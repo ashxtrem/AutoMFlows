@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  automflows:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+    volumes:
+      - ./screenshots:/app/screenshots
+    restart: unless-stopped
+

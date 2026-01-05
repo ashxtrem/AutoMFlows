@@ -1,0 +1,33 @@
+{
+  "name": "example-plugin",
+  "version": "1.0.0",
+  "description": "Example plugin demonstrating the AutoMFlows plugin system",
+  "author": "AutoMFlows Team",
+  "nodes": [
+    {
+      "type": "example.fillForm",
+      "label": "Fill Form",
+      "category": "Interaction",
+      "icon": "📋",
+      "description": "Fill multiple form fields at once",
+      "handlerPath": "handler.js",
+      "defaultData": {
+        "fields": []
+      }
+    },
+    {
+      "type": "example.scrollTo",
+      "label": "Scroll To",
+      "category": "Interaction",
+      "icon": "⬇️",
+      "description": "Scroll to an element on the page",
+      "handlerPath": "handler.js",
+      "defaultData": {
+        "selector": "",
+        "selectorType": "css",
+        "behavior": "smooth"
+      }
+    }
+  ]
+}
+

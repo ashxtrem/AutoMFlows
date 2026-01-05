@@ -1,0 +1,97 @@
+import { Node } from 'reactflow';
+import { NodeType } from '@automflows/shared';
+import { useWorkflowStore } from '../store/workflowStore';
+import OpenBrowserConfig from './nodeConfigs/OpenBrowserConfig';
+import NavigateConfig from './nodeConfigs/NavigateConfig';
+import ClickConfig from './nodeConfigs/ClickConfig';
+import TypeConfig from './nodeConfigs/TypeConfig';
+import GetTextConfig from './nodeConfigs/GetTextConfig';
+import ScreenshotConfig from './nodeConfigs/ScreenshotConfig';
+import WaitConfig from './nodeConfigs/WaitConfig';
+import JavaScriptCodeConfig from './nodeConfigs/JavaScriptCodeConfig';
+import LoopConfig from './nodeConfigs/LoopConfig';
+import { frontendPluginRegistry } from '../plugins/registry';
+
+interface NodeConfigFormProps {
+  node: Node;
+}
+
+export default function NodeConfigForm({ node }: NodeConfigFormProps) {
+  const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
+  const nodeType = node.data.type as NodeType | string;
+
+  const handleChange = (field: string, value: any) => {
+    updateNodeData(node.id, { [field]: value });
+  };
+
+  const renderConfig = () => {
+    // Check if it's a built-in node type (check if value exists in enum values)
+    if (Object.values(NodeType).includes(nodeType as NodeType)) {
+      switch (nodeType as NodeType) {
+        case NodeType.START:
+          return <div className="text-gray-400 text-sm">Start node has no configuration.</div>;
+        case NodeType.OPEN_BROWSER:
+          return <OpenBrowserConfig node={node} onChange={handleChange} />;
+        case NodeType.NAVIGATE:
+          return <NavigateConfig node={node} onChange={handleChange} />;
+        case NodeType.CLICK:
+          return <ClickConfig node={node} onChange={handleChange} />;
+        case NodeType.TYPE:
+          return <TypeConfig node={node} onChange={handleChange} />;
+        case NodeType.GET_TEXT:
+          return <GetTextConfig node={node} onChange={handleChange} />;
+        case NodeType.SCREENSHOT:
+          return <ScreenshotConfig node={node} onChange={handleChange} />;
+        case NodeType.WAIT:
+          return <WaitConfig node={node} onChange={handleChange} />;
+        case NodeType.JAVASCRIPT_CODE:
+          return <JavaScriptCodeConfig node={node} onChange={handleChange} />;
+        case NodeType.LOOP:
+          return <LoopConfig node={node} onChange={handleChange} />;
+        default:
+          return <div className="text-gray-400 text-sm">No configuration available.</div>;
+      }
+    }
+
+    // Check if it's a plugin node
+    const pluginNode = frontendPluginRegistry.getPluginNode(nodeType);
+    if (pluginNode) {
+      // If plugin has a custom config component, use it
+      if (pluginNode.configComponent) {
+        const ConfigComponent = pluginNode.configComponent;
+        return <ConfigComponent node={node} onChange={handleChange} />;
+      }
+      
+      // Otherwise, render a generic config form based on node definition
+      const nodeDef = pluginNode.definition;
+      if (nodeDef.defaultData) {
+        return (
+          <div className="space-y-4">
+            <div className="text-gray-400 text-sm mb-4">{nodeDef.description || 'Configure this node'}</div>
+            {Object.entries(nodeDef.defaultData).map(([key, value]) => (
+              <div key={key}>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  {key}
+                </label>
+                <input
+                  type="text"
+                  value={node.data[key] || value || ''}
+                  onChange={(e) => handleChange(key, e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-gray-200"
+                  placeholder={String(value)}
+                />
+              </div>
+            ))}
+          </div>
+        );
+      }
+      
+      return <div className="text-gray-400 text-sm">No configuration available for this plugin node.</div>;
+    }
+
+    return <div className="text-gray-400 text-sm">No configuration available.</div>;
+  };
+
+  return <div className="space-y-4">{renderConfig()}</div>;
+}
+

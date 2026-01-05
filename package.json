@@ -1,0 +1,24 @@
+{
+  "name": "automflows",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend",
+    "shared"
+  ],
+  "scripts": {
+    "dev:backend": "npm run dev --workspace=backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "build": "npm run build --workspaces",
+    "build:backend": "npm run build --workspace=backend",
+    "build:frontend": "npm run build --workspace=frontend",
+    "lint": "npm run lint --workspaces",
+    "type-check": "npm run type-check --workspaces"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3"
+  }
+}
+
