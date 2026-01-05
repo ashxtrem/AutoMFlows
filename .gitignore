@@ -1,0 +1,144 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build outputs
+dist/
+build/
+out/
+*.tsbuildinfo
+
+# Compiled JavaScript
+*.js.map
+*.d.ts.map
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
+*.webm
+*.png
+*.jpg
+*.jpeg
+screenshots/
+videos/
+blob-report/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Coverage
+coverage/
+*.lcov
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+.temp/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache
+.parcel-cache
+
+# Next.js (if used)
+.next/
+out/
+
+# Nuxt.js (if used)
+.nuxt/
+dist/
+
+# Vite (if used)
+.vite/
+
+# TypeScript
+*.tsbuildinfo
+
+# BrowserFlow runtime files
+.browserflow-port
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+*.db-shm
+*.db-wal
+
+# Backup files
+*.bak
+*.backup
+*.old
+*~
+
+# Python (if any Python scripts exist)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Docker volumes/data
+docker/data/
+docker/volumes/
+
+# Runtime/process files
+*.pid
+*.seed
+*.pid.lock
