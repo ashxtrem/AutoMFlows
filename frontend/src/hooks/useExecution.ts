@@ -13,9 +13,16 @@ async function getBackendPortSync(): Promise<number> {
     return backendPort;
   }
   
-  // Try to get port from port file endpoint (via proxy)
+  // Try to get port from port file endpoint (via proxy) with timeout
   try {
-    const response = await fetch('/.automflows-port');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 2000); // 2 second timeout
+    
+    const response = await fetch('/.automflows-port', {
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    
     if (response.ok) {
       const portText = await response.text();
       const port = parseInt(portText.trim(), 10);
@@ -24,15 +31,15 @@ async function getBackendPortSync(): Promise<number> {
         return backendPort;
       }
     }
-  } catch (error) {
-    // Ignore errors, will retry
+  } catch (error: any) {
+    // Ignore errors, will use fallback
   }
   
   // Fallback to environment variable or default
+  // Try common ports if port discovery fails
   const fallbackPort = import.meta.env.VITE_BACKEND_PORT 
     ? parseInt(import.meta.env.VITE_BACKEND_PORT, 10)
-    : 3003;
-  
+    : 3004; // Default to 3004 since backend typically starts there
   backendPort = fallbackPort;
   return backendPort;
 }
@@ -125,13 +132,18 @@ export function useExecution() {
       }
 
       const currentPort = port || await getBackendPortSync();
+      const fetchController = new AbortController();
+      const fetchTimeoutId = setTimeout(() => fetchController.abort(), 10000); // 10 second timeout for API call
+      
       const response = await fetch(`http://localhost:${currentPort}/api/workflows/execute`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ workflow, traceLogs }),
+        signal: fetchController.signal,
       });
+      clearTimeout(fetchTimeoutId);
 
       if (!response.ok) {
         const error = await response.json();
@@ -142,7 +154,17 @@ export function useExecution() {
       console.log('Execution started:', result);
     } catch (error: any) {
       console.error('Execution error:', error);
-      alert('Failed to execute workflow: ' + error.message);
+      
+      let errorMessage = 'Failed to execute workflow: ' + error.message;
+      if (error.name === 'AbortError') {
+        const currentPort = port || await getBackendPortSync();
+        errorMessage = `Backend server is not responding on port ${currentPort}. Please ensure the backend server is running.`;
+      } else if (error.message === 'Failed to fetch') {
+        const currentPort = port || await getBackendPortSync();
+        errorMessage = `Cannot connect to backend server on port ${currentPort}. Please ensure the backend server is running.`;
+      }
+      
+      alert(errorMessage);
       setExecutionStatus('error');
     }
   };

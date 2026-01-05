@@ -9,8 +9,9 @@ export function serializeWorkflow(nodes: Node[], edges: Edge[]): Workflow {
     data: {
       ...node.data,
       // Remove ReactFlow-specific fields
-      label: undefined,
       isExecuting: undefined,
+      // Preserve custom label, background color, bypass, minimized state, width, height
+      // label, backgroundColor, bypass, isMinimized, width, height are kept
     },
   }));
 
@@ -38,7 +39,12 @@ export function deserializeWorkflow(workflow: Workflow): { nodes: Node[]; edges:
     data: {
       ...node.data,
       type: node.type,
-      label: getNodeLabel(node.type),
+      // Preserve custom label if exists, otherwise use default
+      label: node.data.label || getNodeLabel(node.type),
+      // Preserve background color, bypass, minimized state (borderColor removed)
+      backgroundColor: node.data.backgroundColor,
+      bypass: node.data.bypass,
+      isMinimized: node.data.isMinimized,
     },
   }));
 

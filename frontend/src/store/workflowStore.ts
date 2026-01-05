@@ -1,7 +1,12 @@
 import { create } from 'zustand';
 import { Node, Edge, Connection, addEdge, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange } from 'reactflow';
-import { BaseNode as WorkflowNode, Edge as WorkflowEdge, NodeType } from '@automflows/shared';
+import { NodeType } from '@automflows/shared';
 import { frontendPluginRegistry } from '../plugins/registry';
+
+interface WorkflowSnapshot {
+  nodes: Node[];
+  edges: Edge[];
+}
 
 interface WorkflowState {
   nodes: Node[];
@@ -10,11 +15,21 @@ interface WorkflowState {
   executionStatus: 'idle' | 'running' | 'completed' | 'error';
   executingNodeId: string | null;
   
+  // Undo/Redo
+  history: WorkflowSnapshot[];
+  historyIndex: number;
+  maxHistorySize: number;
+  
+  // Clipboard
+  clipboard: Node | null;
+  
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
   onConnect: (connection: Connection) => void;
+  onConnectStart: (event: React.MouseEvent | React.TouchEvent, params: { nodeId: string | null; handleId: string | null; handleType: 'source' | 'target' | null }) => void;
+  onConnectEnd: (event: MouseEvent | TouchEvent) => void;
   setSelectedNode: (node: Node | null) => void;
   addNode: (type: NodeType | string, position: { x: number; y: number }) => void;
   updateNodeData: (nodeId: string, data: any) => void;
@@ -22,49 +37,186 @@ interface WorkflowState {
   setExecutionStatus: (status: 'idle' | 'running' | 'completed' | 'error') => void;
   setExecutingNodeId: (nodeId: string | null) => void;
   resetExecution: () => void;
+  
+  // Undo/Redo methods
+  saveToHistory: () => void;
+  undo: () => void;
+  redo: () => void;
+  canUndo: () => boolean;
+  canRedo: () => boolean;
+  
+  // Copy/Paste/Duplicate
+  copyNode: (nodeId: string) => void;
+  pasteNode: (position: { x: number; y: number }) => void;
+  duplicateNode: (nodeId: string) => void;
+  
+  // Node operations
+  renameNode: (nodeId: string, label: string) => void;
+  deleteNode: (nodeId: string) => void;
+  toggleBypass: (nodeId: string) => void;
+  toggleMinimize: (nodeId: string) => void;
+  setNodeColor: (nodeId: string, borderColor?: string, backgroundColor?: string) => void;
+  autoResizeNode: (nodeId: string) => void;
+  
+  // Connection operations
+  removeNodeConnections: (nodeId: string) => void;
+  onEdgeUpdate: (oldEdge: Edge, newConnection: Connection) => void;
 }
 
-export const useWorkflowStore = create<WorkflowState>((set, get) => ({
-  nodes: [],
-  edges: [],
-  selectedNode: null,
-  executionStatus: 'idle',
-  executingNodeId: null,
+export const useWorkflowStore = create<WorkflowState>((set, get) => {
+  const initialState: WorkflowSnapshot = { nodes: [], edges: [] };
+  return {
+    nodes: [],
+    edges: [],
+    selectedNode: null,
+    executionStatus: 'idle',
+    executingNodeId: null,
+    history: [initialState],
+    historyIndex: 0,
+    maxHistorySize: 10,
+    clipboard: null,
 
-  setNodes: (nodes) => set({ nodes }),
-  setEdges: (edges) => set({ edges }),
+  setNodes: (nodes) => {
+    set({ nodes });
+  },
+  setEdges: (edges) => {
+    set({ edges });
+  },
 
   onNodesChange: (changes) => {
-    const updatedNodes = applyNodeChanges(changes, get().nodes);
-    const selectedNode = get().selectedNode;
+    const state = get();
+    // Filter out dimension changes from ReactFlow if we have explicit dimensions set
+    // This prevents ReactFlow from overriding our manual resize dimensions
+    const filteredChanges = changes.filter((change) => {
+      if (change.type === 'dimensions' && change.id) {
+        const node = state.nodes.find(n => n.id === change.id);
+        // If node has explicit width/height set, ignore ReactFlow's dimension changes
+        if (node && (node.data.width !== undefined || node.data.height !== undefined)) {
+          return false; // Filter out this dimension change
+        }
+      }
+      return true; // Keep all other changes
+    });
+    
+    const updatedNodes = applyNodeChanges(filteredChanges, state.nodes);
+    
+    // Ensure explicit dimensions are preserved (in case any slipped through)
+    const finalNodes = updatedNodes.map((node) => {
+      const originalNode = state.nodes.find(n => n.id === node.id);
+      // If node has explicit width/height set, preserve them
+      if (originalNode && (originalNode.data.width !== undefined || originalNode.data.height !== undefined)) {
+        return {
+          ...node,
+          width: originalNode.width,
+          height: originalNode.height,
+        };
+      }
+      return node;
+    });
+    
+    const selectedNode = state.selectedNode;
     const updatedSelectedNode = selectedNode 
-      ? updatedNodes.find((node) => node.id === selectedNode.id) || null
+      ? finalNodes.find((node) => node.id === selectedNode.id) || null
       : null;
     
     set({
-      nodes: updatedNodes,
+      nodes: finalNodes,
       selectedNode: updatedSelectedNode,
     });
+    
+    // Check if this is a significant change (not just position updates)
+    const significantChange = changes.some(
+      (change) => change.type === 'add' || change.type === 'remove'
+    );
+    
+    // Save to history for significant changes (debounced)
+    if (significantChange) {
+      setTimeout(() => get().saveToHistory(), 100);
+    }
   },
 
   onEdgesChange: (changes) => {
+    const updatedEdges = applyEdgeChanges(changes, get().edges);
     set({
-      edges: applyEdgeChanges(changes, get().edges),
+      edges: updatedEdges,
     });
+    // Save to history for edge changes (debounced)
+    setTimeout(() => get().saveToHistory(), 100);
   },
 
   onConnect: (connection) => {
-    // Check if target already has a connection
-    const existingEdge = get().edges.find((e) => e.target === connection.target);
-    if (existingEdge && connection.targetHandle === 'input') {
-      // Remove existing connection to input port
-      set({
-        edges: get().edges.filter((e) => !(e.target === connection.target && e.targetHandle === 'input')),
-      });
+    const state = get();
+    
+    // Validate connection
+    if (!connection.source || !connection.target) {
+      return;
     }
+    
+    // Prevent self-connections
+    if (connection.source === connection.target) {
+      return;
+    }
+    
+    // Check if target already has a connection to the same handle
+    const edgesToRemove = state.edges.filter((e) => 
+      e.target === connection.target && 
+      e.targetHandle === connection.targetHandle
+    );
+    
+    // Remove old connections before adding new one
+    const finalEdges = state.edges.filter((e) => 
+      !edgesToRemove.some((edgeToRemove) => edgeToRemove.id === e.id)
+    );
+    
     set({
-      edges: addEdge(connection, get().edges),
+      edges: addEdge(connection, finalEdges),
     });
+    setTimeout(() => get().saveToHistory(), 100);
+  },
+
+  onConnectStart: (_event, _params) => {
+    // No special handling needed - ReactFlow handles connection start
+  },
+
+  onConnectEnd: (_event) => {
+    // No special handling needed - ReactFlow handles connection end
+  },
+
+  onEdgeUpdate: (oldEdge, newConnection) => {
+    const state = get();
+    
+    // Validate new connection
+    if (!newConnection.source || !newConnection.target) {
+      return;
+    }
+    
+    // Prevent self-connections
+    if (newConnection.source === newConnection.target) {
+      return;
+    }
+    
+    // Remove old edge and create new one with updated target
+    const updatedEdges = state.edges.map((edge) => {
+      if (edge.id === oldEdge.id) {
+        return {
+          ...edge,
+          target: newConnection.target!,
+          targetHandle: newConnection.targetHandle || edge.targetHandle,
+        };
+      }
+      return edge;
+    });
+    
+    // Remove any conflicting edges on the new target handle
+    const finalEdges = updatedEdges.filter((edge) => {
+      if (edge.target === newConnection.target && edge.targetHandle === newConnection.targetHandle) {
+        return edge.id === oldEdge.id; // Keep only the updated edge
+      }
+      return true;
+    });
+    
+    set({ edges: finalEdges });
+    setTimeout(() => get().saveToHistory(), 100);
   },
 
   setSelectedNode: (node) => {
@@ -92,12 +244,19 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
     set({
       nodes: [...get().nodes, newNode],
     });
+    setTimeout(() => get().saveToHistory(), 100);
   },
 
   updateNodeData: (nodeId, data) => {
-    const updatedNodes = get().nodes.map((node) =>
-      node.id === nodeId ? { ...node, data: { ...node.data, ...data } } : node
-    );
+    const updatedNodes = get().nodes.map((node) => {
+      if (node.id === nodeId) {
+        return { 
+          ...node, 
+          data: { ...node.data, ...data }
+        };
+      }
+      return node;
+    });
     const selectedNode = get().selectedNode;
     const updatedSelectedNode = selectedNode && selectedNode.id === nodeId
       ? updatedNodes.find((node) => node.id === nodeId) || null
@@ -107,6 +266,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       nodes: updatedNodes,
       selectedNode: updatedSelectedNode,
     });
+    // Don't auto-save to history - let calling code decide when to save
   },
 
   updateNodeDimensions: (nodeId, width, height) => {
@@ -129,12 +289,205 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => ({
       nodes: updatedNodes,
       selectedNode: updatedSelectedNode,
     });
+    // Don't auto-save to history for resize - too frequent
   },
 
   setExecutionStatus: (status) => set({ executionStatus: status }),
   setExecutingNodeId: (nodeId) => set({ executingNodeId: nodeId }),
   resetExecution: () => set({ executionStatus: 'idle', executingNodeId: null }),
-}));
+
+  // Undo/Redo implementation
+  saveToHistory: () => {
+    const state = get();
+    const snapshot: WorkflowSnapshot = {
+      nodes: JSON.parse(JSON.stringify(state.nodes)),
+      edges: JSON.parse(JSON.stringify(state.edges)),
+    };
+    
+    // Remove any history after current index (if we're not at the end)
+    const newHistory = state.history.slice(0, state.historyIndex + 1);
+    
+    // Check if this snapshot is different from the last one
+    const lastSnapshot = newHistory[newHistory.length - 1];
+    const isDifferent = !lastSnapshot || 
+      JSON.stringify(lastSnapshot.nodes) !== JSON.stringify(snapshot.nodes) ||
+      JSON.stringify(lastSnapshot.edges) !== JSON.stringify(snapshot.edges);
+    
+    if (isDifferent) {
+      newHistory.push(snapshot);
+      
+      // Limit history size
+      if (newHistory.length > state.maxHistorySize) {
+        newHistory.shift();
+      } else {
+        // Only increment index if we're not trimming
+        set({ historyIndex: newHistory.length - 1 });
+      }
+      
+      set({ history: newHistory });
+    }
+  },
+
+  undo: () => {
+    const state = get();
+    if (state.historyIndex > 0) {
+      const newIndex = state.historyIndex - 1;
+      const snapshot = state.history[newIndex];
+      set({
+        nodes: JSON.parse(JSON.stringify(snapshot.nodes)),
+        edges: JSON.parse(JSON.stringify(snapshot.edges)),
+        historyIndex: newIndex,
+        selectedNode: null,
+      });
+    }
+  },
+
+  redo: () => {
+    const state = get();
+    if (state.historyIndex < state.history.length - 1) {
+      const newIndex = state.historyIndex + 1;
+      const snapshot = state.history[newIndex];
+      set({
+        nodes: JSON.parse(JSON.stringify(snapshot.nodes)),
+        edges: JSON.parse(JSON.stringify(snapshot.edges)),
+        historyIndex: newIndex,
+        selectedNode: null,
+      });
+    }
+  },
+
+  canUndo: () => {
+    return get().historyIndex > 0;
+  },
+
+  canRedo: () => {
+    const state = get();
+    return state.historyIndex < state.history.length - 1;
+  },
+
+  // Copy/Paste/Duplicate
+  copyNode: (nodeId) => {
+    const node = get().nodes.find((n) => n.id === nodeId);
+    if (node) {
+      set({ clipboard: JSON.parse(JSON.stringify(node)) });
+    }
+  },
+
+  pasteNode: (position) => {
+    const clipboard = get().clipboard;
+    if (!clipboard) return;
+    
+    const newNode: Node = {
+      ...JSON.parse(JSON.stringify(clipboard)),
+      id: `${clipboard.data.type}-${Date.now()}`,
+      position,
+    };
+    
+    set({
+      nodes: [...get().nodes, newNode],
+    });
+    setTimeout(() => get().saveToHistory(), 100);
+  },
+
+  duplicateNode: (nodeId) => {
+    const node = get().nodes.find((n) => n.id === nodeId);
+    if (!node) return;
+    
+    const newNode: Node = {
+      ...JSON.parse(JSON.stringify(node)),
+      id: `${node.data.type}-${Date.now()}`,
+      position: {
+        x: node.position.x + 50,
+        y: node.position.y + 50,
+      },
+    };
+    
+    set({
+      nodes: [...get().nodes, newNode],
+    });
+    setTimeout(() => get().saveToHistory(), 100);
+  },
+
+  // Node operations
+  renameNode: (nodeId, label) => {
+    get().updateNodeData(nodeId, { label });
+    setTimeout(() => get().saveToHistory(), 100);
+  },
+
+  deleteNode: (nodeId) => {
+    const state = get();
+    set({
+      nodes: state.nodes.filter((n) => n.id !== nodeId),
+      edges: state.edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
+      selectedNode: state.selectedNode?.id === nodeId ? null : state.selectedNode,
+    });
+    setTimeout(() => get().saveToHistory(), 100);
+  },
+
+  toggleBypass: (nodeId) => {
+    const node = get().nodes.find((n) => n.id === nodeId);
+    if (node) {
+      const currentBypass = node.data.bypass || false;
+      get().updateNodeData(nodeId, { bypass: !currentBypass });
+      setTimeout(() => get().saveToHistory(), 100);
+    }
+  },
+
+  toggleMinimize: (nodeId) => {
+    const node = get().nodes.find((n) => n.id === nodeId);
+    if (node) {
+      const currentMinimized = node.data.isMinimized || false;
+      get().updateNodeData(nodeId, { isMinimized: !currentMinimized });
+      setTimeout(() => get().saveToHistory(), 100);
+    }
+  },
+
+  setNodeColor: (nodeId, _borderColor, backgroundColor) => {
+    const updates: any = {};
+    // Only set backgroundColor (borderColor is no longer customizable)
+    if (backgroundColor !== undefined) updates.backgroundColor = backgroundColor;
+    get().updateNodeData(nodeId, updates);
+    setTimeout(() => get().saveToHistory(), 100);
+  },
+
+  autoResizeNode: (nodeId) => {
+    const node = get().nodes.find((n) => n.id === nodeId);
+    if (!node) return;
+    
+    // Calculate content size based on properties
+    // This is a simplified version - in practice, you'd measure actual DOM
+    const properties = node.data;
+    let maxWidth = 200;
+    let maxHeight = 100;
+    
+    // Estimate width based on content
+    const propertyCount = Object.keys(properties).filter(
+      (key) => !['type', 'label', 'isExecuting', 'width', 'height', 'borderColor', 'backgroundColor', 'bypass', 'isMinimized'].includes(key)
+    ).length;
+    
+    if (propertyCount > 0) {
+      maxWidth = Math.max(250, propertyCount * 50);
+      maxHeight = Math.max(150, propertyCount * 40 + 50);
+    }
+    
+    get().updateNodeDimensions(nodeId, maxWidth, maxHeight);
+    setTimeout(() => get().saveToHistory(), 100);
+  },
+
+  // Connection operations
+  removeNodeConnections: (nodeId) => {
+    const state = get();
+    const updatedEdges = state.edges.filter(
+      (e) => e.source !== nodeId && e.target !== nodeId
+    );
+    
+    if (updatedEdges.length !== state.edges.length) {
+      set({ edges: updatedEdges });
+      setTimeout(() => get().saveToHistory(), 100);
+    }
+  },
+  };
+});
 
 function getNodeLabel(type: NodeType | string): string {
   // Check if it's a built-in node type (check if value exists in enum values)

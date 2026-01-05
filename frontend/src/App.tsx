@@ -7,6 +7,7 @@ import RightSidebar from './components/RightSidebar';
 import { useWorkflowStore } from './store/workflowStore';
 import SecurityWarning from './components/SecurityWarning';
 import { useWorkflowAutoSave, useWorkflowLoad } from './hooks/useWorkflow';
+import { useUndoRedo } from './hooks/useUndoRedo';
 import { loadPlugins } from './plugins/loader';
 import { getBackendPort } from './utils/getBackendPort';
 
@@ -17,6 +18,9 @@ function App() {
   // Auto-save and load workflow
   useWorkflowAutoSave();
   useWorkflowLoad();
+  
+  // Undo/Redo keyboard shortcuts
+  useUndoRedo();
 
   // Load plugins on mount
   useEffect(() => {

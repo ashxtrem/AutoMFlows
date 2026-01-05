@@ -65,18 +65,31 @@ sleep 3
 # Wait a bit more for servers to fully start and port file to be written
 sleep 2
 
-# Step 6: Read backend port from file
-BACKEND_PORT=$(cat .automflows-port 2>/dev/null || echo "3003")
-FRONTEND_PORT=5173
+# Step 6: Read backend port from file (with retry)
+BACKEND_PORT="3003"
+for i in {1..5}; do
+    if [ -f .automflows-port ]; then
+        BACKEND_PORT=$(cat .automflows-port 2>/dev/null | tr -d '\n' || echo "3003")
+        if [ "$BACKEND_PORT" != "3003" ] || [ -s .automflows-port ]; then
+            break
+        fi
+    fi
+    sleep 1
+done
 
-# Step 7: Open browser
-echo -e "${GREEN}🌐 Opening browser...${NC}"
-if [[ "$OSTYPE" == "darwin"* ]]; then
-    open http://localhost:$FRONTEND_PORT
-elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
-    xdg-open http://localhost:$FRONTEND_PORT 2>/dev/null || true
-elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
-    start http://localhost:$FRONTEND_PORT
+# Step 7: Detect actual frontend port (Vite may use a different port if 5173 is taken)
+FRONTEND_PORT=5173
+if command -v lsof >/dev/null 2>&1; then
+    # Check ports 5173-5180 to find which one Vite is using
+    for port in 5173 5174 5175 5176 5177 5178 5179 5180; do
+        if lsof -Pi :$port -sTCP:LISTEN >/dev/null 2>&1; then
+            # Check if it's likely our Vite process (node/vite)
+            if lsof -Pi :$port -sTCP:LISTEN 2>/dev/null | grep -q -E "(node|vite|tsx)"; then
+                FRONTEND_PORT=$port
+                break
+            fi
+        fi
+    done
 fi
 
 echo -e "\n${GREEN}✅ AutoMFlows is running!${NC}"

@@ -4,6 +4,7 @@ import { NodeType } from '@automflows/shared';
 import { frontendPluginRegistry } from '../plugins/registry';
 import { useWorkflowStore } from '../store/workflowStore';
 import { InlineTextInput, InlineNumberInput, InlineSelect, InlineTextarea, InlineCheckbox } from '../components/InlinePropertyEditor';
+import NodeMenuBar from '../components/NodeMenuBar';
 
 const nodeIcons: Record<NodeType, string> = {
   [NodeType.START]: '🚀',
@@ -31,6 +32,31 @@ function getNodeIcon(nodeType: NodeType | string): string {
   return '📦';
 }
 
+function getNodeLabel(type: NodeType | string): string {
+  if (Object.values(NodeType).includes(type as NodeType)) {
+    const labels: Record<NodeType, string> = {
+      [NodeType.START]: 'Start',
+      [NodeType.OPEN_BROWSER]: 'Open Browser',
+      [NodeType.NAVIGATE]: 'Navigate',
+      [NodeType.CLICK]: 'Click',
+      [NodeType.TYPE]: 'Type',
+      [NodeType.GET_TEXT]: 'Get Text',
+      [NodeType.SCREENSHOT]: 'Screenshot',
+      [NodeType.WAIT]: 'Wait',
+      [NodeType.JAVASCRIPT_CODE]: 'JavaScript Code',
+      [NodeType.LOOP]: 'Loop',
+    };
+    return labels[type as NodeType] || type;
+  }
+  
+  const nodeDef = frontendPluginRegistry.getNodeDefinition(type);
+  if (nodeDef) {
+    return nodeDef.label;
+  }
+  
+  return type;
+}
+
 interface ResizeHandleProps {
   onResize: (deltaX: number, deltaY: number) => void;
 }
@@ -39,7 +65,8 @@ function ResizeHandle({ onResize }: ResizeHandleProps) {
   const [isResizing, setIsResizing] = useState(false);
   const startPos = useRef<{ x: number; y: number } | null>(null);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+  const handleMouseDown = useCallback((e: React.MouseEvent | React.PointerEvent) => {
+    e.preventDefault();
     e.stopPropagation();
     setIsResizing(true);
     startPos.current = { x: e.clientX, y: e.clientY };
@@ -48,7 +75,7 @@ function ResizeHandle({ onResize }: ResizeHandleProps) {
   useEffect(() => {
     if (!isResizing) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const handleMouseMove = (e: MouseEvent | PointerEvent) => {
       if (startPos.current) {
         const deltaX = e.clientX - startPos.current.x;
         const deltaY = e.clientY - startPos.current.y;
@@ -57,25 +84,42 @@ function ResizeHandle({ onResize }: ResizeHandleProps) {
       }
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (e?: MouseEvent | PointerEvent) => {
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+      }
+      // Remove listeners immediately to prevent any further resize events
+      document.removeEventListener('mousemove', handleMouseMove, true);
+      document.removeEventListener('mouseup', handleMouseUp, true);
+      document.removeEventListener('pointermove', handleMouseMove, true);
+      document.removeEventListener('pointerup', handleMouseUp, true);
       setIsResizing(false);
       startPos.current = null;
     };
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    // Use capture phase to ensure we catch events before ReactFlow
+    document.addEventListener('mousemove', handleMouseMove, true);
+    document.addEventListener('mouseup', handleMouseUp, true);
+    document.addEventListener('pointermove', handleMouseMove, true);
+    document.addEventListener('pointerup', handleMouseUp, true);
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mousemove', handleMouseMove, true);
+      document.removeEventListener('mouseup', handleMouseUp, true);
+      document.removeEventListener('pointermove', handleMouseMove, true);
+      document.removeEventListener('pointerup', handleMouseUp, true);
     };
   }, [isResizing, onResize]);
 
   return (
     <div
+      data-nodrag
       className="absolute bottom-0 right-0 w-4 h-4 bg-blue-500 border-2 border-gray-800 rounded-tl-lg cursor-nwse-resize hover:bg-blue-400"
       onMouseDown={handleMouseDown}
-      style={{ zIndex: 10 }}
+      onPointerDown={handleMouseDown}
+      style={{ zIndex: 10, pointerEvents: 'auto' }}
     />
   );
 }
@@ -83,24 +127,114 @@ function ResizeHandle({ onResize }: ResizeHandleProps) {
 export default function CustomNode({ id, data, selected, width, height }: NodeProps) {
   const isExecuting = data.isExecuting || false;
   const nodeType = data.type as NodeType | string;
-  const label = data.label || nodeType;
+  const customLabel = data.label;
+  const defaultLabel = getNodeLabel(nodeType);
+  const label = customLabel || defaultLabel;
   const icon = getNodeIcon(nodeType);
   const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
   const updateNodeDimensions = useWorkflowStore((state) => state.updateNodeDimensions);
+  const renameNode = useWorkflowStore((state) => state.renameNode);
+  const autoResizeNode = useWorkflowStore((state) => state.autoResizeNode);
+  const edges = useWorkflowStore((state) => state.edges);
+
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(label);
+  const renameInputRef = useRef<HTMLInputElement>(null);
+  const [connectingHandleId, setConnectingHandleId] = useState<string | null>(null);
+  
+  // Check if this handle has an incoming/outgoing connection
+  const hasInputConnection = edges.some(e => e.target === id && e.targetHandle === 'input');
+  const hasOutputConnection = edges.some(e => e.source === id && e.sourceHandle === 'output');
 
   const currentWidth = width || data.width || 200;
   const currentHeight = height || data.height || undefined;
+  const isMinimized = data.isMinimized || false;
+  const bypass = data.bypass || false;
+  // Use custom background color if set, otherwise use default
+  const backgroundColor = data.backgroundColor || '#1f2937';
+  // Border color is based on selection state, not customizable
+  const borderColor = selected ? '#3b82f6' : '#4b5563';
+
+  // Calculate minimum dimensions based on content
+  const calculateMinDimensions = useCallback(() => {
+    // Minimum width: enough for label + icon + padding
+    // Estimate label width: ~8px per character + icon (~24px) + padding (32px total)
+    const labelWidth = (label.length * 8) + 24 + 32;
+    const minWidth = Math.max(150, labelWidth);
+    
+    // Check if node has properties (without calling renderProperties to avoid circular dependency)
+    let hasProps = false;
+    let propertyCount = 0;
+    
+    if (Object.values(NodeType).includes(nodeType as NodeType)) {
+      // Built-in nodes - check if they have properties
+      hasProps = nodeType !== NodeType.START;
+      if (hasProps) {
+        propertyCount = Object.keys(data).filter(
+          (key) => !['type', 'label', 'isExecuting', 'width', 'height', 'borderColor', 'backgroundColor', 'bypass', 'isMinimized'].includes(key)
+        ).length;
+      }
+    } else {
+      // Plugin nodes
+      const pluginNode = frontendPluginRegistry.getPluginNode(nodeType);
+      hasProps = pluginNode && pluginNode.definition.defaultData !== undefined;
+      if (hasProps && pluginNode?.definition.defaultData) {
+        propertyCount = Object.keys(pluginNode.definition.defaultData).length;
+      }
+    }
+    
+    // Minimum height: header (~50px) + properties if not minimized
+    let minHeight = 50; // Header height
+    if (!isMinimized && hasProps && propertyCount > 0) {
+      minHeight += propertyCount * 32 + 16; // Properties + border + padding
+    }
+    
+    return { minWidth, minHeight };
+  }, [label, isMinimized, data, nodeType]);
 
   const handleResize = useCallback((deltaX: number, deltaY: number) => {
-    const newWidth = Math.max(150, currentWidth + deltaX);
-    const newHeight = currentHeight ? Math.max(100, currentHeight + deltaY) : undefined;
-    
+    const { minWidth, minHeight } = calculateMinDimensions();
+    const newWidth = Math.max(minWidth, currentWidth + deltaX);
+    const newHeight = currentHeight ? Math.max(minHeight, currentHeight + deltaY) : undefined;
     updateNodeDimensions(id, newWidth, newHeight);
-  }, [id, currentWidth, currentHeight, updateNodeDimensions]);
+  }, [id, currentWidth, currentHeight, updateNodeDimensions, calculateMinDimensions]);
+
+  const handleDoubleClickHeader = useCallback(() => {
+    setIsRenaming(true);
+    setRenameValue(label);
+    setTimeout(() => {
+      renameInputRef.current?.focus();
+      renameInputRef.current?.select();
+    }, 0);
+  }, [label]);
+
+  const handleRenameSubmit = useCallback(() => {
+    if (renameValue.trim() && renameValue !== label) {
+      renameNode(id, renameValue.trim());
+    } else {
+      setRenameValue(label);
+    }
+    setIsRenaming(false);
+  }, [id, renameValue, label, renameNode]);
+
+  const handleRenameKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleRenameSubmit();
+    } else if (e.key === 'Escape') {
+      setRenameValue(label);
+      setIsRenaming(false);
+    }
+  }, [handleRenameSubmit, label]);
+
+  const handleBoundaryDoubleClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+    autoResizeNode(id);
+  }, [id, autoResizeNode]);
 
   const handlePropertyChange = useCallback((field: string, value: any) => {
     updateNodeData(id, { [field]: value });
   }, [id, updateNodeData]);
+
 
   const renderProperties = () => {
     if (Object.values(NodeType).includes(nodeType as NodeType)) {
@@ -447,29 +581,77 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
   const properties = renderProperties();
   const hasProperties = properties !== null;
 
+  // Build style object with colors
+  const nodeStyle: React.CSSProperties = {
+    width: currentWidth,
+    height: currentHeight,
+    minWidth: 150,
+    minHeight: hasProperties && !isMinimized ? undefined : 50,
+    backgroundColor: backgroundColor,
+    borderColor: isExecuting ? '#22c55e' : borderColor,
+    borderWidth: '2px',
+    borderStyle: 'solid',
+  };
+
   return (
     <div
-      className={`relative px-4 py-3 bg-gray-800 border-2 rounded-lg shadow-lg ${
-        selected ? 'border-blue-500' : 'border-gray-700'
-      } ${isExecuting ? 'border-green-500 animate-pulse' : ''}`}
-      style={{
-        width: currentWidth,
-        minWidth: 150,
-        minHeight: hasProperties ? undefined : 50,
-      }}
+      className={`relative px-4 py-3 rounded-lg shadow-lg ${
+        isExecuting ? 'animate-pulse' : ''
+      } ${bypass ? 'opacity-60' : ''}`}
+      style={nodeStyle}
+      onDoubleClick={handleBoundaryDoubleClick}
     >
+      {selected && (
+        <NodeMenuBar
+          nodeId={id}
+          bypass={bypass}
+          failSilently={data.failSilently}
+          isMinimized={isMinimized}
+        />
+      )}
       <Handle
         type="target"
         position={Position.Left}
         id="input"
-        className="!bg-blue-500 !border-2 !border-gray-800"
-        style={{ display: nodeType === NodeType.START || nodeType === 'start' ? 'none' : 'block' }}
+        className={`transition-all duration-200 ${
+          connectingHandleId === 'input' 
+            ? 'connecting' 
+            : hasInputConnection 
+              ? '!bg-green-500 hover:!bg-green-400' 
+              : '!bg-blue-500 hover:!bg-blue-400'
+        }`}
+        style={{ 
+          display: nodeType === NodeType.START || nodeType === 'start' ? 'none' : 'block'
+        }}
+        onMouseEnter={() => setConnectingHandleId('input')}
+        onMouseLeave={() => setConnectingHandleId(null)}
       />
       <div className="flex items-center gap-2">
         <span className="text-lg">{icon}</span>
-        <div className="text-sm font-medium text-white">{label}</div>
+        {isRenaming ? (
+          <input
+            ref={renameInputRef}
+            type="text"
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onBlur={handleRenameSubmit}
+            onKeyDown={handleRenameKeyDown}
+            className="text-sm font-medium text-white bg-gray-700 border border-gray-600 rounded px-2 py-0.5 flex-1 min-w-0"
+            style={{ color: 'white' }}
+            onClick={(e) => e.stopPropagation()}
+          />
+        ) : (
+          <div
+            className="text-sm font-medium text-white cursor-text"
+            onDoubleClick={handleDoubleClickHeader}
+            title="Double-click to rename"
+          >
+            {label}
+            {bypass && <span className="ml-2 text-xs text-yellow-400">(bypassed)</span>}
+          </div>
+        )}
       </div>
-      {hasProperties && (
+      {hasProperties && !isMinimized && (
         <div className="mt-2 border-t border-gray-700 pt-2">
           {properties}
         </div>
@@ -481,8 +663,16 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
         type="source"
         position={Position.Right}
         id="output"
-        className="!bg-blue-500 !border-2 !border-gray-800"
+        className={`transition-all duration-200 ${
+          connectingHandleId === 'output' 
+            ? 'connecting' 
+            : hasOutputConnection 
+              ? '!bg-green-500 hover:!bg-green-400' 
+              : '!bg-blue-500 hover:!bg-blue-400'
+        }`}
         style={{ display: nodeType === NodeType.START ? 'block' : 'block' }}
+        onMouseEnter={() => setConnectingHandleId('output')}
+        onMouseLeave={() => setConnectingHandleId(null)}
       />
     </div>
   );

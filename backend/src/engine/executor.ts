@@ -84,6 +84,19 @@ export class Executor {
           throw new Error(`Node ${nodeId} not found`);
         }
 
+        // Check if node is bypassed
+        const nodeData = node.data as any;
+        if (nodeData?.bypass === true) {
+          this.traceLog(`[TRACE] Skipping bypassed node: ${nodeId} (type: ${node.type})`);
+          this.emitEvent({
+            type: ExecutionEventType.NODE_COMPLETE,
+            nodeId,
+            message: 'Node bypassed',
+            timestamp: Date.now(),
+          });
+          continue;
+        }
+
         this.currentNodeId = nodeId;
         this.traceLog(`[TRACE] Starting node: ${nodeId} (type: ${node.type})`);
         if (this.traceLogs && node.data) {
