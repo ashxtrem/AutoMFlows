@@ -3,7 +3,7 @@ import { NodeHandler, NodeHandlerMap } from './base';
 import { ContextManager } from '../engine/context';
 import { OpenBrowserHandler, NavigateHandler } from './browser';
 import { ClickHandler, TypeHandler } from './interaction';
-import { GetTextHandler, ScreenshotHandler, WaitHandler } from './utility';
+import { GetTextHandler, ScreenshotHandler, WaitHandler, IntValueHandler, StringValueHandler, BooleanValueHandler, InputValueHandler } from './utility';
 import { JavaScriptCodeHandler, LoopHandler } from './logic';
 import { pluginRegistry } from '../plugins/registry';
 
@@ -25,6 +25,10 @@ const handlers: NodeHandlerMap = {
   [NodeType.WAIT]: new WaitHandler(),
   [NodeType.JAVASCRIPT_CODE]: new JavaScriptCodeHandler(),
   [NodeType.LOOP]: new LoopHandler(),
+  [NodeType.INT_VALUE]: new IntValueHandler(),
+  [NodeType.STRING_VALUE]: new StringValueHandler(),
+  [NodeType.BOOLEAN_VALUE]: new BooleanValueHandler(),
+  [NodeType.INPUT_VALUE]: new InputValueHandler(),
 };
 
 export function getNodeHandler(nodeType: NodeType | string): NodeHandler | undefined {

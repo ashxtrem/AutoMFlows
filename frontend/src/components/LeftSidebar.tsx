@@ -44,6 +44,15 @@ const NODE_CATEGORIES = [
       { type: NodeType.JAVASCRIPT_CODE, label: 'JavaScript Code', icon: '💻' },
     ],
   },
+  {
+    label: 'Values',
+    nodes: [
+      { type: NodeType.INT_VALUE, label: 'Int Value', icon: '🔢' },
+      { type: NodeType.STRING_VALUE, label: 'String Value', icon: '📄' },
+      { type: NodeType.BOOLEAN_VALUE, label: 'Boolean Value', icon: '✓' },
+      { type: NodeType.INPUT_VALUE, label: 'Input Value', icon: '📥' },
+    ],
+  },
 ];
 
 export default function LeftSidebar() {

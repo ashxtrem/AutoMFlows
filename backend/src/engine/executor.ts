@@ -1,10 +1,11 @@
-import { Workflow, ExecutionStatus, ExecutionEventType, ExecutionEvent } from '@automflows/shared';
+import { Workflow, ExecutionStatus, ExecutionEventType, ExecutionEvent, BaseNode, Edge, NodeType, PropertyDataType } from '@automflows/shared';
 import { Server } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
 import { WorkflowParser } from './parser';
 import { ContextManager } from './context';
 import { PlaywrightManager } from '../utils/playwright';
 import * as nodeHandlers from '../nodes';
+import { TypeConverter } from '../utils/typeConverter';
 
 export class Executor {
   private executionId: string;
@@ -18,6 +19,7 @@ export class Executor {
   private error: string | null = null;
   private stopRequested: boolean = false;
   private traceLogs: boolean;
+  private nodeTraceLogs: Map<string, string[]> = new Map(); // Store trace logs per node
 
   constructor(workflow: Workflow, io: Server, traceLogs: boolean = false) {
     this.executionId = uuidv4();
@@ -98,6 +100,8 @@ export class Executor {
         }
 
         this.currentNodeId = nodeId;
+        // Clear trace logs for this node at start
+        this.nodeTraceLogs.set(nodeId, []);
         this.traceLog(`[TRACE] Starting node: ${nodeId} (type: ${node.type})`);
         if (this.traceLogs && node.data) {
           this.traceLog(`[TRACE] Node config: ${JSON.stringify(node.data, null, 2)}`);
@@ -109,16 +113,22 @@ export class Executor {
         });
 
         try {
+          // Resolve property input connections before execution
+          const resolvedNode = this.resolvePropertyInputs(node);
+          
           // Get handler for node type
-          const handler = nodeHandlers.getNodeHandler(node.type);
+          const handler = nodeHandlers.getNodeHandler(resolvedNode.type);
           if (!handler) {
-            throw new Error(`No handler found for node type: ${node.type}`);
+            throw new Error(`No handler found for node type: ${resolvedNode.type}`);
           }
 
-          // Execute node
-          this.traceLog(`[TRACE] Executing node handler for: ${node.type}`);
-          await handler.execute(node, this.context);
+          // Execute node with resolved data
+          this.traceLog(`[TRACE] Executing node handler for: ${resolvedNode.type}`);
+          await handler.execute(resolvedNode, this.context);
           this.traceLog(`[TRACE] Node ${nodeId} completed successfully`);
+
+          // Clear trace logs on success (we only need them for errors)
+          this.nodeTraceLogs.delete(nodeId);
 
           this.emitEvent({
             type: ExecutionEventType.NODE_COMPLETE,
@@ -128,10 +138,15 @@ export class Executor {
         } catch (error: any) {
           this.error = error.message;
           this.traceLog(`[TRACE] Node ${nodeId} failed: ${error.message}`);
+          
+          // Get trace logs for this node
+          const traceLogs = this.nodeTraceLogs.get(nodeId) || [];
+          
           this.emitEvent({
             type: ExecutionEventType.NODE_ERROR,
             nodeId,
             message: error.message,
+            traceLogs: traceLogs,
             timestamp: Date.now(),
           });
           throw error;
@@ -185,8 +200,98 @@ export class Executor {
   private traceLog(message: string): void {
     if (this.traceLogs) {
       const timestamp = new Date().toISOString();
-      console.log(`[${timestamp}] ${message}`);
+      const logMessage = `[${timestamp}] ${message}`;
+      console.log(logMessage);
+      
+      // Store trace log for current node if executing
+      if (this.currentNodeId) {
+        const logs = this.nodeTraceLogs.get(this.currentNodeId) || [];
+        logs.push(logMessage);
+        this.nodeTraceLogs.set(this.currentNodeId, logs);
+      }
     }
+  }
+
+  /**
+   * Resolve property input connections for a node
+   * Finds edges targeting property handles and resolves their values
+   */
+  private resolvePropertyInputs(node: BaseNode): BaseNode {
+    const nodeData = node.data as any;
+    const inputConnections = nodeData._inputConnections || {};
+    
+    if (Object.keys(inputConnections).length === 0) {
+      return node; // No input connections to resolve
+    }
+
+    const resolvedData = { ...nodeData };
+    const allNodes = this.parser.getAllNodes();
+    
+    // Resolve each property input connection
+    for (const [propertyName, connectionInfo] of Object.entries(inputConnections)) {
+      // Check if this property is actually converted to input
+      if (!connectionInfo || (connectionInfo as any).isInput !== true) {
+        continue;
+      }
+      
+      const handleId = `${propertyName}-input`;
+      
+      // Find edge connecting to this property handle
+      const edge = this.workflow.edges.find(
+        e => e.target === node.id && e.targetHandle === handleId
+      );
+      
+      if (edge && edge.source) {
+        // Find source node using edge.source
+        const sourceNode = allNodes.find(n => n.id === edge.source);
+        if (sourceNode) {
+          // Get value from source node (it should have been executed already)
+          // Value nodes store their value in context with their node ID as key
+          const sourceValue = this.context.getVariable(edge.source);
+          
+          if (sourceValue !== undefined) {
+            // Determine source and target types for conversion
+            let sourceType: PropertyDataType;
+            if (sourceNode.type === NodeType.INT_VALUE) {
+              sourceType = PropertyDataType.INT;
+            } else if (sourceNode.type === NodeType.STRING_VALUE) {
+              sourceType = PropertyDataType.STRING;
+            } else if (sourceNode.type === NodeType.BOOLEAN_VALUE) {
+              sourceType = PropertyDataType.BOOLEAN;
+            } else if (sourceNode.type === NodeType.INPUT_VALUE) {
+              // Get dataType from INPUT_VALUE node
+              sourceType = (sourceNode.data as any).dataType || PropertyDataType.STRING;
+            } else {
+              sourceType = TypeConverter.inferType(sourceValue);
+            }
+            
+            // Get target property type (we'll need to infer from property name or use default)
+            // For now, use the source type or infer from the value
+            let targetType = sourceType;
+            
+            // Apply type conversion if needed
+            try {
+              const convertedValue = TypeConverter.convert(sourceValue, sourceType, targetType);
+              resolvedData[propertyName] = convertedValue;
+              this.traceLog(`[TRACE] Resolved property ${propertyName} = ${convertedValue} (${sourceType} → ${targetType})`);
+            } catch (error: any) {
+              // If conversion fails, use the value as-is
+              resolvedData[propertyName] = sourceValue;
+              this.traceLog(`[TRACE] Using unconverted value for ${propertyName}: ${sourceValue}`);
+            }
+          } else {
+            this.traceLog(`[TRACE] Warning: Source value not found for property ${propertyName} from node ${edge.source}`);
+          }
+        }
+      } else {
+        this.traceLog(`[TRACE] Warning: No edge found for property input ${propertyName} on node ${node.id}`);
+      }
+    }
+    
+    return {
+      ...node,
+      data: resolvedData,
+    };
   }
 }
 

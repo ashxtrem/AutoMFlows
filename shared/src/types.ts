@@ -1,3 +1,12 @@
+// Property Data Types
+export enum PropertyDataType {
+  INT = 'int',
+  FLOAT = 'float',
+  DOUBLE = 'double',
+  STRING = 'string',
+  BOOLEAN = 'boolean',
+}
+
 // Node Types
 export enum NodeType {
   START = 'start',
@@ -10,6 +19,10 @@ export enum NodeType {
   WAIT = 'wait',
   JAVASCRIPT_CODE = 'javascriptCode',
   LOOP = 'loop',
+  INT_VALUE = 'intValue',
+  STRING_VALUE = 'stringValue',
+  BOOLEAN_VALUE = 'booleanValue',
+  INPUT_VALUE = 'inputValue',
 }
 
 // Base Node Interface
@@ -30,6 +43,12 @@ export interface OpenBrowserNodeData {
   viewportWidth?: number;
   viewportHeight?: number;
   userAgent?: string;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
 }
 
 export interface NavigateNodeData {
@@ -38,6 +57,12 @@ export interface NavigateNodeData {
   waitUntil?: 'load' | 'domcontentloaded' | 'networkidle' | 'commit';
   failSilently?: boolean;
   referer?: string;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
 }
 
 export interface ClickNodeData {
@@ -45,6 +70,12 @@ export interface ClickNodeData {
   selectorType?: 'css' | 'xpath';
   timeout?: number;
   failSilently?: boolean;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
 }
 
 export interface TypeNodeData {
@@ -53,6 +84,12 @@ export interface TypeNodeData {
   text: string;
   timeout?: number;
   failSilently?: boolean;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
 }
 
 export interface GetTextNodeData {
@@ -61,12 +98,24 @@ export interface GetTextNodeData {
   outputVariable?: string;
   timeout?: number;
   failSilently?: boolean;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
 }
 
 export interface ScreenshotNodeData {
   path?: string;
   fullPage?: boolean;
   failSilently?: boolean;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
 }
 
 export interface WaitNodeData {
@@ -75,6 +124,12 @@ export interface WaitNodeData {
   selectorType?: 'css' | 'xpath';
   timeout?: number;
   failSilently?: boolean;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
 }
 
 export interface JavaScriptCodeNodeData {
@@ -85,6 +140,23 @@ export interface JavaScriptCodeNodeData {
 export interface LoopNodeData {
   arrayVariable: string; // Variable name from previous node output
   failSilently?: boolean;
+}
+
+export interface IntValueNodeData {
+  value: number;
+}
+
+export interface StringValueNodeData {
+  value: string;
+}
+
+export interface BooleanValueNodeData {
+  value: boolean;
+}
+
+export interface InputValueNodeData {
+  dataType: PropertyDataType;
+  value: string | number | boolean;
 }
 
 export type NodeData =
@@ -98,6 +170,10 @@ export type NodeData =
   | WaitNodeData
   | JavaScriptCodeNodeData
   | LoopNodeData
+  | IntValueNodeData
+  | StringValueNodeData
+  | BooleanValueNodeData
+  | InputValueNodeData
   | Record<string, any>; // Support custom plugin node data
 
 // Edge/Connection Interface
@@ -149,6 +225,7 @@ export interface ExecutionEvent {
   nodeId?: string;
   message?: string;
   data?: any;
+  traceLogs?: string[]; // Trace logs for node errors
   timestamp: number;
 }
 
@@ -191,6 +268,17 @@ export interface NodeField {
   defaultValue?: any;
   options?: { label: string; value: string }[];
   placeholder?: string;
+  dataType?: PropertyDataType; // Property data type for input connections
+  isInputConnection?: boolean; // Tracks if property is converted to input
+  inputHandleId?: string; // Unique handle ID for this property input
+}
+
+// Property Input Connection metadata stored in node data
+export interface PropertyInputConnection {
+  propertyName: string;
+  sourceNodeId: string;
+  sourceHandleId: string;
+  dataType: PropertyDataType;
 }
 
 // Plugin System Types

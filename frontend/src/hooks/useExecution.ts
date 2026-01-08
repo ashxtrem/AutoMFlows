@@ -4,6 +4,7 @@ import { useWorkflowStore } from '../store/workflowStore';
 import { serializeWorkflow } from '../utils/serialization';
 import { ExecutionEventType } from '@automflows/shared';
 import { getCachedBackendPort } from '../utils/getBackendPort';
+import { validateInputConnections } from '../utils/validation';
 
 let socket: Socket | null = null;
 let backendPort: number | null = null;
@@ -45,8 +46,9 @@ async function getBackendPortSync(): Promise<number> {
 }
 
 export function useExecution() {
-  const { nodes, edges, setExecutionStatus, setExecutingNodeId, resetExecution } = useWorkflowStore();
+  const { nodes, edges, setExecutionStatus, setExecutingNodeId, resetExecution, setNodeError, clearAllNodeErrors } = useWorkflowStore();
   const [port, setPort] = useState<number | null>(null);
+  const [validationErrors, setValidationErrors] = useState<any[]>([]);
 
   useEffect(() => {
     let mounted = true;
@@ -71,6 +73,7 @@ export function useExecution() {
       switch (event.type) {
         case ExecutionEventType.EXECUTION_START:
           setExecutionStatus('running');
+          clearAllNodeErrors(); // Clear previous errors when starting new execution
           break;
         case ExecutionEventType.NODE_START:
           setExecutingNodeId(event.nodeId);
@@ -81,19 +84,32 @@ export function useExecution() {
         case ExecutionEventType.NODE_ERROR:
           setExecutingNodeId(null);
           setExecutionStatus('error');
+          // Store node error with trace logs
+          if (event.nodeId) {
+            setNodeError(event.nodeId, {
+              message: event.message || 'Unknown error',
+              traceLogs: event.traceLogs || [],
+            });
+          }
           break;
         case ExecutionEventType.EXECUTION_COMPLETE:
           setExecutionStatus('completed');
           setExecutingNodeId(null);
+          // Don't clear failedNodes here - let user see errors until they dismiss or start new execution
           setTimeout(() => {
-            resetExecution();
+            // Only reset execution status, keep failed nodes visible
+            setExecutionStatus('idle');
+            setExecutingNodeId(null);
           }, 2000);
           break;
         case ExecutionEventType.EXECUTION_ERROR:
           setExecutionStatus('error');
           setExecutingNodeId(null);
+          // Don't clear failedNodes here - let user see errors until they dismiss or start new execution
           setTimeout(() => {
-            resetExecution();
+            // Only reset execution status, keep failed nodes visible
+            setExecutionStatus('idle');
+            setExecutingNodeId(null);
           }, 2000);
           break;
       }
@@ -118,10 +134,18 @@ export function useExecution() {
         socket = null;
       }
     };
-  }, [setExecutionStatus, setExecutingNodeId, resetExecution]);
+  }, [setExecutionStatus, setExecutingNodeId, resetExecution, setNodeError, clearAllNodeErrors]);
 
   const executeWorkflow = async (traceLogs: boolean = false) => {
     try {
+      // Validate input connections before execution
+      const errors = validateInputConnections(nodes, edges);
+      if (errors.length > 0) {
+        setValidationErrors(errors);
+        return; // Don't execute if there are validation errors
+      }
+      setValidationErrors([]);
+
       const workflow = serializeWorkflow(nodes, edges);
 
       // Ensure there's a Start node
@@ -188,6 +212,8 @@ export function useExecution() {
   return {
     executeWorkflow,
     stopExecution,
+    validationErrors,
+    setValidationErrors,
   };
 }
 

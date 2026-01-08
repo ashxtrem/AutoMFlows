@@ -1,11 +1,36 @@
 import { create } from 'zustand';
 import { Node, Edge, Connection, addEdge, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange } from 'reactflow';
-import { NodeType } from '@automflows/shared';
+import { NodeType, PropertyDataType } from '@automflows/shared';
 import { frontendPluginRegistry } from '../plugins/registry';
+import { getNodeProperties, getPropertyInputHandleId } from '../utils/nodeProperties';
+
+// Type conversion helper (frontend version)
+function canConvertType(sourceType: PropertyDataType, targetType: PropertyDataType): boolean {
+  // Exact match always allowed
+  if (sourceType === targetType) {
+    return true;
+  }
+  // Numeric promotion allowed: int → float → double
+  if (sourceType === PropertyDataType.INT && targetType === PropertyDataType.FLOAT) {
+    return true;
+  }
+  if (sourceType === PropertyDataType.INT && targetType === PropertyDataType.DOUBLE) {
+    return true;
+  }
+  if (sourceType === PropertyDataType.FLOAT && targetType === PropertyDataType.DOUBLE) {
+    return true;
+  }
+  return false;
+}
 
 interface WorkflowSnapshot {
   nodes: Node[];
   edges: Edge[];
+}
+
+interface NodeError {
+  message: string;
+  traceLogs: string[];
 }
 
 interface WorkflowState {
@@ -14,6 +39,8 @@ interface WorkflowState {
   selectedNode: Node | null;
   executionStatus: 'idle' | 'running' | 'completed' | 'error';
   executingNodeId: string | null;
+  failedNodes: Map<string, NodeError>; // Track failed nodes with error details
+  errorPopupNodeId: string | null; // Which failed node's error popup is currently shown
   
   // Undo/Redo
   history: WorkflowSnapshot[];
@@ -37,6 +64,10 @@ interface WorkflowState {
   setExecutionStatus: (status: 'idle' | 'running' | 'completed' | 'error') => void;
   setExecutingNodeId: (nodeId: string | null) => void;
   resetExecution: () => void;
+  setNodeError: (nodeId: string, error: NodeError) => void;
+  clearNodeError: (nodeId: string) => void;
+  clearAllNodeErrors: () => void;
+  showErrorPopupForNode: (nodeId: string | null) => void;
   
   // Undo/Redo methods
   saveToHistory: () => void;
@@ -61,6 +92,13 @@ interface WorkflowState {
   // Connection operations
   removeNodeConnections: (nodeId: string) => void;
   onEdgeUpdate: (oldEdge: Edge, newConnection: Connection) => void;
+  
+  // Property input conversion
+  convertPropertyToInput: (nodeId: string, propertyName: string) => void;
+  convertInputToProperty: (nodeId: string, propertyName: string) => void;
+  
+  // Node reload
+  reloadNode: (nodeId: string) => void;
 }
 
 export const useWorkflowStore = create<WorkflowState>((set, get) => {
@@ -71,6 +109,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     selectedNode: null,
     executionStatus: 'idle',
     executingNodeId: null,
+    failedNodes: new Map(),
+    errorPopupNodeId: null,
     history: [initialState],
     historyIndex: 0,
     maxHistorySize: 10,
@@ -85,6 +125,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
 
   onNodesChange: (changes) => {
     const state = get();
+    
     // Filter out dimension changes from ReactFlow if we have explicit dimensions set
     // This prevents ReactFlow from overriding our manual resize dimensions
     const filteredChanges = changes.filter((change) => {
@@ -95,32 +136,91 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
           return false; // Filter out this dimension change
         }
       }
+      // Filter out changes that don't actually modify content
+      // ReactFlow sometimes sends changes that don't actually change anything
+      if (change.type === 'select' && change.id) {
+        const node = state.nodes.find(n => n.id === change.id);
+        // If node is already in the selected state, ignore the change
+        if (node && node.selected === (change.selected !== false)) {
+          return false; // Filter out redundant select changes
+        }
+      }
       return true; // Keep all other changes
     });
     
+    // If all changes were filtered out, don't update anything
+    if (filteredChanges.length === 0) {
+      return;
+    }
+    
     const updatedNodes = applyNodeChanges(filteredChanges, state.nodes);
     
+    // Check if nodes actually changed by comparing references AND content
+    // applyNodeChanges should preserve references when possible, but we need to verify
+    let nodesChanged = false;
+    if (updatedNodes.length !== state.nodes.length) {
+      nodesChanged = true;
+    } else {
+      // Check if any node reference changed OR if content actually changed
+      for (let i = 0; i < updatedNodes.length; i++) {
+        const updatedNode = updatedNodes[i];
+        const originalNode = state.nodes[i];
+        
+        // If reference changed, check if content actually changed
+        if (updatedNode !== originalNode) {
+          // Compare by content: ID, position, selected state, and data
+          const contentChanged = 
+            updatedNode.id !== originalNode.id ||
+            updatedNode.position.x !== originalNode.position.x ||
+            updatedNode.position.y !== originalNode.position.y ||
+            updatedNode.selected !== originalNode.selected ||
+            JSON.stringify(updatedNode.data) !== JSON.stringify(originalNode.data);
+          
+          if (contentChanged) {
+            nodesChanged = true;
+            break;
+          }
+          // If reference changed but content is the same, don't update
+          // This prevents ReactFlow from triggering updates when it recreates node objects
+        }
+      }
+    }
+    
+    // Only update if nodes actually changed
+    if (!nodesChanged) {
+      return;
+    }
+    
     // Ensure explicit dimensions are preserved (in case any slipped through)
-    const finalNodes = updatedNodes.map((node) => {
-      const originalNode = state.nodes.find(n => n.id === node.id);
+    // Only create new objects if dimensions actually need to be preserved
+    let needsDimensionPreservation = false;
+    const finalNodes = updatedNodes.map((node, index) => {
+      const originalNode = state.nodes[index];
       // If node has explicit width/height set, preserve them
       if (originalNode && (originalNode.data.width !== undefined || originalNode.data.height !== undefined)) {
-        return {
-          ...node,
-          width: originalNode.width,
-          height: originalNode.height,
-        };
+        // Only create new object if dimensions actually changed
+        if (node.width !== originalNode.width || node.height !== originalNode.height) {
+          needsDimensionPreservation = true;
+          return {
+            ...node,
+            width: originalNode.width,
+            height: originalNode.height,
+          };
+        }
       }
       return node;
     });
     
+    // If no dimension preservation was needed, use updatedNodes directly to preserve references
+    const nodesToSet = needsDimensionPreservation ? finalNodes : updatedNodes;
+    
     const selectedNode = state.selectedNode;
     const updatedSelectedNode = selectedNode 
-      ? finalNodes.find((node) => node.id === selectedNode.id) || null
+      ? nodesToSet.find((node) => node.id === selectedNode.id) || null
       : null;
     
     set({
-      nodes: finalNodes,
+      nodes: nodesToSet,
       selectedNode: updatedSelectedNode,
     });
     
@@ -155,6 +255,45 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     // Prevent self-connections
     if (connection.source === connection.target) {
       return;
+    }
+    
+    // Type validation for property input connections
+    if (connection.targetHandle && connection.targetHandle !== 'driver') {
+      // This is a property input connection - validate types
+      const targetNode = state.nodes.find(n => n.id === connection.target);
+      const sourceNode = state.nodes.find(n => n.id === connection.source);
+      
+      if (targetNode && sourceNode) {
+        // Extract property name from handle ID (e.g., "timeout-input" -> "timeout")
+        const propertyName = connection.targetHandle.replace('-input', '');
+        const targetProperties = getNodeProperties(targetNode.data.type);
+        const targetProperty = targetProperties.find(p => p.name === propertyName);
+        
+        // Determine source output type
+        let sourceType: PropertyDataType;
+        if (sourceNode.data.type === NodeType.INT_VALUE) {
+          sourceType = PropertyDataType.INT;
+        } else if (sourceNode.data.type === NodeType.STRING_VALUE) {
+          sourceType = PropertyDataType.STRING;
+        } else if (sourceNode.data.type === NodeType.BOOLEAN_VALUE) {
+          sourceType = PropertyDataType.BOOLEAN;
+        } else if (sourceNode.data.type === NodeType.INPUT_VALUE) {
+          // Get dataType from INPUT_VALUE node
+          sourceType = sourceNode.data.dataType || PropertyDataType.STRING;
+        } else {
+          // For other nodes, infer from output or default to string
+          sourceType = PropertyDataType.STRING;
+        }
+        
+          // Validate type compatibility
+          if (targetProperty) {
+            const targetType = targetProperty.dataType;
+            if (!canConvertType(sourceType, targetType)) {
+              alert(`Type mismatch: Cannot connect ${sourceType} to ${targetType}. Only numeric promotion (int→float→double) is allowed.`);
+              return;
+            }
+          }
+      }
     }
     
     // Check if target already has a connection to the same handle
@@ -294,7 +433,34 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
 
   setExecutionStatus: (status) => set({ executionStatus: status }),
   setExecutingNodeId: (nodeId) => set({ executingNodeId: nodeId }),
-  resetExecution: () => set({ executionStatus: 'idle', executingNodeId: null }),
+  resetExecution: () => set({ executionStatus: 'idle', executingNodeId: null, failedNodes: new Map() }),
+  setNodeError: (nodeId, error) => {
+    const state = get();
+    const newFailedNodes = new Map(state.failedNodes);
+    newFailedNodes.set(nodeId, error);
+    set({ failedNodes: newFailedNodes });
+  },
+  clearNodeError: (nodeId) => {
+    const state = get();
+    const newFailedNodes = new Map(state.failedNodes);
+    newFailedNodes.delete(nodeId);
+    set({ failedNodes: newFailedNodes });
+  },
+  clearAllNodeErrors: () => set({ failedNodes: new Map(), errorPopupNodeId: null }),
+  showErrorPopupForNode: (nodeId) => {
+    const state = get();
+    // If nodeId is null, close the popup
+    if (nodeId === null || nodeId === undefined) {
+      set({ errorPopupNodeId: null });
+      return;
+    }
+    // Only show popup if node has an error
+    if (nodeId && state.failedNodes.has(nodeId)) {
+      set({ errorPopupNodeId: nodeId });
+    } else {
+      set({ errorPopupNodeId: null });
+    }
+  },
 
   // Undo/Redo implementation
   saveToHistory: () => {
@@ -486,6 +652,110 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
       setTimeout(() => get().saveToHistory(), 100);
     }
   },
+
+  // Property input conversion
+  convertPropertyToInput: (nodeId, propertyName) => {
+    const state = get();
+    const node = state.nodes.find(n => n.id === nodeId);
+    if (!node) return;
+
+    const handleId = `${propertyName}-input`;
+    const inputConnections = node.data._inputConnections || {};
+    
+    // Mark property as input connection
+    inputConnections[propertyName] = {
+      isInput: true,
+      handleId,
+    };
+
+    get().updateNodeData(nodeId, {
+      _inputConnections: inputConnections,
+    });
+    setTimeout(() => get().saveToHistory(), 100);
+  },
+
+  convertInputToProperty: (nodeId, propertyName) => {
+    const state = get();
+    const node = state.nodes.find(n => n.id === nodeId);
+    if (!node) return;
+
+    const inputConnections = { ...(node.data._inputConnections || {}) };
+    delete inputConnections[propertyName];
+
+    // Remove any edges connected to this property input handle
+    const handleId = `${propertyName}-input`;
+    const updatedEdges = state.edges.filter(
+      (e) => !(e.target === nodeId && e.targetHandle === handleId)
+    );
+
+    get().updateNodeData(nodeId, {
+      _inputConnections: Object.keys(inputConnections).length > 0 ? inputConnections : undefined,
+    });
+    
+    if (updatedEdges.length !== state.edges.length) {
+      set({ edges: updatedEdges });
+    }
+    
+    setTimeout(() => get().saveToHistory(), 100);
+  },
+
+  reloadNode: (nodeId) => {
+    const state = get();
+    const node = state.nodes.find(n => n.id === nodeId);
+    if (!node) return;
+
+    const nodeType = node.data.type;
+    const defaultData = getDefaultNodeData(nodeType);
+    const defaultLabel = getNodeLabel(nodeType);
+    
+    // Remove all input connections (property inputs only, preserve driver connections)
+    const inputConnections = node.data._inputConnections || {};
+    const propertyNames = Object.keys(inputConnections);
+    
+    // Remove edges connected to property input handles (but NOT driver connections)
+    const handleIds = propertyNames.map(prop => getPropertyInputHandleId(prop));
+    const updatedEdges = state.edges.filter(
+      (e) => !(e.target === nodeId && handleIds.includes(e.targetHandle || ''))
+    );
+    
+    // Reset node data to defaults - only preserve position, reset everything else
+    const resetData = {
+      ...defaultData,
+      type: nodeType,
+      label: defaultLabel, // Reset to default label
+      // Remove width/height to reset to auto-sizing
+      // Remove all custom properties
+      backgroundColor: undefined,
+      borderColor: undefined,
+      bypass: undefined,
+      isMinimized: undefined,
+      _inputConnections: undefined,
+    };
+    
+    // Reset node completely - data, dimensions, and custom properties
+    const updatedNodes = state.nodes.map((n) => {
+      if (n.id === nodeId) {
+        const newNode = { ...n };
+        // Remove width/height from node itself to reset dimensions
+        delete newNode.width;
+        delete newNode.height;
+        // Reset data to defaults - completely replace, don't merge
+        newNode.data = {
+          ...resetData,
+        };
+        return newNode;
+      }
+      return n;
+    });
+    
+    set({ nodes: updatedNodes });
+    
+    if (updatedEdges.length !== state.edges.length) {
+      set({ edges: updatedEdges });
+    }
+    
+    setTimeout(() => get().saveToHistory(), 100);
+  },
   };
 });
 
@@ -503,6 +773,9 @@ function getNodeLabel(type: NodeType | string): string {
       [NodeType.WAIT]: 'Wait',
       [NodeType.JAVASCRIPT_CODE]: 'JavaScript Code',
       [NodeType.LOOP]: 'Loop',
+      [NodeType.INT_VALUE]: 'Int Value',
+      [NodeType.STRING_VALUE]: 'String Value',
+      [NodeType.BOOLEAN_VALUE]: 'Boolean Value',
     };
     return labels[type as NodeType] || type;
   }
@@ -530,6 +803,10 @@ function getDefaultNodeData(type: NodeType | string): any {
       [NodeType.WAIT]: { waitType: 'timeout', value: 1000, timeout: 30000 },
       [NodeType.JAVASCRIPT_CODE]: { code: '// Your code here\nreturn context.data;' },
       [NodeType.LOOP]: { arrayVariable: '' },
+      [NodeType.INT_VALUE]: { value: 0 },
+      [NodeType.STRING_VALUE]: { value: '' },
+      [NodeType.BOOLEAN_VALUE]: { value: false },
+      [NodeType.INPUT_VALUE]: { dataType: PropertyDataType.STRING, value: '' },
     };
     return defaults[type as NodeType] || {};
   }

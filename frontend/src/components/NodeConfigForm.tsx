@@ -10,7 +10,11 @@ import ScreenshotConfig from './nodeConfigs/ScreenshotConfig';
 import WaitConfig from './nodeConfigs/WaitConfig';
 import JavaScriptCodeConfig from './nodeConfigs/JavaScriptCodeConfig';
 import LoopConfig from './nodeConfigs/LoopConfig';
+import IntValueConfig from './nodeConfigs/IntValueConfig';
+import StringValueConfig from './nodeConfigs/StringValueConfig';
+import BooleanValueConfig from './nodeConfigs/BooleanValueConfig';
 import { frontendPluginRegistry } from '../plugins/registry';
+import { useCallback } from 'react';
 
 interface NodeConfigFormProps {
   node: Node;
@@ -20,9 +24,9 @@ export default function NodeConfigForm({ node }: NodeConfigFormProps) {
   const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
   const nodeType = node.data.type as NodeType | string;
 
-  const handleChange = (field: string, value: any) => {
+  const handleChange = useCallback((field: string, value: any) => {
     updateNodeData(node.id, { [field]: value });
-  };
+  }, [node.id, updateNodeData]);
 
   const renderConfig = () => {
     // Check if it's a built-in node type (check if value exists in enum values)
@@ -48,6 +52,14 @@ export default function NodeConfigForm({ node }: NodeConfigFormProps) {
           return <JavaScriptCodeConfig node={node} onChange={handleChange} />;
         case NodeType.LOOP:
           return <LoopConfig node={node} onChange={handleChange} />;
+        case NodeType.INT_VALUE:
+          return <IntValueConfig node={node} onChange={handleChange} />;
+        case NodeType.STRING_VALUE:
+          return <StringValueConfig node={node} onChange={handleChange} />;
+        case NodeType.BOOLEAN_VALUE:
+          return <BooleanValueConfig node={node} onChange={handleChange} />;
+        case NodeType.INPUT_VALUE:
+          return <div className="text-gray-400 text-sm">Input Value node is configured directly on the node.</div>;
         default:
           return <div className="text-gray-400 text-sm">No configuration available.</div>;
       }

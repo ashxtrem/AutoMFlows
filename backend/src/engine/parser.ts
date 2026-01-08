@@ -42,7 +42,8 @@ export class WorkflowParser {
       const targetNode = this.nodes.get(edge.target);
 
       if (sourceNode && targetNode) {
-        // Target depends on source
+        // Both driver (control flow) and property input connections create dependencies
+        // Target depends on source (for both control flow and data flow)
         if (!targetNode.dependencies.includes(edge.source)) {
           targetNode.dependencies.push(edge.source);
         }
@@ -135,17 +136,21 @@ export class WorkflowParser {
       errors.push(error.message);
     }
 
-    // Check for nodes with multiple input connections
-    const inputConnections = new Map<string, number>();
+    // Check for nodes with multiple control flow (driver) input connections
+    // Property input connections are allowed multiple times, but driver (control flow) should be unique
+    const driverConnections = new Map<string, number>();
     for (const edge of this.edges) {
-      const count = inputConnections.get(edge.target) || 0;
-      inputConnections.set(edge.target, count + 1);
+      // Only count driver handle connections (control flow), not property input handles
+      if (!edge.targetHandle || edge.targetHandle === 'driver') {
+        const count = driverConnections.get(edge.target) || 0;
+        driverConnections.set(edge.target, count + 1);
+      }
     }
 
-    for (const [nodeId, count] of inputConnections.entries()) {
+    for (const [nodeId, count] of driverConnections.entries()) {
       const node = this.nodes.get(nodeId);
       if (node && node.node.type !== NodeType.START && count > 1) {
-        errors.push(`Node ${nodeId} has multiple input connections (only one allowed)`);
+        errors.push(`Node ${nodeId} has multiple control flow input connections (only one driver connection allowed)`);
       }
     }
 

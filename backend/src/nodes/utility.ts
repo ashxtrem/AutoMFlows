@@ -1,4 +1,4 @@
-import { BaseNode, GetTextNodeData, ScreenshotNodeData, WaitNodeData } from '@automflows/shared';
+import { BaseNode, GetTextNodeData, ScreenshotNodeData, WaitNodeData, IntValueNodeData, StringValueNodeData, BooleanValueNodeData, InputValueNodeData, NodeType } from '@automflows/shared';
 import { NodeHandler } from './base';
 import { ContextManager } from '../engine/context';
 
@@ -104,6 +104,75 @@ export class WaitHandler implements NodeHandler {
       }
       throw error;
     }
+  }
+}
+
+export class IntValueHandler implements NodeHandler {
+  async execute(node: BaseNode, context: ContextManager): Promise<void> {
+    const data = node.data as IntValueNodeData;
+    
+    // Store the value in context with the node ID as key
+    // This allows other nodes to reference this value via edges
+    context.setVariable(node.id, data.value);
+    
+    // Also store in data for compatibility
+    context.setData('value', data.value);
+  }
+}
+
+export class StringValueHandler implements NodeHandler {
+  async execute(node: BaseNode, context: ContextManager): Promise<void> {
+    const data = node.data as StringValueNodeData;
+    
+    // Store the value in context with the node ID as key
+    context.setVariable(node.id, data.value);
+    
+    // Also store in data for compatibility
+    context.setData('value', data.value);
+  }
+}
+
+export class BooleanValueHandler implements NodeHandler {
+  async execute(node: BaseNode, context: ContextManager): Promise<void> {
+    const data = node.data as BooleanValueNodeData;
+    
+    // Store the value in context with the node ID as key
+    context.setVariable(node.id, data.value);
+    
+    // Also store in data for compatibility
+    context.setData('value', data.value);
+  }
+}
+
+export class InputValueHandler implements NodeHandler {
+  async execute(node: BaseNode, context: ContextManager): Promise<void> {
+    const data = node.data as InputValueNodeData;
+    
+    // Convert value based on dataType
+    let convertedValue: string | number | boolean = data.value;
+    
+    if (data.dataType === 'int') {
+      convertedValue = typeof data.value === 'number' ? Math.floor(data.value) : parseInt(String(data.value), 10);
+      if (isNaN(convertedValue as number)) {
+        convertedValue = 0;
+      }
+    } else if (data.dataType === 'float' || data.dataType === 'double') {
+      convertedValue = typeof data.value === 'number' ? data.value : parseFloat(String(data.value));
+      if (isNaN(convertedValue as number)) {
+        convertedValue = 0;
+      }
+    } else if (data.dataType === 'boolean') {
+      convertedValue = typeof data.value === 'boolean' ? data.value : (data.value === true || data.value === 'true' || data.value === 1 || data.value === '1');
+    } else {
+      // String
+      convertedValue = String(data.value || '');
+    }
+    
+    // Store the converted value in context with the node ID as key
+    context.setVariable(node.id, convertedValue);
+    
+    // Also store in data for compatibility
+    context.setData('value', convertedValue);
   }
 }
 

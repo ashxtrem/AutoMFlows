@@ -1,0 +1,220 @@
+{
+  "nodes": [
+    {
+      "id": "start-2",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 200
+      },
+      "data": {
+        "type": "start",
+        "label": "Start"
+      }
+    },
+    {
+      "id": "openBrowser-2",
+      "type": "openBrowser",
+      "position": {
+        "x": 350,
+        "y": 200
+      },
+      "data": {
+        "type": "openBrowser",
+        "label": "Open Browser",
+        "headless": false,
+        "viewportWidth": 1280,
+        "viewportHeight": 720
+      }
+    },
+    {
+      "id": "navigate-2",
+      "type": "navigate",
+      "position": {
+        "x": 600,
+        "y": 200
+      },
+      "data": {
+        "type": "navigate",
+        "label": "Navigate to Login Page",
+        "url": "https://practicetestautomation.com/practice-test-login/",
+        "timeout": 30000,
+        "waitUntil": "networkidle"
+      }
+    },
+    {
+      "id": "type-username-2",
+      "type": "type",
+      "position": {
+        "x": 850,
+        "y": 200
+      },
+      "data": {
+        "type": "type",
+        "label": "Type Incorrect Username",
+        "selector": "#username",
+        "selectorType": "css",
+        "text": "incorrectUser",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "type-password-2",
+      "type": "type",
+      "position": {
+        "x": 1100,
+        "y": 200
+      },
+      "data": {
+        "type": "type",
+        "label": "Type Password",
+        "selector": "#password",
+        "selectorType": "css",
+        "text": "Password123",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "click-submit-2",
+      "type": "click",
+      "position": {
+        "x": 1350,
+        "y": 200
+      },
+      "data": {
+        "type": "click",
+        "label": "Click Submit",
+        "selector": "#submit",
+        "selectorType": "css",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "verify-error-displayed-2",
+      "type": "javascriptCode",
+      "position": {
+        "x": 1600,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Verify Error Displayed",
+        "code": "// Verify error message is displayed\nconst errorElement = context.page.locator('#error');\nconst isVisible = await errorElement.isVisible();\nif (!isVisible) {\n  throw new Error('Error message is not displayed');\n}\nreturn true;"
+      }
+    },
+    {
+      "id": "verify-error-text-2",
+      "type": "javascriptCode",
+      "position": {
+        "x": 1850,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Verify Error Text",
+        "code": "// Verify error message text is 'Your username is invalid!'\nconst errorText = await context.page.textContent('#error');\nif (errorText !== 'Your username is invalid!') {\n  throw new Error(`Error message text verification failed. Expected: 'Your username is invalid!', Got: '${errorText}'`);\n}\nreturn true;"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-openBrowser-input-2",
+      "source": "start-2",
+      "target": "openBrowser-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-start-openBrowser-driver-2",
+      "source": "start-2",
+      "target": "openBrowser-2",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-openBrowser-navigate-input-2",
+      "source": "openBrowser-2",
+      "target": "navigate-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-openBrowser-navigate-driver-2",
+      "source": "openBrowser-2",
+      "target": "navigate-2",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-navigate-type-username-input-2",
+      "source": "navigate-2",
+      "target": "type-username-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-navigate-type-username-driver-2",
+      "source": "navigate-2",
+      "target": "type-username-2",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-username-type-password-input-2",
+      "source": "type-username-2",
+      "target": "type-password-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-username-type-password-driver-2",
+      "source": "type-username-2",
+      "target": "type-password-2",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-password-click-submit-input-2",
+      "source": "type-password-2",
+      "target": "click-submit-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-password-click-submit-driver-2",
+      "source": "type-password-2",
+      "target": "click-submit-2",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-click-submit-verify-error-displayed-input-2",
+      "source": "click-submit-2",
+      "target": "verify-error-displayed-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-click-submit-verify-error-displayed-driver-2",
+      "source": "click-submit-2",
+      "target": "verify-error-displayed-2",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-error-displayed-verify-error-text-input-2",
+      "source": "verify-error-displayed-2",
+      "target": "verify-error-text-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-error-displayed-verify-error-text-driver-2",
+      "source": "verify-error-displayed-2",
+      "target": "verify-error-text-2",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    }
+  ]
+}
+

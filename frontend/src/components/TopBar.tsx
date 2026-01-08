@@ -1,16 +1,21 @@
 import { useState, useEffect } from 'react';
-import { Play, Square, Save, Upload, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { Play, Square, Save, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, FileText } from 'lucide-react';
 import { useWorkflowStore } from '../store/workflowStore';
 import { useExecution } from '../hooks/useExecution';
 import { useReactFlow } from 'reactflow';
 import { serializeWorkflow, deserializeWorkflow } from '../utils/serialization';
+import ValidationErrorPopup from './ValidationErrorPopup';
+import ResetWarning from './ResetWarning';
+import { NodeType } from '@automflows/shared';
 
 const STORAGE_KEY_TRACE_LOGS = 'automflows_trace_logs';
 
 export default function TopBar() {
   const { nodes, edges, setNodes, setEdges, executionStatus, resetExecution } = useWorkflowStore();
-  const { executeWorkflow, stopExecution } = useExecution();
+  const { executeWorkflow, stopExecution, validationErrors, setValidationErrors } = useExecution();
   const { zoomIn, zoomOut, fitView } = useReactFlow();
+  
+  const [showResetWarning, setShowResetWarning] = useState(false);
   
   // Load trace logs state from localStorage on mount
   const [traceLogs, setTraceLogs] = useState(() => {
@@ -68,6 +73,159 @@ export default function TopBar() {
     input.click();
   };
 
+  const handleReset = () => {
+    setNodes([]);
+    setEdges([]);
+    resetExecution();
+    setShowResetWarning(false);
+  };
+
+  const loadSampleTemplate = () => {
+    // Clear existing workflow
+    setNodes([]);
+    setEdges([]);
+    resetExecution();
+
+    // Create nodes with proper spacing (200px horizontal spacing)
+    const startX = 100;
+    const y = 200;
+    const spacing = 250;
+
+    // Start node
+    const startId = `${NodeType.START}-${Date.now()}`;
+    const startNode = {
+      id: startId,
+      type: 'custom' as const,
+      position: { x: startX, y },
+      data: {
+        type: NodeType.START,
+        label: 'Start',
+      },
+    };
+
+    // Open Browser node
+    const openBrowserId = `${NodeType.OPEN_BROWSER}-${Date.now()}`;
+    const openBrowserNode = {
+      id: openBrowserId,
+      type: 'custom' as const,
+      position: { x: startX + spacing, y },
+      data: {
+        type: NodeType.OPEN_BROWSER,
+        label: 'Open Browser',
+        headless: false,
+        viewportWidth: 1280,
+        viewportHeight: 720,
+      },
+    };
+
+    // Navigate node
+    const navigateId = `${NodeType.NAVIGATE}-${Date.now()}`;
+    const navigateNode = {
+      id: navigateId,
+      type: 'custom' as const,
+      position: { x: startX + spacing * 2, y },
+      data: {
+        type: NodeType.NAVIGATE,
+        label: 'Navigate',
+        url: 'https://example.com',
+        timeout: 30000,
+        waitUntil: 'networkidle',
+      },
+    };
+
+    // Wait node
+    const waitId = `${NodeType.WAIT}-${Date.now()}`;
+    const waitNode = {
+      id: waitId,
+      type: 'custom' as const,
+      position: { x: startX + spacing * 3, y },
+      data: {
+        type: NodeType.WAIT,
+        label: 'Wait',
+        waitType: 'timeout',
+        value: 2000,
+      },
+    };
+
+    // Screenshot node
+    const screenshotId = `${NodeType.SCREENSHOT}-${Date.now()}`;
+    const screenshotNode = {
+      id: screenshotId,
+      type: 'custom' as const,
+      position: { x: startX + spacing * 4, y },
+      data: {
+        type: NodeType.SCREENSHOT,
+        label: 'Screenshot',
+        fullPage: false,
+      },
+    };
+
+    // Set all nodes
+    setNodes([startNode, openBrowserNode, navigateNode, waitNode, screenshotNode]);
+
+    // Create edges
+    const newEdges = [
+      {
+        id: `edge-${startId}-output-${openBrowserId}-input`,
+        source: startId,
+        target: openBrowserId,
+        sourceHandle: 'output',
+        targetHandle: 'input',
+      },
+      {
+        id: `edge-${startId}-output-${openBrowserId}-driver`,
+        source: startId,
+        target: openBrowserId,
+        sourceHandle: 'output',
+        targetHandle: 'driver',
+      },
+      {
+        id: `edge-${openBrowserId}-output-${navigateId}-input`,
+        source: openBrowserId,
+        target: navigateId,
+        sourceHandle: 'output',
+        targetHandle: 'input',
+      },
+      {
+        id: `edge-${openBrowserId}-output-${navigateId}-driver`,
+        source: openBrowserId,
+        target: navigateId,
+        sourceHandle: 'output',
+        targetHandle: 'driver',
+      },
+      {
+        id: `edge-${navigateId}-output-${waitId}-input`,
+        source: navigateId,
+        target: waitId,
+        sourceHandle: 'output',
+        targetHandle: 'input',
+      },
+      {
+        id: `edge-${navigateId}-output-${waitId}-driver`,
+        source: navigateId,
+        target: waitId,
+        sourceHandle: 'output',
+        targetHandle: 'driver',
+      },
+      {
+        id: `edge-${waitId}-output-${screenshotId}-input`,
+        source: waitId,
+        target: screenshotId,
+        sourceHandle: 'output',
+        targetHandle: 'input',
+      },
+      {
+        id: `edge-${waitId}-output-${screenshotId}-driver`,
+        source: waitId,
+        target: screenshotId,
+        sourceHandle: 'output',
+        targetHandle: 'driver',
+      },
+    ];
+
+    setEdges(newEdges);
+  };
+
   return (
     <div className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-between">
       <div className="flex items-center gap-2">
@@ -104,6 +262,22 @@ export default function TopBar() {
         >
           <Upload size={16} />
           Load
+        </button>
+        <button
+          onClick={loadSampleTemplate}
+          className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-2 text-sm"
+          title="Load sample template: Start > Open Browser > Navigate > Wait > Screenshot"
+        >
+          <FileText size={16} />
+          Template
+        </button>
+        <button
+          onClick={() => setShowResetWarning(true)}
+          className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-2 text-sm"
+          title="Reset canvas"
+        >
+          <RotateCcw size={16} />
+          Reset
         </button>
         <div className="w-px h-6 bg-gray-700 mx-2" />
         <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-white">
@@ -142,6 +316,18 @@ export default function TopBar() {
           <Maximize2 size={16} />
         </button>
       </div>
+      {validationErrors.length > 0 && (
+        <ValidationErrorPopup
+          errors={validationErrors}
+          onClose={() => setValidationErrors([])}
+        />
+      )}
+      {showResetWarning && (
+        <ResetWarning
+          onConfirm={handleReset}
+          onCancel={() => setShowResetWarning(false)}
+        />
+      )}
     </div>
   );
 }

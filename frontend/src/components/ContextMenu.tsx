@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Copy, Trash2, Palette, SkipForward, ChevronRight, Settings } from 'lucide-react';
+import { Copy, Trash2, Palette, SkipForward, ChevronRight, Settings, Plug, RotateCw } from 'lucide-react';
 import { useWorkflowStore } from '../store/workflowStore';
+import { getNodeProperties, isPropertyInputConnection, getPropertyInputHandleId } from '../utils/nodeProperties';
 
 interface ContextMenuProps {
   x: number;
@@ -26,8 +27,11 @@ const PRESET_COLORS = [
 
 export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
+  const colorSubmenuRef = useRef<HTMLDivElement>(null);
+  const convertInputSubmenuRef = useRef<HTMLDivElement>(null);
   const [showColorSubmenu, setShowColorSubmenu] = useState(false);
-  const { copyNode, pasteNode, deleteNode, toggleBypass, clipboard, setNodeColor, nodes, setSelectedNode } = useWorkflowStore();
+  const [showConvertInputSubmenu, setShowConvertInputSubmenu] = useState(false);
+  const { copyNode, pasteNode, deleteNode, toggleBypass, clipboard, setNodeColor, nodes, setSelectedNode, convertPropertyToInput, convertInputToProperty, reloadNode } = useWorkflowStore();
   
   // Get current node background color if nodeId exists
   const currentNode = nodeId ? nodes.find(n => n.id === nodeId) : null;
@@ -35,11 +39,12 @@ export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps)
 
   // Calculate adjusted position to keep menu within viewport
   const MENU_WIDTH = 180;
-  const MENU_HEIGHT = nodeId ? 200 : 60; // Approximate height based on items
+  const MENU_HEIGHT = nodeId ? 350 : 60; // Approximate height based on items (increased for submenus)
   const SUBMENU_WIDTH = 200;
   const [adjustedX, setAdjustedX] = useState(x);
   const [adjustedY, setAdjustedY] = useState(y);
   const [submenuOnRight, setSubmenuOnRight] = useState(true);
+  const [submenuY, setSubmenuY] = useState(0);
 
   useEffect(() => {
     const viewportWidth = window.innerWidth;
@@ -49,7 +54,7 @@ export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps)
     let newY = y;
     
     // Check right edge (account for submenu if it might show)
-    const totalWidth = MENU_WIDTH + SUBMENU_WIDTH + 10; // menu + submenu + gap
+    const totalWidth = MENU_WIDTH + SUBMENU_WIDTH; // menu + submenu (no gap)
     if (x + totalWidth > viewportWidth) {
       // Try positioning menu to the left of cursor
       if (x - MENU_WIDTH >= 10) {
@@ -57,7 +62,7 @@ export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps)
         setSubmenuOnRight(false); // Submenu should appear on left side
       } else {
         // Not enough space on left, align to right edge
-        newX = viewportWidth - totalWidth - 10;
+        newX = Math.max(10, viewportWidth - totalWidth - 10);
         setSubmenuOnRight(true);
       }
     } else {
@@ -71,7 +76,7 @@ export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps)
     
     // Check bottom edge
     if (y + MENU_HEIGHT > viewportHeight) {
-      newY = viewportHeight - MENU_HEIGHT - 10;
+      newY = Math.max(10, viewportHeight - MENU_HEIGHT - 10);
     }
     
     // Check top edge
@@ -81,7 +86,77 @@ export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps)
     
     setAdjustedX(newX);
     setAdjustedY(newY);
+    setSubmenuY(0); // Reset submenu Y offset
   }, [x, y, nodeId]);
+
+  // Calculate submenu position when it opens (use requestAnimationFrame to ensure DOM is updated)
+  useEffect(() => {
+    if (showColorSubmenu && colorSubmenuRef.current) {
+      requestAnimationFrame(() => {
+        if (colorSubmenuRef.current) {
+          const rect = colorSubmenuRef.current.getBoundingClientRect();
+          const viewportHeight = window.innerHeight;
+          const viewportWidth = window.innerWidth;
+          let offsetY = 0;
+          
+          // Check if submenu goes below viewport
+          if (rect.bottom > viewportHeight) {
+            offsetY = viewportHeight - rect.bottom - 10;
+          }
+          
+          // Check if submenu goes above viewport
+          if (rect.top < 0) {
+            offsetY = -rect.top + 10;
+          }
+          
+          // Also check if submenu goes off right/left edge
+          if (submenuOnRight && rect.right > viewportWidth) {
+            // Switch to left side if needed
+            setSubmenuOnRight(false);
+          } else if (!submenuOnRight && rect.left < 0) {
+            // Switch to right side if needed
+            setSubmenuOnRight(true);
+          }
+          
+          setSubmenuY(offsetY);
+        }
+      });
+    }
+  }, [showColorSubmenu, submenuOnRight]);
+
+  useEffect(() => {
+    if (showConvertInputSubmenu && convertInputSubmenuRef.current) {
+      requestAnimationFrame(() => {
+        if (convertInputSubmenuRef.current) {
+          const rect = convertInputSubmenuRef.current.getBoundingClientRect();
+          const viewportHeight = window.innerHeight;
+          const viewportWidth = window.innerWidth;
+          let offsetY = 0;
+          
+          // Check if submenu goes below viewport
+          if (rect.bottom > viewportHeight) {
+            offsetY = viewportHeight - rect.bottom - 10;
+          }
+          
+          // Check if submenu goes above viewport
+          if (rect.top < 0) {
+            offsetY = -rect.top + 10;
+          }
+          
+          // Also check if submenu goes off right/left edge
+          if (submenuOnRight && rect.right > viewportWidth) {
+            // Switch to left side if needed
+            setSubmenuOnRight(false);
+          } else if (!submenuOnRight && rect.left < 0) {
+            // Switch to right side if needed
+            setSubmenuOnRight(true);
+          }
+          
+          setSubmenuY(offsetY);
+        }
+      });
+    }
+  }, [showConvertInputSubmenu, submenuOnRight]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -151,15 +226,52 @@ export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps)
     onClose();
   };
 
-  // Determine submenu position class
-  const submenuPosition = submenuOnRight ? 'left-full' : 'right-full';
+  const handlePropertyConversion = (propertyName: string) => {
+    if (!nodeId) return;
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node) return;
+
+    const isInput = isPropertyInputConnection(node.data, propertyName);
+    if (isInput) {
+      convertInputToProperty(nodeId, propertyName);
+    } else {
+      convertPropertyToInput(nodeId, propertyName);
+    }
+    setShowConvertInputSubmenu(false);
+    onClose();
+  };
+
+  const handleReload = () => {
+    if (nodeId) {
+      reloadNode(nodeId);
+    }
+    onClose();
+  };
+
+  // Get available properties for the node
+  const availableProperties = nodeId ? (() => {
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node) return [];
+    return getNodeProperties(node.data.type);
+  })() : [];
+
+  // Submenu positioning will be handled via inline styles
 
   return (
     <div
       ref={menuRef}
       className="fixed bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 min-w-[180px]"
       style={{ left: `${adjustedX}px`, top: `${adjustedY}px` }}
-      onMouseLeave={() => setShowColorSubmenu(false)}
+      onMouseLeave={(e) => {
+        // Only close submenus if mouse is not moving to submenu
+        const relatedTarget = e.relatedTarget as HTMLElement;
+        if (!relatedTarget || (!menuRef.current?.contains(relatedTarget) && 
+            !colorSubmenuRef.current?.contains(relatedTarget) && 
+            !convertInputSubmenuRef.current?.contains(relatedTarget))) {
+          setShowColorSubmenu(false);
+          setShowConvertInputSubmenu(false);
+        }
+      }}
     >
       <div className="py-1">
         {nodeId ? (
@@ -186,10 +298,75 @@ export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps)
               <SkipForward size={16} />
               Bypass
             </button>
+            <button
+              onClick={handleReload}
+              className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-2"
+            >
+              <RotateCw size={16} />
+              Reload Node
+            </button>
+            {availableProperties.length > 0 && (
+              <div
+                className="relative"
+                onMouseEnter={() => setShowConvertInputSubmenu(true)}
+                onMouseLeave={(e) => {
+                  // Only close if mouse is not moving to submenu
+                  const relatedTarget = e.relatedTarget as HTMLElement;
+                  if (!relatedTarget || !convertInputSubmenuRef.current?.contains(relatedTarget)) {
+                    setShowConvertInputSubmenu(false);
+                  }
+                }}
+              >
+                <button
+                  className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center justify-between gap-2"
+                >
+                  <div className="flex items-center gap-2">
+                    <Plug size={16} />
+                    Convert to Input
+                  </div>
+                  <ChevronRight size={14} />
+                </button>
+                {showConvertInputSubmenu && (
+                  <div
+                    ref={convertInputSubmenuRef}
+                    className="absolute top-0 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 py-2 min-w-[200px] max-h-[400px] overflow-y-auto"
+                    style={{ 
+                      [submenuOnRight ? 'left' : 'right']: '100%',
+                      transform: submenuY !== 0 ? `translateY(${submenuY}px)` : undefined
+                    }}
+                    onMouseEnter={() => setShowConvertInputSubmenu(true)}
+                    onMouseLeave={() => setShowConvertInputSubmenu(false)}
+                  >
+                    {availableProperties.map((prop) => {
+                      const node = nodes.find(n => n.id === nodeId);
+                      const isInput = node ? isPropertyInputConnection(node.data, prop.name) : false;
+                      return (
+                        <button
+                          key={prop.name}
+                          onClick={() => handlePropertyConversion(prop.name)}
+                          className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-3"
+                        >
+                          <span>{prop.label}</span>
+                          {isInput && (
+                            <span className="ml-auto text-xs">✓</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
             <div
               className="relative"
               onMouseEnter={() => setShowColorSubmenu(true)}
-              onMouseLeave={() => setShowColorSubmenu(false)}
+              onMouseLeave={(e) => {
+                // Only close if mouse is not moving to submenu
+                const relatedTarget = e.relatedTarget as HTMLElement;
+                if (!relatedTarget || !colorSubmenuRef.current?.contains(relatedTarget)) {
+                  setShowColorSubmenu(false);
+                }
+              }}
             >
               <button
                 className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center justify-between gap-2"
@@ -202,7 +379,14 @@ export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps)
               </button>
               {showColorSubmenu && (
                 <div
-                  className={`absolute ${submenuPosition} top-0 ${submenuOnRight ? 'ml-1' : 'mr-1'} bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 py-2 min-w-[200px] max-h-[400px] overflow-y-auto`}
+                  ref={colorSubmenuRef}
+                  className="absolute top-0 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 py-2 min-w-[200px] max-h-[400px] overflow-y-auto"
+                  style={{ 
+                    [submenuOnRight ? 'left' : 'right']: '100%',
+                    transform: submenuY !== 0 ? `translateY(${submenuY}px)` : undefined
+                  }}
+                  onMouseEnter={() => setShowColorSubmenu(true)}
+                  onMouseLeave={() => setShowColorSubmenu(false)}
                 >
                   {PRESET_COLORS.map((color) => (
                     <button

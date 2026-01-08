@@ -21,31 +21,37 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized 
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     copyNode(nodeId);
   };
 
   const handleDuplicate = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     duplicateNode(nodeId);
   };
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     deleteNode(nodeId);
   };
 
   const handleBypass = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     toggleBypass(nodeId);
   };
 
   const handleFailSilently = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     updateNodeData(nodeId, { failSilently: !failSilently });
   };
 
   const handleMinMax = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     toggleMinimize(nodeId);
   };
 
@@ -53,6 +59,8 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized 
     <div
       className="absolute -top-8 left-1/2 transform -translate-x-1/2 flex items-center gap-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 shadow-lg z-10"
       onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+      style={{ zIndex: 1000, pointerEvents: 'auto' }}
     >
       <Tooltip content="Bypass">
         <button

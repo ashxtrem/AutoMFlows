@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Node } from 'reactflow';
 import Editor from '@monaco-editor/react';
 
@@ -10,9 +10,27 @@ interface JavaScriptCodeConfigProps {
 export default function JavaScriptCodeConfig({ node, onChange }: JavaScriptCodeConfigProps) {
   const data = node.data;
   const [code, setCode] = useState(data.code || '// Your code here\nreturn context.data;');
+  const prevCodeRef = useRef<string>(code);
+  const isInitialMountRef = useRef(true);
+
+  // Sync state when node.data.code changes externally (but not on initial mount)
+  useEffect(() => {
+    if (!isInitialMountRef.current && data.code !== code && data.code !== prevCodeRef.current) {
+      setCode(data.code || '// Your code here\nreturn context.data;');
+    }
+    isInitialMountRef.current = false;
+  }, [data.code, code]);
 
   useEffect(() => {
-    onChange('code', code);
+    const codeChanged = prevCodeRef.current !== code;
+    
+    // Only call onChange if code actually changed (not just onChange reference)
+    // Skip on initial mount to prevent unnecessary update
+    if (codeChanged && !isInitialMountRef.current) {
+      onChange('code', code);
+    }
+    
+    prevCodeRef.current = code;
   }, [code, onChange]);
 
   return (

@@ -1,0 +1,247 @@
+{
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 200
+      },
+      "data": {
+        "type": "start",
+        "label": "Start"
+      }
+    },
+    {
+      "id": "openBrowser-1",
+      "type": "openBrowser",
+      "position": {
+        "x": 350,
+        "y": 200
+      },
+      "data": {
+        "type": "openBrowser",
+        "label": "Open Browser",
+        "headless": false,
+        "viewportWidth": 1280,
+        "viewportHeight": 720
+      }
+    },
+    {
+      "id": "navigate-1",
+      "type": "navigate",
+      "position": {
+        "x": 600,
+        "y": 200
+      },
+      "data": {
+        "type": "navigate",
+        "label": "Navigate to Login Page",
+        "url": "https://practicetestautomation.com/practice-test-login/",
+        "timeout": 30000,
+        "waitUntil": "networkidle"
+      }
+    },
+    {
+      "id": "type-username-1",
+      "type": "type",
+      "position": {
+        "x": 850,
+        "y": 200
+      },
+      "data": {
+        "type": "type",
+        "label": "Type Username",
+        "selector": "#username",
+        "selectorType": "css",
+        "text": "student",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "type-password-1",
+      "type": "type",
+      "position": {
+        "x": 1100,
+        "y": 200
+      },
+      "data": {
+        "type": "type",
+        "label": "Type Password",
+        "selector": "#password",
+        "selectorType": "css",
+        "text": "Password123",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "click-submit-1",
+      "type": "click",
+      "position": {
+        "x": 1350,
+        "y": 200
+      },
+      "data": {
+        "type": "click",
+        "label": "Click Submit",
+        "selector": "#submit",
+        "selectorType": "css",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "verify-url-1",
+      "type": "javascriptCode",
+      "position": {
+        "x": 1600,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Verify URL",
+        "code": "// Verify new page URL contains 'logged-in-successfully'\nconst url = context.page.url();\nif (!url.includes('logged-in-successfully')) {\n  throw new Error(`URL verification failed. Expected to contain 'logged-in-successfully', got: ${url}`);\n}\nreturn true;"
+      }
+    },
+    {
+      "id": "verify-text-1",
+      "type": "javascriptCode",
+      "position": {
+        "x": 1850,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Verify Success Text",
+        "code": "// Verify new page contains expected text ('Congratulations' or 'successfully logged in')\nconst pageText = await context.page.textContent('body');\nif (!pageText.includes('Congratulations') && !pageText.includes('successfully logged in')) {\n  throw new Error(`Expected text not found on page. Page text: ${pageText.substring(0, 200)}`);\n}\nreturn true;"
+      }
+    },
+    {
+      "id": "verify-logout-button-1",
+      "type": "javascriptCode",
+      "position": {
+        "x": 2100,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Verify Logout Button",
+        "code": "// Verify button 'Log out' is displayed on the new page\nconst logoutButton = context.page.locator('button:has-text(\"Log out\")');\nconst isVisible = await logoutButton.isVisible();\nif (!isVisible) {\n  throw new Error('Log out button is not displayed');\n}\nreturn true;"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-openBrowser-input",
+      "source": "start-1",
+      "target": "openBrowser-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-start-openBrowser-driver",
+      "source": "start-1",
+      "target": "openBrowser-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-openBrowser-navigate-input",
+      "source": "openBrowser-1",
+      "target": "navigate-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-openBrowser-navigate-driver",
+      "source": "openBrowser-1",
+      "target": "navigate-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-navigate-type-username-input",
+      "source": "navigate-1",
+      "target": "type-username-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-navigate-type-username-driver",
+      "source": "navigate-1",
+      "target": "type-username-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-username-type-password-input",
+      "source": "type-username-1",
+      "target": "type-password-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-username-type-password-driver",
+      "source": "type-username-1",
+      "target": "type-password-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-password-click-submit-input",
+      "source": "type-password-1",
+      "target": "click-submit-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-password-click-submit-driver",
+      "source": "type-password-1",
+      "target": "click-submit-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-click-submit-verify-url-input",
+      "source": "click-submit-1",
+      "target": "verify-url-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-click-submit-verify-url-driver",
+      "source": "click-submit-1",
+      "target": "verify-url-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-url-verify-text-input",
+      "source": "verify-url-1",
+      "target": "verify-text-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-url-verify-text-driver",
+      "source": "verify-url-1",
+      "target": "verify-text-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-text-verify-logout-input",
+      "source": "verify-text-1",
+      "target": "verify-logout-button-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-text-verify-logout-driver",
+      "source": "verify-text-1",
+      "target": "verify-logout-button-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    }
+  ]
+}
+
