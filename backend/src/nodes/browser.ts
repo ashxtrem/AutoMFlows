@@ -17,10 +17,32 @@ export class OpenBrowserHandler implements NodeHandler {
       ? { width: data.viewportWidth, height: data.viewportHeight }
       : undefined;
     const userAgent = data.userAgent;
+    const browserType = data.browser || 'chromium';
+    const maxWindow = data.maxWindow !== false; // Default to true
+    const capabilities = data.capabilities || {};
+    const launchOptions = data.launchOptions || {};
+    const stealthMode = data.stealthMode || false;
 
-    const page = await playwright.launch(headless, viewport, userAgent);
+    try {
+      const page = await playwright.launch(
+        headless,
+        viewport,
+        userAgent,
+        browserType,
+        maxWindow,
+        capabilities,
+        stealthMode,
+        launchOptions
+      );
 
-    context.setPage(page);
+      context.setPage(page);
+    } catch (error: any) {
+      // Re-throw with browser installation info if it's a browser installation error
+      if (error.message.includes('is not installed')) {
+        throw error;
+      }
+      throw error;
+    }
   }
 }
 

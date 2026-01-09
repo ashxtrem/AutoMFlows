@@ -16,10 +16,6 @@ export class JavaScriptCodeHandler implements NodeHandler {
     // Security warning: This executes arbitrary code
     // In production, this should be sandboxed or restricted
     try {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'logic.ts:18',message:'JavaScriptCodeHandler.execute - entry',data:{nodeId:node.id,codeLength:data.code?.length,hasAwait:data.code?.includes('await')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
-      
       // Create a safe execution context
       const contextData = {
         page,
@@ -31,33 +27,17 @@ export class JavaScriptCodeHandler implements NodeHandler {
         getVariable: (key: string) => context.getVariable(key),
       };
 
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'logic.ts:30',message:'Before Function constructor',data:{codePreview:data.code?.substring(0,100),hasAwait:data.code?.includes('await')},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
-
       // Execute user code - wrap in async function to support await
       // eslint-disable-next-line @typescript-eslint/no-implied-eval
       const fn = new Function('context', `return (async function(context) { ${data.code} })(context);`);
       
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'logic.ts:35',message:'After Function constructor, before await',data:{fnType:typeof fn,isAsync:fn.constructor.name === 'AsyncFunction'},timestamp:Date.now(),sessionId:'debug-session',runId:'post-fix',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
-      
       const result = await fn(contextData);
-      
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'logic.ts:38',message:'After fn execution',data:{resultType:typeof result,hasResult:result !== undefined},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
 
       // Store result in context
       if (result !== undefined) {
         context.setData('result', result);
       }
     } catch (error: any) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'logic.ts:45',message:'JavaScript execution error caught',data:{errorMessage:error.message,errorStack:error.stack?.substring(0,200),failSilently:data.failSilently},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
-      // #endregion
-      
       if (data.failSilently) {
         console.warn(`JavaScript execution failed silently: ${error.message}`);
         return;

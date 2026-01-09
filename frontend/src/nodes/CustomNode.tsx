@@ -1,12 +1,16 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { shallow } from 'zustand/shallow';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { NodeType, PropertyDataType } from '@automflows/shared';
+import { NodeType, PropertyDataType, OpenBrowserNodeData } from '@automflows/shared';
 import { frontendPluginRegistry } from '../plugins/registry';
 import { useWorkflowStore } from '../store/workflowStore';
 import { InlineTextInput, InlineNumberInput, InlineSelect, InlineTextarea, InlineCheckbox } from '../components/InlinePropertyEditor';
 import NodeMenuBar from '../components/NodeMenuBar';
+import CapabilitiesPopup from '../components/CapabilitiesPopup';
+import PropertyEditorPopup, { PropertyEditorType } from '../components/PropertyEditorPopup';
 import { getNodeProperties, isPropertyInputConnection, getPropertyInputHandleId } from '../utils/nodeProperties';
+import { getContrastTextColor } from '../utils/colorContrast';
 
 const nodeIcons: Record<NodeType, string> = {
   [NodeType.START]: '🚀',
@@ -135,36 +139,113 @@ function ResizeHandle({ onResize }: ResizeHandleProps) {
 }
 
 export default function CustomNode({ id, data, selected, width, height }: NodeProps) {
+  // State for capabilities popup (only used for OPEN_BROWSER nodes)
+  const [showCapabilitiesPopup, setShowCapabilitiesPopup] = useState(false);
+  
+  // State for property editor popup
+  const [propertyPopup, setPropertyPopup] = useState<{
+    type: PropertyEditorType;
+    label: string;
+    field: string; // Store field name to read latest value
+    value: any;
+    onChange: (value: any) => void;
+    placeholder?: string;
+    min?: number;
+    max?: number;
+  } | null>(null);
+  
+  // Get latest node data from store to avoid stale prop issues
+  const storeNodes = useWorkflowStore((state) => state.nodes);
+  const latestNodeData = storeNodes.find(n => n.id === id)?.data || data;
+  
   // Stabilize data prop by comparing content, not reference
   // This prevents infinite loops when ReactFlow recreates data objects with same content
   // Use a more stable comparison - compare key properties instead of JSON.stringify
-  const dataRef = useRef(data);
+  // Use latestNodeData instead of data prop to get fresh updates from store
+  const dataRef = useRef(latestNodeData);
   const dataKeyRef = useRef<string>('');
   
   // Create a stable key from data properties (sorted for consistency)
   // Include _inputConnections to detect when properties are converted to inputs
   // Include backgroundColor to detect when color changes
-  const inputConnectionsKey = data._inputConnections ? JSON.stringify(data._inputConnections) : '';
-  const backgroundColorKey = data.backgroundColor || '';
-  const currentDataKey = `${data.type}|${data.label || ''}|${data.code || ''}|${data.width || ''}|${data.height || ''}|${inputConnectionsKey}|${backgroundColorKey}`;
+  // Include isMinimized, bypass, failSilently to detect when these change
+  // Include value for value nodes (INT_VALUE, STRING_VALUE, BOOLEAN_VALUE, INPUT_VALUE) to detect value changes
+  const inputConnectionsKey = latestNodeData._inputConnections ? JSON.stringify(latestNodeData._inputConnections) : '';
+  const backgroundColorKey = latestNodeData.backgroundColor || '';
+  const isMinimizedKey = latestNodeData.isMinimized || false;
+  const bypassKey = latestNodeData.bypass || false;
+  const failSilentlyKey = latestNodeData.failSilently || false;
+  // Include value for value nodes
+  const valueKey = (latestNodeData.type === NodeType.INT_VALUE || 
+                    latestNodeData.type === NodeType.STRING_VALUE || 
+                    latestNodeData.type === NodeType.BOOLEAN_VALUE || 
+                    latestNodeData.type === NodeType.INPUT_VALUE) 
+    ? `|value:${JSON.stringify(latestNodeData.value)}` 
+    : '';
+  // Include dataType for INPUT_VALUE nodes
+  const dataTypeKey = latestNodeData.type === NodeType.INPUT_VALUE 
+    ? `|dataType:${latestNodeData.dataType || PropertyDataType.STRING}` 
+    : '';
+  // Include maxWindow and other browser properties in the key for OPEN_BROWSER nodes
+  const browserDataKey = latestNodeData.type === NodeType.OPEN_BROWSER 
+    ? `|maxWindow:${latestNodeData.maxWindow}|browser:${latestNodeData.browser || 'chromium'}|stealthMode:${latestNodeData.stealthMode || false}|capabilities:${latestNodeData.capabilities ? Object.keys(latestNodeData.capabilities).length : 0}|launchOptions:${latestNodeData.launchOptions ? Object.keys(latestNodeData.launchOptions).length : 0}`
+    : '';
+  // Include url and timeout for NAVIGATE nodes, selector/timeout for CLICK/GET_TEXT nodes
+  const navigateDataKey = latestNodeData.type === NodeType.NAVIGATE 
+    ? `|url:${latestNodeData.url || ''}|timeout:${latestNodeData.timeout || ''}|waitUntil:${latestNodeData.waitUntil || ''}|referer:${latestNodeData.referer || ''}` 
+    : '';
+  const clickDataKey = latestNodeData.type === NodeType.CLICK 
+    ? `|selector:${latestNodeData.selector || ''}|timeout:${latestNodeData.timeout || ''}` 
+    : '';
+  const getTextDataKey = latestNodeData.type === NodeType.GET_TEXT 
+    ? `|selector:${latestNodeData.selector || ''}|timeout:${latestNodeData.timeout || ''}|outputVariable:${latestNodeData.outputVariable || ''}` 
+    : '';
+  const currentDataKey = `${latestNodeData.type}|${latestNodeData.label || ''}|${latestNodeData.code || ''}|${latestNodeData.width || ''}|${latestNodeData.height || ''}|${inputConnectionsKey}|${backgroundColorKey}|isMinimized:${isMinimizedKey}|bypass:${bypassKey}|failSilently:${failSilentlyKey}${valueKey}${dataTypeKey}${browserDataKey}${navigateDataKey}${clickDataKey}${getTextDataKey}`;
   const dataContentChanged = dataKeyRef.current !== currentDataKey;
   
   if (dataContentChanged) {
-    dataRef.current = data;
+    dataRef.current = latestNodeData;
     dataKeyRef.current = currentDataKey;
   }
   
   // Use stable data reference that only changes when content changes
+  // But use latestNodeData for property values to ensure real-time updates
   const stableData = dataRef.current;
   
-  const nodeType = stableData.type as NodeType | string;
+  // Use latestNodeData for rendering to ensure real-time updates
+  // stableData is kept for reference stability in other contexts
+  const renderData = latestNodeData;
   
-  // #region agent log
-  if (nodeType === NodeType.JAVASCRIPT_CODE && dataContentChanged && dataKeyRef.current !== '') {
-    fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CustomNode.tsx:data-changed',message:'Data key changed',data:{nodeId:id,oldKey:dataKeyRef.current.substring(0,100),newKey:currentDataKey.substring(0,100),typeChanged:dataKeyRef.current.split('|')[0]!==currentDataKey.split('|')[0],labelChanged:dataKeyRef.current.split('|')[1]!==currentDataKey.split('|')[1],codeChanged:dataKeyRef.current.split('|')[2]!==currentDataKey.split('|')[2],widthChanged:dataKeyRef.current.split('|')[3]!==currentDataKey.split('|')[3],heightChanged:dataKeyRef.current.split('|')[4]!==currentDataKey.split('|')[4]},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'L'})}).catch(()=>{});
-  }
-  // #endregion
-  const customLabel = stableData.label;
+  // Force re-render when node data changes by using a state that tracks data changes
+  // This ensures ReactFlow re-renders CustomNode even when it memoizes nodes
+  const [dataVersion, setDataVersion] = useState(0);
+  const lastDataVersionRef = useRef<string>('');
+  
+  // Create a version key from important data fields to detect changes
+  const currentDataVersion = JSON.stringify({
+    url: latestNodeData.url,
+    timeout: latestNodeData.timeout,
+    selector: latestNodeData.selector,
+    text: latestNodeData.text,
+    code: latestNodeData.code,
+    value: latestNodeData.value,
+    outputVariable: latestNodeData.outputVariable,
+    arrayVariable: latestNodeData.arrayVariable,
+  });
+  
+  // Update version when data changes to force re-render
+  useEffect(() => {
+    if (lastDataVersionRef.current !== currentDataVersion) {
+      lastDataVersionRef.current = currentDataVersion;
+      // Update state to force React re-render
+      // The component reads from latestNodeData which comes from store, so re-render will show updated values
+      setDataVersion(prev => prev + 1);
+    }
+  }, [currentDataVersion, id, latestNodeData.url, latestNodeData.timeout]);
+  
+  const nodeType = renderData.type as NodeType | string;
+  
+  const customLabel = renderData.label;
   const defaultLabel = getNodeLabel(nodeType);
   const label = customLabel || defaultLabel;
   const icon = getNodeIcon(nodeType);
@@ -235,16 +316,6 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
   const isFailed = failedNodes.has(id);
   // Read isExecuting directly from store instead of node data to avoid triggering ReactFlow sync
   const isExecuting = executingNodeId === id;
-  
-  // #region agent log
-  const isJavaScriptNode = nodeType === NodeType.JAVASCRIPT_CODE;
-  if (isJavaScriptNode && (edgesChanged || nodesChanged || dataContentChanged)) {
-    fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CustomNode.tsx:store-read',message:'Store/props changed',data:{nodeId:id,edgesChanged,edgesLength:edges.length,edgesLengthPrev:edgesRef.current.length,nodesChanged,nodesLength:nodes.length,nodesLengthPrev:nodesRef.current.length,dataContentChanged,codeChanged:dataRef.current?.code!==data.code},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'J'})}).catch(()=>{});
-  }
-  if (isJavaScriptNode) {
-    fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'CustomNode.tsx:render',message:'JavaScript node rendering',data:{nodeId:id,selected,width,height,hasCode:!!stableData.code,codeLength:stableData.code?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'I'})}).catch(()=>{});
-  }
-  // #endregion
 
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(label);
@@ -269,6 +340,8 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
   // Use custom background color if set, otherwise use default
   // Read directly from data prop (not stableData) to get real-time updates
   const backgroundColor = data.backgroundColor || '#1f2937';
+  // Calculate optimal text color based on background color for contrast
+  const textColor = getContrastTextColor(backgroundColor);
   // Border color: red if failed, blue if selected, default gray otherwise
   const borderColor = isFailed ? '#ef4444' : (selected ? '#3b82f6' : '#4b5563');
 
@@ -316,6 +389,22 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
     updateNodeDimensions(id, newWidth, newHeight);
   }, [id, currentWidth, currentHeight, updateNodeDimensions, calculateMinDimensions]);
 
+  // Update node dimensions when minimized state changes to ensure visual update
+  const prevIsMinimizedRef = useRef(isMinimized);
+  useEffect(() => {
+    if (prevIsMinimizedRef.current !== isMinimized) {
+      const { minWidth, minHeight } = calculateMinDimensions();
+      // When minimizing, set height to minimum. When maximizing, let it auto-resize
+      if (isMinimized) {
+        updateNodeDimensions(id, Math.max(minWidth, currentWidth), minHeight);
+      } else {
+        // When maximizing, remove explicit height to allow auto-sizing
+        updateNodeDimensions(id, Math.max(minWidth, currentWidth), undefined);
+      }
+      prevIsMinimizedRef.current = isMinimized;
+    }
+  }, [isMinimized, id, currentWidth, currentHeight, calculateMinDimensions, updateNodeDimensions]);
+
   const handleDoubleClickHeader = useCallback(() => {
     setIsRenaming(true);
     setRenameValue(label);
@@ -352,10 +441,48 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
     updateNodeData(id, { [field]: value });
   }, [id, updateNodeData]);
 
+  // Handler to open property editor popup
+  const handleOpenPopup = useCallback((
+    type: PropertyEditorType,
+    label: string,
+    value: any,
+    onChange: (value: any) => void,
+    placeholder?: string,
+    min?: number,
+    max?: number,
+    field?: string // Optional field name to read latest value
+  ) => {
+    setPropertyPopup({
+      type,
+      label,
+      field: field || label.toLowerCase().replace(/\s+/g, ''), // Default to label-based field name
+      value,
+      onChange,
+      placeholder,
+      min,
+      max,
+    });
+  }, []);
+
+  // Helper to create popup handler with field name
+  const createPopupHandler = useCallback((field: string) => {
+    return (
+      type: PropertyEditorType,
+      label: string,
+      value: any,
+      onChange: (value: any) => void,
+      placeholder?: string,
+      min?: number,
+      max?: number
+    ) => {
+      handleOpenPopup(type, label, value, onChange, placeholder, min, max, field);
+    };
+  }, [handleOpenPopup]);
+
   // Helper to check if property is converted to input
   const isPropertyInput = useCallback((propertyName: string) => {
-    return isPropertyInputConnection(stableData, propertyName);
-  }, [stableData]);
+    return isPropertyInputConnection(renderData, propertyName);
+  }, [renderData]);
 
   // Helper to render property with conditional input handle
   const renderPropertyRow = useCallback((propertyName: string, propertyElement: React.ReactNode, propertyIndex: number) => {
@@ -400,7 +527,7 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
               onMouseEnter={() => setConnectingHandleId(handleId)}
               onMouseLeave={() => setConnectingHandleId(null)}
             />
-            <span className="text-xs text-gray-400 ml-2 flex-shrink-0 flex items-center gap-1">
+            <span className="text-xs ml-2 flex-shrink-0 flex items-center gap-1" style={{ color: textColor, opacity: 0.7 }}>
               <span className="text-blue-400">→</span>
               {propertySchema?.label || propertyName}
             </span>
@@ -409,11 +536,13 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
         {/* Property editor - hide if converted to input */}
         {!isInput && (
           <div className="flex-1">
-            {propertyElement}
+            {React.isValidElement(propertyElement) 
+              ? React.cloneElement(propertyElement as React.ReactElement<any>, { field: propertyName })
+              : propertyElement}
           </div>
         )}
         {isInput && (
-          <div className={`flex-1 text-xs ${hasConnection ? 'text-gray-300' : 'text-gray-500 italic'}`}>
+          <div className={`flex-1 text-xs ${!hasConnection ? 'italic' : ''}`} style={{ color: textColor, opacity: hasConnection ? 0.9 : 0.6 }}>
             {hasConnection ? (
               <span className="flex items-center gap-1">
                 <span className="text-green-400">●</span>
@@ -426,7 +555,7 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
         )}
       </div>
     );
-  }, [id, edgesForThisNode, sourceNodes, isPropertyInput, connectingHandleId, nodeType, setConnectingHandleId]);
+  }, [id, edgesForThisNode, sourceNodes, isPropertyInput, connectingHandleId, nodeType, setConnectingHandleId, textColor]);
 
   const renderProperties = () => {
     if (Object.values(NodeType).includes(nodeType as NodeType)) {
@@ -440,23 +569,25 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
               {renderPropertyRow('url', (
                 <InlineTextInput
                   label="URL"
-                  value={stableData.url || ''}
+                  value={renderData.url || ''}
                   onChange={(value) => handlePropertyChange('url', value)}
                   placeholder="https://example.com"
+                  onOpenPopup={handleOpenPopup}
                 />
               ), 0)}
               {renderPropertyRow('timeout', (
                 <InlineNumberInput
                   label="Timeout"
-                  value={stableData.timeout || 30000}
+                  value={renderData.timeout || 30000}
                   onChange={(value) => handlePropertyChange('timeout', value)}
                   placeholder="30000"
+                  onOpenPopup={handleOpenPopup}
                 />
               ), 1)}
               {renderPropertyRow('waitUntil', (
                 <InlineSelect
                   label="Wait Until"
-                  value={stableData.waitUntil || 'networkidle'}
+                  value={renderData.waitUntil || 'networkidle'}
                   onChange={(value) => handlePropertyChange('waitUntil', value)}
                   options={[
                     { label: 'load', value: 'load' },
@@ -469,9 +600,10 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
               {renderPropertyRow('referer', (
                 <InlineTextInput
                   label="Referer"
-                  value={stableData.referer || ''}
+                  value={renderData.referer || ''}
                   onChange={(value) => handlePropertyChange('referer', value)}
                   placeholder="https://example.com (optional)"
+                  onOpenPopup={handleOpenPopup}
                 />
               ), 3)}
             </div>
@@ -483,7 +615,7 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
               {renderPropertyRow('selectorType', (
                 <InlineSelect
                   label="Selector Type"
-                  value={stableData.selectorType || 'css'}
+                  value={renderData.selectorType || 'css'}
                   onChange={(value) => handlePropertyChange('selectorType', value)}
                   options={[
                     { label: 'CSS', value: 'css' },
@@ -494,17 +626,19 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
               {renderPropertyRow('selector', (
                 <InlineTextInput
                   label="Selector"
-                  value={stableData.selector || ''}
+                  value={renderData.selector || ''}
                   onChange={(value) => handlePropertyChange('selector', value)}
                   placeholder="#button or //button[@id='button']"
+                  onOpenPopup={handleOpenPopup}
                 />
               ), 1)}
               {renderPropertyRow('timeout', (
                 <InlineNumberInput
                   label="Timeout"
-                  value={stableData.timeout || 30000}
+                  value={renderData.timeout || 30000}
                   onChange={(value) => handlePropertyChange('timeout', value)}
                   placeholder="30000"
+                  onOpenPopup={handleOpenPopup}
                 />
               ), 2)}
             </div>
@@ -516,7 +650,7 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
               {renderPropertyRow('selectorType', (
                 <InlineSelect
                   label="Selector Type"
-                  value={stableData.selectorType || 'css'}
+                  value={renderData.selectorType || 'css'}
                   onChange={(value) => handlePropertyChange('selectorType', value)}
                   options={[
                     { label: 'CSS', value: 'css' },
@@ -527,25 +661,28 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
               {renderPropertyRow('selector', (
                 <InlineTextInput
                   label="Selector"
-                  value={stableData.selector || ''}
+                  value={renderData.selector || ''}
                   onChange={(value) => handlePropertyChange('selector', value)}
                   placeholder="#input or //input[@id='input']"
+                  onOpenPopup={handleOpenPopup}
                 />
               ), 1)}
               {renderPropertyRow('text', (
                 <InlineTextarea
                   label="Text"
-                  value={stableData.text || ''}
+                  value={renderData.text || ''}
                   onChange={(value) => handlePropertyChange('text', value)}
                   placeholder="Text to type"
+                  onOpenPopup={handleOpenPopup}
                 />
               ), 2)}
               {renderPropertyRow('timeout', (
                 <InlineNumberInput
                   label="Timeout"
-                  value={stableData.timeout || 30000}
+                  value={renderData.timeout || 30000}
                   onChange={(value) => handlePropertyChange('timeout', value)}
                   placeholder="30000"
+                  onOpenPopup={handleOpenPopup}
                 />
               ), 3)}
             </div>
@@ -571,14 +708,16 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
                   value={stableData.selector || ''}
                   onChange={(value) => handlePropertyChange('selector', value)}
                   placeholder="#element or //div[@class='text']"
+                  onOpenPopup={handleOpenPopup}
                 />
               ), 1)}
               {renderPropertyRow('outputVariable', (
                 <InlineTextInput
                   label="Output Var"
-                  value={stableData.outputVariable || 'text'}
+                  value={renderData.outputVariable || 'text'}
                   onChange={(value) => handlePropertyChange('outputVariable', value)}
                   placeholder="text"
+                  onOpenPopup={handleOpenPopup}
                 />
               ), 2)}
               {renderPropertyRow('timeout', (
@@ -587,6 +726,7 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
                   value={stableData.timeout || 30000}
                   onChange={(value) => handlePropertyChange('timeout', value)}
                   placeholder="30000"
+                  onOpenPopup={handleOpenPopup}
                 />
               ), 3)}
             </div>
@@ -598,16 +738,17 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
               {renderPropertyRow('fullPage', (
                 <InlineCheckbox
                   label="Full Page"
-                  value={stableData.fullPage || false}
+                  value={renderData.fullPage || false}
                   onChange={(value) => handlePropertyChange('fullPage', value)}
                 />
               ), 0)}
               {renderPropertyRow('path', (
                 <InlineTextInput
                   label="Path"
-                  value={stableData.path || ''}
+                  value={renderData.path || ''}
                   onChange={(value) => handlePropertyChange('path', value)}
                   placeholder="screenshot.png (optional)"
+                  onOpenPopup={handleOpenPopup}
                 />
               ), 1)}
             </div>
@@ -619,7 +760,7 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
               {renderPropertyRow('waitType', (
                 <InlineSelect
                   label="Wait Type"
-                  value={stableData.waitType || 'timeout'}
+                  value={renderData.waitType || 'timeout'}
                   onChange={(value) => handlePropertyChange('waitType', value)}
                   options={[
                     { label: 'Timeout', value: 'timeout' },
@@ -627,13 +768,14 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
                   ]}
                 />
               ), 0)}
-              {data.waitType === 'timeout' ? (
+              {renderData.waitType === 'timeout' ? (
                 renderPropertyRow('value', (
                   <InlineNumberInput
                     label="Value (ms)"
-                    value={typeof data.value === 'number' ? data.value : parseInt(String(data.value || 1000), 10)}
+                    value={typeof renderData.value === 'number' ? renderData.value : parseInt(String(renderData.value || 1000), 10)}
                     onChange={(value) => handlePropertyChange('value', value)}
                     placeholder="1000"
+                    onOpenPopup={handleOpenPopup}
                   />
                 ), 1)
               ) : (
@@ -641,7 +783,7 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
                   {renderPropertyRow('selectorType', (
                     <InlineSelect
                       label="Selector Type"
-                      value={stableData.selectorType || 'css'}
+                      value={renderData.selectorType || 'css'}
                       onChange={(value) => handlePropertyChange('selectorType', value)}
                       options={[
                         { label: 'CSS', value: 'css' },
@@ -652,17 +794,19 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
                   {renderPropertyRow('value', (
                     <InlineTextInput
                       label="Selector"
-                      value={typeof data.value === 'string' ? data.value : ''}
+                      value={typeof renderData.value === 'string' ? renderData.value : ''}
                       onChange={(value) => handlePropertyChange('value', value)}
                       placeholder="#element or //div[@class='element']"
+                      onOpenPopup={handleOpenPopup}
                     />
                   ), 2)}
                   {renderPropertyRow('timeout', (
                     <InlineNumberInput
                       label="Timeout"
-                      value={stableData.timeout || 30000}
+                      value={renderData.timeout || 30000}
                       onChange={(value) => handlePropertyChange('timeout', value)}
                       placeholder="30000"
+                      onOpenPopup={handleOpenPopup}
                     />
                   ), 3)}
                 </>
@@ -676,9 +820,13 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
               {renderPropertyRow('code', (
                 <InlineTextarea
                   label="Code"
-                  value={stableData.code || ''}
+                  value={renderData.code || ''}
                   onChange={(value) => handlePropertyChange('code', value)}
                   placeholder="// Your code here"
+                  field="code"
+                  onOpenPopup={(type, label, value, onChange, placeholder, min, max, field) => {
+                    handleOpenPopup('code', label, value, onChange, placeholder, min, max, field);
+                  }}
                 />
               ), 0)}
             </div>
@@ -690,49 +838,109 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
               {renderPropertyRow('arrayVariable', (
                 <InlineTextInput
                   label="Array Var"
-                  value={stableData.arrayVariable || ''}
+                  value={renderData.arrayVariable || ''}
                   onChange={(value) => handlePropertyChange('arrayVariable', value)}
                   placeholder="items (variable name)"
+                  onOpenPopup={handleOpenPopup}
                 />
               ), 0)}
             </div>
           );
         
         case NodeType.OPEN_BROWSER:
+          const browserData = renderData as OpenBrowserNodeData;
+          const maxWindow = browserData.maxWindow !== false; // Default to true
+          const capabilitiesCount = browserData.capabilities ? Object.keys(browserData.capabilities).length : 0;
+          const launchOptionsCount = browserData.launchOptions ? Object.keys(browserData.launchOptions).length : 0;
+          
           return (
-            <div className="mt-2 space-y-1">
-              {renderPropertyRow('headless', (
-                <InlineCheckbox
-                  label="Headless"
-                  value={stableData.headless !== false}
-                  onChange={(value) => handlePropertyChange('headless', value)}
-                />
-              ), 0)}
-              {renderPropertyRow('viewportWidth', (
-                <InlineNumberInput
-                  label="Width"
-                  value={stableData.viewportWidth || 1280}
-                  onChange={(value) => handlePropertyChange('viewportWidth', value)}
-                  placeholder="1280"
-                />
-              ), 1)}
-              {renderPropertyRow('viewportHeight', (
-                <InlineNumberInput
-                  label="Height"
-                  value={stableData.viewportHeight || 720}
-                  onChange={(value) => handlePropertyChange('viewportHeight', value)}
-                  placeholder="720"
-                />
-              ), 2)}
-              {renderPropertyRow('userAgent', (
-                <InlineTextInput
-                  label="User Agent"
-                  value={stableData.userAgent || ''}
-                  onChange={(value) => handlePropertyChange('userAgent', value)}
-                  placeholder="Mozilla/5.0... (optional)"
-                />
-              ), 3)}
-            </div>
+            <>
+              <div className="mt-2 space-y-1">
+                {renderPropertyRow('browser', (
+                  <InlineSelect
+                    label="Browser"
+                    value={browserData.browser || 'chromium'}
+                    onChange={(value) => handlePropertyChange('browser', value)}
+                    options={[
+                      { label: 'Chromium', value: 'chromium' },
+                      { label: 'Firefox', value: 'firefox' },
+                      { label: 'WebKit', value: 'webkit' },
+                    ]}
+                  />
+                ), 0)}
+                {renderPropertyRow('maxWindow', (
+                  <InlineCheckbox
+                    label="Max Window"
+                    value={maxWindow}
+                    onChange={(value) => {
+                      handlePropertyChange('maxWindow', value);
+                      // If disabling max window, set default viewport if not set
+                      if (!value && !browserData.viewportWidth && !browserData.viewportHeight) {
+                        handlePropertyChange('viewportWidth', 1280);
+                        handlePropertyChange('viewportHeight', 720);
+                      }
+                    }}
+                  />
+                ), 1)}
+                {!maxWindow && renderPropertyRow('viewportWidth', (
+                  <InlineNumberInput
+                    label="Width"
+                    value={browserData.viewportWidth || 1280}
+                    onChange={(value) => handlePropertyChange('viewportWidth', value)}
+                    placeholder="1280"
+                    onOpenPopup={handleOpenPopup}
+                  />
+                ), 2)}
+                {!maxWindow && renderPropertyRow('viewportHeight', (
+                  <InlineNumberInput
+                    label="Height"
+                    value={browserData.viewportHeight || 720}
+                    onChange={(value) => handlePropertyChange('viewportHeight', value)}
+                    placeholder="720"
+                    onOpenPopup={handleOpenPopup}
+                  />
+                ), 3)}
+                {renderPropertyRow('headless', (
+                  <InlineCheckbox
+                    label="Headless"
+                    value={browserData.headless !== false}
+                    onChange={(value) => handlePropertyChange('headless', value)}
+                  />
+                ), 4)}
+                {renderPropertyRow('stealthMode', (
+                  <InlineCheckbox
+                    label="Stealth Mode"
+                    value={browserData.stealthMode || false}
+                    onChange={(value) => handlePropertyChange('stealthMode', value)}
+                  />
+                ), 5)}
+                {/* View/Add Options button - rendered directly, NOT via renderPropertyRow */}
+                <div className="mt-1">
+                  <button
+                    onClick={() => {
+                      setShowCapabilitiesPopup(true);
+                    }}
+                    className="w-full px-2 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded text-white transition-colors"
+                  >
+                    View/Add Options
+                    {(capabilitiesCount > 0 || launchOptionsCount > 0) && (
+                      <span className="ml-2 text-blue-400">
+                        (C:{capabilitiesCount}, L:{launchOptionsCount})
+                      </span>
+                    )}
+                  </button>
+                </div>
+                {renderPropertyRow('userAgent', (
+                  <InlineTextInput
+                    label="User Agent"
+                    value={browserData.userAgent || ''}
+                    onChange={(value) => handlePropertyChange('userAgent', value)}
+                    placeholder="Mozilla/5.0... (optional)"
+                    onOpenPopup={handleOpenPopup}
+                  />
+                ), 6)}
+              </div>
+            </>
           );
         
         case NodeType.INT_VALUE:
@@ -740,9 +948,11 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
             <div className="mt-2 space-y-1">
               <InlineNumberInput
                 label="Value"
-                value={data.value ?? 0}
+                value={renderData.value ?? 0}
                 onChange={(value) => handlePropertyChange('value', value)}
                 placeholder="0"
+                field="value"
+                onOpenPopup={handleOpenPopup}
               />
             </div>
           );
@@ -752,9 +962,11 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
             <div className="mt-2 space-y-1">
               <InlineTextInput
                 label="Value"
-                value={data.value ?? ''}
+                value={renderData.value ?? ''}
                 onChange={(value) => handlePropertyChange('value', value)}
                 placeholder="Enter string value"
+                field="value"
+                onOpenPopup={handleOpenPopup}
               />
             </div>
           );
@@ -764,7 +976,7 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
             <div className="mt-2 space-y-1">
               <InlineSelect
                 label="Value"
-                value={String(data.value ?? false)}
+                value={String(renderData.value ?? false)}
                 onChange={(value) => handlePropertyChange('value', value === 'true')}
                 options={[
                   { label: 'True', value: 'true' },
@@ -775,8 +987,8 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
           );
         
         case NodeType.INPUT_VALUE:
-          const inputDataType = stableData.dataType || PropertyDataType.STRING;
-          const inputValue = stableData.value ?? (inputDataType === PropertyDataType.BOOLEAN ? false : inputDataType === PropertyDataType.INT ? 0 : '');
+          const inputDataType = renderData.dataType || PropertyDataType.STRING;
+          const inputValue = renderData.value ?? (inputDataType === PropertyDataType.BOOLEAN ? false : inputDataType === PropertyDataType.INT ? 0 : '');
           
           return (
             <div className="mt-2 space-y-1">
@@ -811,6 +1023,8 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
                   value={String(inputValue)}
                   onChange={(value) => handlePropertyChange('value', value)}
                   placeholder="Enter string value"
+                  field="value"
+                  onOpenPopup={handleOpenPopup}
                 />
               )}
               {(inputDataType === PropertyDataType.INT || inputDataType === PropertyDataType.FLOAT || inputDataType === PropertyDataType.DOUBLE) && (
@@ -819,6 +1033,8 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
                   value={typeof inputValue === 'number' ? inputValue : parseFloat(String(inputValue)) || 0}
                   onChange={(value) => handlePropertyChange('value', value)}
                   placeholder="0"
+                  field="value"
+                  onOpenPopup={handleOpenPopup}
                 />
               )}
               {inputDataType === PropertyDataType.BOOLEAN && (
@@ -866,6 +1082,8 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
                   label={key}
                   value={value}
                   onChange={(val) => handlePropertyChange(key, val)}
+                  field={key}
+                  onOpenPopup={handleOpenPopup}
                 />
               );
             } else {
@@ -875,6 +1093,8 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
                   label={key}
                   value={String(value || '')}
                   onChange={(val) => handlePropertyChange(key, val)}
+                  field={key}
+                  onOpenPopup={handleOpenPopup}
                 />
               );
             }
@@ -892,16 +1112,34 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
   // Instead, we memoize based on the actual data that affects the output
   // Include _inputConnections in dependencies so properties re-render when converted to inputs
   const inputConnectionsForMemo = stableData._inputConnections ? JSON.stringify(stableData._inputConnections) : '';
+  // Include maxWindow and browser properties in dependencies for OPEN_BROWSER nodes
+  const browserDataForMemo = nodeType === NodeType.OPEN_BROWSER 
+    ? `${(stableData as OpenBrowserNodeData).maxWindow}|${(stableData as OpenBrowserNodeData).browser}|${(stableData as OpenBrowserNodeData).stealthMode}|${(stableData as OpenBrowserNodeData).capabilities ? Object.keys((stableData as OpenBrowserNodeData).capabilities || {}).length : 0}|${(stableData as OpenBrowserNodeData).launchOptions ? Object.keys((stableData as OpenBrowserNodeData).launchOptions || {}).length : 0}`
+    : '';
+  // Include value for value nodes to ensure real-time updates
+  const valueForMemo = (nodeType === NodeType.INT_VALUE || 
+                        nodeType === NodeType.STRING_VALUE || 
+                        nodeType === NodeType.BOOLEAN_VALUE || 
+                        nodeType === NodeType.INPUT_VALUE)
+    ? JSON.stringify(renderData.value)
+    : '';
+  // Include dataType for INPUT_VALUE nodes
+  const dataTypeForMemo = nodeType === NodeType.INPUT_VALUE 
+    ? renderData.dataType 
+    : '';
   const properties = useMemo(() => renderProperties(), [
     nodeType, 
-    stableData.code, 
-    stableData.url,
-    stableData.selector,
-    stableData.text,
+    renderData.code, 
+    renderData.url,
+    renderData.selector,
+    renderData.text,
     edgesForThisNode.length,
     sourceNodes.length,
     connectingHandleId,
     inputConnectionsForMemo,
+    browserDataForMemo, // Include browser-specific data in dependencies
+    valueForMemo, // Include value for value nodes
+    dataTypeForMemo, // Include dataType for INPUT_VALUE nodes
   ]);
   const hasProperties = properties !== null;
 
@@ -964,13 +1202,14 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
             onChange={(e) => setRenameValue(e.target.value)}
             onBlur={handleRenameSubmit}
             onKeyDown={handleRenameKeyDown}
-            className="text-sm font-medium text-white bg-gray-700 border border-gray-600 rounded px-2 py-0.5 flex-1 min-w-0"
-            style={{ color: 'white' }}
+            className="text-sm font-medium bg-gray-700 border border-gray-600 rounded px-2 py-0.5 flex-1 min-w-0"
+            style={{ color: textColor }}
             onClick={(e) => e.stopPropagation()}
           />
         ) : (
           <div
-            className="text-sm font-medium text-white cursor-text"
+            className="text-sm font-medium cursor-text"
+            style={{ color: textColor }}
             onDoubleClick={handleDoubleClickHeader}
             title="Double-click to rename"
           >
@@ -984,6 +1223,41 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
         <div className="mt-2 border-t border-gray-700 pt-2">
           {properties}
         </div>
+      )}
+      {/* Render CapabilitiesPopup via portal to avoid ReactFlow clipping */}
+      {showCapabilitiesPopup && nodeType === NodeType.OPEN_BROWSER && typeof document !== 'undefined' && createPortal(
+          <CapabilitiesPopup
+            node={{ id, data: renderData } as any}
+            onSave={(data: { capabilities?: Record<string, any>, launchOptions?: Record<string, any> }) => {
+              if (data.capabilities !== undefined) {
+                handlePropertyChange('capabilities', data.capabilities);
+              }
+              if (data.launchOptions !== undefined) {
+                handlePropertyChange('launchOptions', data.launchOptions);
+              }
+              setShowCapabilitiesPopup(false);
+            }}
+          onClose={() => {
+            setShowCapabilitiesPopup(false);
+          }}
+        />,
+        document.body
+      )}
+      {/* Render PropertyEditorPopup via portal to avoid ReactFlow clipping */}
+      {propertyPopup && typeof document !== 'undefined' && createPortal(
+        <PropertyEditorPopup
+          label={propertyPopup.label}
+          value={latestNodeData[propertyPopup.field] !== undefined ? latestNodeData[propertyPopup.field] : propertyPopup.value}
+          type={propertyPopup.type}
+          onChange={(newValue) => {
+            propertyPopup.onChange(newValue);
+          }}
+          onClose={() => setPropertyPopup(null)}
+          placeholder={propertyPopup.placeholder}
+          min={propertyPopup.min}
+          max={propertyPopup.max}
+        />,
+        document.body
       )}
       {selected && (
         <ResizeHandle onResize={handleResize} />

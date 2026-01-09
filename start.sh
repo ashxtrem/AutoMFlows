@@ -36,6 +36,9 @@ npm install
 echo -e "${BLUE}🌐 Installing Playwright browsers...${NC}"
 cd backend
 npx playwright install chromium || echo -e "${YELLOW}Warning: Playwright browser installation failed. You may need to install manually.${NC}"
+npx playwright install firefox || echo -e "${YELLOW}Warning: Playwright browser installation failed. You may need to install manually.${NC}"
+npx playwright install chrome || echo -e "${YELLOW}Warning: Playwright browser installation failed. You may need to install manually.${NC}"
+npx playwright install webkit || echo -e "${YELLOW}Warning: Playwright browser installation failed. You may need to install manually.${NC}"
 cd ..
 
 # Step 3: Build shared package

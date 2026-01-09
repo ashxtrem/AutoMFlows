@@ -66,10 +66,14 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
       
       case NodeType.OPEN_BROWSER:
         return [
+          { name: 'browser', label: 'Browser', dataType: PropertyDataType.STRING, required: false, defaultValue: 'chromium' },
+          { name: 'maxWindow', label: 'Max Window', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: true },
           { name: 'headless', label: 'Headless', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: true },
           { name: 'viewportWidth', label: 'Viewport Width', dataType: PropertyDataType.INT, required: false, defaultValue: 1280 },
           { name: 'viewportHeight', label: 'Viewport Height', dataType: PropertyDataType.INT, required: false, defaultValue: 720 },
+          { name: 'stealthMode', label: 'Stealth Mode', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
           { name: 'userAgent', label: 'User Agent', dataType: PropertyDataType.STRING, required: false },
+          // Note: 'capabilities' is NOT included here - it's managed via button/popup and cannot be converted to input
         ];
       
       case NodeType.SCREENSHOT:

@@ -8,60 +8,17 @@ interface TooltipProps {
 
 export default function Tooltip({ content, children, position = 'top' }: TooltipProps) {
   const [isVisible, setIsVisible] = useState(false);
-  const [tooltipPosition, setTooltipPosition] = useState({ x: 0, y: 0 });
   const triggerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (isVisible && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      let x = 0;
-      let y = 0;
-
-      switch (position) {
-        case 'top':
-          x = rect.left + rect.width / 2;
-          y = rect.top - 5;
-          break;
-        case 'bottom':
-          x = rect.left + rect.width / 2;
-          y = rect.bottom + 5;
-          break;
-        case 'left':
-          x = rect.left - 5;
-          y = rect.top + rect.height / 2;
-          break;
-        case 'right':
-          x = rect.right + 5;
-          y = rect.top + rect.height / 2;
-          break;
-      }
-
-      setTooltipPosition({ x, y });
-    }
-  }, [isVisible, position]);
-
   const getTooltipStyle = () => {
-    const baseStyle: React.CSSProperties = {
-      position: 'fixed',
-      left: `${tooltipPosition.x}px`,
-      top: `${tooltipPosition.y}px`,
+    return {
+      position: 'fixed' as const,
+      top: '20px',
+      right: '20px',
       zIndex: 10000,
-      pointerEvents: 'none',
+      pointerEvents: 'none' as const,
     };
-
-    switch (position) {
-      case 'top':
-        return { ...baseStyle, transform: 'translate(-50%, -100%)' };
-      case 'bottom':
-        return { ...baseStyle, transform: 'translate(-50%, 0)' };
-      case 'left':
-        return { ...baseStyle, transform: 'translate(-100%, -50%)' };
-      case 'right':
-        return { ...baseStyle, transform: 'translate(0, -50%)' };
-      default:
-        return { ...baseStyle, transform: 'translate(-50%, -100%)' };
-    }
   };
 
   return (
@@ -78,7 +35,7 @@ export default function Tooltip({ content, children, position = 'top' }: Tooltip
         <div
           ref={tooltipRef}
           style={getTooltipStyle()}
-          className="bg-gray-900 text-white text-xs px-2 py-1 rounded shadow-lg border border-gray-700 whitespace-nowrap"
+          className="bg-gray-900 text-white text-base px-4 py-2 rounded-lg shadow-xl border border-gray-700 whitespace-nowrap font-medium"
         >
           {content}
         </div>
@@ -86,4 +43,5 @@ export default function Tooltip({ content, children, position = 'top' }: Tooltip
     </>
   );
 }
+
 

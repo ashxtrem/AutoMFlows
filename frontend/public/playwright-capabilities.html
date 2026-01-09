@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Playwright Browser Capabilities</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .search-box {
+            margin-bottom: 20px;
+            position: sticky;
+            top: 20px;
+            z-index: 10;
+        }
+        
+        .search-box input {
+            width: 100%;
+            padding: 12px 20px;
+            font-size: 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            transition: border-color 0.3s;
+        }
+        
+        .search-box input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+        }
+        
+        thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            position: sticky;
+            top: 80px;
+            z-index: 5;
+        }
+        
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 0.95em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        td {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+            vertical-align: top;
+        }
+        
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        
+        .key-col {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            color: #667eea;
+            min-width: 200px;
+        }
+        
+        .value-col {
+            font-family: 'Courier New', monospace;
+            color: #28a745;
+            background: #f0f8f0;
+            padding: 8px 12px;
+            border-radius: 4px;
+            display: inline-block;
+            margin: 2px 0;
+            font-size: 0.9em;
+        }
+        
+        .copy-btn {
+            cursor: pointer;
+            color: #667eea;
+            text-decoration: underline;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+        
+        .copy-btn:hover {
+            color: #764ba2;
+        }
+        
+        .copy-icon-btn {
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 24px;
+            height: 24px;
+            margin-left: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f8f9fa;
+            color: #667eea;
+            transition: all 0.2s;
+            vertical-align: middle;
+        }
+        
+        .copy-icon-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .copy-icon-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .key-with-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .value-with-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .description-col {
+            color: #555;
+            line-height: 1.6;
+        }
+        
+        .type-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        .type-string { background: #e3f2fd; color: #1976d2; }
+        .type-number { background: #fff3e0; color: #f57c00; }
+        .type-boolean { background: #f3e5f5; color: #7b1fa2; }
+        .type-object { background: #e8f5e9; color: #388e3c; }
+        .type-array { background: #fce4ec; color: #c2185b; }
+        
+        .example {
+            font-size: 0.85em;
+            color: #888;
+            font-style: italic;
+            margin-top: 5px;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-size: 1.1em;
+        }
+        
+        .footer {
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #e0e0e0;
+            background: #f8f9fa;
+        }
+        
+        .copy-icon {
+            width: 14px;
+            height: 14px;
+            stroke-width: 2;
+        }
+        
+        .filter-btn {
+            padding: 8px 16px;
+            border: 2px solid #667eea;
+            background: white;
+            color: #667eea;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.2s;
+        }
+        
+        .filter-btn:hover {
+            background: #f0f4ff;
+        }
+        
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        h2 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        
+        .browser-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .browser-chromium { background: #4285f4; color: white; }
+        .browser-firefox { background: #ff7139; color: white; }
+        .browser-webkit { background: #000; color: white; }
+        .browser-all { background: #666; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎭 Playwright Browser Capabilities</h1>
+            <p>Complete reference for browser.newContext() options</p>
+        </div>
+        
+        <div class="content">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search capabilities by key, description, or type...">
+            </div>
+            
+            <table id="capabilitiesTable">
+                <thead>
+                    <tr>
+                        <th style="width: 20%;">Key</th>
+                        <th style="width: 15%;">Value Example</th>
+                        <th style="width: 10%;">Type</th>
+                        <th style="width: 55%;">Description</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Capabilities will be inserted here -->
+                </tbody>
+            </table>
+            
+            <div id="noResults" class="no-results" style="display: none;">
+                No capabilities found matching your search.
+            </div>
+            
+            <h2 style="margin-top: 40px; color: #667eea;">Browser-Specific Launch Options (browser.launch())</h2>
+            <p style="color: #666; margin-bottom: 15px;">These options are passed to the launch() method, not newContext(). They configure the browser instance itself.</p>
+            <table id="browserSpecificTable">
+                <thead>
+                    <tr>
+                        <th style="width: 20%;">Key</th>
+                        <th style="width: 15%;">Value Example</th>
+                        <th style="width: 10%;">Type</th>
+                        <th style="width: 10%;">Browser</th>
+                        <th style="width: 45%;">Description</th>
+                    </tr>
+                </thead>
+                <tbody id="browserSpecificBody">
+                    <!-- Browser-specific options will be inserted here -->
+                </tbody>
+            </table>
+            
+            <div id="noBrowserResults" class="no-results" style="display: none;">
+                No browser-specific options found matching your search.
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>Playwright Browser Context Options Reference | Click the copy buttons to copy key or value</p>
+        </div>
+    </div>
+
+    <script>
+        const capabilities = [
+            {
+                key: 'viewport',
+                value: '{"width": 1920, "height": 1080}',
+                type: 'object',
+                description: 'Sets the viewport size for the browser context. When null, uses the default viewport size.'
+            },
+            {
+                key: 'userAgent',
+                value: '"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"',
+                type: 'string',
+                description: 'Sets the user agent string for all pages in this context.'
+            },
+            {
+                key: 'locale',
+                value: '"en-US"',
+                type: 'string',
+                description: 'Sets the locale for the browser context. Affects date/time formatting, number formatting, etc.'
+            },
+            {
+                key: 'timezoneId',
+                value: '"America/New_York"',
+                type: 'string',
+                description: 'Sets the timezone for the browser context. Uses IANA timezone database names.'
+            },
+            {
+                key: 'geolocation',
+                value: '{"latitude": 40.7128, "longitude": -74.0060}',
+                type: 'object',
+                description: 'Sets the geolocation for the browser context. Used when pages request location access.'
+            },
+            {
+                key: 'permissions',
+                value: '["geolocation", "notifications"]',
+                type: 'array',
+                description: 'Grants specific permissions to all pages in this context. Common values: geolocation, notifications, camera, microphone, etc.'
+            },
+            {
+                key: 'colorScheme',
+                value: '"dark"',
+                type: 'string',
+                description: 'Sets the color scheme preference. Options: "light", "dark", or "no-preference".'
+            },
+            {
+                key: 'reducedMotion',
+                value: '"reduce"',
+                type: 'string',
+                description: 'Sets the reduced motion preference. Options: "reduce" or "no-preference".'
+            },
+            {
+                key: 'forcedColors',
+                value: '"active"',
+                type: 'string',
+                description: 'Sets the forced colors mode. Options: "active" or "none".'
+            },
+            {
+                key: 'extraHTTPHeaders',
+                value: '{"Authorization": "Bearer token123", "X-Custom-Header": "value"}',
+                type: 'object',
+                description: 'Sets extra HTTP headers that will be sent with every request made by any page in this context.'
+            },
+            {
+                key: 'httpCredentials',
+                value: '{"username": "user", "password": "pass"}',
+                type: 'object',
+                description: 'Sets HTTP authentication credentials for all pages in this context.'
+            },
+            {
+                key: 'ignoreHTTPSErrors',
+                value: 'true',
+                type: 'boolean',
+                description: 'Whether to ignore HTTPS errors when making requests. Default: false.'
+            },
+            {
+                key: 'bypassCSP',
+                value: 'true',
+                type: 'boolean',
+                description: 'Whether to bypass Content Security Policy (CSP) for all pages. Default: false.'
+            },
+            {
+                key: 'javaScriptEnabled',
+                value: 'true',
+                type: 'boolean',
+                description: 'Whether to enable JavaScript execution. Default: true.'
+            },
+            {
+                key: 'hasTouch',
+                value: 'true',
+                type: 'boolean',
+                description: 'Whether the browser context should simulate touch events. Default: false.'
+            },
+            {
+                key: 'isMobile',
+                value: 'true',
+                type: 'boolean',
+                description: 'Whether the browser context should simulate a mobile device. Default: false.'
+            },
+            {
+                key: 'deviceScaleFactor',
+                value: '2',
+                type: 'number',
+                description: 'Sets the device scale factor. Common values: 1, 2, 3. Used for high-DPI displays.'
+            },
+            {
+                key: 'screen',
+                value: '{"width": 1920, "height": 1080}',
+                type: 'object',
+                description: 'Sets the screen size for the browser context. Used for media queries.'
+            },
+            {
+                key: 'acceptDownloads',
+                value: 'true',
+                type: 'boolean',
+                description: 'Whether to automatically accept downloads. Default: true.'
+            },
+            {
+                key: 'offline',
+                value: 'false',
+                type: 'boolean',
+                description: 'Whether to simulate offline mode. Default: false.'
+            },
+            {
+                key: 'serviceWorkers',
+                value: '"allow"',
+                type: 'string',
+                description: 'Controls service worker behavior. Options: "allow" or "block". Default: "allow".'
+            },
+            {
+                key: 'recordVideo',
+                value: '{"dir": "./videos", "size": {"width": 1920, "height": 1080}}',
+                type: 'object',
+                description: 'Records video for all pages. Specify directory and optional size.'
+            },
+            {
+                key: 'recordHar',
+                value: '{"path": "./har/file.har", "urlFilter": "**/*"}',
+                type: 'object',
+                description: 'Records HTTP Archive (HAR) for all pages. Specify path and optional URL filter.'
+            },
+            {
+                key: 'storageState',
+                value: '"./storage-state.json"',
+                type: 'string',
+                description: 'Path to a file containing saved authentication state (cookies, localStorage, etc.).'
+            },
+            {
+                key: 'baseURL',
+                value: '"https://example.com"',
+                type: 'string',
+                description: 'Base URL for all pages in this context. Relative URLs will be resolved against this.'
+            },
+            {
+                key: 'proxy',
+                value: '{"server": "http://proxy.example.com:8080", "username": "user", "password": "pass"}',
+                type: 'object',
+                description: 'Sets a proxy server for all pages. Can include authentication credentials.'
+            },
+            {
+                key: 'strictSelectors',
+                value: 'true',
+                type: 'boolean',
+                description: 'Whether to use strict selector mode. Default: false.'
+            },
+            {
+                key: 'actionTimeout',
+                value: '30000',
+                type: 'number',
+                description: 'Timeout for all actions (clicks, fills, etc.) in milliseconds. Default: 30000.'
+            },
+            {
+                key: 'navigationTimeout',
+                value: '30000',
+                type: 'number',
+                description: 'Timeout for navigation operations in milliseconds. Default: 30000.'
+            },
+            {
+                key: 'trace',
+                value: '"on"',
+                type: 'string',
+                description: 'Enables tracing. Options: "on", "off", or "retain-on-failure".'
+            }
+        ];
+
+        // Browser-specific launch options (passed via launch() method, not context)
+        const browserSpecificOptions = [
+            {
+                key: 'args (Chromium)',
+                value: '["--disable-blink-features=AutomationControlled", "--no-sandbox"]',
+                type: 'array',
+                browser: 'chromium',
+                description: 'Chromium-specific command-line arguments. Common: --no-sandbox, --disable-setuid-sandbox, --disable-blink-features=AutomationControlled, --disable-dev-shm-usage, --disable-web-security'
+            },
+            {
+                key: 'firefoxUserPrefs (Firefox)',
+                value: '{"dom.webnotifications.enabled": false, "media.navigator.streams.fake": true}',
+                type: 'object',
+                browser: 'firefox',
+                description: 'Firefox-specific user preferences. Common: dom.webnotifications.enabled, media.navigator.streams.fake, privacy.trackingprotection.enabled'
+            },
+            {
+                key: 'chromiumSandbox (Chromium)',
+                value: 'false',
+                type: 'boolean',
+                browser: 'chromium',
+                description: 'Disables Chromium sandbox. Use --no-sandbox in args instead for better control.'
+            },
+            {
+                key: 'ignoreDefaultArgs (All)',
+                value: '["--enable-automation"]',
+                type: 'array',
+                browser: 'all',
+                description: 'Ignores default browser arguments. Useful for removing automation flags. Can specify exact args to ignore.'
+            },
+            {
+                key: 'slowMo (All)',
+                value: '100',
+                type: 'number',
+                browser: 'all',
+                description: 'Slows down Playwright operations by specified milliseconds. Useful for debugging. Default: 0.'
+            },
+            {
+                key: 'timeout (All)',
+                value: '30000',
+                type: 'number',
+                browser: 'all',
+                description: 'Maximum time in milliseconds to wait for browser to start. Default: 30000.'
+            },
+            {
+                key: 'channel (Chromium)',
+                value: '"chrome"',
+                type: 'string',
+                browser: 'chromium',
+                description: 'Browser distribution channel. Options: "chrome", "chrome-beta", "chrome-dev", "chrome-canary", "msedge", "msedge-beta", "msedge-dev", "msedge-canary". Uses system browser if installed.'
+            },
+            {
+                key: 'executablePath (All)',
+                value: '"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"',
+                type: 'string',
+                browser: 'all',
+                description: 'Path to browser executable. Use this to launch a specific browser installation instead of Playwright\'s bundled browser.'
+            },
+            {
+                key: 'devtools (Chromium/Firefox)',
+                value: 'true',
+                type: 'boolean',
+                browser: 'chromium,firefox',
+                description: 'Opens browser DevTools panel. Only works in non-headless mode. Default: false.'
+            },
+            {
+                key: 'downloadsPath (All)',
+                value: '"./downloads"',
+                type: 'string',
+                browser: 'all',
+                description: 'Directory where downloads are saved. Default: null (uses system temp directory).'
+            },
+            {
+                key: 'handleSIGINT (All)',
+                value: 'true',
+                type: 'boolean',
+                browser: 'all',
+                description: 'Close browser on Ctrl+C. Default: true.'
+            },
+            {
+                key: 'handleSIGTERM (All)',
+                value: 'true',
+                type: 'boolean',
+                browser: 'all',
+                description: 'Close browser on SIGTERM signal. Default: true.'
+            },
+            {
+                key: 'handleSIGHUP (All)',
+                value: 'true',
+                type: 'boolean',
+                browser: 'all',
+                description: 'Close browser on SIGHUP signal. Default: true.'
+            }
+        ];
+
+        let currentBrowserFilter = 'all';
+        
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            const noResults = document.getElementById('noResults');
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '';
+                noResults.style.display = 'block';
+                return;
+            }
+            
+            noResults.style.display = 'none';
+            tbody.innerHTML = data.map(cap => {
+                const typeClass = `type-${cap.type}`;
+                const escapedKey = cap.key.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const escapedValue = cap.value.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                return `
+                    <tr>
+                        <td class="key-col">
+                            <div class="key-with-btn">
+                                <span>${cap.key}</span>
+                                <button class="copy-icon-btn" onclick="copyKeyToClipboard('${escapedKey}', this)" title="Copy key">
+                                    <svg class="copy-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="value-with-btn">
+                                <span class="value-col">${cap.value}</span>
+                                <button class="copy-icon-btn" onclick="copyValueToClipboard('${escapedValue}', this)" title="Copy value">
+                                    <svg class="copy-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="type-badge ${typeClass}">${cap.type}</span>
+                        </td>
+                        <td class="description-col">${cap.description}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        function renderBrowserSpecificTable(data) {
+            const tbody = document.getElementById('browserSpecificBody');
+            const noResults = document.getElementById('noBrowserResults');
+            
+            // Filter by browser if needed
+            let filteredData = data;
+            if (currentBrowserFilter !== 'all') {
+                filteredData = data.filter(opt => 
+                    opt.browser === currentBrowserFilter || 
+                    opt.browser === 'all' ||
+                    (currentBrowserFilter === 'chromium' && opt.browser && opt.browser.includes('chromium'))
+                );
+            }
+            
+            if (filteredData.length === 0) {
+                tbody.innerHTML = '';
+                noResults.style.display = 'block';
+                return;
+            }
+            
+            noResults.style.display = 'none';
+            tbody.innerHTML = filteredData.map(opt => {
+                const typeClass = `type-${opt.type}`;
+                const escapedKey = opt.key.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const escapedValue = opt.value.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                const browserClass = `browser-${opt.browser === 'all' ? 'all' : opt.browser.split(',')[0]}`;
+                return `
+                    <tr>
+                        <td class="key-col">
+                            <div class="key-with-btn">
+                                <span>${opt.key}</span>
+                                <button class="copy-icon-btn" onclick="copyKeyToClipboard('${escapedKey}', this)" title="Copy key">
+                                    <svg class="copy-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="value-with-btn">
+                                <span class="value-col">${opt.value}</span>
+                                <button class="copy-icon-btn" onclick="copyValueToClipboard('${escapedValue}', this)" title="Copy value">
+                                    <svg class="copy-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                    </svg>
+                                </button>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="type-badge ${typeClass}">${opt.type}</span>
+                        </td>
+                        <td>
+                            <span class="browser-badge ${browserClass}">${opt.browser}</span>
+                        </td>
+                        <td class="description-col">${opt.description}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+        
+        function filterByBrowser(browser) {
+            currentBrowserFilter = browser;
+            
+            // Update button states
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`show${browser.charAt(0).toUpperCase() + browser.slice(1)}`).classList.add('active');
+            
+            // Re-render browser-specific table
+            const searchTerm = document.getElementById('searchInput').value;
+            const filtered = filterCapabilities(searchTerm);
+            renderTable(filtered);
+            renderBrowserSpecificTable(browserSpecificOptions);
+        }
+
+        function copyKeyToClipboard(key, button) {
+            navigator.clipboard.writeText(key).then(() => {
+                // Visual feedback
+                const originalBg = button.style.background;
+                const originalColor = button.style.color;
+                const originalBorder = button.style.borderColor;
+                
+                button.style.background = '#28a745';
+                button.style.color = 'white';
+                button.style.borderColor = '#28a745';
+                
+                setTimeout(() => {
+                    button.style.background = originalBg || '';
+                    button.style.color = originalColor || '';
+                    button.style.borderColor = originalBorder || '';
+                }, 500);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy to clipboard');
+            });
+        }
+
+        function copyValueToClipboard(value, button) {
+            // Remove quotes if it's a JSON string
+            let textToCopy = value;
+            if ((value.startsWith('"') && value.endsWith('"')) || 
+                (value.startsWith("'") && value.endsWith("'"))) {
+                textToCopy = value.slice(1, -1);
+            }
+            
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                // Visual feedback
+                const originalBg = button.style.background;
+                const originalColor = button.style.color;
+                const originalBorder = button.style.borderColor;
+                
+                button.style.background = '#28a745';
+                button.style.color = 'white';
+                button.style.borderColor = '#28a745';
+                
+                setTimeout(() => {
+                    button.style.background = originalBg || '';
+                    button.style.color = originalColor || '';
+                    button.style.borderColor = originalBorder || '';
+                }, 500);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+                alert('Failed to copy to clipboard');
+            });
+        }
+
+        function filterCapabilities(searchTerm) {
+            const term = searchTerm.toLowerCase();
+            return capabilities.filter(cap => 
+                cap.key.toLowerCase().includes(term) ||
+                cap.description.toLowerCase().includes(term) ||
+                cap.type.toLowerCase().includes(term) ||
+                cap.value.toLowerCase().includes(term)
+            );
+        }
+        
+        function filterBrowserSpecificOptions(searchTerm) {
+            const term = searchTerm.toLowerCase();
+            return browserSpecificOptions.filter(opt => 
+                opt.key.toLowerCase().includes(term) ||
+                opt.description.toLowerCase().includes(term) ||
+                opt.type.toLowerCase().includes(term) ||
+                opt.value.toLowerCase().includes(term) ||
+                opt.browser.toLowerCase().includes(term)
+            );
+        }
+
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const searchTerm = e.target.value;
+            const filtered = filterCapabilities(searchTerm);
+            const browserFiltered = filterBrowserSpecificOptions(searchTerm);
+            renderTable(filtered);
+            renderBrowserSpecificTable(browserFiltered);
+        });
+
+        // Initial render
+        renderTable(capabilities);
+        renderBrowserSpecificTable(browserSpecificOptions);
+    </script>
+</body>
+</html>
+

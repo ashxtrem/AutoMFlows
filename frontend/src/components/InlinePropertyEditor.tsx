@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { PropertyEditorType } from './PropertyEditorPopup';
 
 interface InlinePropertyEditorProps {
   label: string;
@@ -9,139 +10,42 @@ interface InlinePropertyEditorProps {
   placeholder?: string;
   min?: number;
   max?: number;
+  field?: string; // Field name for reading latest value from store
+  onOpenPopup?: (type: PropertyEditorType, label: string, value: any, onChange: (value: any) => void, placeholder?: string, min?: number, max?: number, field?: string) => void;
 }
 
-export function InlineTextInput({ label, value, onChange, placeholder }: Omit<InlinePropertyEditorProps, 'type'>) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(String(value || ''));
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setEditValue(String(value || ''));
-  }, [value]);
-
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [isEditing]);
-
-  const handleBlur = () => {
-    onChange(editValue);
-    setIsEditing(false);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleBlur();
-    } else if (e.key === 'Escape') {
-      setEditValue(String(value || ''));
-      setIsEditing(false);
+export function InlineTextInput({ label, value, onChange, placeholder, onOpenPopup, field }: Omit<InlinePropertyEditorProps, 'type'>) {
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onOpenPopup) {
+      onOpenPopup('text', label, value, onChange, placeholder, undefined, undefined, field);
     }
   };
-
-  if (isEditing) {
-    return (
-      <div className="flex items-center gap-1">
-        <span className="text-xs text-gray-400 min-w-[60px]">{label}:</span>
-        <input
-          ref={inputRef}
-          type="text"
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          className="flex-1 px-2 py-1 bg-gray-700 border border-blue-500 rounded text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-        />
-      </div>
-    );
-  }
 
   return (
     <div 
       className="flex items-center gap-1 cursor-text hover:bg-gray-700/50 rounded px-1 py-0.5"
-      onClick={(e) => {
-        e.stopPropagation();
-        setIsEditing(true);
-      }}
+      onClick={handleClick}
       onMouseDown={(e) => e.stopPropagation()}
     >
       <span className="text-xs text-gray-400 min-w-[60px]">{label}:</span>
-      <span className="text-xs text-gray-200 flex-1 truncate">{value || <span className="text-gray-500 italic">{placeholder || 'empty'}</span>}</span>
+      <span className="text-xs text-gray-200 flex-1 truncate" title={value || placeholder || 'empty'}>{value || <span className="text-gray-500 italic">{placeholder || 'empty'}</span>}</span>
     </div>
   );
 }
 
-export function InlineNumberInput({ label, value, onChange, placeholder, min, max }: Omit<InlinePropertyEditorProps, 'type'>) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(String(value || ''));
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  useEffect(() => {
-    setEditValue(String(value || ''));
-  }, [value]);
-
-  useEffect(() => {
-    if (isEditing && inputRef.current) {
-      inputRef.current.focus();
-      inputRef.current.select();
-    }
-  }, [isEditing]);
-
-  const handleBlur = () => {
-    const numValue = editValue === '' ? 0 : parseInt(editValue, 10);
-    if (!isNaN(numValue)) {
-      const finalValue = min !== undefined && numValue < min ? min : (max !== undefined && numValue > max ? max : numValue);
-      onChange(finalValue);
-      setEditValue(String(finalValue));
-    } else {
-      setEditValue(String(value || ''));
-    }
-    setIsEditing(false);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleBlur();
-    } else if (e.key === 'Escape') {
-      setEditValue(String(value || ''));
-      setIsEditing(false);
+export function InlineNumberInput({ label, value, onChange, placeholder, min, max, onOpenPopup, field }: Omit<InlinePropertyEditorProps, 'type'>) {
+  const handleClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onOpenPopup) {
+      onOpenPopup('number', label, value, onChange, placeholder, min, max, field);
     }
   };
-
-  if (isEditing) {
-    return (
-      <div className="flex items-center gap-1">
-        <span className="text-xs text-gray-400 min-w-[60px]">{label}:</span>
-        <input
-          ref={inputRef}
-          type="number"
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          min={min}
-          max={max}
-          className="flex-1 px-2 py-1 bg-gray-700 border border-blue-500 rounded text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-        />
-      </div>
-    );
-  }
 
   return (
     <div 
       className="flex items-center gap-1 cursor-text hover:bg-gray-700/50 rounded px-1 py-0.5"
-      onClick={(e) => {
-        e.stopPropagation();
-        setIsEditing(true);
-      }}
+      onClick={handleClick}
       onMouseDown={(e) => e.stopPropagation()}
     >
       <span className="text-xs text-gray-400 min-w-[60px]">{label}:</span>
@@ -209,55 +113,13 @@ export function InlineSelect({ label, value, onChange, options = [] }: Omit<Inli
   );
 }
 
-export function InlineTextarea({ label, value, onChange, placeholder }: Omit<InlinePropertyEditorProps, 'type'>) {
-  const [isEditing, setIsEditing] = useState(false);
-  const [editValue, setEditValue] = useState(String(value || ''));
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    setEditValue(String(value || ''));
-  }, [value]);
-
-  useEffect(() => {
-    if (isEditing && textareaRef.current) {
-      textareaRef.current.focus();
-      textareaRef.current.select();
-    }
-  }, [isEditing]);
-
-  const handleBlur = () => {
-    onChange(editValue);
-    setIsEditing(false);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      setEditValue(String(value || ''));
-      setIsEditing(false);
-    }
-    // Allow Enter for multiline
+export function InlineTextarea({ label, value, onChange, placeholder, onOpenPopup, field }: Omit<InlinePropertyEditorProps, 'type'>) {
+  const handleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (onOpenPopup) {
+      onOpenPopup('textarea', label, value, onChange, placeholder, undefined, undefined, field);
+    }
   };
-
-  if (isEditing) {
-    return (
-      <div className="flex flex-col gap-1">
-        <span className="text-xs text-gray-400">{label}:</span>
-        <textarea
-          ref={textareaRef}
-          value={editValue}
-          onChange={(e) => setEditValue(e.target.value)}
-          onBlur={handleBlur}
-          onKeyDown={handleKeyDown}
-          placeholder={placeholder}
-          rows={3}
-          className="w-full px-2 py-1 bg-gray-700 border border-blue-500 rounded text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-        />
-      </div>
-    );
-  }
 
   const displayValue = value || '';
   const truncatedValue = displayValue.length > 50 ? displayValue.substring(0, 50) + '...' : displayValue;
@@ -265,14 +127,11 @@ export function InlineTextarea({ label, value, onChange, placeholder }: Omit<Inl
   return (
     <div 
       className="flex flex-col gap-1 cursor-text hover:bg-gray-700/50 rounded px-1 py-0.5"
-      onClick={(e) => {
-        e.stopPropagation();
-        setIsEditing(true);
-      }}
+      onClick={handleClick}
       onMouseDown={(e) => e.stopPropagation()}
     >
       <span className="text-xs text-gray-400">{label}:</span>
-      <span className="text-xs text-gray-200 break-words">{truncatedValue || <span className="text-gray-500 italic">{placeholder || 'empty'}</span>}</span>
+      <span className="text-xs text-gray-200 break-words" title={value || placeholder || 'empty'}>{truncatedValue || <span className="text-gray-500 italic">{placeholder || 'empty'}</span>}</span>
     </div>
   );
 }

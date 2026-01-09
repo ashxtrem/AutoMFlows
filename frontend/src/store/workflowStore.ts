@@ -41,6 +41,7 @@ interface WorkflowState {
   executingNodeId: string | null;
   failedNodes: Map<string, NodeError>; // Track failed nodes with error details
   errorPopupNodeId: string | null; // Which failed node's error popup is currently shown
+  canvasReloading: boolean; // Global loader state for canvas reload
   
   // Undo/Redo
   history: WorkflowSnapshot[];
@@ -111,6 +112,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     executingNodeId: null,
     failedNodes: new Map(),
     errorPopupNodeId: null,
+    canvasReloading: false,
     history: [initialState],
     historyIndex: 0,
     maxHistorySize: 10,
@@ -387,8 +389,14 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
   },
 
   updateNodeData: (nodeId, data) => {
-    const updatedNodes = get().nodes.map((node) => {
+    // Show global loader
+    set({ canvasReloading: true });
+    
+    const state = get();
+    const updatedNodes = state.nodes.map((node) => {
       if (node.id === nodeId) {
+        // Create a completely new node object to ensure ReactFlow detects the change
+        // The spread operator creates a new reference, which ReactFlow uses for change detection
         return { 
           ...node, 
           data: { ...node.data, ...data }
@@ -396,7 +404,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
       }
       return node;
     });
-    const selectedNode = get().selectedNode;
+    const selectedNode = state.selectedNode;
     const updatedSelectedNode = selectedNode && selectedNode.id === nodeId
       ? updatedNodes.find((node) => node.id === nodeId) || null
       : selectedNode;
@@ -405,6 +413,12 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
       nodes: updatedNodes,
       selectedNode: updatedSelectedNode,
     });
+    
+    // Hide loader after a short delay to allow ReactFlow to reload
+    setTimeout(() => {
+      set({ canvasReloading: false });
+    }, 100);
+    
     // Don't auto-save to history - let calling code decide when to save
   },
 
@@ -794,7 +808,16 @@ function getDefaultNodeData(type: NodeType | string): any {
   if (Object.values(NodeType).includes(type as NodeType)) {
     const defaults: Record<NodeType, any> = {
       [NodeType.START]: {},
-      [NodeType.OPEN_BROWSER]: { headless: true, viewportWidth: 1280, viewportHeight: 720 },
+      [NodeType.OPEN_BROWSER]: { 
+        headless: true, 
+        viewportWidth: 1280, 
+        viewportHeight: 720,
+        maxWindow: true,
+        browser: 'chromium',
+        stealthMode: false,
+        capabilities: {},
+        launchOptions: {}
+      },
       [NodeType.NAVIGATE]: { url: '' },
       [NodeType.CLICK]: { selector: '', selectorType: 'css', timeout: 30000 },
       [NodeType.TYPE]: { selector: '', selectorType: 'css', text: '', timeout: 30000 },

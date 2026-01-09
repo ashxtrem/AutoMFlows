@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
+import { getContrastTextColor, getContrastRatio, meetsWCAGAA } from '../utils/colorContrast';
 
 interface ColorPickerProps {
   x: number;
@@ -161,6 +162,31 @@ export default function ColorPicker({
             onChange={(e) => setBackgroundColor(e.target.value)}
             className="w-full h-8 rounded cursor-pointer"
           />
+        </div>
+
+        {/* Text Color Preview */}
+        <div>
+          <label className="block text-xs text-gray-400 mb-2">Text Preview</label>
+          <div
+            className="w-full p-3 rounded border border-gray-600"
+            style={{ backgroundColor: backgroundColor }}
+          >
+            <div
+              className="text-sm font-medium"
+              style={{ color: getContrastTextColor(backgroundColor) }}
+            >
+              Sample Node Label
+            </div>
+            <div className="mt-2 text-xs opacity-75" style={{ color: getContrastTextColor(backgroundColor) }}>
+              Property text preview
+            </div>
+          </div>
+          <div className="mt-1 text-xs text-gray-500">
+            Text color: {getContrastTextColor(backgroundColor) === '#ffffff' ? 'White' : 'Black'}
+            {meetsWCAGAA(backgroundColor, getContrastTextColor(backgroundColor)) && (
+              <span className="ml-2 text-green-400">✓ WCAG AA compliant</span>
+            )}
+          </div>
         </div>
 
         {/* Actions */}

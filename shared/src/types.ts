@@ -43,6 +43,11 @@ export interface OpenBrowserNodeData {
   viewportWidth?: number;
   viewportHeight?: number;
   userAgent?: string;
+  maxWindow?: boolean;
+  browser?: 'chromium' | 'firefox' | 'webkit';
+  capabilities?: Record<string, any>; // Context options (browser.newContext())
+  launchOptions?: Record<string, any>; // Launch options (browser.launch())
+  stealthMode?: boolean;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
