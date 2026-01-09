@@ -34,17 +34,17 @@ export function deserializeWorkflow(workflow: Workflow): { nodes: Node[]; edges:
     id: node.id,
     type: 'custom',
     position: node.position,
-    width: node.data.width,
-    height: node.data.height,
+    width: (node.data as any).width,
+    height: (node.data as any).height,
     data: {
       ...node.data,
       type: node.type,
       // Preserve custom label if exists, otherwise use default
-      label: node.data.label || getNodeLabel(node.type),
+      label: (node.data as any).label || getNodeLabel(node.type as NodeType),
       // Preserve background color, bypass, minimized state (borderColor removed)
-      backgroundColor: node.data.backgroundColor,
-      bypass: node.data.bypass,
-      isMinimized: node.data.isMinimized,
+      backgroundColor: (node.data as any).backgroundColor,
+      bypass: (node.data as any).bypass,
+      isMinimized: (node.data as any).isMinimized,
     },
   }));
 
@@ -71,6 +71,10 @@ function getNodeLabel(type: NodeType): string {
     [NodeType.WAIT]: 'Wait',
     [NodeType.JAVASCRIPT_CODE]: 'JavaScript Code',
     [NodeType.LOOP]: 'Loop',
+    [NodeType.INT_VALUE]: 'Int Value',
+    [NodeType.STRING_VALUE]: 'String Value',
+    [NodeType.BOOLEAN_VALUE]: 'Boolean Value',
+    [NodeType.INPUT_VALUE]: 'Input Value',
   };
   return labels[type] || type;
 }

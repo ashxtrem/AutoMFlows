@@ -1,6 +1,6 @@
 import { useWorkflowStore } from '../store/workflowStore';
 import { NodeType } from '@automflows/shared';
-import { MouseEvent, useMemo } from 'react';
+import { useMemo } from 'react';
 import { frontendPluginRegistry } from '../plugins/registry';
 
 const NODE_CATEGORIES = [
@@ -81,7 +81,7 @@ export default function LeftSidebar() {
     }));
   }, []);
 
-  const handleDragStart = (e: MouseEvent<HTMLDivElement>, type: NodeType | string) => {
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>, type: NodeType | string) => {
     e.dataTransfer.setData('application/reactflow', type);
     e.dataTransfer.effectAllowed = 'move';
   };

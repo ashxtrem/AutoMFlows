@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Node } from 'reactflow';
 import { OpenBrowserNodeData } from '@automflows/shared';
 import CapabilitiesPopup from '../CapabilitiesPopup';
+import ScriptEditorPopup from '../ScriptEditorPopup';
 
 interface OpenBrowserConfigProps {
   node: Node;
@@ -11,12 +12,18 @@ interface OpenBrowserConfigProps {
 export default function OpenBrowserConfig({ node, onChange }: OpenBrowserConfigProps) {
   const data = node.data as OpenBrowserNodeData;
   const [showCapabilitiesPopup, setShowCapabilitiesPopup] = useState(false);
+  const [showScriptEditorPopup, setShowScriptEditorPopup] = useState(false);
   
   const maxWindow = data.maxWindow !== false; // Default to true
   const capabilitiesCount = data.capabilities ? Object.keys(data.capabilities).length : 0;
+  const hasScript = data.jsScript && data.jsScript.trim().length > 0;
 
   const handleCapabilitiesSave = (capabilities: Record<string, any>) => {
     onChange('capabilities', capabilities);
+  };
+
+  const handleScriptSave = (script: string) => {
+    onChange('jsScript', script);
   };
 
   return (
@@ -117,14 +124,13 @@ export default function OpenBrowserConfig({ node, onChange }: OpenBrowserConfigP
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">User Agent (Optional)</label>
-          <input
-            type="text"
-            value={data.userAgent || ''}
-            onChange={(e) => onChange('userAgent', e.target.value)}
-            placeholder="Mozilla/5.0..."
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-          />
+          <label className="block text-sm font-medium text-gray-300 mb-1">JavaScript Script (Optional)</label>
+          <button
+            onClick={() => setShowScriptEditorPopup(true)}
+            className="w-full px-3 py-2 bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded text-white text-sm transition-colors"
+          >
+            Edit JavaScript Script{hasScript ? ' (Configured)' : ''}
+          </button>
         </div>
       </div>
 
@@ -133,6 +139,14 @@ export default function OpenBrowserConfig({ node, onChange }: OpenBrowserConfigP
           node={node}
           onSave={handleCapabilitiesSave}
           onClose={() => setShowCapabilitiesPopup(false)}
+        />
+      )}
+
+      {showScriptEditorPopup && (
+        <ScriptEditorPopup
+          node={node}
+          onSave={handleScriptSave}
+          onClose={() => setShowScriptEditorPopup(false)}
         />
       )}
     </>

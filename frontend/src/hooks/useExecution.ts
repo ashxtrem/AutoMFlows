@@ -3,7 +3,6 @@ import { io, Socket } from 'socket.io-client';
 import { useWorkflowStore } from '../store/workflowStore';
 import { serializeWorkflow } from '../utils/serialization';
 import { ExecutionEventType } from '@automflows/shared';
-import { getCachedBackendPort } from '../utils/getBackendPort';
 import { validateInputConnections } from '../utils/validation';
 
 let socket: Socket | null = null;
@@ -84,11 +83,12 @@ export function useExecution() {
         case ExecutionEventType.NODE_ERROR:
           setExecutingNodeId(null);
           setExecutionStatus('error');
-          // Store node error with trace logs
+          // Store node error with trace logs and debug info
           if (event.nodeId) {
             setNodeError(event.nodeId, {
               message: event.message || 'Unknown error',
               traceLogs: event.traceLogs || [],
+              debugInfo: event.debugInfo,
             });
           }
           break;

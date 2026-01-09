@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { X, Plus, Trash2, HelpCircle, ExternalLink } from 'lucide-react';
+import { useState } from 'react';
+import { X, Plus, Trash2, HelpCircle } from 'lucide-react';
 import { Node } from 'reactflow';
 import { OpenBrowserNodeData } from '@automflows/shared';
 
@@ -158,7 +158,7 @@ export default function CapabilitiesPopup({ node, onSave, onClose }: Capabilitie
           </div>
           
           <div className="space-y-3">
-            {capabilities.map((row, index) => (
+            {capabilities.map((row) => (
               <div key={row.id} className="flex items-center gap-2 p-2 border border-gray-700 rounded" style={{ backgroundColor: row.type === 'launch' ? 'rgba(147, 51, 234, 0.1)' : 'rgba(59, 130, 246, 0.1)' }}>
                 <select
                   value={row.type}

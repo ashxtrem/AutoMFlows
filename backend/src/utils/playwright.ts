@@ -81,12 +81,12 @@ export class PlaywrightManager {
   async launch(
     headless: boolean = true,
     viewport?: { width: number; height: number },
-    userAgent?: string,
     browserType: BrowserType = 'chromium',
     maxWindow: boolean = true,
     capabilities?: Record<string, any>,
     stealthMode: boolean = false,
-    launchOptions?: Record<string, any>
+    launchOptions?: Record<string, any>,
+    jsScript?: string
   ): Promise<Page> {
     if (this.browser) {
       throw new Error('Browser already launched');
@@ -131,20 +131,109 @@ export class PlaywrightManager {
 
     const browserContextOptions: any = {};
     
-    // Set viewport based on maxWindow setting
-    if (maxWindow && !headless) {
-      // When maxWindow is true and not headless, use large viewport to simulate maximized window
-      // Use common large screen size (1920x1080) or get actual screen size if available
+    // Helper function to remove comments from JavaScript code
+    const removeComments = (code: string): string => {
+      // Remove single-line comments (// ...)
+      let result = code.replace(/\/\/.*$/gm, '');
+      // Remove multi-line comments (/* ... */)
+      result = result.replace(/\/\*[\s\S]*?\*\//g, '');
+      return result.trim();
+    };
+    
+    // Detect mobile script by checking for mobile user agent patterns in executable code only
+    // (ignore commented code)
+    const executableCode = jsScript ? removeComments(jsScript) : '';
+    const isMobileScript = executableCode && executableCode.length > 0 && (
+      executableCode.includes('Mobile') || 
+      executableCode.includes('iPhone') || 
+      executableCode.includes('Android') ||
+      executableCode.toLowerCase().includes('mobile')
+    );
+    
+    // Extract viewport dimensions from script if defined (look for innerWidth/innerHeight patterns)
+    // Pattern: innerWidth: 412 or innerWidth = 412 or get: () => 412
+    // Use executable code (without comments) for extraction
+    let scriptViewport: { width: number; height: number } | undefined;
+    const codeToAnalyze = executableCode || jsScript || '';
+    if (codeToAnalyze) {
+      // Try multiple patterns to extract width
+      // Priority: Object.defineProperty pattern first, then simpler patterns
+      const widthPatterns = [
+        /innerWidth['"]?\s*,\s*\{[^}]*get:\s*\(\)\s*=>\s*(\d+)/, // Object.defineProperty(window, 'innerWidth', { get: () => 412 })
+        /innerWidth['"]?\s*[:=]\s*(\d+)/, // innerWidth: 412 or innerWidth = 412
+        /innerWidth['"]?\s*=>\s*(\d+)/, // innerWidth => 412
+        /get:\s*\(\)\s*=>\s*(\d+).*\/\/.*Mobile width/i,
+        /get:\s*\(\)\s*=>\s*(\d+).*\/\/.*width/i
+      ];
+      
+      // Try multiple patterns to extract height
+      const heightPatterns = [
+        /innerHeight['"]?\s*,\s*\{[^}]*get:\s*\(\)\s*=>\s*(\d+)/, // Object.defineProperty(window, 'innerHeight', { get: () => 915 })
+        /innerHeight['"]?\s*[:=]\s*(\d+)/, // innerHeight: 915 or innerHeight = 915
+        /innerHeight['"]?\s*=>\s*(\d+)/, // innerHeight => 915
+        /get:\s*\(\)\s*=>\s*(\d+).*\/\/.*Mobile height/i,
+        /get:\s*\(\)\s*=>\s*(\d+).*\/\/.*height/i
+      ];
+      
+      // Also try a more flexible pattern for Object.defineProperty that handles nested braces
+      const widthMatchDefineProp = codeToAnalyze.match(/innerWidth['"]?\s*,\s*\{[\s\S]*?get:\s*\(\)\s*=>\s*(\d+)/);
+      const heightMatchDefineProp = codeToAnalyze.match(/innerHeight['"]?\s*,\s*\{[\s\S]*?get:\s*\(\)\s*=>\s*(\d+)/);
+      
+      // Use Object.defineProperty matches if found, otherwise try other patterns
+      let widthMatch: RegExpMatchArray | null = widthMatchDefineProp;
+      let heightMatch: RegExpMatchArray | null = heightMatchDefineProp;
+      
+      if (!widthMatch) {
+        for (const pattern of widthPatterns) {
+          widthMatch = codeToAnalyze.match(pattern);
+          if (widthMatch) break;
+        }
+      }
+      
+      if (!heightMatch) {
+        for (const pattern of heightPatterns) {
+          heightMatch = codeToAnalyze.match(pattern);
+          if (heightMatch) break;
+        }
+      }
+      
+      // Also check for screen.width/height patterns
+      if (!widthMatch) {
+        widthMatch = codeToAnalyze.match(/screen['"]?\.width['"]?\s*[:=]\s*(\d+)/);
+      }
+      if (!heightMatch) {
+        heightMatch = codeToAnalyze.match(/screen['"]?\.height['"]?\s*[:=]\s*(\d+)/);
+      }
+      
+      if (widthMatch && heightMatch) {
+        scriptViewport = {
+          width: parseInt(widthMatch[1], 10),
+          height: parseInt(heightMatch[1], 10)
+        };
+      }
+    }
+    
+    // Set viewport based on maxWindow setting and mobile script detection
+    if (isMobileScript && scriptViewport) {
+      // If mobile script with explicit viewport dimensions in script, use those (highest priority)
+      browserContextOptions.viewport = scriptViewport;
+    } else if (isMobileScript && viewport && viewport.width < 800) {
+      // If mobile script and viewport is already mobile-sized, use it
+      browserContextOptions.viewport = viewport;
+    } else if (isMobileScript && !viewport) {
+      // If mobile script but no viewport specified, use default mobile dimensions
+      browserContextOptions.viewport = { width: 412, height: 915 };
+    } else if (maxWindow && !headless && !isMobileScript) {
+      // When maxWindow is true and not headless and not mobile, use large viewport
       browserContextOptions.viewport = { width: 1920, height: 1080 };
     } else if (!maxWindow && viewport) {
       // When maxWindow is false, use provided viewport
       browserContextOptions.viewport = viewport;
+    } else if (isMobileScript && viewport && viewport.width >= 800) {
+      // If mobile script but viewport is desktop-sized, override with mobile dimensions from script or default
+      browserContextOptions.viewport = scriptViewport || { width: 412, height: 915 };
     }
     // If maxWindow is true and headless, don't set viewport (let Playwright use default)
-    
-    if (userAgent) {
-      browserContextOptions.userAgent = userAgent;
-    }
 
     // Apply capabilities to context options
     if (capabilities && Object.keys(capabilities).length > 0) {
@@ -156,6 +245,16 @@ export class PlaywrightManager {
     // Apply stealth mode if enabled
     if (stealthMode) {
       await this.applyStealthMode(this.context);
+    }
+
+    // Inject custom JavaScript script if provided
+    if (jsScript && jsScript.trim().length > 0) {
+      try {
+        await this.context.addInitScript(jsScript);
+      } catch (error: any) {
+        // Log warning but don't fail browser launch
+        console.warn('Failed to inject JavaScript script:', error.message);
+      }
     }
 
     this.page = await this.context.newPage();

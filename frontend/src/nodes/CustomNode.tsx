@@ -138,7 +138,9 @@ function ResizeHandle({ onResize }: ResizeHandleProps) {
   );
 }
 
-export default function CustomNode({ id, data, selected, width, height }: NodeProps) {
+export default function CustomNode({ id, data, selected }: NodeProps) {
+  const width = (data as any).width;
+  const height = (data as any).height;
   // State for capabilities popup (only used for OPEN_BROWSER nodes)
   const [showCapabilitiesPopup, setShowCapabilitiesPopup] = useState(false);
   
@@ -218,7 +220,7 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
   
   // Force re-render when node data changes by using a state that tracks data changes
   // This ensures ReactFlow re-renders CustomNode even when it memoizes nodes
-  const [dataVersion, setDataVersion] = useState(0);
+  const [, setDataVersion] = useState(0);
   const lastDataVersionRef = useRef<string>('');
   
   // Create a version key from important data fields to detect changes
@@ -326,10 +328,6 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
   const hasDriverConnection = edgesRaw.some(e => e.target === id && e.targetHandle === 'driver');
   const hasOutputConnection = edgesRaw.some(e => e.source === id && e.sourceHandle === 'output');
   
-  // Get property input connections
-  const inputConnections = stableData._inputConnections || {};
-  const propertyInputHandles = Object.keys(inputConnections).filter(prop => inputConnections[prop]?.isInput === true);
-
   const currentWidth = width || stableData.width || 200;
   const currentHeight = height || stableData.height || undefined;
   // Use node-specific data from store selector to ensure we always get latest values
@@ -367,7 +365,7 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
     } else {
       // Plugin nodes
       const pluginNode = frontendPluginRegistry.getPluginNode(nodeType);
-      hasProps = pluginNode && pluginNode.definition.defaultData !== undefined;
+      hasProps = !!(pluginNode && pluginNode.definition.defaultData !== undefined);
       if (hasProps && pluginNode?.definition.defaultData) {
         propertyCount = Object.keys(pluginNode.definition.defaultData).length;
       }
@@ -464,28 +462,13 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
     });
   }, []);
 
-  // Helper to create popup handler with field name
-  const createPopupHandler = useCallback((field: string) => {
-    return (
-      type: PropertyEditorType,
-      label: string,
-      value: any,
-      onChange: (value: any) => void,
-      placeholder?: string,
-      min?: number,
-      max?: number
-    ) => {
-      handleOpenPopup(type, label, value, onChange, placeholder, min, max, field);
-    };
-  }, [handleOpenPopup]);
-
   // Helper to check if property is converted to input
   const isPropertyInput = useCallback((propertyName: string) => {
     return isPropertyInputConnection(renderData, propertyName);
   }, [renderData]);
 
   // Helper to render property with conditional input handle
-  const renderPropertyRow = useCallback((propertyName: string, propertyElement: React.ReactNode, propertyIndex: number) => {
+  const renderPropertyRow = useCallback((propertyName: string, propertyElement: React.ReactNode, _propertyIndex: number) => {
     const isInput = isPropertyInput(propertyName);
     const handleId = getPropertyInputHandleId(propertyName);
     // Use filtered edges instead of full edges array
@@ -606,6 +589,55 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
                   onOpenPopup={handleOpenPopup}
                 />
               ), 3)}
+              {renderData.waitForSelector && renderPropertyRow('waitForSelector', (
+                <InlineTextInput
+                  label={renderData.waitAfterOperation ? "Wait After: Selector" : "Wait Before: Selector"}
+                  value={renderData.waitForSelector || ''}
+                  onChange={(value) => handlePropertyChange('waitForSelector', value)}
+                  placeholder=".my-class"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 4)}
+              {renderData.waitForSelector && renderPropertyRow('waitForSelectorType', (
+                <InlineSelect
+                  label="Selector Type"
+                  value={renderData.waitForSelectorType || 'css'}
+                  onChange={(value) => handlePropertyChange('waitForSelectorType', value)}
+                  options={[
+                    { label: 'CSS', value: 'css' },
+                    { label: 'XPath', value: 'xpath' },
+                  ]}
+                />
+              ), 5)}
+              {renderData.waitForUrl && renderPropertyRow('waitForUrl', (
+                <InlineTextInput
+                  label={renderData.waitAfterOperation ? "Wait After: URL" : "Wait Before: URL"}
+                  value={renderData.waitForUrl || ''}
+                  onChange={(value) => handlePropertyChange('waitForUrl', value)}
+                  placeholder="/pattern/ or exact-url"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 6)}
+              {renderData.waitForCondition && renderPropertyRow('waitForCondition', (
+                <InlineTextarea
+                  label={renderData.waitAfterOperation ? "Wait After: Condition" : "Wait Before: Condition"}
+                  value={renderData.waitForCondition || ''}
+                  onChange={(value) => handlePropertyChange('waitForCondition', value)}
+                  placeholder="() => document.querySelector('.loaded')"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 7)}
+              {(renderData.waitForSelector || renderData.waitForUrl || renderData.waitForCondition) && renderPropertyRow('waitStrategy', (
+                <InlineSelect
+                  label="Wait Strategy"
+                  value={renderData.waitStrategy || 'parallel'}
+                  onChange={(value) => handlePropertyChange('waitStrategy', value)}
+                  options={[
+                    { label: 'Parallel', value: 'parallel' },
+                    { label: 'Sequential', value: 'sequential' },
+                  ]}
+                />
+              ), 8)}
             </div>
           );
         
@@ -641,6 +673,75 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
                   onOpenPopup={handleOpenPopup}
                 />
               ), 2)}
+              {renderData.waitForSelector && renderPropertyRow('waitForSelector', (
+                <InlineTextInput
+                  label={renderData.waitAfterOperation ? "Wait After: Selector" : "Wait Before: Selector"}
+                  value={renderData.waitForSelector || ''}
+                  onChange={(value) => handlePropertyChange('waitForSelector', value)}
+                  placeholder=".my-class"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 3)}
+              {renderData.waitForSelector && renderPropertyRow('waitForSelectorType', (
+                <InlineSelect
+                  label="Selector Type"
+                  value={renderData.waitForSelectorType || 'css'}
+                  onChange={(value) => handlePropertyChange('waitForSelectorType', value)}
+                  options={[
+                    { label: 'CSS', value: 'css' },
+                    { label: 'XPath', value: 'xpath' },
+                  ]}
+                />
+              ), 4)}
+              {renderData.waitForUrl && renderPropertyRow('waitForUrl', (
+                <InlineTextInput
+                  label={renderData.waitAfterOperation ? "Wait After: URL" : "Wait Before: URL"}
+                  value={renderData.waitForUrl || ''}
+                  onChange={(value) => handlePropertyChange('waitForUrl', value)}
+                  placeholder="/pattern/ or exact-url"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 5)}
+              {renderData.waitForCondition && renderPropertyRow('waitForCondition', (
+                <InlineTextarea
+                  label={renderData.waitAfterOperation ? "Wait After: Condition" : "Wait Before: Condition"}
+                  value={renderData.waitForCondition || ''}
+                  onChange={(value) => handlePropertyChange('waitForCondition', value)}
+                  placeholder="() => document.querySelector('.loaded')"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 6)}
+              {(renderData.waitForSelector || renderData.waitForUrl || renderData.waitForCondition) && renderPropertyRow('waitStrategy', (
+                <InlineSelect
+                  label="Wait Strategy"
+                  value={renderData.waitStrategy || 'parallel'}
+                  onChange={(value) => handlePropertyChange('waitStrategy', value)}
+                  options={[
+                    { label: 'Parallel', value: 'parallel' },
+                    { label: 'Sequential', value: 'sequential' },
+                  ]}
+                />
+              ), 7)}
+              {renderData.retryEnabled && renderPropertyRow('retryStrategy', (
+                <InlineSelect
+                  label="Retry Strategy"
+                  value={renderData.retryStrategy || 'count'}
+                  onChange={(value) => handlePropertyChange('retryStrategy', value)}
+                  options={[
+                    { label: 'Count', value: 'count' },
+                    { label: 'Until Condition', value: 'untilCondition' },
+                  ]}
+                />
+              ), 8)}
+              {renderData.retryEnabled && renderData.retryStrategy === 'count' && renderPropertyRow('retryCount', (
+                <InlineNumberInput
+                  label="Retry Count"
+                  value={renderData.retryCount || 3}
+                  onChange={(value) => handlePropertyChange('retryCount', value)}
+                  placeholder="3"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 9)}
             </div>
           );
         
@@ -685,6 +786,75 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
                   onOpenPopup={handleOpenPopup}
                 />
               ), 3)}
+              {renderData.waitForSelector && renderPropertyRow('waitForSelector', (
+                <InlineTextInput
+                  label="Wait Selector"
+                  value={renderData.waitForSelector || ''}
+                  onChange={(value) => handlePropertyChange('waitForSelector', value)}
+                  placeholder=".my-class"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 4)}
+              {renderData.waitForSelector && renderPropertyRow('waitForSelectorType', (
+                <InlineSelect
+                  label="Wait Selector Type"
+                  value={renderData.waitForSelectorType || 'css'}
+                  onChange={(value) => handlePropertyChange('waitForSelectorType', value)}
+                  options={[
+                    { label: 'CSS', value: 'css' },
+                    { label: 'XPath', value: 'xpath' },
+                  ]}
+                />
+              ), 5)}
+              {renderData.waitForUrl && renderPropertyRow('waitForUrl', (
+                <InlineTextInput
+                  label="Wait URL"
+                  value={renderData.waitForUrl || ''}
+                  onChange={(value) => handlePropertyChange('waitForUrl', value)}
+                  placeholder="/pattern/ or exact-url"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 6)}
+              {renderData.waitForCondition && renderPropertyRow('waitForCondition', (
+                <InlineTextarea
+                  label="Wait Condition"
+                  value={renderData.waitForCondition || ''}
+                  onChange={(value) => handlePropertyChange('waitForCondition', value)}
+                  placeholder="() => document.querySelector('.loaded')"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 7)}
+              {(renderData.waitForSelector || renderData.waitForUrl || renderData.waitForCondition) && renderPropertyRow('waitStrategy', (
+                <InlineSelect
+                  label="Wait Strategy"
+                  value={renderData.waitStrategy || 'parallel'}
+                  onChange={(value) => handlePropertyChange('waitStrategy', value)}
+                  options={[
+                    { label: 'Parallel', value: 'parallel' },
+                    { label: 'Sequential', value: 'sequential' },
+                  ]}
+                />
+              ), 8)}
+              {renderData.retryEnabled && renderPropertyRow('retryStrategy', (
+                <InlineSelect
+                  label="Retry Strategy"
+                  value={renderData.retryStrategy || 'count'}
+                  onChange={(value) => handlePropertyChange('retryStrategy', value)}
+                  options={[
+                    { label: 'Count', value: 'count' },
+                    { label: 'Until Condition', value: 'untilCondition' },
+                  ]}
+                />
+              ), 9)}
+              {renderData.retryEnabled && renderData.retryStrategy === 'count' && renderPropertyRow('retryCount', (
+                <InlineNumberInput
+                  label="Retry Count"
+                  value={renderData.retryCount || 3}
+                  onChange={(value) => handlePropertyChange('retryCount', value)}
+                  placeholder="3"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 10)}
             </div>
           );
         
@@ -729,6 +899,75 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
                   onOpenPopup={handleOpenPopup}
                 />
               ), 3)}
+              {renderData.waitForSelector && renderPropertyRow('waitForSelector', (
+                <InlineTextInput
+                  label="Wait Selector"
+                  value={renderData.waitForSelector || ''}
+                  onChange={(value) => handlePropertyChange('waitForSelector', value)}
+                  placeholder=".my-class"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 4)}
+              {renderData.waitForSelector && renderPropertyRow('waitForSelectorType', (
+                <InlineSelect
+                  label="Wait Selector Type"
+                  value={renderData.waitForSelectorType || 'css'}
+                  onChange={(value) => handlePropertyChange('waitForSelectorType', value)}
+                  options={[
+                    { label: 'CSS', value: 'css' },
+                    { label: 'XPath', value: 'xpath' },
+                  ]}
+                />
+              ), 5)}
+              {renderData.waitForUrl && renderPropertyRow('waitForUrl', (
+                <InlineTextInput
+                  label="Wait URL"
+                  value={renderData.waitForUrl || ''}
+                  onChange={(value) => handlePropertyChange('waitForUrl', value)}
+                  placeholder="/pattern/ or exact-url"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 6)}
+              {renderData.waitForCondition && renderPropertyRow('waitForCondition', (
+                <InlineTextarea
+                  label="Wait Condition"
+                  value={renderData.waitForCondition || ''}
+                  onChange={(value) => handlePropertyChange('waitForCondition', value)}
+                  placeholder="() => document.querySelector('.loaded')"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 7)}
+              {(renderData.waitForSelector || renderData.waitForUrl || renderData.waitForCondition) && renderPropertyRow('waitStrategy', (
+                <InlineSelect
+                  label="Wait Strategy"
+                  value={renderData.waitStrategy || 'parallel'}
+                  onChange={(value) => handlePropertyChange('waitStrategy', value)}
+                  options={[
+                    { label: 'Parallel', value: 'parallel' },
+                    { label: 'Sequential', value: 'sequential' },
+                  ]}
+                />
+              ), 8)}
+              {renderData.retryEnabled && renderPropertyRow('retryStrategy', (
+                <InlineSelect
+                  label="Retry Strategy"
+                  value={renderData.retryStrategy || 'count'}
+                  onChange={(value) => handlePropertyChange('retryStrategy', value)}
+                  options={[
+                    { label: 'Count', value: 'count' },
+                    { label: 'Until Condition', value: 'untilCondition' },
+                  ]}
+                />
+              ), 9)}
+              {renderData.retryEnabled && renderData.retryStrategy === 'count' && renderPropertyRow('retryCount', (
+                <InlineNumberInput
+                  label="Retry Count"
+                  value={renderData.retryCount || 3}
+                  onChange={(value) => handlePropertyChange('retryCount', value)}
+                  placeholder="3"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 10)}
             </div>
           );
         
@@ -751,6 +990,75 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
                   onOpenPopup={handleOpenPopup}
                 />
               ), 1)}
+              {renderData.waitForSelector && renderPropertyRow('waitForSelector', (
+                <InlineTextInput
+                  label="Wait Selector"
+                  value={renderData.waitForSelector || ''}
+                  onChange={(value) => handlePropertyChange('waitForSelector', value)}
+                  placeholder=".my-class"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 2)}
+              {renderData.waitForSelector && renderPropertyRow('waitForSelectorType', (
+                <InlineSelect
+                  label="Wait Selector Type"
+                  value={renderData.waitForSelectorType || 'css'}
+                  onChange={(value) => handlePropertyChange('waitForSelectorType', value)}
+                  options={[
+                    { label: 'CSS', value: 'css' },
+                    { label: 'XPath', value: 'xpath' },
+                  ]}
+                />
+              ), 3)}
+              {renderData.waitForUrl && renderPropertyRow('waitForUrl', (
+                <InlineTextInput
+                  label="Wait URL"
+                  value={renderData.waitForUrl || ''}
+                  onChange={(value) => handlePropertyChange('waitForUrl', value)}
+                  placeholder="/pattern/ or exact-url"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 4)}
+              {renderData.waitForCondition && renderPropertyRow('waitForCondition', (
+                <InlineTextarea
+                  label="Wait Condition"
+                  value={renderData.waitForCondition || ''}
+                  onChange={(value) => handlePropertyChange('waitForCondition', value)}
+                  placeholder="() => document.querySelector('.loaded')"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 5)}
+              {(renderData.waitForSelector || renderData.waitForUrl || renderData.waitForCondition) && renderPropertyRow('waitStrategy', (
+                <InlineSelect
+                  label="Wait Strategy"
+                  value={renderData.waitStrategy || 'parallel'}
+                  onChange={(value) => handlePropertyChange('waitStrategy', value)}
+                  options={[
+                    { label: 'Parallel', value: 'parallel' },
+                    { label: 'Sequential', value: 'sequential' },
+                  ]}
+                />
+              ), 6)}
+              {renderData.retryEnabled && renderPropertyRow('retryStrategy', (
+                <InlineSelect
+                  label="Retry Strategy"
+                  value={renderData.retryStrategy || 'count'}
+                  onChange={(value) => handlePropertyChange('retryStrategy', value)}
+                  options={[
+                    { label: 'Count', value: 'count' },
+                    { label: 'Until Condition', value: 'untilCondition' },
+                  ]}
+                />
+              ), 7)}
+              {renderData.retryEnabled && renderData.retryStrategy === 'count' && renderPropertyRow('retryCount', (
+                <InlineNumberInput
+                  label="Retry Count"
+                  value={renderData.retryCount || 3}
+                  onChange={(value) => handlePropertyChange('retryCount', value)}
+                  placeholder="3"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 8)}
             </div>
           );
         
@@ -765,6 +1073,8 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
                   options={[
                     { label: 'Timeout', value: 'timeout' },
                     { label: 'Selector', value: 'selector' },
+                    { label: 'URL Pattern', value: 'url' },
+                    { label: 'JavaScript Condition', value: 'condition' },
                   ]}
                 />
               ), 0)}
@@ -778,7 +1088,7 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
                     onOpenPopup={handleOpenPopup}
                   />
                 ), 1)
-              ) : (
+              ) : renderData.waitType === 'selector' ? (
                 <>
                   {renderPropertyRow('selectorType', (
                     <InlineSelect
@@ -810,7 +1120,69 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
                     />
                   ), 3)}
                 </>
+              ) : renderData.waitType === 'url' ? (
+                <>
+                  {renderPropertyRow('value', (
+                    <InlineTextInput
+                      label="URL Pattern"
+                      value={typeof renderData.value === 'string' ? renderData.value : ''}
+                      onChange={(value) => handlePropertyChange('value', value)}
+                      placeholder="/pattern/ or exact-url"
+                      onOpenPopup={handleOpenPopup}
+                    />
+                  ), 1)}
+                  {renderPropertyRow('timeout', (
+                    <InlineNumberInput
+                      label="Timeout"
+                      value={renderData.timeout || 30000}
+                      onChange={(value) => handlePropertyChange('timeout', value)}
+                      placeholder="30000"
+                      onOpenPopup={handleOpenPopup}
+                    />
+                  ), 2)}
+                </>
+              ) : (
+                <>
+                  {renderPropertyRow('value', (
+                    <InlineTextarea
+                      label="Condition"
+                      value={typeof renderData.value === 'string' ? renderData.value : ''}
+                      onChange={(value) => handlePropertyChange('value', value)}
+                      placeholder="() => document.querySelector('.loaded')"
+                      onOpenPopup={handleOpenPopup}
+                    />
+                  ), 1)}
+                  {renderPropertyRow('timeout', (
+                    <InlineNumberInput
+                      label="Timeout"
+                      value={renderData.timeout || 30000}
+                      onChange={(value) => handlePropertyChange('timeout', value)}
+                      placeholder="30000"
+                      onOpenPopup={handleOpenPopup}
+                    />
+                  ), 2)}
+                </>
               )}
+              {renderData.retryEnabled && renderPropertyRow('retryStrategy', (
+                <InlineSelect
+                  label="Retry Strategy"
+                  value={renderData.retryStrategy || 'count'}
+                  onChange={(value) => handlePropertyChange('retryStrategy', value)}
+                  options={[
+                    { label: 'Count', value: 'count' },
+                    { label: 'Until Condition', value: 'untilCondition' },
+                  ]}
+                />
+              ), 3)}
+              {renderData.retryEnabled && renderData.retryStrategy === 'count' && renderPropertyRow('retryCount', (
+                <InlineNumberInput
+                  label="Retry Count"
+                  value={renderData.retryCount || 3}
+                  onChange={(value) => handlePropertyChange('retryCount', value)}
+                  placeholder="3"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 4)}
             </div>
           );
         
@@ -824,7 +1196,7 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
                   onChange={(value) => handlePropertyChange('code', value)}
                   placeholder="// Your code here"
                   field="code"
-                  onOpenPopup={(type, label, value, onChange, placeholder, min, max, field) => {
+                  onOpenPopup={(_type, label, value, onChange, placeholder, min, max, field) => {
                     handleOpenPopup('code', label, value, onChange, placeholder, min, max, field);
                   }}
                 />
@@ -930,15 +1302,6 @@ export default function CustomNode({ id, data, selected, width, height }: NodePr
                     )}
                   </button>
                 </div>
-                {renderPropertyRow('userAgent', (
-                  <InlineTextInput
-                    label="User Agent"
-                    value={browserData.userAgent || ''}
-                    onChange={(value) => handlePropertyChange('userAgent', value)}
-                    placeholder="Mozilla/5.0... (optional)"
-                    onOpenPopup={handleOpenPopup}
-                  />
-                ), 6)}
               </div>
             </>
           );

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
-import { getContrastTextColor, getContrastRatio, meetsWCAGAA } from '../utils/colorContrast';
+import { getContrastTextColor, meetsWCAGAA } from '../utils/colorContrast';
 
 interface ColorPickerProps {
   x: number;

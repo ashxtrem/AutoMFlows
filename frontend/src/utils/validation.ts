@@ -18,7 +18,6 @@ export function validateInputConnections(nodes: Node[], edges: Edge[]): Validati
   for (const node of nodes) {
     const nodeType = node.data.type;
     const properties = getNodeProperties(nodeType);
-    const inputConnections = node.data._inputConnections || {};
 
     for (const property of properties) {
       // Check if property is converted to input

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Node, Edge, Connection, addEdge, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange } from 'reactflow';
-import { NodeType, PropertyDataType } from '@automflows/shared';
+import { NodeType, PropertyDataType, PageDebugInfo } from '@automflows/shared';
 import { frontendPluginRegistry } from '../plugins/registry';
 import { getNodeProperties, getPropertyInputHandleId } from '../utils/nodeProperties';
 
@@ -31,6 +31,7 @@ interface WorkflowSnapshot {
 interface NodeError {
   message: string;
   traceLogs: string[];
+  debugInfo?: PageDebugInfo;
 }
 
 interface WorkflowState {
@@ -790,6 +791,7 @@ function getNodeLabel(type: NodeType | string): string {
       [NodeType.INT_VALUE]: 'Int Value',
       [NodeType.STRING_VALUE]: 'String Value',
       [NodeType.BOOLEAN_VALUE]: 'Boolean Value',
+      [NodeType.INPUT_VALUE]: 'Input Value',
     };
     return labels[type as NodeType] || type;
   }

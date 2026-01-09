@@ -6,6 +6,7 @@ import { ContextManager } from './context';
 import { PlaywrightManager } from '../utils/playwright';
 import * as nodeHandlers from '../nodes';
 import { TypeConverter } from '../utils/typeConverter';
+import { PageDebugHelper } from '../utils/pageDebugHelper';
 
 export class Executor {
   private executionId: string;
@@ -142,11 +143,31 @@ export class Executor {
           // Get trace logs for this node
           const traceLogs = this.nodeTraceLogs.get(nodeId) || [];
           
+          // Capture debug info for UI nodes
+          let debugInfo;
+          if (this.isUINode(node)) {
+            try {
+              const page = this.context.getPage();
+              if (page) {
+                const selectorInfo = this.extractSelectorInfo(node);
+                debugInfo = await PageDebugHelper.captureDebugInfo(
+                  page,
+                  selectorInfo.selector,
+                  selectorInfo.selectorType || 'css'
+                );
+              }
+            } catch (debugError: any) {
+              // Don't fail the error reporting if debug capture fails
+              console.warn(`Failed to capture debug info for node ${nodeId}: ${debugError.message}`);
+            }
+          }
+          
           this.emitEvent({
             type: ExecutionEventType.NODE_ERROR,
             nodeId,
             message: error.message,
             traceLogs: traceLogs,
+            debugInfo: debugInfo,
             timestamp: Date.now(),
           });
           throw error;
@@ -210,6 +231,83 @@ export class Executor {
         this.nodeTraceLogs.set(this.currentNodeId, logs);
       }
     }
+  }
+
+  /**
+   * Check if a node is a UI node that uses selectors
+   */
+  private isUINode(node: BaseNode): boolean {
+    const nodeType = node.type;
+    const nodeData = node.data as any;
+
+    // Built-in UI nodes
+    if (nodeType === NodeType.CLICK || 
+        nodeType === NodeType.TYPE || 
+        nodeType === NodeType.GET_TEXT || 
+        nodeType === NodeType.SCREENSHOT) {
+      return true;
+    }
+
+    // Navigate node with waitForSelector
+    if (nodeType === NodeType.NAVIGATE && nodeData?.waitForSelector) {
+      return true;
+    }
+
+    // Wait node with selector waitType
+    if (nodeType === NodeType.WAIT && nodeData?.waitType === 'selector') {
+      return true;
+    }
+
+    // Plugin nodes that have selector property
+    if (nodeData?.selector) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Extract selector information from node data
+   */
+  private extractSelectorInfo(node: BaseNode): { selector?: string; selectorType?: 'css' | 'xpath' } {
+    const nodeData = node.data as any;
+    const nodeType = node.type;
+
+    // Built-in nodes with selector property
+    if (nodeType === NodeType.CLICK || 
+        nodeType === NodeType.TYPE || 
+        nodeType === NodeType.GET_TEXT) {
+      return {
+        selector: nodeData?.selector,
+        selectorType: nodeData?.selectorType || 'css',
+      };
+    }
+
+    // Navigate node with waitForSelector
+    if (nodeType === NodeType.NAVIGATE && nodeData?.waitForSelector) {
+      return {
+        selector: nodeData.waitForSelector,
+        selectorType: nodeData.waitForSelectorType || 'css',
+      };
+    }
+
+    // Wait node with selector waitType
+    if (nodeType === NodeType.WAIT && nodeData?.waitType === 'selector') {
+      return {
+        selector: typeof nodeData.value === 'string' ? nodeData.value : undefined,
+        selectorType: nodeData.selectorType || 'css',
+      };
+    }
+
+    // Plugin nodes
+    if (nodeData?.selector) {
+      return {
+        selector: nodeData.selector,
+        selectorType: nodeData.selectorType || 'css',
+      };
+    }
+
+    return {};
   }
 
   /**

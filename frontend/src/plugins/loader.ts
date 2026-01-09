@@ -1,5 +1,5 @@
-import { PluginMetadata, PluginNodeDefinition } from '@automflows/shared';
-import { FrontendPlugin, LoadedPluginNode, PluginConfigComponentProps } from './types';
+import { PluginMetadata } from '@automflows/shared';
+import { FrontendPlugin, LoadedPluginNode } from './types';
 import { frontendPluginRegistry } from './registry';
 
 export async function loadPlugins(backendPort: number): Promise<void> {

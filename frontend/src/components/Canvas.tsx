@@ -22,10 +22,10 @@ const edgeTypes = {
 
 
 function CanvasInner() {
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setSelectedNode, executingNodeId, onConnectStart, onConnectEnd, onEdgeUpdate, failedNodes, showErrorPopupForNode, selectedNode } = useWorkflowStore();
+  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setSelectedNode, onConnectStart, onConnectEnd, onEdgeUpdate, failedNodes, showErrorPopupForNode } = useWorkflowStore();
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useReactFlow();
-  const { screenToFlowPosition, fitView } = reactFlowInstance;
+  const { screenToFlowPosition } = reactFlowInstance;
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId?: string } | null>(null);
 
   const onDragOver = useCallback((e: React.DragEvent) => {
@@ -124,7 +124,6 @@ function CanvasInner() {
       viewportHeight: n.data.viewportHeight,
       headless: n.data.headless,
       stealthMode: n.data.stealthMode,
-      userAgent: n.data.userAgent,
       waitUntil: n.data.waitUntil,
       referer: n.data.referer,
       dataType: n.data.dataType,
@@ -217,7 +216,6 @@ function CanvasInner() {
         onConnectEnd={onConnectEnd}
         onEdgeUpdate={onEdgeUpdate}
         isValidConnection={isValidConnection}
-        connectionMode="loose"
         edgesUpdatable={true}
         edgesFocusable={true}
         deleteKeyCode="Delete"

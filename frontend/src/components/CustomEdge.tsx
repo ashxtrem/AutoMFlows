@@ -11,10 +11,9 @@ export default function CustomEdge({
   targetPosition,
   style = {},
   markerEnd,
-  selected,
 }: EdgeProps) {
   const { onEdgesChange } = useWorkflowStore();
-  const [edgePath, labelX, labelY] = getBezierPath({
+  const [edgePath] = getBezierPath({
     sourceX,
     sourceY,
     sourcePosition,

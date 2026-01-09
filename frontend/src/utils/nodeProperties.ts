@@ -16,7 +16,6 @@ export interface PropertySchema {
  * Returns array of property schemas with their metadata
  */
 export function getNodeProperties(nodeType: NodeType | string): PropertySchema[] {
-  const properties: PropertySchema[] = [];
 
   if (Object.values(NodeType).includes(nodeType as NodeType)) {
     switch (nodeType as NodeType) {
@@ -72,8 +71,7 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
           { name: 'viewportWidth', label: 'Viewport Width', dataType: PropertyDataType.INT, required: false, defaultValue: 1280 },
           { name: 'viewportHeight', label: 'Viewport Height', dataType: PropertyDataType.INT, required: false, defaultValue: 720 },
           { name: 'stealthMode', label: 'Stealth Mode', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
-          { name: 'userAgent', label: 'User Agent', dataType: PropertyDataType.STRING, required: false },
-          // Note: 'capabilities' is NOT included here - it's managed via button/popup and cannot be converted to input
+          // Note: 'capabilities' and 'jsScript' are NOT included here - they're managed via button/popup and cannot be converted to input
         ];
       
       case NodeType.SCREENSHOT:

@@ -42,12 +42,12 @@ export interface OpenBrowserNodeData {
   headless?: boolean;
   viewportWidth?: number;
   viewportHeight?: number;
-  userAgent?: string;
   maxWindow?: boolean;
   browser?: 'chromium' | 'firefox' | 'webkit';
   capabilities?: Record<string, any>; // Context options (browser.newContext())
   launchOptions?: Record<string, any>; // Launch options (browser.launch())
   stealthMode?: boolean;
+  jsScript?: string; // JavaScript script to inject into all pages
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -62,6 +62,27 @@ export interface NavigateNodeData {
   waitUntil?: 'load' | 'domcontentloaded' | 'networkidle' | 'commit';
   failSilently?: boolean;
   referer?: string;
+  waitForSelector?: string;
+  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string; // Supports regex patterns
+  waitForUrlTimeout?: number;
+  waitForCondition?: string; // JavaScript code
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean; // false = wait before (default), true = wait after
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: 'css' | 'xpath';
+    timeout?: number;
+  };
+  retryDelay?: number;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -75,6 +96,27 @@ export interface ClickNodeData {
   selectorType?: 'css' | 'xpath';
   timeout?: number;
   failSilently?: boolean;
+  waitForSelector?: string;
+  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean; // false = wait before (default), true = wait after
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: 'css' | 'xpath';
+    timeout?: number;
+  };
+  retryDelay?: number;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -89,6 +131,27 @@ export interface TypeNodeData {
   text: string;
   timeout?: number;
   failSilently?: boolean;
+  waitForSelector?: string;
+  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean; // false = wait before (default), true = wait after
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: 'css' | 'xpath';
+    timeout?: number;
+  };
+  retryDelay?: number;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -103,6 +166,27 @@ export interface GetTextNodeData {
   outputVariable?: string;
   timeout?: number;
   failSilently?: boolean;
+  waitForSelector?: string;
+  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean; // false = wait before (default), true = wait after
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: 'css' | 'xpath';
+    timeout?: number;
+  };
+  retryDelay?: number;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -115,6 +199,27 @@ export interface ScreenshotNodeData {
   path?: string;
   fullPage?: boolean;
   failSilently?: boolean;
+  waitForSelector?: string;
+  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean; // false = wait before (default), true = wait after
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: 'css' | 'xpath';
+    timeout?: number;
+  };
+  retryDelay?: number;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -124,11 +229,23 @@ export interface ScreenshotNodeData {
 }
 
 export interface WaitNodeData {
-  waitType: 'timeout' | 'selector';
-  value: number | string; // timeout in ms or selector string
+  waitType: 'timeout' | 'selector' | 'url' | 'condition';
+  value: number | string; // timeout in ms, selector string, URL pattern, or JavaScript condition
   selectorType?: 'css' | 'xpath';
   timeout?: number;
   failSilently?: boolean;
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: 'css' | 'xpath';
+    timeout?: number;
+  };
+  retryDelay?: number;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -224,6 +341,20 @@ export enum ExecutionEventType {
   LOG = 'log',
 }
 
+// Page Debug Info for UI node errors
+export interface SelectorSuggestion {
+  selector: string;
+  selectorType: 'css' | 'xpath';
+  reason: string; // e.g., "Similar ID found", "Class match", etc.
+  elementInfo?: string; // e.g., "button#submit-btn.login-button"
+}
+
+export interface PageDebugInfo {
+  pageUrl?: string;
+  pageSource?: string;
+  similarSelectors?: SelectorSuggestion[];
+}
+
 // Execution Event
 export interface ExecutionEvent {
   type: ExecutionEventType;
@@ -231,6 +362,7 @@ export interface ExecutionEvent {
   message?: string;
   data?: any;
   traceLogs?: string[]; // Trace logs for node errors
+  debugInfo?: PageDebugInfo; // Debug info for UI node errors
   timestamp: number;
 }
 

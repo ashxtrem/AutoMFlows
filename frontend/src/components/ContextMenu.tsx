@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Copy, Trash2, Palette, SkipForward, ChevronRight, Settings, Plug, RotateCw } from 'lucide-react';
 import { useWorkflowStore } from '../store/workflowStore';
-import { getNodeProperties, isPropertyInputConnection, getPropertyInputHandleId } from '../utils/nodeProperties';
+import { getNodeProperties, isPropertyInputConnection } from '../utils/nodeProperties';
 
 interface ContextMenuProps {
   x: number;

@@ -1,6 +1,8 @@
 import { BaseNode, GetTextNodeData, ScreenshotNodeData, WaitNodeData, IntValueNodeData, StringValueNodeData, BooleanValueNodeData, InputValueNodeData, NodeType } from '@automflows/shared';
 import { NodeHandler } from './base';
 import { ContextManager } from '../engine/context';
+import { WaitHelper } from '../utils/waitHelper';
+import { RetryHelper } from '../utils/retryHelper';
 
 export class GetTextHandler implements NodeHandler {
   async execute(node: BaseNode, context: ContextManager): Promise<void> {
@@ -17,26 +19,71 @@ export class GetTextHandler implements NodeHandler {
 
     const timeout = data.timeout || 30000;
     const selector = data.selector;
-    let text: string | null;
+    const outputVariable = data.outputVariable || 'text';
 
-    try {
-      if (data.selectorType === 'xpath') {
-        text = await page.locator(`xpath=${selector}`).textContent({ timeout });
-      } else {
-        text = await page.textContent(selector, { timeout });
-      }
+    // Execute getText operation with retry logic (includes wait conditions)
+    const text = await RetryHelper.executeWithRetry(
+      async () => {
+        const waitAfterOperation = data.waitAfterOperation || false;
+        
+        // Execute waits before operation if waitAfterOperation is false
+        if (!waitAfterOperation) {
+          await WaitHelper.executeWaits(page, {
+            waitForSelector: data.waitForSelector,
+            waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorTimeout: data.waitForSelectorTimeout,
+            waitForUrl: data.waitForUrl,
+            waitForUrlTimeout: data.waitForUrlTimeout,
+            waitForCondition: data.waitForCondition,
+            waitForConditionTimeout: data.waitForConditionTimeout,
+            waitStrategy: data.waitStrategy,
+            failSilently: data.failSilently || false,
+            defaultTimeout: timeout,
+            waitTiming: 'before',
+          });
+        }
 
-      const outputVariable = data.outputVariable || 'text';
-      context.setData(outputVariable, text || '');
-    } catch (error: any) {
-      if (data.failSilently) {
-        console.warn(`GetText failed silently for selector "${selector}": ${error.message}`);
-        const outputVariable = data.outputVariable || 'text';
-        context.setData(outputVariable, '');
-        return;
-      }
-      throw error;
-    }
+        // Execute getText operation
+        let result: string | null;
+        if (data.selectorType === 'xpath') {
+          result = await page.locator(`xpath=${selector}`).textContent({ timeout });
+        } else {
+          result = await page.textContent(selector, { timeout });
+        }
+
+        // Execute waits after operation if waitAfterOperation is true
+        if (waitAfterOperation) {
+          await WaitHelper.executeWaits(page, {
+            waitForSelector: data.waitForSelector,
+            waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorTimeout: data.waitForSelectorTimeout,
+            waitForUrl: data.waitForUrl,
+            waitForUrlTimeout: data.waitForUrlTimeout,
+            waitForCondition: data.waitForCondition,
+            waitForConditionTimeout: data.waitForConditionTimeout,
+            waitStrategy: data.waitStrategy,
+            failSilently: data.failSilently || false,
+            defaultTimeout: timeout,
+            waitTiming: 'after',
+          });
+        }
+
+        return result || '';
+      },
+      {
+        enabled: data.retryEnabled || false,
+        strategy: data.retryStrategy || 'count',
+        count: data.retryCount,
+        untilCondition: data.retryUntilCondition,
+        delay: data.retryDelay || 1000,
+        delayStrategy: data.retryDelayStrategy || 'fixed',
+        maxDelay: data.retryMaxDelay,
+        failSilently: data.failSilently || false,
+      },
+      page
+    );
+
+    context.setData(outputVariable, text || '');
   }
 }
 
@@ -54,18 +101,62 @@ export class ScreenshotHandler implements NodeHandler {
       throw new Error('Playwright manager not found in context');
     }
 
-    try {
-      const fullPage = data.fullPage || false;
-      const screenshotPath = await playwright.takeScreenshot(data.path, fullPage);
+    // Execute screenshot operation with retry logic (includes wait conditions)
+    await RetryHelper.executeWithRetry(
+      async () => {
+        const waitAfterOperation = data.waitAfterOperation || false;
+        
+        // Execute waits before operation if waitAfterOperation is false
+        if (!waitAfterOperation) {
+          await WaitHelper.executeWaits(page, {
+            waitForSelector: data.waitForSelector,
+            waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorTimeout: data.waitForSelectorTimeout,
+            waitForUrl: data.waitForUrl,
+            waitForUrlTimeout: data.waitForUrlTimeout,
+            waitForCondition: data.waitForCondition,
+            waitForConditionTimeout: data.waitForConditionTimeout,
+            waitStrategy: data.waitStrategy,
+            failSilently: data.failSilently || false,
+            defaultTimeout: 30000,
+            waitTiming: 'before',
+          });
+        }
 
-      context.setData('screenshotPath', screenshotPath);
-    } catch (error: any) {
-      if (data.failSilently) {
-        console.warn(`Screenshot failed silently: ${error.message}`);
-        return;
-      }
-      throw error;
-    }
+        // Execute screenshot operation
+        const fullPage = data.fullPage || false;
+        const screenshotPath = await playwright.takeScreenshot(data.path, fullPage);
+        context.setData('screenshotPath', screenshotPath);
+
+        // Execute waits after operation if waitAfterOperation is true
+        if (waitAfterOperation) {
+          await WaitHelper.executeWaits(page, {
+            waitForSelector: data.waitForSelector,
+            waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorTimeout: data.waitForSelectorTimeout,
+            waitForUrl: data.waitForUrl,
+            waitForUrlTimeout: data.waitForUrlTimeout,
+            waitForCondition: data.waitForCondition,
+            waitForConditionTimeout: data.waitForConditionTimeout,
+            waitStrategy: data.waitStrategy,
+            failSilently: data.failSilently || false,
+            defaultTimeout: 30000,
+            waitTiming: 'after',
+          });
+        }
+      },
+      {
+        enabled: data.retryEnabled || false,
+        strategy: data.retryStrategy || 'count',
+        count: data.retryCount,
+        untilCondition: data.retryUntilCondition,
+        delay: data.retryDelay || 1000,
+        delayStrategy: data.retryDelayStrategy || 'fixed',
+        maxDelay: data.retryMaxDelay,
+        failSilently: data.failSilently || false,
+      },
+      page
+    );
   }
 }
 
@@ -78,32 +169,48 @@ export class WaitHandler implements NodeHandler {
       throw new Error('No page available. Ensure Open Browser node is executed first.');
     }
 
-    try {
-      if (data.waitType === 'timeout') {
-        const timeout = typeof data.value === 'number' ? data.value : parseInt(String(data.value), 10);
-        if (isNaN(timeout)) {
-          throw new Error('Invalid timeout value for Wait node');
-        }
-        await page.waitForTimeout(timeout);
-      } else if (data.waitType === 'selector') {
-        const selector = String(data.value);
-        const timeout = data.timeout || 30000;
+    // Execute wait operation with retry logic
+    await RetryHelper.executeWithRetry(
+      async () => {
+        if (data.waitType === 'timeout') {
+          const timeout = typeof data.value === 'number' ? data.value : parseInt(String(data.value), 10);
+          if (isNaN(timeout)) {
+            throw new Error('Invalid timeout value for Wait node');
+          }
+          await page.waitForTimeout(timeout);
+        } else if (data.waitType === 'selector') {
+          const selector = String(data.value);
+          const timeout = data.timeout || 30000;
 
-        if (data.selectorType === 'xpath') {
-          await page.locator(`xpath=${selector}`).waitFor({ timeout });
+          if (data.selectorType === 'xpath') {
+            await page.locator(`xpath=${selector}`).waitFor({ timeout });
+          } else {
+            await page.waitForSelector(selector, { timeout });
+          }
+        } else if (data.waitType === 'url') {
+          const urlPattern = String(data.value);
+          const timeout = data.timeout || 30000;
+          await WaitHelper.waitForUrl(page, urlPattern, timeout, data.failSilently || false, 'before');
+        } else if (data.waitType === 'condition') {
+          const condition = String(data.value);
+          const timeout = data.timeout || 30000;
+          await WaitHelper.waitForCondition(page, condition, timeout, data.failSilently || false, 'before');
         } else {
-          await page.waitForSelector(selector, { timeout });
+          throw new Error(`Invalid wait type: ${data.waitType}`);
         }
-      } else {
-        throw new Error(`Invalid wait type: ${data.waitType}`);
-      }
-    } catch (error: any) {
-      if (data.failSilently) {
-        console.warn(`Wait failed silently: ${error.message}`);
-        return;
-      }
-      throw error;
-    }
+      },
+      {
+        enabled: data.retryEnabled || false,
+        strategy: data.retryStrategy || 'count',
+        count: data.retryCount,
+        untilCondition: data.retryUntilCondition,
+        delay: data.retryDelay || 1000,
+        delayStrategy: data.retryDelayStrategy || 'fixed',
+        maxDelay: data.retryMaxDelay,
+        failSilently: data.failSilently || false,
+      },
+      page
+    );
   }
 }
 
@@ -162,7 +269,11 @@ export class InputValueHandler implements NodeHandler {
         convertedValue = 0;
       }
     } else if (data.dataType === 'boolean') {
-      convertedValue = typeof data.value === 'boolean' ? data.value : (data.value === true || data.value === 'true' || data.value === 1 || data.value === '1');
+      if (typeof data.value === 'boolean') {
+        convertedValue = data.value;
+      } else {
+        convertedValue = data.value === 'true' || data.value === 1 || data.value === '1';
+      }
     } else {
       // String
       convertedValue = String(data.value || '');

@@ -2,6 +2,8 @@ import { BaseNode, NodeType, OpenBrowserNodeData, NavigateNodeData } from '@auto
 import { NodeHandler } from './base';
 import { ContextManager } from '../engine/context';
 import { PlaywrightManager } from '../utils/playwright';
+import { WaitHelper } from '../utils/waitHelper';
+import { RetryHelper } from '../utils/retryHelper';
 
 export class OpenBrowserHandler implements NodeHandler {
   async execute(node: BaseNode, context: ContextManager): Promise<void> {
@@ -16,7 +18,7 @@ export class OpenBrowserHandler implements NodeHandler {
     const viewport = data.viewportWidth && data.viewportHeight
       ? { width: data.viewportWidth, height: data.viewportHeight }
       : undefined;
-    const userAgent = data.userAgent;
+    const jsScript = data.jsScript;
     const browserType = data.browser || 'chromium';
     const maxWindow = data.maxWindow !== false; // Default to true
     const capabilities = data.capabilities || {};
@@ -27,12 +29,12 @@ export class OpenBrowserHandler implements NodeHandler {
       const page = await playwright.launch(
         headless,
         viewport,
-        userAgent,
         browserType,
         maxWindow,
         capabilities,
         stealthMode,
-        launchOptions
+        launchOptions,
+        jsScript
       );
 
       context.setPage(page);
@@ -77,18 +79,60 @@ export class NavigateHandler implements NodeHandler {
       gotoOptions.referer = data.referer;
     }
 
-    // Execute navigation with optional fail silently
-    try {
-      await page.goto(url, gotoOptions);
-    } catch (error: any) {
-      if (data.failSilently) {
-        // Log error but don't throw - allow execution to continue
-        console.warn(`Navigation failed silently for ${url}: ${error.message}`);
-        return;
-      }
-      // Re-throw error if fail silently is not enabled
-      throw error;
-    }
+    // Execute navigation with retry logic (includes wait conditions)
+    await RetryHelper.executeWithRetry(
+      async () => {
+        const waitAfterOperation = data.waitAfterOperation || false;
+        
+        // Execute waits before operation if waitAfterOperation is false
+        if (!waitAfterOperation) {
+          await WaitHelper.executeWaits(page, {
+            waitForSelector: data.waitForSelector,
+            waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorTimeout: data.waitForSelectorTimeout,
+            waitForUrl: data.waitForUrl,
+            waitForUrlTimeout: data.waitForUrlTimeout,
+            waitForCondition: data.waitForCondition,
+            waitForConditionTimeout: data.waitForConditionTimeout,
+            waitStrategy: data.waitStrategy,
+            failSilently: data.failSilently || false,
+            defaultTimeout: timeout,
+            waitTiming: 'before',
+          });
+        }
+
+        // Execute navigation
+        await page.goto(url, gotoOptions);
+
+        // Execute waits after operation if waitAfterOperation is true
+        if (waitAfterOperation) {
+          await WaitHelper.executeWaits(page, {
+            waitForSelector: data.waitForSelector,
+            waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorTimeout: data.waitForSelectorTimeout,
+            waitForUrl: data.waitForUrl,
+            waitForUrlTimeout: data.waitForUrlTimeout,
+            waitForCondition: data.waitForCondition,
+            waitForConditionTimeout: data.waitForConditionTimeout,
+            waitStrategy: data.waitStrategy,
+            failSilently: data.failSilently || false,
+            defaultTimeout: timeout,
+            waitTiming: 'after',
+          });
+        }
+      },
+      {
+        enabled: data.retryEnabled || false,
+        strategy: data.retryStrategy || 'count',
+        count: data.retryCount,
+        untilCondition: data.retryUntilCondition,
+        delay: data.retryDelay || 1000,
+        delayStrategy: data.retryDelayStrategy || 'fixed',
+        maxDelay: data.retryMaxDelay,
+        failSilently: data.failSilently || false,
+      },
+      page
+    );
   }
 }
 
