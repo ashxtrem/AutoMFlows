@@ -130,7 +130,7 @@ function App() {
           />
         )}
         <TopBar />
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1 overflow-hidden pt-[50px]">
           <LeftSidebar />
           <Canvas />
           {selectedNode && <RightSidebar />}

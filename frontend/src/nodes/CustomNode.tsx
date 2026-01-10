@@ -11,35 +11,66 @@ import CapabilitiesPopup from '../components/CapabilitiesPopup';
 import PropertyEditorPopup, { PropertyEditorType } from '../components/PropertyEditorPopup';
 import { getNodeProperties, isPropertyInputConnection, getPropertyInputHandleId } from '../utils/nodeProperties';
 import { getContrastTextColor } from '../utils/colorContrast';
+import PlayCircleFilledWhiteTwoToneIcon from '@mui/icons-material/PlayCircleFilledWhiteTwoTone';
+import LanguageIcon from '@mui/icons-material/Language';
+import LinkIcon from '@mui/icons-material/Link';
+import TouchAppIcon from '@mui/icons-material/TouchApp';
+import KeyboardIcon from '@mui/icons-material/Keyboard';
+import TextFieldsIcon from '@mui/icons-material/TextFields';
+import CameraAltIcon from '@mui/icons-material/CameraAlt';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import CodeIcon from '@mui/icons-material/Code';
+import LoopIcon from '@mui/icons-material/Loop';
+import NumbersIcon from '@mui/icons-material/Numbers';
+import DescriptionIcon from '@mui/icons-material/Description';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import InputIcon from '@mui/icons-material/Input';
+import VerifiedIcon from '@mui/icons-material/Verified';
+import HttpIcon from '@mui/icons-material/Http';
+import TerminalIcon from '@mui/icons-material/Terminal';
+import InventoryIcon from '@mui/icons-material/Inventory';
+import FolderIcon from '@mui/icons-material/Folder';
+import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 
-const nodeIcons: Record<NodeType, string> = {
-  [NodeType.START]: '🚀',
-  [NodeType.OPEN_BROWSER]: '🌐',
-  [NodeType.NAVIGATE]: '🔗',
-  [NodeType.CLICK]: '👆',
-  [NodeType.TYPE]: '⌨️',
-  [NodeType.GET_TEXT]: '📝',
-  [NodeType.SCREENSHOT]: '📸',
-  [NodeType.WAIT]: '⏱️',
-  [NodeType.JAVASCRIPT_CODE]: '💻',
-  [NodeType.LOOP]: '🔁',
-  [NodeType.INT_VALUE]: '🔢',
-  [NodeType.STRING_VALUE]: '📄',
-  [NodeType.BOOLEAN_VALUE]: '✓',
-  [NodeType.INPUT_VALUE]: '📥',
+interface IconConfig {
+  icon: React.ComponentType<{ sx?: any }>;
+  color: string;
+}
+
+const nodeIcons: Record<NodeType, IconConfig> = {
+  [NodeType.START]: { icon: PlayCircleFilledWhiteTwoToneIcon, color: '#4CAF50' },
+  [NodeType.OPEN_BROWSER]: { icon: LanguageIcon, color: '#2196F3' },
+  [NodeType.NAVIGATE]: { icon: LinkIcon, color: '#2196F3' },
+  [NodeType.CLICK]: { icon: TouchAppIcon, color: '#9C27B0' },
+  [NodeType.TYPE]: { icon: KeyboardIcon, color: '#FF9800' },
+  [NodeType.GET_TEXT]: { icon: TextFieldsIcon, color: '#4CAF50' },
+  [NodeType.SCREENSHOT]: { icon: CameraAltIcon, color: '#F44336' },
+  [NodeType.WAIT]: { icon: ScheduleIcon, color: '#FFC107' },
+  [NodeType.JAVASCRIPT_CODE]: { icon: CodeIcon, color: '#2196F3' },
+  [NodeType.LOOP]: { icon: LoopIcon, color: '#9C27B0' },
+  [NodeType.INT_VALUE]: { icon: NumbersIcon, color: '#2196F3' },
+  [NodeType.STRING_VALUE]: { icon: DescriptionIcon, color: '#4CAF50' },
+  [NodeType.BOOLEAN_VALUE]: { icon: CheckCircleIcon, color: '#4CAF50' },
+  [NodeType.INPUT_VALUE]: { icon: InputIcon, color: '#FF9800' },
+  [NodeType.VERIFY]: { icon: VerifiedIcon, color: '#4CAF50' },
+  [NodeType.API_REQUEST]: { icon: HttpIcon, color: '#2196F3' },
+  [NodeType.API_CURL]: { icon: TerminalIcon, color: '#9C27B0' },
+  [NodeType.LOAD_CONFIG_FILE]: { icon: FolderIcon, color: '#FF9800' },
+  [NodeType.SELECT_CONFIG_FILE]: { icon: FolderOpenIcon, color: '#FF9800' },
 };
 
-function getNodeIcon(nodeType: NodeType | string): string {
+function getNodeIcon(nodeType: NodeType | string): IconConfig | null {
   if (Object.values(NodeType).includes(nodeType as NodeType)) {
-    return nodeIcons[nodeType as NodeType] || '📦';
+    return nodeIcons[nodeType as NodeType] || { icon: InventoryIcon, color: '#757575' };
   }
   
   const pluginNode = frontendPluginRegistry.getPluginNode(nodeType);
   if (pluginNode && pluginNode.icon) {
-    return pluginNode.icon;
+    // For plugin nodes, return null to use the string icon fallback
+    return null;
   }
   
-  return '📦';
+  return { icon: InventoryIcon, color: '#757575' };
 }
 
 function getNodeLabel(type: NodeType | string): string {
@@ -59,6 +90,11 @@ function getNodeLabel(type: NodeType | string): string {
       [NodeType.STRING_VALUE]: 'String Value',
       [NodeType.BOOLEAN_VALUE]: 'Boolean Value',
       [NodeType.INPUT_VALUE]: 'Input Value',
+      [NodeType.VERIFY]: 'Verify',
+      [NodeType.API_REQUEST]: 'API Request',
+      [NodeType.API_CURL]: 'API cURL',
+      [NodeType.LOAD_CONFIG_FILE]: 'Load Config File',
+      [NodeType.SELECT_CONFIG_FILE]: 'Select Config File',
     };
     return labels[type as NodeType] || type;
   }
@@ -202,7 +238,13 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const getTextDataKey = latestNodeData.type === NodeType.GET_TEXT 
     ? `|selector:${latestNodeData.selector || ''}|timeout:${latestNodeData.timeout || ''}|outputVariable:${latestNodeData.outputVariable || ''}` 
     : '';
-  const currentDataKey = `${latestNodeData.type}|${latestNodeData.label || ''}|${latestNodeData.code || ''}|${latestNodeData.width || ''}|${latestNodeData.height || ''}|${inputConnectionsKey}|${backgroundColorKey}|isMinimized:${isMinimizedKey}|bypass:${bypassKey}|failSilently:${failSilentlyKey}${valueKey}${dataTypeKey}${browserDataKey}${navigateDataKey}${clickDataKey}${getTextDataKey}`;
+  const apiRequestDataKey = latestNodeData.type === NodeType.API_REQUEST 
+    ? `|method:${latestNodeData.method || 'GET'}|url:${latestNodeData.url || ''}|timeout:${latestNodeData.timeout || ''}|contextKey:${latestNodeData.contextKey || ''}` 
+    : '';
+  const apiCurlDataKey = latestNodeData.type === NodeType.API_CURL 
+    ? `|curlCommand:${latestNodeData.curlCommand || ''}|timeout:${latestNodeData.timeout || ''}|contextKey:${latestNodeData.contextKey || ''}` 
+    : '';
+  const currentDataKey = `${latestNodeData.type}|${latestNodeData.label || ''}|${latestNodeData.code || ''}|${latestNodeData.width || ''}|${latestNodeData.height || ''}|${inputConnectionsKey}|${backgroundColorKey}|isMinimized:${isMinimizedKey}|bypass:${bypassKey}|failSilently:${failSilentlyKey}${valueKey}${dataTypeKey}${browserDataKey}${navigateDataKey}${clickDataKey}${getTextDataKey}${apiRequestDataKey}${apiCurlDataKey}`;
   const dataContentChanged = dataKeyRef.current !== currentDataKey;
   
   if (dataContentChanged) {
@@ -233,6 +275,9 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     value: latestNodeData.value,
     outputVariable: latestNodeData.outputVariable,
     arrayVariable: latestNodeData.arrayVariable,
+    method: latestNodeData.method,
+    curlCommand: latestNodeData.curlCommand,
+    contextKey: latestNodeData.contextKey,
   });
   
   // Update version when data changes to force re-render
@@ -267,6 +312,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
         bypass: node?.data?.bypass || false,
         failSilently: node?.data?.failSilently || false,
         isMinimized: node?.data?.isMinimized || false,
+        isTest: node?.data?.isTest !== undefined ? node?.data?.isTest : true,
       };
     },
     shallow
@@ -315,6 +361,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   );
   const failedNodes = useWorkflowStore((state) => state.failedNodes);
   const executingNodeId = useWorkflowStore((state) => state.executingNodeId);
+  const showErrorPopupForNode = useWorkflowStore((state) => state.showErrorPopupForNode);
   const isFailed = failedNodes.has(id);
   // Read isExecuting directly from store instead of node data to avoid triggering ReactFlow sync
   const isExecuting = executingNodeId === id;
@@ -322,6 +369,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(label);
   const renameInputRef = useRef<HTMLInputElement>(null);
+  const selectConfigFileInputRef = useRef<HTMLInputElement>(null);
   const [connectingHandleId, setConnectingHandleId] = useState<string | null>(null);
   
   // Check if this handle has an incoming/outgoing connection
@@ -1414,6 +1462,168 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
             </div>
           );
         
+        case NodeType.API_REQUEST:
+          return (
+            <div className="mt-2 space-y-1">
+              {renderPropertyRow('method', (
+                <InlineSelect
+                  label="Method"
+                  value={renderData.method || 'GET'}
+                  onChange={(value) => handlePropertyChange('method', value)}
+                  options={[
+                    { label: 'GET', value: 'GET' },
+                    { label: 'POST', value: 'POST' },
+                    { label: 'PUT', value: 'PUT' },
+                    { label: 'DELETE', value: 'DELETE' },
+                    { label: 'PATCH', value: 'PATCH' },
+                    { label: 'HEAD', value: 'HEAD' },
+                    { label: 'OPTIONS', value: 'OPTIONS' },
+                  ]}
+                />
+              ), 0)}
+              {renderPropertyRow('url', (
+                <InlineTextInput
+                  label="URL"
+                  value={renderData.url || ''}
+                  onChange={(value) => handlePropertyChange('url', value)}
+                  placeholder="https://api.example.com/users"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 1)}
+              {renderPropertyRow('contextKey', (
+                <InlineTextInput
+                  label="Context Key"
+                  value={renderData.contextKey || 'apiResponse'}
+                  onChange={(value) => handlePropertyChange('contextKey', value)}
+                  placeholder="apiResponse"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 2)}
+              {renderPropertyRow('timeout', (
+                <InlineNumberInput
+                  label="Timeout"
+                  value={renderData.timeout || 30000}
+                  onChange={(value) => handlePropertyChange('timeout', value)}
+                  placeholder="30000"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 3)}
+            </div>
+          );
+        
+        case NodeType.API_CURL:
+          return (
+            <div className="mt-2 space-y-1">
+              {renderPropertyRow('curlCommand', (
+                <InlineTextarea
+                  label="cURL Command"
+                  value={renderData.curlCommand || ''}
+                  onChange={(value) => handlePropertyChange('curlCommand', value)}
+                  placeholder="curl -X POST https://api.example.com/users"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 0)}
+              {renderPropertyRow('contextKey', (
+                <InlineTextInput
+                  label="Context Key"
+                  value={renderData.contextKey || 'apiResponse'}
+                  onChange={(value) => handlePropertyChange('contextKey', value)}
+                  placeholder="apiResponse"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 1)}
+              {renderPropertyRow('timeout', (
+                <InlineNumberInput
+                  label="Timeout"
+                  value={renderData.timeout || 30000}
+                  onChange={(value) => handlePropertyChange('timeout', value)}
+                  placeholder="30000"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 2)}
+            </div>
+          );
+        
+        case NodeType.LOAD_CONFIG_FILE:
+          return (
+            <div className="mt-2 space-y-1">
+              {renderPropertyRow('filePath', (
+                <InlineTextInput
+                  label="File Path"
+                  value={renderData.filePath || ''}
+                  onChange={(value) => handlePropertyChange('filePath', value)}
+                  placeholder="tests/resources/env.Env1.json"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 0)}
+              {renderData.contextKey && renderPropertyRow('contextKey', (
+                <InlineTextInput
+                  label="Context Key"
+                  value={renderData.contextKey || ''}
+                  onChange={(value) => handlePropertyChange('contextKey', value)}
+                  placeholder="env (optional)"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 1)}
+            </div>
+          );
+        
+        case NodeType.SELECT_CONFIG_FILE:
+          const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            
+            if (!file.name.endsWith('.json')) {
+              alert('Please select a JSON file');
+              return;
+            }
+            
+            try {
+              const fileContent = await file.text();
+              // Validate JSON
+              JSON.parse(fileContent);
+              handlePropertyChange('fileContent', fileContent);
+              handlePropertyChange('fileName', file.name);
+            } catch (error: any) {
+              alert(`Invalid JSON: ${error.message}`);
+            }
+          };
+          
+          return (
+            <div className="mt-2 space-y-1">
+              <input
+                ref={selectConfigFileInputRef}
+                type="file"
+                accept="application/json"
+                onChange={handleFileSelect}
+                className="hidden"
+              />
+              <div className="px-2 py-1">
+                <button
+                  type="button"
+                  onClick={() => selectConfigFileInputRef.current?.click()}
+                  className="w-full px-2 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded text-gray-200 transition-colors"
+                >
+                  {renderData.fileName || 'Select JSON File'}
+                </button>
+                {renderData.fileName && (
+                  <p className="mt-1 text-xs text-gray-400 truncate" title={renderData.fileName}>
+                    {renderData.fileName}
+                  </p>
+                )}
+              </div>
+              {renderData.contextKey && renderPropertyRow('contextKey', (
+                <InlineTextInput
+                  label="Context Key"
+                  value={renderData.contextKey || ''}
+                  onChange={(value) => handlePropertyChange('contextKey', value)}
+                  placeholder="env (optional)"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 1)}
+            </div>
+          );
+        
         default:
           return null;
       }
@@ -1496,6 +1706,9 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     renderData.url,
     renderData.selector,
     renderData.text,
+    renderData.method,
+    renderData.curlCommand,
+    renderData.contextKey,
     edgesForThisNode.length,
     sourceNodes.length,
     connectingHandleId,
@@ -1528,11 +1741,12 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     >
       {selected && (
         <NodeMenuBar
-          key={`${id}-${bypass}-${nodeDataFromStore.failSilently}-${isMinimized}`}
+          key={`${id}-${bypass}-${nodeDataFromStore.failSilently}-${isMinimized}-${nodeDataFromStore.isTest}`}
           nodeId={id}
           bypass={bypass}
           failSilently={nodeDataFromStore.failSilently}
           isMinimized={isMinimized}
+          isTest={nodeDataFromStore.isTest}
         />
       )}
       {/* Default control flow handle (driver) */}
@@ -1556,7 +1770,12 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
         onMouseLeave={() => setConnectingHandleId(null)}
       />
       <div className="flex items-center gap-2">
-        <span className="text-lg">{icon}</span>
+        {icon ? (() => {
+          const IconComponent = icon.icon;
+          return <IconComponent sx={{ fontSize: '1.25rem', color: icon.color }} />;
+        })() : (
+          <span className="text-lg">{frontendPluginRegistry.getPluginNode(nodeType)?.icon || '📦'}</span>
+        )}
         {isRenaming ? (
           <input
             ref={renameInputRef}
@@ -1571,10 +1790,16 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
           />
         ) : (
           <div
-            className="text-sm font-medium cursor-text"
+            className={`text-sm font-medium ${isFailed ? 'cursor-pointer hover:underline' : 'cursor-text'}`}
             style={{ color: textColor }}
             onDoubleClick={handleDoubleClickHeader}
-            title="Double-click to rename"
+            onClick={(e) => {
+              if (isFailed) {
+                e.stopPropagation();
+                showErrorPopupForNode(id);
+              }
+            }}
+            title={isFailed ? 'Click to view error details | Double-click to rename' : 'Double-click to rename'}
           >
             {label}
             {bypass && <span className="ml-2 text-xs text-yellow-400">(bypassed)</span>}

@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { X, AlertCircle, Terminal } from 'lucide-react';
 import { useWorkflowStore } from '../store/workflowStore';
 
@@ -9,6 +10,19 @@ interface BrowserInstallErrorPopupProps {
 
 export default function BrowserInstallErrorPopup({ nodeId, browserName, onClose }: BrowserInstallErrorPopupProps) {
   const { nodes } = useWorkflowStore();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
 
   const node = nodes.find(n => n.id === nodeId);
   const nodeLabel = node?.data?.label || node?.data?.type || nodeId;

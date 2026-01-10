@@ -93,6 +93,35 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
           { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
         ];
       
+      case NodeType.VERIFY:
+        return [
+          { name: 'domain', label: 'Domain', dataType: PropertyDataType.STRING, required: true, defaultValue: 'browser' },
+          { name: 'verificationType', label: 'Verification Type', dataType: PropertyDataType.STRING, required: true },
+          { name: 'urlPattern', label: 'URL Pattern', dataType: PropertyDataType.STRING, required: false },
+          { name: 'expectedText', label: 'Expected Text', dataType: PropertyDataType.STRING, required: false },
+          { name: 'selector', label: 'Selector', dataType: PropertyDataType.STRING, required: false },
+          { name: 'expectedValue', label: 'Expected Value', dataType: PropertyDataType.STRING, required: false },
+          { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+      
+      case NodeType.API_REQUEST:
+        return [
+          { name: 'method', label: 'Method', dataType: PropertyDataType.STRING, required: false, defaultValue: 'GET' },
+          { name: 'url', label: 'URL', dataType: PropertyDataType.STRING, required: true },
+          { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
+          { name: 'contextKey', label: 'Context Key', dataType: PropertyDataType.STRING, required: false, defaultValue: 'apiResponse' },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+      
+      case NodeType.API_CURL:
+        return [
+          { name: 'curlCommand', label: 'cURL Command', dataType: PropertyDataType.STRING, required: true },
+          { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
+          { name: 'contextKey', label: 'Context Key', dataType: PropertyDataType.STRING, required: false, defaultValue: 'apiResponse' },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+      
       case NodeType.START:
       case NodeType.INT_VALUE:
       case NodeType.STRING_VALUE:

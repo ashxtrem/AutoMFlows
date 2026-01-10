@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { X, AlertCircle } from 'lucide-react';
 import { ValidationError } from '../utils/validation';
 import { useWorkflowStore } from '../store/workflowStore';
@@ -9,6 +10,19 @@ interface ValidationErrorPopupProps {
 
 export default function ValidationErrorPopup({ errors, onClose }: ValidationErrorPopupProps) {
   const { nodes, setSelectedNode } = useWorkflowStore();
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
 
   const handleFocusNode = (nodeId: string) => {
     const node = nodes.find(n => n.id === nodeId);

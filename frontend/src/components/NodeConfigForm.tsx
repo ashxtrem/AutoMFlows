@@ -13,6 +13,11 @@ import LoopConfig from './nodeConfigs/LoopConfig';
 import IntValueConfig from './nodeConfigs/IntValueConfig';
 import StringValueConfig from './nodeConfigs/StringValueConfig';
 import BooleanValueConfig from './nodeConfigs/BooleanValueConfig';
+import VerifyConfig from './nodeConfigs/VerifyConfig';
+import ApiRequestConfig from './nodeConfigs/ApiRequestConfig';
+import ApiCurlConfig from './nodeConfigs/ApiCurlConfig';
+import LoadConfigFileConfig from './nodeConfigs/LoadConfigFileConfig';
+import SelectConfigFileConfig from './nodeConfigs/SelectConfigFileConfig';
 import { frontendPluginRegistry } from '../plugins/registry';
 import { useCallback } from 'react';
 
@@ -60,6 +65,16 @@ export default function NodeConfigForm({ node }: NodeConfigFormProps) {
           return <BooleanValueConfig node={node} onChange={handleChange} />;
         case NodeType.INPUT_VALUE:
           return <div className="text-gray-400 text-sm">Input Value node is configured directly on the node.</div>;
+        case NodeType.VERIFY:
+          return <VerifyConfig node={node} onChange={handleChange} />;
+        case NodeType.API_REQUEST:
+          return <ApiRequestConfig node={node} onChange={handleChange} />;
+        case NodeType.API_CURL:
+          return <ApiCurlConfig node={node} onChange={handleChange} />;
+        case NodeType.LOAD_CONFIG_FILE:
+          return <LoadConfigFileConfig node={node} onChange={handleChange} />;
+        case NodeType.SELECT_CONFIG_FILE:
+          return <SelectConfigFileConfig node={node} onChange={handleChange} />;
         default:
           return <div className="text-gray-400 text-sm">No configuration available.</div>;
       }

@@ -1,11 +1,15 @@
-import { useState, useEffect } from 'react';
-import { Play, Square, Save, Upload, ZoomIn, ZoomOut, Maximize2, RotateCcw, FileText } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import StopIcon from '@mui/icons-material/Stop';
+import SaveIcon from '@mui/icons-material/Save';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { useWorkflowStore } from '../store/workflowStore';
 import { useExecution } from '../hooks/useExecution';
-import { useReactFlow } from 'reactflow';
 import { serializeWorkflow, deserializeWorkflow } from '../utils/serialization';
 import ValidationErrorPopup from './ValidationErrorPopup';
 import ResetWarning from './ResetWarning';
+import LoadWarning from './LoadWarning';
 import { NodeType } from '@automflows/shared';
 
 const STORAGE_KEY_TRACE_LOGS = 'automflows_trace_logs';
@@ -13,9 +17,12 @@ const STORAGE_KEY_TRACE_LOGS = 'automflows_trace_logs';
 export default function TopBar() {
   const { nodes, edges, setNodes, setEdges, executionStatus, resetExecution } = useWorkflowStore();
   const { executeWorkflow, stopExecution, validationErrors, setValidationErrors } = useExecution();
-  const { zoomIn, zoomOut, fitView } = useReactFlow();
   
   const [showResetWarning, setShowResetWarning] = useState(false);
+  const [showLoadWarning, setShowLoadWarning] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [pendingLoadAction, setPendingLoadAction] = useState<(() => void) | null>(null);
+  const topBarRef = useRef<HTMLDivElement>(null);
   
   // Load trace logs state from localStorage on mount
   const [traceLogs, setTraceLogs] = useState(() => {
@@ -27,6 +34,60 @@ export default function TopBar() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_TRACE_LOGS, String(traceLogs));
   }, [traceLogs]);
+
+  // Auto-hide functionality
+  useEffect(() => {
+    let hideTimeout: NodeJS.Timeout | null = null;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      // Show menu when cursor is near top of screen (within 50px)
+      if (e.clientY <= 50) {
+        setIsVisible(true);
+        if (hideTimeout) {
+          clearTimeout(hideTimeout);
+          hideTimeout = null;
+        }
+      }
+    };
+
+    const handleMouseLeave = (e: MouseEvent) => {
+      // Check if mouse is leaving the top bar area
+      const relatedTarget = e.relatedTarget as HTMLElement | null;
+      if (!relatedTarget || (topBarRef.current && !topBarRef.current.contains(relatedTarget))) {
+        // Delay hiding to allow smooth transition
+        hideTimeout = setTimeout(() => {
+          setIsVisible(false);
+        }, 300);
+      }
+    };
+
+    const handleMouseEnter = () => {
+      setIsVisible(true);
+      if (hideTimeout) {
+        clearTimeout(hideTimeout);
+        hideTimeout = null;
+      }
+    };
+
+    window.addEventListener('mousemove', handleMouseMove);
+    
+    const topBarElement = topBarRef.current;
+    if (topBarElement) {
+      topBarElement.addEventListener('mouseenter', handleMouseEnter);
+      topBarElement.addEventListener('mouseleave', handleMouseLeave);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      if (topBarElement) {
+        topBarElement.removeEventListener('mouseenter', handleMouseEnter);
+        topBarElement.removeEventListener('mouseleave', handleMouseLeave);
+      }
+      if (hideTimeout) {
+        clearTimeout(hideTimeout);
+      }
+    };
+  }, []);
 
   const handleRun = async () => {
     resetExecution();
@@ -49,7 +110,7 @@ export default function TopBar() {
     URL.revokeObjectURL(url);
   };
 
-  const handleLoad = () => {
+  const performLoad = () => {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'application/json';
@@ -71,13 +132,18 @@ export default function TopBar() {
       }
     };
     input.click();
+    setShowLoadWarning(false);
+    setPendingLoadAction(null);
   };
 
-  const handleReset = () => {
-    setNodes([]);
-    setEdges([]);
-    resetExecution();
-    setShowResetWarning(false);
+  const handleLoad = () => {
+    const hasWorkflow = nodes.length > 0;
+    if (hasWorkflow) {
+      setPendingLoadAction(() => performLoad);
+      setShowLoadWarning(true);
+    } else {
+      performLoad();
+    }
   };
 
   const loadSampleTemplate = () => {
@@ -226,95 +292,91 @@ export default function TopBar() {
     setEdges(newEdges);
   };
 
+  const handleReset = () => {
+    const hasWorkflow = nodes.length > 0;
+    if (hasWorkflow) {
+      setShowResetWarning(true);
+    } else {
+      loadSampleTemplate();
+    }
+  };
+
+  const confirmReset = () => {
+    loadSampleTemplate();
+    setShowResetWarning(false);
+  };
+
+  const confirmLoad = () => {
+    if (pendingLoadAction) {
+      pendingLoadAction();
+    }
+  };
+
   return (
-    <div className="bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-between">
-      <div className="flex items-center gap-2">
-        <h1 className="text-xl font-bold text-white">AutoMFlows</h1>
-      </div>
-      <div className="flex items-center gap-2">
-        <button
-          onClick={handleRun}
-          disabled={executionStatus === 'running'}
-          className="px-4 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded flex items-center gap-2 text-sm font-medium"
-        >
-          <Play size={16} />
-          Run
-        </button>
-        <button
-          onClick={handleStop}
-          disabled={executionStatus !== 'running'}
-          className="px-4 py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded flex items-center gap-2 text-sm font-medium"
-        >
-          <Square size={16} />
-          Stop
-        </button>
-        <div className="w-px h-6 bg-gray-700 mx-2" />
-        <button
-          onClick={handleSave}
-          className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-2 text-sm"
-        >
-          <Save size={16} />
-          Save
-        </button>
-        <button
-          onClick={handleLoad}
-          className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-2 text-sm"
-        >
-          <Upload size={16} />
-          Load
-        </button>
-        <button
-          onClick={loadSampleTemplate}
-          className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-2 text-sm"
-          title="Load sample template: Start > Open Browser > Navigate > Wait > Screenshot"
-        >
-          <FileText size={16} />
-          Template
-        </button>
-        <button
-          onClick={() => setShowResetWarning(true)}
-          className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-2 text-sm"
-          title="Reset canvas"
-        >
-          <RotateCcw size={16} />
-          Reset
-        </button>
-        <div className="w-px h-6 bg-gray-700 mx-2" />
-        <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-white">
-          <div className="relative">
-            <input
-              type="checkbox"
-              checked={traceLogs}
-              onChange={(e) => setTraceLogs(e.target.checked)}
-              className="sr-only"
-            />
-            <div className={`block h-8 w-14 rounded-full transition-colors ${traceLogs ? 'bg-green-600' : 'bg-gray-600'}`}></div>
-            <div className={`dot absolute left-1 top-1 h-6 w-6 rounded-full bg-white transition-transform ${traceLogs ? 'translate-x-6' : 'translate-x-0'}`}></div>
-          </div>
-          <span>Trace Logs</span>
-        </label>
-        <div className="w-px h-6 bg-gray-700 mx-2" />
-        <button
-          onClick={() => zoomIn()}
-          className="p-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded"
-          title="Zoom In"
-        >
-          <ZoomIn size={16} />
-        </button>
-        <button
-          onClick={() => zoomOut()}
-          className="p-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded"
-          title="Zoom Out"
-        >
-          <ZoomOut size={16} />
-        </button>
-        <button
-          onClick={() => fitView()}
-          className="p-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded"
-          title="Fit View"
-        >
-          <Maximize2 size={16} />
-        </button>
+    <>
+      <div
+        ref={topBarRef}
+        className={`fixed top-0 left-0 right-0 bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-between z-40 transition-transform duration-300 ${
+          isVisible ? 'translate-y-0' : '-translate-y-full'
+        }`}
+      >
+        <div className="flex items-center gap-2">
+          <h1 className="text-xl font-bold text-white">AutoMFlows</h1>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleRun}
+            disabled={executionStatus === 'running'}
+            className="px-4 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded flex items-center gap-2 text-sm font-medium"
+          >
+            <PlayArrowIcon sx={{ fontSize: '16px', color: '#ffffff' }} className="flex-shrink-0" />
+            Run
+          </button>
+          <button
+            onClick={handleStop}
+            disabled={executionStatus !== 'running'}
+            className="px-4 py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded flex items-center gap-2 text-sm font-medium"
+          >
+            <StopIcon sx={{ fontSize: '16px', color: '#ffffff' }} className="flex-shrink-0" />
+            Stop
+          </button>
+          <div className="w-px h-6 bg-gray-700 mx-2" />
+          <button
+            onClick={handleSave}
+            className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-2 text-sm"
+          >
+            <SaveIcon sx={{ fontSize: '16px', color: '#ffffff' }} className="flex-shrink-0" />
+            Save
+          </button>
+          <button
+            onClick={handleLoad}
+            className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-2 text-sm"
+          >
+            <UploadFileIcon sx={{ fontSize: '16px', color: '#ffffff' }} className="flex-shrink-0" />
+            Load
+          </button>
+          <button
+            onClick={handleReset}
+            className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-2 text-sm"
+          >
+            <RefreshIcon sx={{ fontSize: '16px', color: '#ffffff' }} className="flex-shrink-0" />
+            Reset
+          </button>
+          <div className="w-px h-6 bg-gray-700 mx-2" />
+          <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-white">
+            <div className="relative">
+              <input
+                type="checkbox"
+                checked={traceLogs}
+                onChange={(e) => setTraceLogs(e.target.checked)}
+                className="sr-only"
+              />
+              <div className={`block h-8 w-14 rounded-full transition-colors ${traceLogs ? 'bg-green-600' : 'bg-gray-600'}`}></div>
+              <div className={`dot absolute left-1 top-1 h-6 w-6 rounded-full bg-white transition-transform ${traceLogs ? 'translate-x-6' : 'translate-x-0'}`}></div>
+            </div>
+            <span>Trace Logs</span>
+          </label>
+        </div>
       </div>
       {validationErrors.length > 0 && (
         <ValidationErrorPopup
@@ -324,11 +386,19 @@ export default function TopBar() {
       )}
       {showResetWarning && (
         <ResetWarning
-          onConfirm={handleReset}
+          onConfirm={confirmReset}
           onCancel={() => setShowResetWarning(false)}
         />
       )}
-    </div>
+      {showLoadWarning && (
+        <LoadWarning
+          onConfirm={confirmLoad}
+          onCancel={() => {
+            setShowLoadWarning(false);
+            setPendingLoadAction(null);
+          }}
+        />
+      )}
+    </>
   );
 }
-

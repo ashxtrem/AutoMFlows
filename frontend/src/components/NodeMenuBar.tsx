@@ -1,4 +1,4 @@
-import { Copy, Trash2, SkipForward, AlertCircle, Minimize2, Maximize2, Files } from 'lucide-react';
+import { Copy, Trash2, SkipForward, AlertCircle, Minimize2, Maximize2, Files, CheckSquare, Wrench } from 'lucide-react';
 import { useWorkflowStore } from '../store/workflowStore';
 import Tooltip from './Tooltip';
 
@@ -7,9 +7,10 @@ interface NodeMenuBarProps {
   bypass?: boolean;
   failSilently?: boolean;
   isMinimized?: boolean;
+  isTest?: boolean;
 }
 
-export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized }: NodeMenuBarProps) {
+export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized, isTest }: NodeMenuBarProps) {
   const {
     copyNode,
     duplicateNode,
@@ -55,6 +56,12 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized 
     toggleMinimize(nodeId);
   };
 
+  const handleToggleIsTest = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    updateNodeData(nodeId, { isTest: !isTest });
+  };
+
   return (
     <div
       className="absolute -top-8 left-1/2 transform -translate-x-1/2 flex items-center gap-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 shadow-lg z-10"
@@ -80,6 +87,16 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized 
           }`}
         >
           <AlertCircle size={14} />
+        </button>
+      </Tooltip>
+      <Tooltip content={isTest ? 'Test Case' : 'Support Case'}>
+        <button
+          onClick={handleToggleIsTest}
+          className={`p-1.5 rounded hover:bg-gray-700 transition-colors ${
+            isTest ? 'text-green-400' : 'text-gray-400'
+          }`}
+        >
+          {isTest ? <CheckSquare size={14} /> : <Wrench size={14} />}
         </button>
       </Tooltip>
       <div className="w-px h-4 bg-gray-700 mx-0.5" />

@@ -23,6 +23,11 @@ export enum NodeType {
   STRING_VALUE = 'stringValue',
   BOOLEAN_VALUE = 'booleanValue',
   INPUT_VALUE = 'inputValue',
+  VERIFY = 'verify',
+  API_REQUEST = 'apiRequest',
+  API_CURL = 'apiCurl',
+  LOAD_CONFIG_FILE = 'loadConfigFile',
+  SELECT_CONFIG_FILE = 'selectConfigFile',
 }
 
 // Base Node Interface
@@ -229,11 +234,19 @@ export interface ScreenshotNodeData {
 }
 
 export interface WaitNodeData {
-  waitType: 'timeout' | 'selector' | 'url' | 'condition';
-  value: number | string; // timeout in ms, selector string, URL pattern, or JavaScript condition
+  waitType: 'timeout' | 'selector' | 'url' | 'condition' | 'api-response';
+  value: number | string; // timeout in ms, selector string, URL pattern, JavaScript condition, or API response context key
   selectorType?: 'css' | 'xpath';
   timeout?: number;
   failSilently?: boolean;
+  // API response wait configuration
+  apiWaitConfig?: {
+    contextKey: string; // Which API response to check
+    checkType: 'status' | 'header' | 'body-path' | 'body-value';
+    path?: string; // JSON path for body checks, header name for header checks
+    expectedValue?: any;
+    matchType?: MatchType;
+  };
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
   retryCount?: number;
@@ -281,6 +294,138 @@ export interface InputValueNodeData {
   value: string | number | boolean;
 }
 
+export interface ApiRequestNodeData {
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE' | 'PATCH' | 'HEAD' | 'OPTIONS';
+  url: string; // Supports ${data.key.path} interpolation
+  headers?: Record<string, string>; // Supports interpolation in values
+  body?: string; // Request body (supports interpolation)
+  bodyType?: 'json' | 'form-data' | 'raw' | 'url-encoded';
+  timeout?: number;
+  contextKey?: string; // Where to store response (default: 'apiResponse')
+  failSilently?: boolean;
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number;
+  retryUntilCondition?: {
+    type: 'api-status' | 'api-json-path' | 'api-javascript';
+    value?: string; // Optional, used for api-javascript condition code
+    timeout?: number;
+    // API-specific fields
+    expectedStatus?: number; // For api-status
+    jsonPath?: string; // For api-json-path
+    expectedValue?: any; // For api-json-path
+    matchType?: MatchType; // For api-json-path
+    contextKey?: string; // For api-javascript (which API response to check, defaults to node's contextKey)
+  };
+  retryDelay?: number;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface ApiCurlNodeData {
+  curlCommand: string; // Raw cURL command (supports interpolation)
+  timeout?: number;
+  contextKey?: string; // Where to store response (default: 'apiResponse')
+  failSilently?: boolean;
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number;
+  retryUntilCondition?: {
+    type: 'api-status' | 'api-json-path' | 'api-javascript';
+    value?: string; // Optional, used for api-javascript condition code
+    timeout?: number;
+    // API-specific fields
+    expectedStatus?: number; // For api-status
+    jsonPath?: string; // For api-json-path
+    expectedValue?: any; // For api-json-path
+    matchType?: MatchType; // For api-json-path
+    contextKey?: string; // For api-javascript (which API response to check, defaults to node's contextKey)
+  };
+  retryDelay?: number;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface LoadConfigFileNodeData {
+  filePath: string; // Relative or absolute path
+  contextKey?: string; // Optional key to store under (default: merge into root)
+}
+
+export interface SelectConfigFileNodeData {
+  fileContent: string; // JSON content from file picker
+  fileName?: string; // Optional: name of the selected file
+  contextKey?: string; // Optional key to store under (default: merge into root)
+}
+
+// Verification Domain and Types
+export type VerificationDomain = 'browser' | 'api' | 'database';
+
+export type BrowserVerificationType = 'url' | 'text' | 'element' | 'attribute' | 'formField' | 'cookie' | 'storage' | 'css';
+
+export type MatchType = 'contains' | 'equals' | 'regex' | 'startsWith' | 'endsWith';
+
+export type ComparisonOperator = 'equals' | 'greaterThan' | 'lessThan' | 'greaterThanOrEqual' | 'lessThanOrEqual';
+
+export interface VerifyNodeData {
+  domain: VerificationDomain; // 'browser' | 'api' | 'database'
+  verificationType: string; // Type specific to domain
+  // Browser-specific fields
+  urlPattern?: string;
+  expectedText?: string;
+  selector?: string;
+  selectorType?: 'css' | 'xpath';
+  attributeName?: string;
+  elementCheck?: 'visible' | 'hidden' | 'exists' | 'notExists' | 'count' | 'enabled' | 'disabled' | 'selected' | 'checked';
+  cookieName?: string;
+  storageType?: 'local' | 'session';
+  storageKey?: string;
+  cssProperty?: string;
+  // API-specific fields
+  statusCode?: number;
+  jsonPath?: string;
+  headerName?: string;
+  apiContextKey?: string; // Context key for API response to verify
+  // Database-specific fields (future)
+  query?: string;
+  // Common fields
+  matchType?: MatchType;
+  comparisonOperator?: ComparisonOperator;
+  expectedValue?: any;
+  caseSensitive?: boolean;
+  timeout?: number;
+  failSilently?: boolean;
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: 'css' | 'xpath';
+    timeout?: number;
+  };
+  retryDelay?: number;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
 export type NodeData =
   | StartNodeData
   | OpenBrowserNodeData
@@ -296,6 +441,11 @@ export type NodeData =
   | StringValueNodeData
   | BooleanValueNodeData
   | InputValueNodeData
+  | VerifyNodeData
+  | ApiRequestNodeData
+  | ApiCurlNodeData
+  | LoadConfigFileNodeData
+  | SelectConfigFileNodeData
   | Record<string, any>; // Support custom plugin node data
 
 // Edge/Connection Interface
@@ -363,6 +513,7 @@ export interface ExecutionEvent {
   data?: any;
   traceLogs?: string[]; // Trace logs for node errors
   debugInfo?: PageDebugInfo; // Debug info for UI node errors
+  failSilently?: boolean; // If true, node failed but execution should continue
   timestamp: number;
 }
 

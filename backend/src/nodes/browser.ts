@@ -4,6 +4,7 @@ import { ContextManager } from '../engine/context';
 import { PlaywrightManager } from '../utils/playwright';
 import { WaitHelper } from '../utils/waitHelper';
 import { RetryHelper } from '../utils/retryHelper';
+import { VariableInterpolator } from '../utils/variableInterpolator';
 
 export class OpenBrowserHandler implements NodeHandler {
   async execute(node: BaseNode, context: ContextManager): Promise<void> {
@@ -61,8 +62,11 @@ export class NavigateHandler implements NodeHandler {
       throw new Error('URL is required for Navigate node');
     }
 
+    // Interpolate variables in URL
+    let url = VariableInterpolator.interpolateString(data.url, context);
+
     // Normalize URL - add https:// if no protocol is specified
-    let url = data.url.trim();
+    url = url.trim();
     if (!url.match(/^https?:\/\//i)) {
       url = `https://${url}`;
     }
@@ -80,7 +84,7 @@ export class NavigateHandler implements NodeHandler {
     }
 
     // Execute navigation with retry logic (includes wait conditions)
-    await RetryHelper.executeWithRetry(
+    const result = await RetryHelper.executeWithRetry(
       async () => {
         const waitAfterOperation = data.waitAfterOperation || false;
         
@@ -133,6 +137,11 @@ export class NavigateHandler implements NodeHandler {
       },
       page
     );
+    
+    // If RetryHelper returned undefined (failSilently), throw error so executor can track it
+    if (result === undefined && data.failSilently) {
+      throw new Error(`Navigation operation failed silently to URL: ${url}`);
+    }
   }
 }
 

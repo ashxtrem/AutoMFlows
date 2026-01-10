@@ -21,7 +21,7 @@ export class ClickHandler implements NodeHandler {
     const selector = data.selector;
 
     // Execute click operation with retry logic (includes wait conditions)
-    await RetryHelper.executeWithRetry(
+    const result = await RetryHelper.executeWithRetry(
       async () => {
         const waitAfterOperation = data.waitAfterOperation || false;
         
@@ -78,6 +78,11 @@ export class ClickHandler implements NodeHandler {
       },
       page
     );
+    
+    // If RetryHelper returned undefined (failSilently), throw error so executor can track it
+    if (result === undefined && data.failSilently) {
+      throw new Error(`Click operation failed silently on selector: ${selector}`);
+    }
   }
 }
 
@@ -103,7 +108,7 @@ export class TypeHandler implements NodeHandler {
     const text = data.text;
 
     // Execute type operation with retry logic (includes wait conditions)
-    await RetryHelper.executeWithRetry(
+    const result = await RetryHelper.executeWithRetry(
       async () => {
         const waitAfterOperation = data.waitAfterOperation || false;
         
@@ -160,6 +165,11 @@ export class TypeHandler implements NodeHandler {
       },
       page
     );
+    
+    // If RetryHelper returned undefined (failSilently), throw error so executor can track it
+    if (result === undefined && data.failSilently) {
+      throw new Error(`Type operation failed silently on selector: ${selector}`);
+    }
   }
 }
 

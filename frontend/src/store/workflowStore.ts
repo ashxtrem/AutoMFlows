@@ -792,6 +792,7 @@ function getNodeLabel(type: NodeType | string): string {
       [NodeType.STRING_VALUE]: 'String Value',
       [NodeType.BOOLEAN_VALUE]: 'Boolean Value',
       [NodeType.INPUT_VALUE]: 'Input Value',
+      [NodeType.VERIFY]: 'Verify',
     };
     return labels[type as NodeType] || type;
   }
@@ -809,7 +810,7 @@ function getDefaultNodeData(type: NodeType | string): any {
   // Check if it's a built-in node type (check if value exists in enum values)
   if (Object.values(NodeType).includes(type as NodeType)) {
     const defaults: Record<NodeType, any> = {
-      [NodeType.START]: {},
+      [NodeType.START]: { isTest: true },
       [NodeType.OPEN_BROWSER]: { 
         headless: true, 
         viewportWidth: 1280, 
@@ -818,30 +819,50 @@ function getDefaultNodeData(type: NodeType | string): any {
         browser: 'chromium',
         stealthMode: false,
         capabilities: {},
-        launchOptions: {}
+        launchOptions: {},
+        isTest: true
       },
-      [NodeType.NAVIGATE]: { url: '' },
-      [NodeType.CLICK]: { selector: '', selectorType: 'css', timeout: 30000 },
-      [NodeType.TYPE]: { selector: '', selectorType: 'css', text: '', timeout: 30000 },
-      [NodeType.GET_TEXT]: { selector: '', selectorType: 'css', outputVariable: 'text', timeout: 30000 },
-      [NodeType.SCREENSHOT]: { fullPage: false },
-      [NodeType.WAIT]: { waitType: 'timeout', value: 1000, timeout: 30000 },
-      [NodeType.JAVASCRIPT_CODE]: { code: '// Your code here\nreturn context.data;' },
-      [NodeType.LOOP]: { arrayVariable: '' },
-      [NodeType.INT_VALUE]: { value: 0 },
-      [NodeType.STRING_VALUE]: { value: '' },
-      [NodeType.BOOLEAN_VALUE]: { value: false },
-      [NodeType.INPUT_VALUE]: { dataType: PropertyDataType.STRING, value: '' },
+      [NodeType.NAVIGATE]: { url: '', isTest: true },
+      [NodeType.CLICK]: { selector: '', selectorType: 'css', timeout: 30000, isTest: true },
+      [NodeType.TYPE]: { selector: '', selectorType: 'css', text: '', timeout: 30000, isTest: true },
+      [NodeType.GET_TEXT]: { selector: '', selectorType: 'css', outputVariable: 'text', timeout: 30000, isTest: true },
+      [NodeType.SCREENSHOT]: { fullPage: false, isTest: true },
+      [NodeType.WAIT]: { waitType: 'timeout', value: 1000, timeout: 30000, isTest: true },
+      [NodeType.JAVASCRIPT_CODE]: { code: '// Your code here\nreturn context.data;', isTest: true },
+      [NodeType.LOOP]: { arrayVariable: '', isTest: true },
+      [NodeType.INT_VALUE]: { value: 0, isTest: true },
+      [NodeType.STRING_VALUE]: { value: '', isTest: true },
+      [NodeType.BOOLEAN_VALUE]: { value: false, isTest: true },
+      [NodeType.INPUT_VALUE]: { dataType: PropertyDataType.STRING, value: '', isTest: true },
+      [NodeType.VERIFY]: { domain: 'browser', verificationType: 'url', timeout: 30000, isTest: true },
+      [NodeType.API_REQUEST]: { 
+        method: 'GET', 
+        url: '', 
+        headers: {}, 
+        bodyType: 'json', 
+        timeout: 30000, 
+        contextKey: 'apiResponse',
+        isTest: true
+      },
+      [NodeType.API_CURL]: { 
+        curlCommand: '', 
+        timeout: 30000, 
+        contextKey: 'apiResponse',
+        isTest: true
+      },
+      [NodeType.LOAD_CONFIG_FILE]: { isTest: true },
+      [NodeType.SELECT_CONFIG_FILE]: { isTest: true },
     };
-    return defaults[type as NodeType] || {};
+    const defaultData = defaults[type as NodeType] || { isTest: true };
+    return defaultData;
   }
   
   // Check if it's a plugin node
   const nodeDef = frontendPluginRegistry.getNodeDefinition(type);
   if (nodeDef && nodeDef.defaultData) {
-    return nodeDef.defaultData;
+    return { ...nodeDef.defaultData, isTest: true };
   }
   
-  return {};
+  return { isTest: true };
 }
 

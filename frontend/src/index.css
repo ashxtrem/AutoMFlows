@@ -102,3 +102,12 @@ body {
   background: #5a5a5a;
 }
 
+/* Hide React Flow attribution */
+.react-flow__attribution,
+.react-flow__attribution a,
+a[href*="reactflow.dev"],
+.react-flow__attribution button {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}

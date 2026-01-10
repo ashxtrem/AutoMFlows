@@ -2,12 +2,12 @@ import { useEffect } from 'react';
 import WarningIcon from '@mui/icons-material/Warning';
 import CloseIcon from '@mui/icons-material/Close';
 
-interface ResetWarningProps {
+interface LoadWarningProps {
   onConfirm: () => void;
   onCancel: () => void;
 }
 
-export default function ResetWarning({ onConfirm, onCancel }: ResetWarningProps) {
+export default function LoadWarning({ onConfirm, onCancel }: LoadWarningProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -27,7 +27,7 @@ export default function ResetWarning({ onConfirm, onCancel }: ResetWarningProps)
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           <div className="flex items-center gap-2">
             <WarningIcon sx={{ fontSize: '20px', color: '#fbbf24' }} />
-            <h2 className="text-lg font-semibold text-white">Reset and Load Template</h2>
+            <h2 className="text-lg font-semibold text-white">Load Workflow</h2>
           </div>
           <button
             onClick={onCancel}
@@ -39,7 +39,7 @@ export default function ResetWarning({ onConfirm, onCancel }: ResetWarningProps)
         </div>
         <div className="p-4">
           <p className="text-gray-300 mb-4">
-            Are you sure you want to reset the canvas and load the template? This will replace all current nodes and edges with the sample template. This action cannot be undone.
+            You have an existing workflow loaded. Loading a new workflow will replace the current one. This action cannot be undone.
           </p>
         </div>
         <div className="p-4 border-t border-gray-700 flex gap-2 justify-end">
@@ -51,13 +51,12 @@ export default function ResetWarning({ onConfirm, onCancel }: ResetWarningProps)
           </button>
           <button
             onClick={onConfirm}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded transition-colors"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
           >
-            Reset and Load Template
+            Load Workflow
           </button>
         </div>
       </div>
     </div>
   );
 }
-

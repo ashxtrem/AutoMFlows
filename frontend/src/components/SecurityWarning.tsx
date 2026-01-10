@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { X } from 'lucide-react';
 
 interface SecurityWarningProps {
@@ -5,6 +6,19 @@ interface SecurityWarningProps {
 }
 
 export default function SecurityWarning({ onDismiss }: SecurityWarningProps) {
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onDismiss();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onDismiss]);
+
   return (
     <div className="bg-yellow-900 border-b border-yellow-700 px-4 py-2 flex items-center justify-between">
       <div className="flex items-center gap-2">

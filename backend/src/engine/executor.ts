@@ -162,14 +162,33 @@ export class Executor {
             }
           }
           
+          // Check if node has failSilently enabled
+          const nodeData = node.data as any;
+          const failSilently = nodeData?.failSilently === true;
+          
           this.emitEvent({
             type: ExecutionEventType.NODE_ERROR,
             nodeId,
             message: error.message,
             traceLogs: traceLogs,
             debugInfo: debugInfo,
+            failSilently: failSilently,
             timestamp: Date.now(),
           });
+          
+          // If failSilently is enabled, continue execution instead of throwing
+          if (failSilently) {
+            this.traceLog(`[TRACE] Node ${nodeId} failed silently, continuing execution`);
+            // Mark node as complete (even though it failed) so execution continues
+            this.emitEvent({
+              type: ExecutionEventType.NODE_COMPLETE,
+              nodeId,
+              timestamp: Date.now(),
+            });
+            continue; // Continue to next node
+          }
+          
+          // Otherwise, throw error to stop execution
           throw error;
         }
       }

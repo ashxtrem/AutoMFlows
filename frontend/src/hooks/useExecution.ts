@@ -82,7 +82,6 @@ export function useExecution() {
           break;
         case ExecutionEventType.NODE_ERROR:
           setExecutingNodeId(null);
-          setExecutionStatus('error');
           // Store node error with trace logs and debug info
           if (event.nodeId) {
             setNodeError(event.nodeId, {
@@ -91,6 +90,11 @@ export function useExecution() {
               debugInfo: event.debugInfo,
             });
           }
+          // Only stop execution if failSilently is not enabled
+          if (!event.failSilently) {
+            setExecutionStatus('error');
+          }
+          // If failSilently is enabled, execution continues, so don't change status
           break;
         case ExecutionEventType.EXECUTION_COMPLETE:
           setExecutionStatus('completed');

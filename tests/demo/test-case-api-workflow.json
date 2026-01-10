@@ -1,0 +1,451 @@
+{
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 300
+      },
+      "data": {
+        "type": "start",
+        "label": "Start"
+      }
+    },
+    {
+      "id": "api-get-all",
+      "type": "apiRequest",
+      "position": {
+        "x": 300,
+        "y": 300
+      },
+      "data": {
+        "type": "apiRequest",
+        "label": "GET: Fetch All Objects",
+        "method": "GET",
+        "url": "https://api.restful-api.dev/objects",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "bodyType": "json",
+        "timeout": 30000,
+        "contextKey": "allObjects"
+      }
+    },
+    {
+      "id": "verify-get-all-status",
+      "type": "verify",
+      "position": {
+        "x": 550,
+        "y": 200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify: GET All Status",
+        "domain": "api",
+        "verificationType": "status",
+        "apiContextKey": "allObjects",
+        "statusCode": 200,
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "verify-get-all-array",
+      "type": "verify",
+      "position": {
+        "x": 550,
+        "y": 250
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify: GET All Returns Array",
+        "domain": "api",
+        "verificationType": "bodyPath",
+        "apiContextKey": "allObjects",
+        "jsonPath": "0.id",
+        "expectedValue": "1",
+        "matchType": "equals",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "api-get-single",
+      "type": "apiRequest",
+      "position": {
+        "x": 800,
+        "y": 300
+      },
+      "data": {
+        "type": "apiRequest",
+        "label": "GET: Fetch Single Object by ID",
+        "method": "GET",
+        "url": "https://api.restful-api.dev/objects/${data.allObjects.body[0].id}",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "bodyType": "json",
+        "timeout": 30000,
+        "contextKey": "singleObject"
+      }
+    },
+    {
+      "id": "verify-get-single-status",
+      "type": "verify",
+      "position": {
+        "x": 1050,
+        "y": 250
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify: GET Single Status",
+        "domain": "api",
+        "verificationType": "status",
+        "apiContextKey": "singleObject",
+        "statusCode": 200,
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "verify-get-single-id",
+      "type": "verify",
+      "position": {
+        "x": 1050,
+        "y": 300
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify: GET Single Has ID",
+        "domain": "api",
+        "verificationType": "bodyPath",
+        "apiContextKey": "singleObject",
+        "jsonPath": "id",
+        "expectedValue": "${data.allObjects.body[0].id}",
+        "matchType": "equals",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "api-post-create",
+      "type": "apiRequest",
+      "position": {
+        "x": 1300,
+        "y": 300
+      },
+      "data": {
+        "type": "apiRequest",
+        "label": "POST: Create New Object",
+        "method": "POST",
+        "url": "https://api.restful-api.dev/objects",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\"name\": \"Test Object Created by Workflow\", \"data\": {\"workflow\": \"api-workflow\", \"timestamp\": \"${new Date().toISOString()}\", \"source\": \"automflows\"}}",
+        "bodyType": "json",
+        "timeout": 30000,
+        "contextKey": "createdObject"
+      }
+    },
+    {
+      "id": "verify-post-status",
+      "type": "verify",
+      "position": {
+        "x": 1550,
+        "y": 250
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify: POST Status",
+        "domain": "api",
+        "verificationType": "status",
+        "apiContextKey": "createdObject",
+        "statusCode": 200,
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "verify-post-name",
+      "type": "verify",
+      "position": {
+        "x": 1550,
+        "y": 300
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify: POST Name",
+        "domain": "api",
+        "verificationType": "bodyPath",
+        "apiContextKey": "createdObject",
+        "jsonPath": "name",
+        "expectedValue": "Test Object Created by Workflow",
+        "matchType": "equals",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "api-put-update",
+      "type": "apiRequest",
+      "position": {
+        "x": 1800,
+        "y": 300
+      },
+      "data": {
+        "type": "apiRequest",
+        "label": "PUT: Update Object (Full)",
+        "method": "PUT",
+        "url": "https://api.restful-api.dev/objects/${data.createdObject.body.id}",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\"name\": \"Updated Test Object\", \"data\": {\"workflow\": \"api-workflow\", \"status\": \"updated\", \"timestamp\": \"${new Date().toISOString()}\", \"method\": \"PUT\"}}",
+        "bodyType": "json",
+        "timeout": 30000,
+        "contextKey": "updatedObject"
+      }
+    },
+    {
+      "id": "verify-put-status",
+      "type": "verify",
+      "position": {
+        "x": 2050,
+        "y": 300
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify: PUT Status",
+        "domain": "api",
+        "verificationType": "status",
+        "apiContextKey": "updatedObject",
+        "statusCode": 200,
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "api-patch-update",
+      "type": "apiCurl",
+      "position": {
+        "x": 2300,
+        "y": 300
+      },
+      "data": {
+        "type": "apiCurl",
+        "label": "PATCH: Partially Update Object (cURL)",
+        "curlCommand": "curl -X PATCH 'https://api.restful-api.dev/objects/${data.createdObject.body.id}' -H 'Content-Type: application/json' --data-raw '{\"data\": {\"status\": \"patched\", \"method\": \"PATCH\"}}'",
+        "timeout": 30000,
+        "contextKey": "patchedObject"
+      }
+    },
+    {
+      "id": "verify-patch-status",
+      "type": "verify",
+      "position": {
+        "x": 2550,
+        "y": 250
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify: PATCH Status",
+        "domain": "api",
+        "verificationType": "status",
+        "apiContextKey": "patchedObject",
+        "statusCode": 200,
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "verify-patch-data-status",
+      "type": "verify",
+      "position": {
+        "x": 2550,
+        "y": 300
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify: PATCH Data Status",
+        "domain": "api",
+        "verificationType": "bodyPath",
+        "apiContextKey": "patchedObject",
+        "jsonPath": "data.status",
+        "expectedValue": "patched",
+        "matchType": "equals",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "api-delete",
+      "type": "apiRequest",
+      "position": {
+        "x": 2800,
+        "y": 300
+      },
+      "data": {
+        "type": "apiRequest",
+        "label": "DELETE: Delete Object",
+        "method": "DELETE",
+        "url": "https://api.restful-api.dev/objects/${data.createdObject.body.id}",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "bodyType": "json",
+        "timeout": 30000,
+        "contextKey": "deletedObject"
+      }
+    },
+    {
+      "id": "verify-delete-status",
+      "type": "verify",
+      "position": {
+        "x": 3050,
+        "y": 300
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify: DELETE Status",
+        "domain": "api",
+        "verificationType": "status",
+        "apiContextKey": "deletedObject",
+        "statusCode": 200,
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "verify-updated-id-matches",
+      "type": "verify",
+      "position": {
+        "x": 3300,
+        "y": 300
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify: Updated ID Matches Created",
+        "domain": "api",
+        "verificationType": "bodyPath",
+        "apiContextKey": "updatedObject",
+        "jsonPath": "id",
+        "expectedValue": "${data.createdObject.body.id}",
+        "matchType": "equals",
+        "timeout": 30000
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-api-get-all",
+      "source": "start-1",
+      "target": "api-get-all",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-api-get-all-verify-status",
+      "source": "api-get-all",
+      "target": "verify-get-all-status",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-get-all-status-verify-array",
+      "source": "verify-get-all-status",
+      "target": "verify-get-all-array",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-get-all-array-api-get-single",
+      "source": "verify-get-all-array",
+      "target": "api-get-single",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-api-get-single-verify-status",
+      "source": "api-get-single",
+      "target": "verify-get-single-status",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-get-single-status-verify-id",
+      "source": "verify-get-single-status",
+      "target": "verify-get-single-id",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-get-single-id-api-post-create",
+      "source": "verify-get-single-id",
+      "target": "api-post-create",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-api-post-create-verify-status",
+      "source": "api-post-create",
+      "target": "verify-post-status",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-post-status-verify-name",
+      "source": "verify-post-status",
+      "target": "verify-post-name",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-post-name-api-put-update",
+      "source": "verify-post-name",
+      "target": "api-put-update",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-api-put-update-verify-status",
+      "source": "api-put-update",
+      "target": "verify-put-status",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-put-status-api-patch-update",
+      "source": "verify-put-status",
+      "target": "api-patch-update",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-api-patch-update-verify-status",
+      "source": "api-patch-update",
+      "target": "verify-patch-status",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-patch-status-verify-data-status",
+      "source": "verify-patch-status",
+      "target": "verify-patch-data-status",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-patch-data-status-api-delete",
+      "source": "verify-patch-data-status",
+      "target": "api-delete",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-api-delete-verify-delete-status",
+      "source": "api-delete",
+      "target": "verify-delete-status",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-delete-status-verify-updated-id",
+      "source": "verify-delete-status",
+      "target": "verify-updated-id-matches",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    }
+  ]
+}

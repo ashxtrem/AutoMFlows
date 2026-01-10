@@ -1,0 +1,845 @@
+import { Node } from 'reactflow';
+import { useState } from 'react';
+import RetryConfigSection from '../RetryConfigSection';
+import { VerificationDomain, BrowserVerificationType, MatchType, ComparisonOperator } from '@automflows/shared';
+
+interface VerifyConfigProps {
+  node: Node;
+  onChange: (field: string, value: any) => void;
+}
+
+const BROWSER_VERIFICATION_TYPES: { value: BrowserVerificationType; label: string }[] = [
+  { value: 'url', label: 'URL' },
+  { value: 'text', label: 'Text' },
+  { value: 'element', label: 'Element' },
+  { value: 'attribute', label: 'Attribute' },
+  { value: 'formField', label: 'Form Field' },
+  { value: 'cookie', label: 'Cookie' },
+  { value: 'storage', label: 'Storage' },
+  { value: 'css', label: 'CSS' },
+];
+
+const API_VERIFICATION_TYPES: { value: string; label: string }[] = [
+  { value: 'status', label: 'Status Code' },
+  { value: 'header', label: 'Header' },
+  { value: 'bodyPath', label: 'Body Path (JSON)' },
+  { value: 'bodyValue', label: 'Body Value' },
+];
+
+const MATCH_TYPES: { value: MatchType; label: string }[] = [
+  { value: 'equals', label: 'Equals' },
+  { value: 'contains', label: 'Contains' },
+  { value: 'startsWith', label: 'Starts With' },
+  { value: 'endsWith', label: 'Ends With' },
+  { value: 'regex', label: 'Regex' },
+];
+
+const COMPARISON_OPERATORS: { value: ComparisonOperator; label: string }[] = [
+  { value: 'equals', label: 'Equals (=)' },
+  { value: 'greaterThan', label: 'Greater Than (>)' },
+  { value: 'lessThan', label: 'Less Than (<)' },
+  { value: 'greaterThanOrEqual', label: 'Greater Than or Equal (>=)' },
+  { value: 'lessThanOrEqual', label: 'Less Than or Equal (<=)' },
+];
+
+const ELEMENT_CHECKS = [
+  { value: 'visible', label: 'Visible' },
+  { value: 'hidden', label: 'Hidden' },
+  { value: 'exists', label: 'Exists' },
+  { value: 'notExists', label: 'Not Exists' },
+  { value: 'count', label: 'Count' },
+  { value: 'enabled', label: 'Enabled' },
+  { value: 'disabled', label: 'Disabled' },
+  { value: 'selected', label: 'Selected' },
+  { value: 'checked', label: 'Checked' },
+];
+
+export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
+  const data = node.data;
+  const domain = (data.domain as VerificationDomain) || 'browser';
+  const verificationType = data.verificationType || 'url';
+
+  const renderBrowserConfig = () => {
+    switch (verificationType) {
+      case 'url':
+        return (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">URL Pattern</label>
+              <input
+                type="text"
+                value={data.urlPattern || ''}
+                onChange={(e) => onChange('urlPattern', e.target.value)}
+                placeholder="practicetestautomation.com/logged-in-successfully/"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                Supports context references: {'${data.keyName}'} or {'${variables.varName}'}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Match Type</label>
+              <select
+                value={data.matchType || 'contains'}
+                onChange={(e) => onChange('matchType', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                {MATCH_TYPES.map((mt) => (
+                  <option key={mt.value} value={mt.value}>
+                    {mt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        );
+
+      case 'text':
+        return (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Expected Text</label>
+              <textarea
+                value={data.expectedText || ''}
+                onChange={(e) => onChange('expectedText', e.target.value)}
+                placeholder="Congratulations"
+                rows={3}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                Supports context references: {'${data.keyName}'} or {'${variables.varName}'}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Match Type</label>
+              <select
+                value={data.matchType || 'contains'}
+                onChange={(e) => onChange('matchType', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                {MATCH_TYPES.map((mt) => (
+                  <option key={mt.value} value={mt.value}>
+                    {mt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Selector (Optional)</label>
+              <input
+                type="text"
+                value={data.selector || ''}
+                onChange={(e) => onChange('selector', e.target.value)}
+                placeholder="Leave empty to check entire page"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                If provided, checks text from this element only
+              </div>
+            </div>
+            {data.selector && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
+                <select
+                  value={data.selectorType || 'css'}
+                  onChange={(e) => onChange('selectorType', e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                >
+                  <option value="css">CSS Selector</option>
+                  <option value="xpath">XPath</option>
+                </select>
+              </div>
+            )}
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={data.caseSensitive || false}
+                  onChange={(e) => onChange('caseSensitive', e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-sm text-gray-300">Case Sensitive</span>
+              </label>
+            </div>
+          </>
+        );
+
+      case 'element':
+        return (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Selector</label>
+              <input
+                type="text"
+                value={data.selector || ''}
+                onChange={(e) => onChange('selector', e.target.value)}
+                placeholder="button:has-text('Log out')"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
+              <select
+                value={data.selectorType || 'css'}
+                onChange={(e) => onChange('selectorType', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                <option value="css">CSS Selector</option>
+                <option value="xpath">XPath</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Element Check</label>
+              <select
+                value={data.elementCheck || 'visible'}
+                onChange={(e) => onChange('elementCheck', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                {ELEMENT_CHECKS.map((ec) => (
+                  <option key={ec.value} value={ec.value}>
+                    {ec.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {data.elementCheck === 'count' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Comparison Operator</label>
+                  <select
+                    value={data.comparisonOperator || 'equals'}
+                    onChange={(e) => onChange('comparisonOperator', e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                  >
+                    {COMPARISON_OPERATORS.map((op) => (
+                      <option key={op.value} value={op.value}>
+                        {op.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">Expected Count</label>
+                  <input
+                    type="number"
+                    value={data.expectedValue || ''}
+                    onChange={(e) => onChange('expectedValue', parseInt(e.target.value, 10) || 0)}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                  />
+                  <div className="mt-1 text-xs text-gray-400">
+                    Supports context references: {'${data.keyName}'} or {'${variables.varName}'}
+                  </div>
+                </div>
+              </>
+            )}
+          </>
+        );
+
+      case 'attribute':
+        return (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Selector</label>
+              <input
+                type="text"
+                value={data.selector || ''}
+                onChange={(e) => onChange('selector', e.target.value)}
+                placeholder="#submit-btn"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
+              <select
+                value={data.selectorType || 'css'}
+                onChange={(e) => onChange('selectorType', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                <option value="css">CSS Selector</option>
+                <option value="xpath">XPath</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Attribute Name</label>
+              <input
+                type="text"
+                value={data.attributeName || ''}
+                onChange={(e) => onChange('attributeName', e.target.value)}
+                placeholder="disabled"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Expected Value (Optional)</label>
+              <input
+                type="text"
+                value={data.expectedValue || ''}
+                onChange={(e) => onChange('expectedValue', e.target.value)}
+                placeholder="Leave empty to just check existence"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                Supports context references: {'${data.keyName}'} or {'${variables.varName}'}
+              </div>
+            </div>
+            {data.expectedValue && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Match Type</label>
+                <select
+                  value={data.matchType || 'equals'}
+                  onChange={(e) => onChange('matchType', e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                >
+                  {MATCH_TYPES.map((mt) => (
+                    <option key={mt.value} value={mt.value}>
+                      {mt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </>
+        );
+
+      case 'formField':
+        return (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Selector</label>
+              <input
+                type="text"
+                value={data.selector || ''}
+                onChange={(e) => onChange('selector', e.target.value)}
+                placeholder="#username"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
+              <select
+                value={data.selectorType || 'css'}
+                onChange={(e) => onChange('selectorType', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                <option value="css">CSS Selector</option>
+                <option value="xpath">XPath</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Expected Value</label>
+              <input
+                type="text"
+                value={data.expectedValue || ''}
+                onChange={(e) => onChange('expectedValue', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                Supports context references: {'${data.keyName}'} or {'${variables.varName}'}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Match Type</label>
+              <select
+                value={data.matchType || 'equals'}
+                onChange={(e) => onChange('matchType', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                {MATCH_TYPES.map((mt) => (
+                  <option key={mt.value} value={mt.value}>
+                    {mt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        );
+
+      case 'cookie':
+        return (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Cookie Name</label>
+              <input
+                type="text"
+                value={data.cookieName || ''}
+                onChange={(e) => onChange('cookieName', e.target.value)}
+                placeholder="sessionId"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Expected Value (Optional)</label>
+              <input
+                type="text"
+                value={data.expectedValue || ''}
+                onChange={(e) => onChange('expectedValue', e.target.value)}
+                placeholder="Leave empty to just check existence"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                Supports context references: {'${data.keyName}'} or {'${variables.varName}'}
+              </div>
+            </div>
+            {data.expectedValue && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Match Type</label>
+                <select
+                  value={data.matchType || 'equals'}
+                  onChange={(e) => onChange('matchType', e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                >
+                  {MATCH_TYPES.map((mt) => (
+                    <option key={mt.value} value={mt.value}>
+                      {mt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </>
+        );
+
+      case 'storage':
+        return (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Storage Type</label>
+              <select
+                value={data.storageType || 'local'}
+                onChange={(e) => onChange('storageType', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                <option value="local">Local Storage</option>
+                <option value="session">Session Storage</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Storage Key</label>
+              <input
+                type="text"
+                value={data.storageKey || ''}
+                onChange={(e) => onChange('storageKey', e.target.value)}
+                placeholder="userToken"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Expected Value (Optional)</label>
+              <input
+                type="text"
+                value={data.expectedValue || ''}
+                onChange={(e) => onChange('expectedValue', e.target.value)}
+                placeholder="Leave empty to just check existence"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                Supports context references: {'${data.keyName}'} or {'${variables.varName}'}
+              </div>
+            </div>
+            {data.expectedValue && (
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Match Type</label>
+                <select
+                  value={data.matchType || 'equals'}
+                  onChange={(e) => onChange('matchType', e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                >
+                  {MATCH_TYPES.map((mt) => (
+                    <option key={mt.value} value={mt.value}>
+                      {mt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </>
+        );
+
+      case 'css':
+        return (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Selector</label>
+              <input
+                type="text"
+                value={data.selector || ''}
+                onChange={(e) => onChange('selector', e.target.value)}
+                placeholder=".button"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
+              <select
+                value={data.selectorType || 'css'}
+                onChange={(e) => onChange('selectorType', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                <option value="css">CSS Selector</option>
+                <option value="xpath">XPath</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">CSS Property</label>
+              <input
+                type="text"
+                value={data.cssProperty || ''}
+                onChange={(e) => onChange('cssProperty', e.target.value)}
+                placeholder="background-color"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Expected Value</label>
+              <input
+                type="text"
+                value={data.expectedValue || ''}
+                onChange={(e) => onChange('expectedValue', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                Supports context references: {'${data.keyName}'} or {'${variables.varName}'}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Match Type</label>
+              <select
+                value={data.matchType || 'equals'}
+                onChange={(e) => onChange('matchType', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                {MATCH_TYPES.map((mt) => (
+                  <option key={mt.value} value={mt.value}>
+                    {mt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        );
+
+      default:
+        return <div className="text-gray-400 text-sm">Select a verification type</div>;
+    }
+  };
+
+  const renderApiConfig = () => {
+    switch (verificationType) {
+      case 'status':
+        return (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">API Context Key</label>
+              <input
+                type="text"
+                value={data.apiContextKey || 'apiResponse'}
+                onChange={(e) => onChange('apiContextKey', e.target.value)}
+                placeholder="apiResponse"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                Context key where API response is stored (from API Request or API cURL node)
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Expected Status Code</label>
+              <input
+                type="number"
+                value={data.statusCode || 200}
+                onChange={(e) => onChange('statusCode', parseInt(e.target.value, 10) || 200)}
+                placeholder="200"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                Supports context references: {'${data.keyName}'} or {'${variables.varName}'}
+              </div>
+            </div>
+          </>
+        );
+
+      case 'header':
+        return (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">API Context Key</label>
+              <input
+                type="text"
+                value={data.apiContextKey || 'apiResponse'}
+                onChange={(e) => onChange('apiContextKey', e.target.value)}
+                placeholder="apiResponse"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Header Name</label>
+              <input
+                type="text"
+                value={data.headerName || ''}
+                onChange={(e) => onChange('headerName', e.target.value)}
+                placeholder="content-type"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Expected Header Value</label>
+              <input
+                type="text"
+                value={data.expectedValue || ''}
+                onChange={(e) => onChange('expectedValue', e.target.value)}
+                placeholder="application/json"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                Supports context references: {'${data.keyName}'} or {'${variables.varName}'}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Match Type</label>
+              <select
+                value={data.matchType || 'equals'}
+                onChange={(e) => onChange('matchType', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                {MATCH_TYPES.map((mt) => (
+                  <option key={mt.value} value={mt.value}>
+                    {mt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={data.caseSensitive || false}
+                  onChange={(e) => onChange('caseSensitive', e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-sm text-gray-400">Case Sensitive</span>
+              </label>
+            </div>
+          </>
+        );
+
+      case 'bodyPath':
+        return (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">API Context Key</label>
+              <input
+                type="text"
+                value={data.apiContextKey || 'apiResponse'}
+                onChange={(e) => onChange('apiContextKey', e.target.value)}
+                placeholder="apiResponse"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">JSON Path</label>
+              <input
+                type="text"
+                value={data.jsonPath || ''}
+                onChange={(e) => onChange('jsonPath', e.target.value)}
+                placeholder="body.customer.id"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                Dot-notation path to check in response body (e.g., body.customer.id)
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Expected Value</label>
+              <input
+                type="text"
+                value={data.expectedValue !== undefined ? String(data.expectedValue) : ''}
+                onChange={(e) => onChange('expectedValue', e.target.value)}
+                placeholder="Expected value"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                Supports context references: {'${data.keyName}'} or {'${variables.varName}'}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Match Type</label>
+              <select
+                value={data.matchType || 'equals'}
+                onChange={(e) => onChange('matchType', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                {MATCH_TYPES.map((mt) => (
+                  <option key={mt.value} value={mt.value}>
+                    {mt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={data.caseSensitive || false}
+                  onChange={(e) => onChange('caseSensitive', e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-sm text-gray-400">Case Sensitive</span>
+              </label>
+            </div>
+          </>
+        );
+
+      case 'bodyValue':
+        return (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">API Context Key</label>
+              <input
+                type="text"
+                value={data.apiContextKey || 'apiResponse'}
+                onChange={(e) => onChange('apiContextKey', e.target.value)}
+                placeholder="apiResponse"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Expected Body Value</label>
+              <textarea
+                value={data.expectedValue !== undefined ? (typeof data.expectedValue === 'object' ? JSON.stringify(data.expectedValue, null, 2) : String(data.expectedValue)) : ''}
+                onChange={(e) => {
+                  try {
+                    const parsed = JSON.parse(e.target.value);
+                    onChange('expectedValue', parsed);
+                  } catch {
+                    onChange('expectedValue', e.target.value);
+                  }
+                }}
+                placeholder='{"key": "value"}'
+                rows={6}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm font-mono"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                JSON object or string. Supports context references: {'${data.keyName}'} or {'${variables.varName}'}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Match Type</label>
+              <select
+                value={data.matchType || 'equals'}
+                onChange={(e) => onChange('matchType', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                {MATCH_TYPES.map((mt) => (
+                  <option key={mt.value} value={mt.value}>
+                    {mt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={data.caseSensitive || false}
+                  onChange={(e) => onChange('caseSensitive', e.target.checked)}
+                  className="rounded"
+                />
+                <span className="text-sm text-gray-400">Case Sensitive</span>
+              </label>
+            </div>
+          </>
+        );
+
+      default:
+        return <div className="text-gray-400 text-sm">Select a verification type</div>;
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Domain</label>
+        <select
+          value={domain}
+          onChange={(e) => onChange('domain', e.target.value)}
+          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+        >
+          <option value="browser">Browser</option>
+          <option value="api">API</option>
+          <option value="database" disabled>Database (Coming Soon)</option>
+        </select>
+      </div>
+
+      {domain === 'browser' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">Verification Type</label>
+          <select
+            value={verificationType}
+            onChange={(e) => onChange('verificationType', e.target.value)}
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+          >
+            {BROWSER_VERIFICATION_TYPES.map((vt) => (
+              <option key={vt.value} value={vt.value}>
+                {vt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {domain === 'api' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">Verification Type</label>
+          <select
+            value={verificationType}
+            onChange={(e) => onChange('verificationType', e.target.value)}
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+          >
+            {API_VERIFICATION_TYPES.map((vt) => (
+              <option key={vt.value} value={vt.value}>
+                {vt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {domain === 'browser' && renderBrowserConfig()}
+      {domain === 'api' && renderApiConfig()}
+
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
+        <input
+          type="number"
+          value={data.timeout || 30000}
+          onChange={(e) => onChange('timeout', parseInt(e.target.value, 10) || 30000)}
+          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+        />
+      </div>
+
+      <div>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={data.failSilently || false}
+            onChange={(e) => onChange('failSilently', e.target.checked)}
+            className="rounded"
+          />
+          <span className="text-sm text-gray-300">Fail Silently</span>
+        </label>
+        <div className="mt-1 text-xs text-gray-400">
+          Continue execution even if verification fails
+        </div>
+      </div>
+
+      {domain !== 'api' && <RetryConfigSection data={data} onChange={onChange} />}
+      {domain === 'api' && (
+        <div className="border-t border-gray-600 pt-4">
+          <div className="text-xs text-gray-400">
+            Retry configuration is not available for API domain verify nodes. 
+            Retries are handled by the API execution node when the API request is made.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

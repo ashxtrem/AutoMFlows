@@ -2,7 +2,6 @@ import { useCallback, useRef, useState, useEffect, useMemo } from 'react';
 import ReactFlow, {
   Background,
   Controls,
-  MiniMap,
   useReactFlow,
   Node,
 } from 'reactflow';
@@ -229,14 +228,10 @@ function CanvasInner() {
         edgeTypes={edgeTypes}
         fitView
         className="bg-gray-900"
+        proOptions={{ hideAttribution: true }}
       >
         <Background color="#4a4a4a" gap={16} />
         <Controls className="bg-gray-800 border border-gray-700" />
-        <MiniMap
-          className="bg-gray-800 border border-gray-700"
-          nodeColor="#4a9eff"
-          maskColor="rgba(0, 0, 0, 0.5)"
-        />
       </ReactFlow>
       {contextMenu && (
         <ContextMenu

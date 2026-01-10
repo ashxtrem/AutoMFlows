@@ -3,20 +3,30 @@
  * Provides retry logic with count-based and condition-based strategies
  */
 
+import { MatchType } from '@automflows/shared';
+import { ContextManager } from '../engine/context';
+
 export interface RetryOptions {
   enabled: boolean;
   strategy: 'count' | 'untilCondition';
   count?: number; // For count strategy
   untilCondition?: {
-    type: 'selector' | 'url' | 'javascript';
-    value: string;
+    type: 'selector' | 'url' | 'javascript' | 'api-status' | 'api-json-path' | 'api-javascript';
+    value?: string; // Optional, used for javascript and api-javascript
     selectorType?: 'css' | 'xpath';
     timeout?: number; // Max time to retry
+    // API-specific fields
+    expectedStatus?: number; // For api-status
+    jsonPath?: string; // For api-json-path
+    expectedValue?: any; // For api-json-path
+    matchType?: MatchType; // For api-json-path
+    contextKey?: string; // For api-javascript (which API response to check)
   };
   delay?: number; // Base delay in ms
   delayStrategy?: 'fixed' | 'exponential';
   maxDelay?: number; // Max delay for exponential (optional)
   failSilently?: boolean;
+  context?: ContextManager; // Context for API condition checking
 }
 
 export class RetryHelper {
@@ -29,14 +39,28 @@ export class RetryHelper {
     page?: any
   ): Promise<T> {
     if (!options.enabled) {
-      return operation();
+      // When retry is disabled, still handle failSilently
+      try {
+        return await operation();
+      } catch (error: any) {
+        if (options.failSilently) {
+          console.warn(`Operation failed silently: ${error.message}`);
+          return undefined as T;
+        }
+        throw error;
+      }
     }
 
     if (options.strategy === 'count') {
       return this.retryWithCount(operation, options);
     } else if (options.strategy === 'untilCondition') {
-      if (!page) {
-        throw new Error('Page is required for retry until condition strategy');
+      // Check if this is an API condition (doesn't need page)
+      const isApiCondition = options.untilCondition?.type?.startsWith('api-');
+      if (!isApiCondition && !page) {
+        throw new Error('Page is required for browser-based retry until condition strategy');
+      }
+      if (isApiCondition && !options.context) {
+        throw new Error('Context is required for API retry until condition strategy');
       }
       return this.retryUntilCondition(operation, options, page);
     } else {
@@ -123,7 +147,10 @@ export class RetryHelper {
         attempt++;
 
         // Check if condition is met
-        const conditionMet = await this.checkCondition(page, condition);
+        const isApiCondition = condition.type?.startsWith('api-');
+        const conditionMet = isApiCondition 
+          ? await this.checkApiCondition(options.context!, condition as any)
+          : await this.checkCondition(page, condition as any);
         if (conditionMet) {
           return result;
         }
@@ -148,7 +175,10 @@ export class RetryHelper {
 
         // Check if condition is met despite error
         try {
-          const conditionMet = await this.checkCondition(page, condition);
+          const isApiCondition = condition.type?.startsWith('api-');
+          const conditionMet = isApiCondition 
+            ? await this.checkApiCondition(options.context!, condition as any)
+            : await this.checkCondition(page, condition as any);
           if (conditionMet) {
             return undefined as T; // Condition met but operation failed
           }
@@ -176,7 +206,7 @@ export class RetryHelper {
   }
 
   /**
-   * Check if condition is met
+   * Check if condition is met (browser-based conditions)
    */
   private static async checkCondition(
     page: any,
@@ -214,6 +244,145 @@ export class RetryHelper {
       return false;
     } catch {
       return false;
+    }
+  }
+
+  /**
+   * Check if API condition is met
+   */
+  private static async checkApiCondition(
+    context: ContextManager,
+    condition: {
+      type: 'api-status' | 'api-json-path' | 'api-javascript';
+      value?: string;
+      expectedStatus?: number;
+      jsonPath?: string;
+      expectedValue?: any;
+      matchType?: MatchType;
+      contextKey?: string;
+    }
+  ): Promise<boolean> {
+    try {
+      // Get the API response from context
+      // For api-javascript, use the specified contextKey, otherwise use default
+      const contextKey = condition.contextKey || 'apiResponse';
+      const apiResponse = context.getData(contextKey);
+
+      if (!apiResponse) {
+        // API response not found, condition not met
+        return false;
+      }
+
+      if (condition.type === 'api-status') {
+        // Check if status code matches expected status
+        if (condition.expectedStatus === undefined || condition.expectedStatus === null) {
+          return false;
+        }
+        return apiResponse.status === condition.expectedStatus;
+      } else if (condition.type === 'api-json-path') {
+        // Check if JSON path matches expected value
+        if (!condition.jsonPath || condition.expectedValue === undefined) {
+          return false;
+        }
+
+        const actualValue = this.getNestedValue(apiResponse.body, condition.jsonPath);
+        if (actualValue === undefined) {
+          return false;
+        }
+
+        const matchType = condition.matchType || 'equals';
+        return this.matchValue(actualValue, condition.expectedValue, matchType);
+      } else if (condition.type === 'api-javascript') {
+        // Execute JavaScript with API response context
+        if (!condition.value) {
+          return false;
+        }
+
+        try {
+          // Create a safe execution context with API response
+          const response = apiResponse;
+          const contextData = {
+            response: {
+              status: response.status,
+              statusText: response.statusText,
+              headers: response.headers,
+              body: response.body,
+              duration: response.duration,
+              timestamp: response.timestamp,
+            },
+            context: {
+              data: context.getAllData(),
+              variables: context.getAllVariables(),
+              getData: (key: string) => context.getData(key),
+              getVariable: (key: string) => context.getVariable(key),
+            },
+          };
+
+          // Execute user code - wrap in async function to support await
+          // The user code should be an expression that evaluates to a boolean
+          // eslint-disable-next-line @typescript-eslint/no-implied-eval
+          const fn = new Function('ctx', `
+            const response = ctx.response;
+            const context = ctx.context;
+            return (${condition.value});
+          `);
+          const result = fn(contextData);
+          return !!result;
+        } catch (error: any) {
+          console.warn(`[RetryHelper] API JavaScript condition error: ${error.message}`);
+          return false;
+        }
+      }
+
+      return false;
+    } catch (error: any) {
+      console.warn(`[RetryHelper] API condition check error: ${error.message}`);
+      return false;
+    }
+  }
+
+  /**
+   * Get nested value from object using dot notation path
+   */
+  private static getNestedValue(obj: any, path: string): any {
+    const parts = path.split('.');
+    let current = obj;
+
+    for (const part of parts) {
+      if (current === null || current === undefined) {
+        return undefined;
+      }
+      current = current[part];
+    }
+
+    return current;
+  }
+
+  /**
+   * Match a value against an expected value using match type
+   */
+  private static matchValue(actual: any, expected: any, matchType: MatchType): boolean {
+    const actualStr = String(actual);
+    const expectedStr = String(expected);
+
+    switch (matchType) {
+      case 'equals':
+        return actualStr === expectedStr;
+      case 'contains':
+        return actualStr.includes(expectedStr);
+      case 'startsWith':
+        return actualStr.startsWith(expectedStr);
+      case 'endsWith':
+        return actualStr.endsWith(expectedStr);
+      case 'regex':
+        try {
+          const regex = new RegExp(expectedStr);
+          return regex.test(actualStr);
+        } catch {
+          return false;
+        }
+      default:
+        return actualStr === expectedStr;
     }
   }
 

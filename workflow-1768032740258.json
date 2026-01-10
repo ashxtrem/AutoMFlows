@@ -1,0 +1,402 @@
+{
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 200
+      },
+      "data": {
+        "type": "start",
+        "label": "Start"
+      }
+    },
+    {
+      "id": "openBrowser-1",
+      "type": "openBrowser",
+      "position": {
+        "x": 350,
+        "y": 200
+      },
+      "data": {
+        "type": "openBrowser",
+        "label": "Open Browser",
+        "headless": false,
+        "viewportWidth": 1280,
+        "viewportHeight": 720
+      }
+    },
+    {
+      "id": "api-get-all-1",
+      "type": "apiRequest",
+      "position": {
+        "x": 600,
+        "y": 200
+      },
+      "data": {
+        "type": "apiRequest",
+        "label": "API: Get All Objects",
+        "method": "GET",
+        "url": "${data.endpoints.BASE_API}/objects",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "bodyType": "json",
+        "timeout": 30000,
+        "contextKey": "apiAllObjects"
+      }
+    },
+    {
+      "id": "verify-api-all-1",
+      "type": "javascriptCode",
+      "position": {
+        "x": 850,
+        "y": 100
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Verify API: All Objects Response",
+        "code": "// Verify API response for Get All Objects\nconst apiResponse = context.getData('apiAllObjects');\nif (!apiResponse) {\n  throw new Error('API response not found in context');\n}\nif (apiResponse.status !== 200) {\n  throw new Error(`Expected status 200, got ${apiResponse.status}`);\n}\nif (!Array.isArray(apiResponse.body)) {\n  throw new Error('Expected response body to be an array');\n}\nif (apiResponse.body.length === 0) {\n  throw new Error('Expected at least one object in response');\n}\nconsole.log(`Successfully retrieved ${apiResponse.body.length} objects from API`);\nreturn true;"
+      }
+    },
+    {
+      "id": "navigate-1",
+      "type": "navigate",
+      "position": {
+        "x": 850,
+        "y": 200
+      },
+      "data": {
+        "type": "navigate",
+        "label": "Navigate to Login Page",
+        "url": "${data.endpoints.BASE_WEB_URL}",
+        "timeout": 30000,
+        "waitUntil": "networkidle"
+      }
+    },
+    {
+      "id": "api-get-single-1",
+      "type": "apiRequest",
+      "position": {
+        "x": 1100,
+        "y": 200
+      },
+      "data": {
+        "type": "apiRequest",
+        "label": "API: Get Object by ID",
+        "method": "GET",
+        "url": "https://api.restful-api.dev/objects/1",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "bodyType": "json",
+        "timeout": 30000,
+        "contextKey": "apiSingleObject"
+      }
+    },
+    {
+      "id": "verify-api-single-1",
+      "type": "javascriptCode",
+      "position": {
+        "x": 1350,
+        "y": 100
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Verify API: Single Object Response",
+        "code": "// Verify API response for Get Single Object\nconst apiResponse = context.getData('apiSingleObject');\nif (!apiResponse) {\n  throw new Error('API response not found in context');\n}\nif (apiResponse.status !== 200) {\n  throw new Error(`Expected status 200, got ${apiResponse.status}`);\n}\nif (!apiResponse.body || !apiResponse.body.id) {\n  throw new Error('Expected response body to have an id field');\n}\nif (apiResponse.body.id !== '1') {\n  throw new Error(`Expected object id to be '1', got '${apiResponse.body.id}'`);\n}\nconsole.log(`Successfully retrieved object: ${apiResponse.body.name}`);\nreturn true;"
+      }
+    },
+    {
+      "id": "type-username-1",
+      "type": "type",
+      "position": {
+        "x": 1350,
+        "y": 200
+      },
+      "data": {
+        "type": "type",
+        "label": "Type Username",
+        "selector": "#username",
+        "selectorType": "css",
+        "text": "student",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "type-password-1",
+      "type": "type",
+      "position": {
+        "x": 1600,
+        "y": 200
+      },
+      "data": {
+        "type": "type",
+        "label": "Type Password",
+        "selector": "#password",
+        "selectorType": "css",
+        "text": "Password123",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "click-submit-1",
+      "type": "click",
+      "position": {
+        "x": 1850,
+        "y": 200
+      },
+      "data": {
+        "type": "click",
+        "label": "Click Submit",
+        "selector": "#submit",
+        "selectorType": "css",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "verify-url-1",
+      "type": "javascriptCode",
+      "position": {
+        "x": 2100,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Verify URL",
+        "code": "// Verify new page URL contains 'logged-in-successfully'\nconst url = context.page.url();\nif (!url.includes('logged-in-successfully')) {\n  throw new Error(`URL verification failed. Expected to contain 'logged-in-successfully', got: ${url}`);\n}\nreturn true;"
+      }
+    },
+    {
+      "id": "verify-text-1",
+      "type": "javascriptCode",
+      "position": {
+        "x": 2350,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Verify Success Text",
+        "code": "// Verify new page contains expected text ('Congratulations' or 'successfully logged in')\nconst pageText = await context.page.textContent('body');\nif (!pageText.includes('Congratulations') && !pageText.includes('successfully logged in')) {\n  throw new Error(`Expected text not found on page. Page text: ${pageText.substring(0, 200)}`);\n}\nreturn true;"
+      }
+    },
+    {
+      "id": "verify-logout-button-1",
+      "type": "javascriptCode",
+      "position": {
+        "x": 2600,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Verify Logout Button",
+        "code": "// Verify button 'Log out' is displayed on the new page\n// Try multiple selectors as the button text might vary\nconst logoutButton1 = context.page.locator('button:has-text(\"Log out\")');\nconst logoutButton2 = context.page.locator('a:has-text(\"Log out\")');\nconst logoutButton3 = context.page.locator('[href*=\"logout\"], [href*=\"log-out\"]');\nconst isVisible1 = await logoutButton1.isVisible().catch(() => false);\nconst isVisible2 = await logoutButton2.isVisible().catch(() => false);\nconst isVisible3 = await logoutButton3.isVisible().catch(() => false);\nif (!isVisible1 && !isVisible2 && !isVisible3) {\n  // Get page HTML for debugging\n  const pageContent = await context.page.content();\n  throw new Error('Log out button/link is not displayed. Page might have different structure.');\n}\nreturn true;"
+      }
+    },
+    {
+      "id": "api-post-object-1",
+      "type": "apiRequest",
+      "position": {
+        "x": 2850,
+        "y": 200
+      },
+      "data": {
+        "type": "apiRequest",
+        "label": "API: Create New Object",
+        "method": "POST",
+        "url": "https://api.restful-api.dev/objects",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": "{\"name\": \"Test Object\", \"data\": {\"test\": \"login-success\", \"timestamp\": \"${new Date().toISOString()}\"}}",
+        "bodyType": "json",
+        "timeout": 30000,
+        "contextKey": "apiCreatedObject"
+      }
+    },
+    {
+      "id": "verify-api-created-1",
+      "type": "javascriptCode",
+      "position": {
+        "x": 3100,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Verify API: Created Object Response",
+        "code": "// Verify API response for Create Object\nconst apiResponse = context.getData('apiCreatedObject');\nif (!apiResponse) {\n  throw new Error('API response not found in context');\n}\nif (apiResponse.status !== 200) {\n  throw new Error(`Expected status 200, got ${apiResponse.status}`);\n}\nif (!apiResponse.body || !apiResponse.body.id) {\n  throw new Error('Expected response body to have an id field');\n}\nif (!apiResponse.body.name || apiResponse.body.name !== 'Test Object') {\n  throw new Error(`Expected object name to be 'Test Object', got '${apiResponse.body.name}'`);\n}\nif (!apiResponse.body.createdAt) {\n  throw new Error('Expected response to have createdAt timestamp');\n}\nconsole.log(`Successfully created object with id: ${apiResponse.body.id}`);\nconsole.log(`Created at: ${apiResponse.body.createdAt}`);\nreturn true;"
+      }
+    },
+    {
+      "id": "selectConfigFile-1768032521420",
+      "type": "selectConfigFile",
+      "position": {
+        "x": 221.9352559561273,
+        "y": 69.29764318395587
+      },
+      "data": {
+        "type": "selectConfigFile",
+        "label": "selectConfigFile",
+        "fileContent": "{\n  \"name\": \"Env1\",\n  \"description\": \"Environment 1 configuration\",\n  \"endpoints\": {\n    \"BASE_API\": \"https://goldengate-staging3.paytm.com\",\n    \"BASE_WEB_URL\": \"https://practicetestautomation.com/practice-test-login/\"\n  },\n  \"browser\": {\n    \"defaultBrowser\": \"chromium\",\n    \"headless\": true,\n    \"defaultViewport\": {\n      \"width\": 1280,\n      \"height\": 720\n    }\n  }\n} ",
+        "fileName": "env.Env1.json"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-openBrowser-api-get-all-input",
+      "source": "openBrowser-1",
+      "target": "api-get-all-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-openBrowser-navigate-driver",
+      "source": "openBrowser-1",
+      "target": "navigate-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-api-get-all-verify-api-all-input",
+      "source": "api-get-all-1",
+      "target": "verify-api-all-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-api-all-navigate-input",
+      "source": "verify-api-all-1",
+      "target": "navigate-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-navigate-api-get-single-input",
+      "source": "navigate-1",
+      "target": "api-get-single-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-navigate-type-username-driver",
+      "source": "navigate-1",
+      "target": "type-username-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-api-get-single-verify-api-single-input",
+      "source": "api-get-single-1",
+      "target": "verify-api-single-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-api-single-type-username-input",
+      "source": "verify-api-single-1",
+      "target": "type-username-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-username-type-password-input",
+      "source": "type-username-1",
+      "target": "type-password-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-username-type-password-driver",
+      "source": "type-username-1",
+      "target": "type-password-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-password-click-submit-input",
+      "source": "type-password-1",
+      "target": "click-submit-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-password-click-submit-driver",
+      "source": "type-password-1",
+      "target": "click-submit-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-click-submit-verify-url-input",
+      "source": "click-submit-1",
+      "target": "verify-url-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-click-submit-verify-url-driver",
+      "source": "click-submit-1",
+      "target": "verify-url-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-url-verify-text-input",
+      "source": "verify-url-1",
+      "target": "verify-text-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-url-verify-text-driver",
+      "source": "verify-url-1",
+      "target": "verify-text-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-text-verify-logout-input",
+      "source": "verify-text-1",
+      "target": "verify-logout-button-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-text-verify-logout-driver",
+      "source": "verify-text-1",
+      "target": "verify-logout-button-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-logout-api-post-input",
+      "source": "verify-logout-button-1",
+      "target": "api-post-object-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-api-post-verify-api-created-input",
+      "source": "api-post-object-1",
+      "target": "verify-api-created-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "reactflow__edge-start-1output-selectConfigFile-1768032521420driver",
+      "source": "start-1",
+      "target": "selectConfigFile-1768032521420",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-selectConfigFile-1768032521420output-openBrowser-1driver",
+      "source": "selectConfigFile-1768032521420",
+      "target": "openBrowser-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    }
+  ]
+}

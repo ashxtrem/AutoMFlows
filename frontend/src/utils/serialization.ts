@@ -41,10 +41,12 @@ export function deserializeWorkflow(workflow: Workflow): { nodes: Node[]; edges:
       type: node.type,
       // Preserve custom label if exists, otherwise use default
       label: (node.data as any).label || getNodeLabel(node.type as NodeType),
-      // Preserve background color, bypass, minimized state (borderColor removed)
+      // Preserve background color, bypass, minimized state, isTest (borderColor removed)
       backgroundColor: (node.data as any).backgroundColor,
       bypass: (node.data as any).bypass,
       isMinimized: (node.data as any).isMinimized,
+      // Default isTest to true if not present (for backward compatibility)
+      isTest: (node.data as any).isTest !== undefined ? (node.data as any).isTest : true,
     },
   }));
 

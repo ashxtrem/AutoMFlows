@@ -24,6 +24,19 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
   });
   const [pageSourceSearch, setPageSourceSearch] = useState('');
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
   const node = nodes.find(n => n.id === nodeId);
   const nodeLabel = node?.data?.label || node?.data?.type || nodeId;
 

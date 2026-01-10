@@ -32,13 +32,20 @@ export default function WaitConfig({ node, onChange }: WaitConfigProps) {
         <label className="block text-sm font-medium text-gray-300 mb-1">Wait Type</label>
         <select
           value={data.waitType || 'timeout'}
-          onChange={(e) => onChange('waitType', e.target.value)}
+          onChange={(e) => {
+            onChange('waitType', e.target.value);
+            // Reset API wait config when switching away from api-response
+            if (e.target.value !== 'api-response') {
+              onChange('apiWaitConfig', undefined);
+            }
+          }}
           className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
         >
           <option value="timeout">Timeout (milliseconds)</option>
           <option value="selector">Wait for Selector</option>
           <option value="url">Wait for URL Pattern</option>
           <option value="condition">Wait for JavaScript Condition</option>
+          <option value="api-response">Wait for API Response</option>
         </select>
       </div>
       {data.waitType === 'timeout' ? (
@@ -116,6 +123,105 @@ export default function WaitConfig({ node, onChange }: WaitConfigProps) {
               onChange={(e) => onChange('timeout', parseInt(e.target.value, 10))}
               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
             />
+          </div>
+        </>
+      ) : data.waitType === 'api-response' ? (
+        <>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Context Key</label>
+            <input
+              type="text"
+              value={data.apiWaitConfig?.contextKey || typeof data.value === 'string' ? data.value : ''}
+              onChange={(e) => {
+                onChange('apiWaitConfig', {
+                  ...data.apiWaitConfig,
+                  contextKey: e.target.value,
+                });
+                onChange('value', e.target.value);
+              }}
+              placeholder="apiResponse"
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+            />
+            <div className="mt-1 text-xs text-gray-400">
+              Context key where API response is stored (from API Request or API cURL node)
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Check Type</label>
+            <select
+              value={data.apiWaitConfig?.checkType || 'status'}
+              onChange={(e) => onChange('apiWaitConfig', {
+                ...data.apiWaitConfig,
+                checkType: e.target.value,
+              })}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+            >
+              <option value="status">Status Code</option>
+              <option value="header">Header Value</option>
+              <option value="body-path">Body Path (JSON)</option>
+              <option value="body-value">Body Value</option>
+            </select>
+          </div>
+          {(data.apiWaitConfig?.checkType === 'header' || data.apiWaitConfig?.checkType === 'body-path') && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                {data.apiWaitConfig?.checkType === 'header' ? 'Header Name' : 'JSON Path'}
+              </label>
+              <input
+                type="text"
+                value={data.apiWaitConfig?.path || ''}
+                onChange={(e) => onChange('apiWaitConfig', {
+                  ...data.apiWaitConfig,
+                  path: e.target.value,
+                })}
+                placeholder={data.apiWaitConfig?.checkType === 'header' ? 'content-type' : 'body.customer.id'}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                {data.apiWaitConfig?.checkType === 'header' 
+                  ? 'Name of the header to check'
+                  : 'Dot-notation path to check in response body (e.g., body.customer.id)'}
+              </div>
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Expected Value</label>
+            <input
+              type="text"
+              value={data.apiWaitConfig?.expectedValue !== undefined ? String(data.apiWaitConfig.expectedValue) : ''}
+              onChange={(e) => {
+                // Try to parse as number if it looks like a number
+                let value: any = e.target.value;
+                if (/^\d+$/.test(value)) {
+                  value = parseInt(value, 10);
+                } else if (/^\d+\.\d+$/.test(value)) {
+                  value = parseFloat(value);
+                }
+                onChange('apiWaitConfig', {
+                  ...data.apiWaitConfig,
+                  expectedValue: value,
+                });
+              }}
+              placeholder={data.apiWaitConfig?.checkType === 'status' ? '200' : 'Expected value'}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Match Type</label>
+            <select
+              value={data.apiWaitConfig?.matchType || 'equals'}
+              onChange={(e) => onChange('apiWaitConfig', {
+                ...data.apiWaitConfig,
+                matchType: e.target.value,
+              })}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+            >
+              <option value="equals">Equals</option>
+              <option value="contains">Contains</option>
+              <option value="startsWith">Starts With</option>
+              <option value="endsWith">Ends With</option>
+              <option value="regex">Regex</option>
+            </select>
           </div>
         </>
       ) : (

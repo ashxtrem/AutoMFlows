@@ -1,0 +1,30 @@
+{
+  "description": "RESTful API endpoints configuration for restful-api.dev",
+  "version": "1.0.0",
+  "baseUrl": "https://api.restful-api.dev",
+  "paths": {
+    "objects": {
+      "list": "/objects",
+      "listByIds": "/objects/",
+      "getById": "/objects/",
+      "create": "/objects",
+      "update": "/objects/",
+      "patch": "/objects/",
+      "delete": "/objects/"
+    }
+  },
+  "examples": {
+    "getAllObjects": "GET https://api.restful-api.dev/objects",
+    "getSingleObject": "GET https://api.restful-api.dev/objects/1",
+    "createObject": "POST https://api.restful-api.dev/objects",
+    "updateObject": "PUT https://api.restful-api.dev/objects/6",
+    "deleteObject": "DELETE https://api.restful-api.dev/objects/1"
+    },
+  "objectSchema": {
+    "id": "string",
+    "name": "string",
+    "data": "object",
+    "createdAt": "string (ISO 8601)",
+    "updatedAt": "string (ISO 8601)"
+  }
+}

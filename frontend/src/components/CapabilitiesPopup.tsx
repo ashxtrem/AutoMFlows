@@ -22,6 +22,19 @@ export default function CapabilitiesPopup({ node, onSave, onClose }: Capabilitie
   const existingCapabilities = data.capabilities || {};
   const existingLaunchOptions = data.launchOptions || {};
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
   // Initialize state from existing capabilities and launch options
   const [capabilities, setCapabilities] = useState<CapabilityRow[]>(() => {
     const contextEntries = Object.entries(existingCapabilities).map(([key, value], index) => ({

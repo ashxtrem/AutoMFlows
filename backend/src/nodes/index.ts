@@ -3,8 +3,10 @@ import { NodeHandler, NodeHandlerMap } from './base';
 import { ContextManager } from '../engine/context';
 import { OpenBrowserHandler, NavigateHandler } from './browser';
 import { ClickHandler, TypeHandler } from './interaction';
-import { GetTextHandler, ScreenshotHandler, WaitHandler, IntValueHandler, StringValueHandler, BooleanValueHandler, InputValueHandler } from './utility';
+import { GetTextHandler, ScreenshotHandler, WaitHandler, IntValueHandler, StringValueHandler, BooleanValueHandler, InputValueHandler, VerifyHandler } from './utility';
 import { JavaScriptCodeHandler, LoopHandler } from './logic';
+import { ApiRequestHandler, ApiCurlHandler } from './api';
+import { LoadConfigFileHandler, SelectConfigFileHandler } from './config';
 import { pluginRegistry } from '../plugins/registry';
 
 // Start node handler (no-op)
@@ -29,6 +31,11 @@ const handlers: NodeHandlerMap = {
   [NodeType.STRING_VALUE]: new StringValueHandler(),
   [NodeType.BOOLEAN_VALUE]: new BooleanValueHandler(),
   [NodeType.INPUT_VALUE]: new InputValueHandler(),
+  [NodeType.VERIFY]: new VerifyHandler(),
+  [NodeType.API_REQUEST]: new ApiRequestHandler(),
+  [NodeType.API_CURL]: new ApiCurlHandler(),
+  [NodeType.LOAD_CONFIG_FILE]: new LoadConfigFileHandler(),
+  [NodeType.SELECT_CONFIG_FILE]: new SelectConfigFileHandler(),
 };
 
 export function getNodeHandler(nodeType: NodeType | string): NodeHandler | undefined {
@@ -46,4 +53,6 @@ export * from './browser';
 export * from './interaction';
 export * from './utility';
 export * from './logic';
+export * from './api';
+export * from './config';
 
