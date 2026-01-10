@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useWorkflowStore } from '../store/workflowStore';
 import { serializeWorkflow } from '../utils/serialization';
-import { ExecutionEventType } from '@automflows/shared';
+import { ExecutionEventType, ScreenshotConfig, ReportConfig } from '@automflows/shared';
 import { validateInputConnections } from '../utils/validation';
 
 let socket: Socket | null = null;
@@ -159,6 +159,21 @@ export function useExecution() {
         return;
       }
 
+      // Read screenshot and report config from localStorage
+      const screenshotOnNode = localStorage.getItem('automflows_screenshot_on_node') === 'true';
+      const screenshotTiming = (localStorage.getItem('automflows_screenshot_timing') || 'post') as 'pre' | 'post' | 'both';
+      const reportingEnabled = localStorage.getItem('automflows_reporting_enabled') === 'true';
+      const reportPath = localStorage.getItem('automflows_report_path') || './output';
+      const reportTypes = JSON.parse(localStorage.getItem('automflows_report_types') || '["html"]');
+
+      const screenshotConfig: ScreenshotConfig | undefined = screenshotOnNode
+        ? { enabled: true, timing: screenshotTiming }
+        : undefined;
+
+      const reportConfig: ReportConfig | undefined = reportingEnabled
+        ? { enabled: true, outputPath: reportPath, reportTypes }
+        : undefined;
+
       const currentPort = port || await getBackendPortSync();
       const fetchController = new AbortController();
       const fetchTimeoutId = setTimeout(() => fetchController.abort(), 10000); // 10 second timeout for API call
@@ -168,7 +183,12 @@ export function useExecution() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ workflow, traceLogs }),
+        body: JSON.stringify({ 
+          workflow, 
+          traceLogs,
+          screenshotConfig,
+          reportConfig,
+        }),
         signal: fetchController.signal,
       });
       clearTimeout(fetchTimeoutId);

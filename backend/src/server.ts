@@ -5,6 +5,7 @@ import { Server } from 'socket.io';
 import path from 'path';
 import workflowRoutes from './routes/workflows';
 import pluginRoutes from './routes/plugins';
+import reportRoutes from './routes/reports';
 import { findAvailablePort } from './utils/portFinder';
 import { writePortFile, deletePortFile } from './utils/writePort';
 import { PluginLoader } from './plugins/loader';
@@ -33,6 +34,11 @@ app.use((req, res, next) => {
 // API Routes
 app.use('/api/workflows', workflowRoutes(io));
 app.use('/api/plugins', pluginRoutes());
+app.use('/api/reports', reportRoutes());
+
+// Serve static report files from output directory
+const outputDir = path.resolve('./output');
+app.use('/reports', express.static(outputDir));
 
 // Serve port file for frontend to discover backend port
 app.get('/.automflows-port', (req, res) => {

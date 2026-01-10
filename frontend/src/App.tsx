@@ -4,6 +4,7 @@ import TopBar from './components/TopBar';
 import LeftSidebar from './components/LeftSidebar';
 import Canvas from './components/Canvas';
 import RightSidebar from './components/RightSidebar';
+import ReportHistory from './components/ReportHistory';
 import { useWorkflowStore } from './store/workflowStore';
 import NodeErrorPopup from './components/NodeErrorPopup';
 import BrowserInstallErrorPopup from './components/BrowserInstallErrorPopup';
@@ -102,6 +103,15 @@ function App() {
   }, [browserInstallError]);
 
   const errorPopupError = errorPopupNodeId ? failedNodes.get(errorPopupNodeId) : null;
+
+  // Simple routing based on pathname
+  const currentPath = window.location.pathname;
+  const isReportHistory = currentPath === '/reports/history';
+
+  // If on report history page, render only that component
+  if (isReportHistory) {
+    return <ReportHistory />;
+  }
 
   return (
     <ReactFlowProvider>

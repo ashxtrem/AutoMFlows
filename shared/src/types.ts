@@ -517,10 +517,26 @@ export interface ExecutionEvent {
   timestamp: number;
 }
 
+// Report Types
+export type ReportType = 'html' | 'allure' | 'json' | 'junit' | 'csv' | 'markdown';
+
+export interface ReportConfig {
+  enabled: boolean;
+  outputPath?: string; // Default: './output'
+  reportTypes: ReportType[]; // ['html', 'allure', 'json', etc.]
+}
+
+export interface ScreenshotConfig {
+  enabled: boolean;
+  timing: 'pre' | 'post' | 'both'; // When to take screenshots
+}
+
 // API Request/Response Types
 export interface ExecuteWorkflowRequest {
   workflow: Workflow;
   traceLogs?: boolean; // Enable trace logging to terminal (default: false)
+  screenshotConfig?: ScreenshotConfig;
+  reportConfig?: ReportConfig;
 }
 
 export interface ExecuteWorkflowResponse {

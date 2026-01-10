@@ -1,4 +1,4 @@
-import { Workflow, ExecutionStatus, ExecutionEventType, ExecutionEvent, BaseNode, Edge, NodeType, PropertyDataType } from '@automflows/shared';
+import { Workflow, ExecutionStatus, ExecutionEventType, ExecutionEvent, BaseNode, Edge, NodeType, PropertyDataType, ScreenshotConfig, ReportConfig } from '@automflows/shared';
 import { Server } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
 import { WorkflowParser } from './parser';
@@ -7,6 +7,9 @@ import { PlaywrightManager } from '../utils/playwright';
 import * as nodeHandlers from '../nodes';
 import { TypeConverter } from '../utils/typeConverter';
 import { PageDebugHelper } from '../utils/pageDebugHelper';
+import { ExecutionTracker } from '../utils/executionTracker';
+import { ReportGenerator } from '../utils/reportGenerator';
+import * as path from 'path';
 
 export class Executor {
   private executionId: string;
@@ -21,15 +24,43 @@ export class Executor {
   private stopRequested: boolean = false;
   private traceLogs: boolean;
   private nodeTraceLogs: Map<string, string[]> = new Map(); // Store trace logs per node
+  private screenshotConfig?: ScreenshotConfig;
+  private reportConfig?: ReportConfig;
+  private executionTracker?: ExecutionTracker;
 
-  constructor(workflow: Workflow, io: Server, traceLogs: boolean = false) {
+  constructor(
+    workflow: Workflow, 
+    io: Server, 
+    traceLogs: boolean = false,
+    screenshotConfig?: ScreenshotConfig,
+    reportConfig?: ReportConfig
+  ) {
     this.executionId = uuidv4();
     this.workflow = workflow;
     this.io = io;
     this.traceLogs = traceLogs;
+    this.screenshotConfig = screenshotConfig;
+    this.reportConfig = reportConfig;
     this.parser = new WorkflowParser(workflow);
     this.context = new ContextManager();
-    this.playwright = new PlaywrightManager();
+    
+    // Initialize execution tracker if screenshots or reporting is enabled
+    const shouldCreateTracker = (screenshotConfig?.enabled) || (reportConfig?.enabled);
+    if (shouldCreateTracker) {
+      // Use report config output path if available, otherwise default to './output'
+      const outputPath = reportConfig?.outputPath || './output';
+      this.executionTracker = new ExecutionTracker(this.executionId, workflow, outputPath);
+      
+      // Store directory paths in context for node handlers
+      this.context.setData('outputDirectory', this.executionTracker.getOutputDirectory());
+      this.context.setData('screenshotsDirectory', this.executionTracker.getScreenshotsDirectory());
+      
+      // Initialize PlaywrightManager with screenshots directory
+      this.playwright = new PlaywrightManager(this.executionTracker.getScreenshotsDirectory());
+    } else {
+      this.playwright = new PlaywrightManager();
+    }
+    
     // Store playwright in context for node handlers
     (this.context as any).playwright = this.playwright;
   }
@@ -91,6 +122,13 @@ export class Executor {
         const nodeData = node.data as any;
         if (nodeData?.bypass === true) {
           this.traceLog(`[TRACE] Skipping bypassed node: ${nodeId} (type: ${node.type})`);
+          
+          // Record node bypassed in tracker
+          if (this.executionTracker) {
+            this.executionTracker.recordNodeStart(node);
+            this.executionTracker.recordNodeBypassed(nodeId);
+          }
+          
           this.emitEvent({
             type: ExecutionEventType.NODE_COMPLETE,
             nodeId,
@@ -107,11 +145,23 @@ export class Executor {
         if (this.traceLogs && node.data) {
           this.traceLog(`[TRACE] Node config: ${JSON.stringify(node.data, null, 2)}`);
         }
+        
+        // Record node start in tracker
+        if (this.executionTracker) {
+          this.executionTracker.recordNodeStart(node);
+        }
+        
         this.emitEvent({
           type: ExecutionEventType.NODE_START,
           nodeId,
           timestamp: Date.now(),
         });
+
+        // Take pre-execution screenshot if enabled
+        if (this.screenshotConfig?.enabled && 
+            (this.screenshotConfig.timing === 'pre' || this.screenshotConfig.timing === 'both')) {
+          await this.takeNodeScreenshot(nodeId, 'pre');
+        }
 
         try {
           // Resolve property input connections before execution
@@ -130,6 +180,17 @@ export class Executor {
 
           // Clear trace logs on success (we only need them for errors)
           this.nodeTraceLogs.delete(nodeId);
+
+          // Take post-execution screenshot if enabled
+          if (this.screenshotConfig?.enabled && 
+              (this.screenshotConfig.timing === 'post' || this.screenshotConfig.timing === 'both')) {
+            await this.takeNodeScreenshot(nodeId, 'post');
+          }
+
+          // Record node completion in tracker
+          if (this.executionTracker) {
+            this.executionTracker.recordNodeComplete(nodeId);
+          }
 
           this.emitEvent({
             type: ExecutionEventType.NODE_COMPLETE,
@@ -176,6 +237,11 @@ export class Executor {
             timestamp: Date.now(),
           });
           
+          // Record node error in tracker
+          if (this.executionTracker) {
+            this.executionTracker.recordNodeError(nodeId, error.message);
+          }
+          
           // If failSilently is enabled, continue execution instead of throwing
           if (failSilently) {
             this.traceLog(`[TRACE] Node ${nodeId} failed silently, continuing execution`);
@@ -196,6 +262,17 @@ export class Executor {
       this.status = ExecutionStatus.COMPLETED;
       this.currentNodeId = null;
       this.traceLog(`[TRACE] Execution completed successfully`);
+      
+      // Complete execution in tracker
+      if (this.executionTracker) {
+        this.executionTracker.completeExecution('completed');
+      }
+      
+      // Generate reports if enabled
+      if (this.reportConfig?.enabled && this.executionTracker) {
+        await this.generateReports();
+      }
+      
       this.emitEvent({
         type: ExecutionEventType.EXECUTION_COMPLETE,
         timestamp: Date.now(),
@@ -204,6 +281,17 @@ export class Executor {
       this.status = ExecutionStatus.ERROR;
       this.error = error.message;
       this.traceLog(`[TRACE] Execution failed: ${error.message}`);
+      
+      // Complete execution with error status in tracker
+      if (this.executionTracker) {
+        this.executionTracker.completeExecution('error');
+      }
+      
+      // Generate reports even on error if enabled
+      if (this.reportConfig?.enabled && this.executionTracker) {
+        await this.generateReports();
+      }
+      
       this.emitEvent({
         type: ExecutionEventType.EXECUTION_ERROR,
         message: error.message,
@@ -219,6 +307,42 @@ export class Executor {
   async stop(): Promise<void> {
     this.stopRequested = true;
     await this.cleanup();
+  }
+
+  private async takeNodeScreenshot(nodeId: string, timing: 'pre' | 'post'): Promise<void> {
+    try {
+      const page = this.context.getPage();
+      if (!page) {
+        return; // No page available, skip screenshot
+      }
+
+      const fileName = `${nodeId}-${timing}-${Date.now()}.png`;
+      const screenshotPath = await this.playwright.takeScreenshot(fileName, false);
+      
+      // Record screenshot in tracker
+      if (this.executionTracker) {
+        this.executionTracker.recordScreenshot(nodeId, screenshotPath, timing);
+      }
+    } catch (error: any) {
+      // Don't fail execution if screenshot fails
+      console.warn(`Failed to take ${timing} screenshot for node ${nodeId}: ${error.message}`);
+    }
+  }
+
+  private async generateReports(): Promise<void> {
+    if (!this.executionTracker || !this.reportConfig?.reportTypes.length) {
+      return;
+    }
+
+    try {
+      const metadata = this.executionTracker.getMetadata();
+      const reportGenerator = new ReportGenerator(metadata);
+      await reportGenerator.generateReports(this.reportConfig.reportTypes);
+      this.traceLog(`[TRACE] Generated reports: ${this.reportConfig.reportTypes.join(', ')}`);
+    } catch (error: any) {
+      console.error(`Failed to generate reports: ${error.message}`);
+      // Don't fail execution if report generation fails
+    }
   }
 
   private async cleanup(): Promise<void> {

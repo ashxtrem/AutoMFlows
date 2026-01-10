@@ -10,9 +10,21 @@ export class PlaywrightManager {
   private page: Page | null = null;
   private screenshotsDir: string;
 
-  constructor() {
-    // Create screenshots directory
-    this.screenshotsDir = path.join(process.cwd(), 'screenshots');
+  constructor(screenshotsDirectory?: string) {
+    // Use provided directory or fallback to default
+    if (screenshotsDirectory) {
+      this.screenshotsDir = screenshotsDirectory;
+    } else {
+      // Create default screenshots directory
+      this.screenshotsDir = path.join(process.cwd(), 'screenshots');
+    }
+    if (!fs.existsSync(this.screenshotsDir)) {
+      fs.mkdirSync(this.screenshotsDir, { recursive: true });
+    }
+  }
+
+  setScreenshotsDirectory(directory: string): void {
+    this.screenshotsDir = directory;
     if (!fs.existsSync(this.screenshotsDir)) {
       fs.mkdirSync(this.screenshotsDir, { recursive: true });
     }

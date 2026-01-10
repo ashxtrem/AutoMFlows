@@ -107,6 +107,12 @@ export class ScreenshotHandler implements NodeHandler {
       throw new Error('Playwright manager not found in context');
     }
 
+    // Check if execution-specific screenshots directory is available
+    const screenshotsDirectory = context.getData('screenshotsDirectory');
+    if (screenshotsDirectory && playwright.setScreenshotsDirectory) {
+      playwright.setScreenshotsDirectory(screenshotsDirectory);
+    }
+
     // Execute screenshot operation with retry logic (includes wait conditions)
     const result = await RetryHelper.executeWithRetry(
       async () => {

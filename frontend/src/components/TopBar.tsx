@@ -4,12 +4,15 @@ import StopIcon from '@mui/icons-material/Stop';
 import SaveIcon from '@mui/icons-material/Save';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import HistoryIcon from '@mui/icons-material/History';
 import { useWorkflowStore } from '../store/workflowStore';
 import { useExecution } from '../hooks/useExecution';
 import { serializeWorkflow, deserializeWorkflow } from '../utils/serialization';
 import ValidationErrorPopup from './ValidationErrorPopup';
 import ResetWarning from './ResetWarning';
 import LoadWarning from './LoadWarning';
+import SettingsDropdown from './SettingsDropdown';
+import ReportSettingsPopup from './ReportSettingsPopup';
 import { NodeType } from '@automflows/shared';
 
 const STORAGE_KEY_TRACE_LOGS = 'automflows_trace_logs';
@@ -20,6 +23,7 @@ export default function TopBar() {
   
   const [showResetWarning, setShowResetWarning] = useState(false);
   const [showLoadWarning, setShowLoadWarning] = useState(false);
+  const [showReportSettings, setShowReportSettings] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [pendingLoadAction, setPendingLoadAction] = useState<(() => void) | null>(null);
   const topBarRef = useRef<HTMLDivElement>(null);
@@ -363,19 +367,22 @@ export default function TopBar() {
             Reset
           </button>
           <div className="w-px h-6 bg-gray-700 mx-2" />
-          <label className="flex cursor-pointer select-none items-center gap-2 text-sm text-white">
-            <div className="relative">
-              <input
-                type="checkbox"
-                checked={traceLogs}
-                onChange={(e) => setTraceLogs(e.target.checked)}
-                className="sr-only"
-              />
-              <div className={`block h-8 w-14 rounded-full transition-colors ${traceLogs ? 'bg-green-600' : 'bg-gray-600'}`}></div>
-              <div className={`dot absolute left-1 top-1 h-6 w-6 rounded-full bg-white transition-transform ${traceLogs ? 'translate-x-6' : 'translate-x-0'}`}></div>
-            </div>
-            <span>Trace Logs</span>
-          </label>
+          <SettingsDropdown
+            traceLogs={traceLogs}
+            onTraceLogsChange={setTraceLogs}
+            onReportSettingsClick={() => setShowReportSettings(true)}
+          />
+          <button
+            onClick={() => {
+              const url = window.location.origin + '/reports/history';
+              window.open(url, '_blank');
+            }}
+            className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-2 text-sm"
+            title="Go to Report History"
+          >
+            <HistoryIcon sx={{ fontSize: '16px', color: '#ffffff' }} className="flex-shrink-0" />
+            Report History
+          </button>
         </div>
       </div>
       {validationErrors.length > 0 && (
@@ -398,6 +405,9 @@ export default function TopBar() {
             setPendingLoadAction(null);
           }}
         />
+      )}
+      {showReportSettings && (
+        <ReportSettingsPopup onClose={() => setShowReportSettings(false)} />
       )}
     </>
   );
