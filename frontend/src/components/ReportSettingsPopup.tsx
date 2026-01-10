@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { ReportType } from '@automflows/shared';
+import { useNotificationStore } from '../store/notificationStore';
 
 const STORAGE_KEY_REPORTING_ENABLED = 'automflows_reporting_enabled';
 const STORAGE_KEY_REPORT_PATH = 'automflows_report_path';
@@ -11,6 +12,7 @@ interface ReportSettingsPopupProps {
 }
 
 export default function ReportSettingsPopup({ onClose }: ReportSettingsPopupProps) {
+  const addNotification = useNotificationStore((state) => state.addNotification);
   const [reportingEnabled, setReportingEnabled] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY_REPORTING_ENABLED);
     return saved === 'true';
@@ -22,6 +24,13 @@ export default function ReportSettingsPopup({ onClose }: ReportSettingsPopupProp
   const [reportTypes, setReportTypes] = useState<ReportType[]>(() => {
     const saved = localStorage.getItem(STORAGE_KEY_REPORT_TYPES);
     return saved ? JSON.parse(saved) : ['html'];
+  });
+  
+  // Track previous values to detect changes
+  const prevValuesRef = useRef({
+    reportingEnabled,
+    reportPath,
+    reportTypes: [...reportTypes],
   });
 
   useEffect(() => {
@@ -62,6 +71,40 @@ export default function ReportSettingsPopup({ onClose }: ReportSettingsPopupProp
   };
 
   const handleSave = () => {
+    // Check for changes and show notification
+    const changes: string[] = [];
+    
+    if (prevValuesRef.current.reportingEnabled !== reportingEnabled) {
+      changes.push(reportingEnabled ? 'Reports enabled' : 'Reports disabled');
+    }
+    
+    if (prevValuesRef.current.reportPath !== reportPath) {
+      changes.push(`Report path: ${reportPath}`);
+    }
+    
+    const reportTypesChanged = 
+      prevValuesRef.current.reportTypes.length !== reportTypes.length ||
+      prevValuesRef.current.reportTypes.some((type, idx) => type !== reportTypes[idx]);
+    
+    if (reportTypesChanged) {
+      changes.push(`Report types: ${reportTypes.join(', ')}`);
+    }
+    
+    if (changes.length > 0) {
+      addNotification({
+        type: 'settings',
+        title: 'Report Settings Applied',
+        details: changes,
+      });
+    }
+    
+    // Update previous values
+    prevValuesRef.current = {
+      reportingEnabled,
+      reportPath,
+      reportTypes: [...reportTypes],
+    };
+    
     onClose();
   };
 

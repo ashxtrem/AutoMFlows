@@ -1,0 +1,1721 @@
+{
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 200
+      },
+      "data": {
+        "type": "start",
+        "label": "Start"
+      }
+    },
+    {
+      "id": "openBrowser-1",
+      "type": "openBrowser",
+      "position": {
+        "x": 350,
+        "y": 200
+      },
+      "data": {
+        "type": "openBrowser",
+        "label": "Open Browser",
+        "headless": false,
+        "viewportWidth": 1280,
+        "viewportHeight": 720
+      }
+    },
+    {
+      "id": "navigate-1",
+      "type": "navigate",
+      "position": {
+        "x": 600,
+        "y": 200
+      },
+      "data": {
+        "type": "navigate",
+        "label": "Navigate to Test Site",
+        "url": "https://testautomationpractice.blogspot.com/",
+        "timeout": 30000,
+        "waitUntil": "networkidle",
+        "retryEnabled": true,
+        "retryStrategy": "count",
+        "retryCount": 3,
+        "retryDelay": 2000
+      }
+    },
+    {
+      "id": "verify-url-loaded",
+      "type": "verify",
+      "position": {
+        "x": 850,
+        "y": 150
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify URL Loaded",
+        "domain": "browser",
+        "verificationType": "url",
+        "urlPattern": "testautomationpractice.blogspot.com",
+        "matchType": "contains",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3
+      }
+    },
+    {
+      "id": "verify-page-title",
+      "type": "verify",
+      "position": {
+        "x": 850,
+        "y": 250
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Page Title",
+        "domain": "browser",
+        "verificationType": "text",
+        "expectedText": "Automation Testing Practice",
+        "matchType": "contains",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "screenshot-initial",
+      "type": "screenshot",
+      "position": {
+        "x": 1100,
+        "y": 200
+      },
+      "data": {
+        "type": "screenshot",
+        "label": "Take Initial Screenshot",
+        "fullPage": false,
+        "retryEnabled": true,
+        "retryCount": 2
+      }
+    },
+    {
+      "id": "fill-name",
+      "type": "type",
+      "position": {
+        "x": 1350,
+        "y": 100
+      },
+      "data": {
+        "type": "type",
+        "label": "Fill Name Field",
+        "selector": "#name",
+        "selectorType": "css",
+        "text": "John Doe",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3
+      }
+    },
+    {
+      "id": "verify-name-filled",
+      "type": "verify",
+      "position": {
+        "x": 1600,
+        "y": 100
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Name Filled",
+        "domain": "browser",
+        "verificationType": "formField",
+        "selector": "#name",
+        "selectorType": "css",
+        "expectedValue": "John Doe",
+        "matchType": "equals",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "fill-email",
+      "type": "type",
+      "position": {
+        "x": 1350,
+        "y": 200
+      },
+      "data": {
+        "type": "type",
+        "label": "Fill Email Field",
+        "selector": "#email",
+        "selectorType": "css",
+        "text": "john.doe@example.com",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3
+      }
+    },
+    {
+      "id": "fill-phone",
+      "type": "type",
+      "position": {
+        "x": 1350,
+        "y": 300
+      },
+      "data": {
+        "type": "type",
+        "label": "Fill Phone Field",
+        "selector": "#phone",
+        "selectorType": "css",
+        "text": "1234567890",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3
+      }
+    },
+    {
+      "id": "fill-address",
+      "type": "type",
+      "position": {
+        "x": 1350,
+        "y": 400
+      },
+      "data": {
+        "type": "type",
+        "label": "Fill Address Field",
+        "selector": "#textarea",
+        "selectorType": "css",
+        "text": "123 Main Street, City, State 12345",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3
+      }
+    },
+    {
+      "id": "select-gender-male",
+      "type": "click",
+      "position": {
+        "x": 1600,
+        "y": 200
+      },
+      "data": {
+        "type": "click",
+        "label": "Select Gender Male",
+        "selector": "#male",
+        "selectorType": "css",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3
+      }
+    },
+    {
+      "id": "verify-gender-selected",
+      "type": "verify",
+      "position": {
+        "x": 1850,
+        "y": 200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Gender Selected",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "#male",
+        "selectorType": "css",
+        "elementCheck": "checked",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "select-day-sunday",
+      "type": "click",
+      "position": {
+        "x": 1600,
+        "y": 300
+      },
+      "data": {
+        "type": "click",
+        "label": "Select Sunday",
+        "selector": "#sunday",
+        "selectorType": "css",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3
+      }
+    },
+    {
+      "id": "select-day-monday",
+      "type": "click",
+      "position": {
+        "x": 1600,
+        "y": 400
+      },
+      "data": {
+        "type": "click",
+        "label": "Select Monday",
+        "selector": "#monday",
+        "selectorType": "css",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3
+      }
+    },
+    {
+      "id": "verify-days-selected",
+      "type": "verify",
+      "position": {
+        "x": 1850,
+        "y": 350
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Days Selected",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "#sunday",
+        "selectorType": "css",
+        "elementCheck": "checked",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "select-country-india",
+      "type": "javascriptCode",
+      "position": {
+        "x": 2100,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Select India from Country Dropdown",
+        "code": "// Select India from country dropdown using Playwright's selectOption\nawait context.page.selectOption('#country', 'india');\nreturn true;"
+      }
+    },
+    {
+      "id": "verify-country-selected",
+      "type": "verify",
+      "position": {
+        "x": 2850,
+        "y": 200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Country Selected",
+        "domain": "browser",
+        "verificationType": "attribute",
+        "selector": "#country",
+        "selectorType": "css",
+        "attributeName": "value",
+        "expectedValue": "india",
+        "matchType": "equals",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "select-color-red",
+      "type": "click",
+      "position": {
+        "x": 2100,
+        "y": 300
+      },
+      "data": {
+        "type": "click",
+        "label": "Select Red Color",
+        "selector": "#red",
+        "selectorType": "css",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3
+      }
+    },
+    {
+      "id": "verify-color-selected",
+      "type": "verify",
+      "position": {
+        "x": 2350,
+        "y": 300
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Color Selected",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "#red",
+        "selectorType": "css",
+        "elementCheck": "checked",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "verify-table-exists",
+      "type": "verify",
+      "position": {
+        "x": 2100,
+        "y": 400
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Static Table Exists",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "table.wp-block-table",
+        "selectorType": "css",
+        "elementCheck": "exists",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "verify-table-headers",
+      "type": "verify",
+      "position": {
+        "x": 2350,
+        "y": 400
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Table Headers",
+        "domain": "browser",
+        "verificationType": "text",
+        "selector": "table.wp-block-table th",
+        "selectorType": "css",
+        "expectedText": "BookName",
+        "matchType": "contains",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "verify-table-row-count",
+      "type": "verify",
+      "position": {
+        "x": 2600,
+        "y": 400
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Table Has Rows",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "table.wp-block-table tbody tr",
+        "selectorType": "css",
+        "elementCheck": "count",
+        "expectedValue": 6,
+        "comparisonOperator": "equals",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "get-text-first-book",
+      "type": "getText",
+      "position": {
+        "x": 2850,
+        "y": 400
+      },
+      "data": {
+        "type": "getText",
+        "label": "Get First Book Name",
+        "selector": "table.wp-block-table tbody tr:first-child td:first-child",
+        "selectorType": "css",
+        "contextKey": "firstBookName",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3
+      }
+    },
+    {
+      "id": "verify-first-book-name",
+      "type": "verify",
+      "position": {
+        "x": 3100,
+        "y": 400
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify First Book Name",
+        "domain": "browser",
+        "verificationType": "text",
+        "selector": "table.wp-block-table tbody tr:first-child td:first-child",
+        "selectorType": "css",
+        "expectedText": "Learn Selenium",
+        "matchType": "equals",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "scroll-to-tabs",
+      "type": "wait",
+      "position": {
+        "x": 3350,
+        "y": 200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait Before Tabs",
+        "waitType": "timeout",
+        "value": 1000,
+        "timeout": 5000
+      }
+    },
+    {
+      "id": "click-tab-2",
+      "type": "click",
+      "position": {
+        "x": 3600,
+        "y": 200
+      },
+      "data": {
+        "type": "click",
+        "label": "Click Tab 2",
+        "selector": "button[onclick=\"opentab('tab2')\"]",
+        "selectorType": "css",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3
+      }
+    },
+    {
+      "id": "verify-tab-2-content",
+      "type": "verify",
+      "position": {
+        "x": 3850,
+        "y": 200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Tab 2 Content",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "#tab2",
+        "selectorType": "css",
+        "elementCheck": "visible",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3
+      }
+    },
+    {
+      "id": "verify-tab-2-text",
+      "type": "verify",
+      "position": {
+        "x": 4100,
+        "y": 200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Tab 2 Text",
+        "domain": "browser",
+        "verificationType": "text",
+        "selector": "#tab2",
+        "selectorType": "css",
+        "expectedText": "Section 2",
+        "matchType": "contains",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "click-dynamic-button",
+      "type": "click",
+      "position": {
+        "x": 3600,
+        "y": 300
+      },
+      "data": {
+        "type": "click",
+        "label": "Click Dynamic Button",
+        "selector": "button[onclick*='START']",
+        "selectorType": "css",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "waitForSelector": "button[onclick*='STOP']",
+        "waitForSelectorTimeout": 10000
+      }
+    },
+    {
+      "id": "verify-button-changed",
+      "type": "verify",
+      "position": {
+        "x": 3850,
+        "y": 300
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Button Changed to STOP",
+        "domain": "browser",
+        "verificationType": "text",
+        "selector": "button[onclick*='STOP']",
+        "selectorType": "css",
+        "expectedText": "STOP",
+        "matchType": "contains",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 5,
+        "retryDelay": 1000
+      }
+    },
+    {
+      "id": "click-simple-alert",
+      "type": "click",
+      "position": {
+        "x": 3600,
+        "y": 400
+      },
+      "data": {
+        "type": "click",
+        "label": "Click Simple Alert",
+        "selector": "button[onclick='myFunction()']",
+        "selectorType": "css",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3
+      }
+    },
+    {
+      "id": "wait-for-alert",
+      "type": "wait",
+      "position": {
+        "x": 3850,
+        "y": 400
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for Alert",
+        "waitType": "timeout",
+        "value": 500,
+        "timeout": 5000
+      }
+    },
+    {
+      "id": "verify-alert-handled",
+      "type": "verify",
+      "position": {
+        "x": 4100,
+        "y": 400
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Alert Handled",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "button[onclick='myFunction()']",
+        "selectorType": "css",
+        "elementCheck": "visible",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "scroll-to-double-click",
+      "type": "wait",
+      "position": {
+        "x": 4350,
+        "y": 200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait Before Double Click",
+        "waitType": "timeout",
+        "value": 1000,
+        "timeout": 5000
+      }
+    },
+    {
+      "id": "fill-field1",
+      "type": "type",
+      "position": {
+        "x": 4600,
+        "y": 200
+      },
+      "data": {
+        "type": "type",
+        "label": "Fill Field 1",
+        "selector": "#field1",
+        "selectorType": "css",
+        "text": "Hello World",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3
+      }
+    },
+    {
+      "id": "double-click-copy-button",
+      "type": "javascriptCode",
+      "position": {
+        "x": 4850,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Double Click Copy Button",
+        "code": "// Perform double-click on the copy button\nconst button = context.page.locator(\"button[ondblclick='myFunction1()']\");\nawait button.dblclick({ timeout: 30000 });\nreturn true;"
+      }
+    },
+    {
+      "id": "wait-field2-update",
+      "type": "wait",
+      "position": {
+        "x": 5100,
+        "y": 200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for Field 2 Update",
+        "waitType": "selector",
+        "value": "#field2",
+        "selectorType": "css",
+        "timeout": 10000,
+        "retryEnabled": true,
+        "retryCount": 5,
+        "retryDelay": 500
+      }
+    },
+    {
+      "id": "verify-field2-copied",
+      "type": "verify",
+      "position": {
+        "x": 5350,
+        "y": 200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Field 2 Copied",
+        "domain": "browser",
+        "verificationType": "formField",
+        "selector": "#field2",
+        "selectorType": "css",
+        "expectedValue": "Hello World",
+        "matchType": "equals",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 5,
+        "retryDelay": 1000
+      }
+    },
+    {
+      "id": "scroll-to-drag-drop",
+      "type": "wait",
+      "position": {
+        "x": 5600,
+        "y": 200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait Before Drag Drop",
+        "waitType": "timeout",
+        "value": 1000,
+        "timeout": 5000
+      }
+    },
+    {
+      "id": "verify-drag-element",
+      "type": "verify",
+      "position": {
+        "x": 5850,
+        "y": 200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Drag Element Exists",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "#draggable",
+        "selectorType": "css",
+        "elementCheck": "visible",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "verify-drop-target",
+      "type": "verify",
+      "position": {
+        "x": 6100,
+        "y": 200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Drop Target Exists",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "#droppable",
+        "selectorType": "css",
+        "elementCheck": "visible",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "scroll-to-slider",
+      "type": "wait",
+      "position": {
+        "x": 6350,
+        "y": 200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait Before Slider",
+        "waitType": "timeout",
+        "value": 1000,
+        "timeout": 5000
+      }
+    },
+    {
+      "id": "verify-slider-exists",
+      "type": "verify",
+      "position": {
+        "x": 6600,
+        "y": 200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Slider Exists",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "#slider",
+        "selectorType": "css",
+        "elementCheck": "exists",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "verify-slider-enabled",
+      "type": "verify",
+      "position": {
+        "x": 6850,
+        "y": 200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Slider Enabled",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "#slider",
+        "selectorType": "css",
+        "elementCheck": "enabled",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "scroll-to-links",
+      "type": "wait",
+      "position": {
+        "x": 7100,
+        "y": 200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait Before Links",
+        "waitType": "timeout",
+        "value": 1000,
+        "timeout": 5000
+      }
+    },
+    {
+      "id": "verify-mobile-labels",
+      "type": "verify",
+      "position": {
+        "x": 7350,
+        "y": 100
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Mobile Labels Section",
+        "domain": "browser",
+        "verificationType": "text",
+        "expectedText": "Mobile Labels",
+        "matchType": "contains",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "verify-laptop-links",
+      "type": "verify",
+      "position": {
+        "x": 7350,
+        "y": 200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Laptop Links Section",
+        "domain": "browser",
+        "verificationType": "text",
+        "expectedText": "Laptop Links",
+        "matchType": "contains",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "verify-samsung-link",
+      "type": "verify",
+      "position": {
+        "x": 7600,
+        "y": 100
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Samsung Link Exists",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "a[href*='Samsung']",
+        "selectorType": "css",
+        "elementCheck": "exists",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "verify-apple-link",
+      "type": "verify",
+      "position": {
+        "x": 7600,
+        "y": 200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Apple Link Exists",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "a[href*='Apple']",
+        "selectorType": "css",
+        "elementCheck": "exists",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "verify-broken-links-section",
+      "type": "verify",
+      "position": {
+        "x": 7350,
+        "y": 300
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Broken Links Section",
+        "domain": "browser",
+        "verificationType": "text",
+        "expectedText": "Broken Links",
+        "matchType": "contains",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "verify-error-404-link",
+      "type": "verify",
+      "position": {
+        "x": 7600,
+        "y": 300
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Error 404 Link Exists",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "a[href*='404']",
+        "selectorType": "css",
+        "elementCheck": "exists",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "screenshot-final",
+      "type": "screenshot",
+      "position": {
+        "x": 7850,
+        "y": 200
+      },
+      "data": {
+        "type": "screenshot",
+        "label": "Take Final Screenshot",
+        "fullPage": true,
+        "retryEnabled": true,
+        "retryCount": 2
+      }
+    },
+    {
+      "id": "verify-form-submit-button",
+      "type": "verify",
+      "position": {
+        "x": 3100,
+        "y": 200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Submit Button Exists",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "input[type='submit']",
+        "selectorType": "css",
+        "elementCheck": "visible",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "verify-submit-button-enabled",
+      "type": "verify",
+      "position": {
+        "x": 3100,
+        "y": 300
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Submit Button Enabled",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "input[type='submit']",
+        "selectorType": "css",
+        "elementCheck": "enabled",
+        "timeout": 30000
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-openBrowser-input",
+      "source": "start-1",
+      "target": "openBrowser-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-start-openBrowser-driver",
+      "source": "start-1",
+      "target": "openBrowser-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-openBrowser-navigate-input",
+      "source": "openBrowser-1",
+      "target": "navigate-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-openBrowser-navigate-driver",
+      "source": "openBrowser-1",
+      "target": "navigate-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-navigate-verify-url-input",
+      "source": "navigate-1",
+      "target": "verify-url-loaded",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-navigate-verify-url-driver",
+      "source": "navigate-1",
+      "target": "verify-url-loaded",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-navigate-verify-title-input",
+      "source": "navigate-1",
+      "target": "verify-page-title",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-navigate-verify-title-driver",
+      "source": "navigate-1",
+      "target": "verify-page-title",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-url-screenshot-input",
+      "source": "verify-url-loaded",
+      "target": "screenshot-initial",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-url-screenshot-driver",
+      "source": "verify-url-loaded",
+      "target": "screenshot-initial",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-screenshot-fill-name-input",
+      "source": "screenshot-initial",
+      "target": "fill-name",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-screenshot-fill-name-driver",
+      "source": "screenshot-initial",
+      "target": "fill-name",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-fill-name-verify-name-input",
+      "source": "fill-name",
+      "target": "verify-name-filled",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-fill-name-verify-name-driver",
+      "source": "fill-name",
+      "target": "verify-name-filled",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-name-fill-email-input",
+      "source": "verify-name-filled",
+      "target": "fill-email",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-name-fill-email-driver",
+      "source": "verify-name-filled",
+      "target": "fill-email",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-fill-email-fill-phone-input",
+      "source": "fill-email",
+      "target": "fill-phone",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-fill-email-fill-phone-driver",
+      "source": "fill-email",
+      "target": "fill-phone",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-fill-phone-fill-address-input",
+      "source": "fill-phone",
+      "target": "fill-address",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-fill-phone-fill-address-driver",
+      "source": "fill-phone",
+      "target": "fill-address",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-fill-address-select-gender-input",
+      "source": "fill-address",
+      "target": "select-gender-male",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-fill-address-select-gender-driver",
+      "source": "fill-address",
+      "target": "select-gender-male",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-select-gender-verify-gender-input",
+      "source": "select-gender-male",
+      "target": "verify-gender-selected",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-select-gender-verify-gender-driver",
+      "source": "select-gender-male",
+      "target": "verify-gender-selected",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-gender-select-sunday-input",
+      "source": "verify-gender-selected",
+      "target": "select-day-sunday",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-gender-select-sunday-driver",
+      "source": "verify-gender-selected",
+      "target": "select-day-sunday",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-select-sunday-select-monday-input",
+      "source": "select-day-sunday",
+      "target": "select-day-monday",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-select-sunday-select-monday-driver",
+      "source": "select-day-sunday",
+      "target": "select-day-monday",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-select-monday-verify-days-input",
+      "source": "select-day-monday",
+      "target": "verify-days-selected",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-select-monday-verify-days-driver",
+      "source": "select-day-monday",
+      "target": "verify-days-selected",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-days-select-country-input",
+      "source": "verify-days-selected",
+      "target": "select-country-india",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-days-select-country-driver",
+      "source": "verify-days-selected",
+      "target": "select-country-india",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-select-india-verify-country-input",
+      "source": "select-country-india",
+      "target": "verify-country-selected",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-select-india-verify-country-driver",
+      "source": "select-country-india",
+      "target": "verify-country-selected",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-country-select-color-input",
+      "source": "verify-country-selected",
+      "target": "select-color-red",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-country-select-color-driver",
+      "source": "verify-country-selected",
+      "target": "select-color-red",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-select-color-verify-color-input",
+      "source": "select-color-red",
+      "target": "verify-color-selected",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-select-color-verify-color-driver",
+      "source": "select-color-red",
+      "target": "verify-color-selected",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-color-verify-table-input",
+      "source": "verify-color-selected",
+      "target": "verify-table-exists",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-color-verify-table-driver",
+      "source": "verify-color-selected",
+      "target": "verify-table-exists",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-table-verify-headers-input",
+      "source": "verify-table-exists",
+      "target": "verify-table-headers",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-table-verify-headers-driver",
+      "source": "verify-table-exists",
+      "target": "verify-table-headers",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-headers-verify-row-count-input",
+      "source": "verify-table-headers",
+      "target": "verify-table-row-count",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-headers-verify-row-count-driver",
+      "source": "verify-table-headers",
+      "target": "verify-table-row-count",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-row-count-get-text-input",
+      "source": "verify-table-row-count",
+      "target": "get-text-first-book",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-row-count-get-text-driver",
+      "source": "verify-table-row-count",
+      "target": "get-text-first-book",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-get-text-verify-book-name-input",
+      "source": "get-text-first-book",
+      "target": "verify-first-book-name",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-get-text-verify-book-name-driver",
+      "source": "get-text-first-book",
+      "target": "verify-first-book-name",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-book-name-verify-submit-input",
+      "source": "verify-first-book-name",
+      "target": "verify-form-submit-button",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-book-name-verify-submit-driver",
+      "source": "verify-first-book-name",
+      "target": "verify-form-submit-button",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-submit-verify-enabled-input",
+      "source": "verify-form-submit-button",
+      "target": "verify-submit-button-enabled",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-submit-verify-enabled-driver",
+      "source": "verify-form-submit-button",
+      "target": "verify-submit-button-enabled",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-enabled-scroll-tabs-input",
+      "source": "verify-submit-button-enabled",
+      "target": "scroll-to-tabs",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-enabled-scroll-tabs-driver",
+      "source": "verify-submit-button-enabled",
+      "target": "scroll-to-tabs",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-scroll-tabs-click-tab-input",
+      "source": "scroll-to-tabs",
+      "target": "click-tab-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-scroll-tabs-click-tab-driver",
+      "source": "scroll-to-tabs",
+      "target": "click-tab-2",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-click-tab-verify-content-input",
+      "source": "click-tab-2",
+      "target": "verify-tab-2-content",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-click-tab-verify-content-driver",
+      "source": "click-tab-2",
+      "target": "verify-tab-2-content",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-content-verify-text-input",
+      "source": "verify-tab-2-content",
+      "target": "verify-tab-2-text",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-content-verify-text-driver",
+      "source": "verify-tab-2-content",
+      "target": "verify-tab-2-text",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-text-click-dynamic-input",
+      "source": "verify-tab-2-text",
+      "target": "click-dynamic-button",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-text-click-dynamic-driver",
+      "source": "verify-tab-2-text",
+      "target": "click-dynamic-button",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-click-dynamic-verify-button-input",
+      "source": "click-dynamic-button",
+      "target": "verify-button-changed",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-click-dynamic-verify-button-driver",
+      "source": "click-dynamic-button",
+      "target": "verify-button-changed",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-button-click-alert-input",
+      "source": "verify-button-changed",
+      "target": "click-simple-alert",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-button-click-alert-driver",
+      "source": "verify-button-changed",
+      "target": "click-simple-alert",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-click-alert-wait-alert-input",
+      "source": "click-simple-alert",
+      "target": "wait-for-alert",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-click-alert-wait-alert-driver",
+      "source": "click-simple-alert",
+      "target": "wait-for-alert",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-alert-verify-handled-input",
+      "source": "wait-for-alert",
+      "target": "verify-alert-handled",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-alert-verify-handled-driver",
+      "source": "wait-for-alert",
+      "target": "verify-alert-handled",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-handled-scroll-double-input",
+      "source": "verify-alert-handled",
+      "target": "scroll-to-double-click",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-handled-scroll-double-driver",
+      "source": "verify-alert-handled",
+      "target": "scroll-to-double-click",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-scroll-double-fill-field1-input",
+      "source": "scroll-to-double-click",
+      "target": "fill-field1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-scroll-double-fill-field1-driver",
+      "source": "scroll-to-double-click",
+      "target": "fill-field1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-fill-field1-double-click-input",
+      "source": "fill-field1",
+      "target": "double-click-copy-button",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-fill-field1-double-click-driver",
+      "source": "fill-field1",
+      "target": "double-click-copy-button",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-double-click-wait-field2-input",
+      "source": "double-click-copy-button",
+      "target": "wait-field2-update",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-double-click-wait-field2-driver",
+      "source": "double-click-copy-button",
+      "target": "wait-field2-update",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-field2-verify-copied-input",
+      "source": "wait-field2-update",
+      "target": "verify-field2-copied",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-field2-verify-copied-driver",
+      "source": "wait-field2-update",
+      "target": "verify-field2-copied",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-copied-scroll-drag-input",
+      "source": "verify-field2-copied",
+      "target": "scroll-to-drag-drop",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-copied-scroll-drag-driver",
+      "source": "verify-field2-copied",
+      "target": "scroll-to-drag-drop",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-scroll-drag-verify-drag-input",
+      "source": "scroll-to-drag-drop",
+      "target": "verify-drag-element",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-scroll-drag-verify-drag-driver",
+      "source": "scroll-to-drag-drop",
+      "target": "verify-drag-element",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-drag-verify-drop-input",
+      "source": "verify-drag-element",
+      "target": "verify-drop-target",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-drag-verify-drop-driver",
+      "source": "verify-drag-element",
+      "target": "verify-drop-target",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-drop-scroll-slider-input",
+      "source": "verify-drop-target",
+      "target": "scroll-to-slider",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-drop-scroll-slider-driver",
+      "source": "verify-drop-target",
+      "target": "scroll-to-slider",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-scroll-slider-verify-exists-input",
+      "source": "scroll-to-slider",
+      "target": "verify-slider-exists",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-scroll-slider-verify-exists-driver",
+      "source": "scroll-to-slider",
+      "target": "verify-slider-exists",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-exists-verify-enabled-input",
+      "source": "verify-slider-exists",
+      "target": "verify-slider-enabled",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-exists-verify-enabled-driver",
+      "source": "verify-slider-exists",
+      "target": "verify-slider-enabled",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-enabled-scroll-links-input",
+      "source": "verify-slider-enabled",
+      "target": "scroll-to-links",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-enabled-scroll-links-driver",
+      "source": "verify-slider-enabled",
+      "target": "scroll-to-links",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-scroll-links-verify-mobile-input",
+      "source": "scroll-to-links",
+      "target": "verify-mobile-labels",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-scroll-links-verify-mobile-driver",
+      "source": "scroll-to-links",
+      "target": "verify-mobile-labels",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-mobile-verify-laptop-input",
+      "source": "verify-mobile-labels",
+      "target": "verify-laptop-links",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-mobile-verify-laptop-driver",
+      "source": "verify-mobile-labels",
+      "target": "verify-laptop-links",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-laptop-verify-broken-input",
+      "source": "verify-laptop-links",
+      "target": "verify-broken-links-section",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-laptop-verify-broken-driver",
+      "source": "verify-laptop-links",
+      "target": "verify-broken-links-section",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-broken-verify-samsung-input",
+      "source": "verify-broken-links-section",
+      "target": "verify-samsung-link",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-broken-verify-samsung-driver",
+      "source": "verify-broken-links-section",
+      "target": "verify-samsung-link",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-samsung-verify-apple-input",
+      "source": "verify-samsung-link",
+      "target": "verify-apple-link",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-samsung-verify-apple-driver",
+      "source": "verify-samsung-link",
+      "target": "verify-apple-link",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-apple-verify-404-input",
+      "source": "verify-apple-link",
+      "target": "verify-error-404-link",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-apple-verify-404-driver",
+      "source": "verify-apple-link",
+      "target": "verify-error-404-link",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-404-screenshot-input",
+      "source": "verify-error-404-link",
+      "target": "screenshot-final",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-404-screenshot-driver",
+      "source": "verify-error-404-link",
+      "target": "screenshot-final",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    }
+  ]
+}

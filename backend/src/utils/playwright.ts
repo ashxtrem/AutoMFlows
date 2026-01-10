@@ -1,6 +1,7 @@
 import { chromium, firefox, webkit, Browser, Page, BrowserContext } from 'playwright';
 import * as fs from 'fs';
 import * as path from 'path';
+import { resolveFromProjectRoot } from './pathUtils';
 
 type BrowserType = 'chromium' | 'firefox' | 'webkit';
 
@@ -15,8 +16,9 @@ export class PlaywrightManager {
     if (screenshotsDirectory) {
       this.screenshotsDir = screenshotsDirectory;
     } else {
-      // Create default screenshots directory
-      this.screenshotsDir = path.join(process.cwd(), 'screenshots');
+      // Create default screenshots directory in project root
+      // Note: This fallback is rarely used since ExecutionTracker provides screenshots directory
+      this.screenshotsDir = resolveFromProjectRoot('./output/screenshots');
     }
     if (!fs.existsSync(this.screenshotsDir)) {
       fs.mkdirSync(this.screenshotsDir, { recursive: true });

@@ -48,6 +48,7 @@ export class Executor {
     const shouldCreateTracker = (screenshotConfig?.enabled) || (reportConfig?.enabled);
     if (shouldCreateTracker) {
       // Use report config output path if available, otherwise default to './output'
+      // Path will be resolved relative to project root in ExecutionTracker
       const outputPath = reportConfig?.outputPath || './output';
       this.executionTracker = new ExecutionTracker(this.executionId, workflow, outputPath);
       
@@ -181,6 +182,15 @@ export class Executor {
           // Clear trace logs on success (we only need them for errors)
           this.nodeTraceLogs.delete(nodeId);
 
+          // Record screenshot if this is a Screenshot node
+          if (resolvedNode.type === NodeType.SCREENSHOT && this.executionTracker) {
+            const screenshotPath = this.context.getData('screenshotPath') as string | undefined;
+            if (screenshotPath) {
+              // Record as 'post' since screenshot is taken during node execution
+              this.executionTracker.recordScreenshot(nodeId, screenshotPath, 'post');
+            }
+          }
+
           // Take post-execution screenshot if enabled
           if (this.screenshotConfig?.enabled && 
               (this.screenshotConfig.timing === 'post' || this.screenshotConfig.timing === 'both')) {
@@ -245,12 +255,8 @@ export class Executor {
           // If failSilently is enabled, continue execution instead of throwing
           if (failSilently) {
             this.traceLog(`[TRACE] Node ${nodeId} failed silently, continuing execution`);
-            // Mark node as complete (even though it failed) so execution continues
-            this.emitEvent({
-              type: ExecutionEventType.NODE_COMPLETE,
-              nodeId,
-              timestamp: Date.now(),
-            });
+            // Don't emit NODE_COMPLETE - keep node in 'error' status for reporting
+            // Execution continues to next node, but node remains marked as failed
             continue; // Continue to next node
           }
           
@@ -336,7 +342,8 @@ export class Executor {
 
     try {
       const metadata = this.executionTracker.getMetadata();
-      const reportGenerator = new ReportGenerator(metadata);
+      const workflow = this.executionTracker.getWorkflow();
+      const reportGenerator = new ReportGenerator(metadata, workflow);
       await reportGenerator.generateReports(this.reportConfig.reportTypes);
       this.traceLog(`[TRACE] Generated reports: ${this.reportConfig.reportTypes.join(', ')}`);
     } catch (error: any) {

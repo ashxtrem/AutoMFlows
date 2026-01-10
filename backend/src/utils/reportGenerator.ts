@@ -1,15 +1,33 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { ExecutionMetadata, NodeExecutionEvent } from './executionTracker';
-import { ReportType } from '@automflows/shared';
+import { ReportType, Workflow } from '@automflows/shared';
 
 export class ReportGenerator {
   private metadata: ExecutionMetadata;
   private outputDirectory: string;
+  private workflow: Workflow;
 
-  constructor(metadata: ExecutionMetadata) {
+  constructor(metadata: ExecutionMetadata, workflow: Workflow) {
     this.metadata = metadata;
     this.outputDirectory = metadata.outputDirectory;
+    this.workflow = workflow;
+  }
+
+  /**
+   * Filter nodes to only include test nodes (isTest !== false)
+   * Nodes with isTest: false are excluded from reports
+   */
+  private getTestNodes(): NodeExecutionEvent[] {
+    return this.metadata.nodes.filter(node => {
+      const workflowNode = this.workflow.nodes.find(n => n.id === node.nodeId);
+      if (!workflowNode) {
+        return true; // Include if node not found in workflow (shouldn't happen)
+      }
+      const nodeData = workflowNode.data as any;
+      // Include node if isTest is true, undefined, or not explicitly false
+      return nodeData?.isTest !== false;
+    });
   }
 
   async generateReports(reportTypes: ReportType[]): Promise<void> {
@@ -48,21 +66,24 @@ export class ReportGenerator {
   }
 
   private async generateHTMLReport(reportDir: string): Promise<void> {
-    const html = this.generateHTMLContent();
+    // reportDir is the html directory (e.g., output/workflow-timestamp/html)
+    // Screenshots are in the parent directory's screenshots folder
+    const html = this.generateHTMLContent(reportDir);
     const filePath = path.join(reportDir, 'report.html');
     fs.writeFileSync(filePath, html, 'utf-8');
   }
 
-  private generateHTMLContent(): string {
+  private generateHTMLContent(htmlReportDir?: string): string {
+    const testNodes = this.getTestNodes();
     const duration = this.metadata.endTime 
       ? ((this.metadata.endTime - this.metadata.startTime) / 1000).toFixed(2)
       : 'N/A';
     
-    const passedNodes = this.metadata.nodes.filter(n => n.status === 'completed').length;
-    const failedNodes = this.metadata.nodes.filter(n => n.status === 'error').length;
-    const totalNodes = this.metadata.nodes.length;
+    const passedNodes = testNodes.filter(n => n.status === 'completed').length;
+    const failedNodes = testNodes.filter(n => n.status === 'error').length;
+    const totalNodes = testNodes.length;
 
-    const nodeRows = this.metadata.nodes.map(node => {
+    const nodeRows = testNodes.map((node, index) => {
       const nodeDuration = node.endTime && node.startTime
         ? ((node.endTime - node.startTime) / 1000).toFixed(2)
         : 'N/A';
@@ -75,23 +96,62 @@ export class ReportGenerator {
         ? '<span class="badge badge-skipped">Bypassed</span>'
         : '<span class="badge badge-running">Running</span>';
 
-      const screenshots = node.screenshotPaths 
-        ? Object.entries(node.screenshotPaths)
+      const hasScreenshots = node.screenshotPaths && Object.keys(node.screenshotPaths).length > 0;
+      const screenshotCount = hasScreenshots ? Object.keys(node.screenshotPaths).length : 0;
+      
+      // Screenshot toggle button
+      const screenshotToggle = hasScreenshots
+        ? `<button class="screenshot-toggle" onclick="toggleScreenshots(${index})" aria-expanded="false">
+            <span class="toggle-icon">▼</span>
+            Screenshots (${screenshotCount})
+          </button>`
+        : '-';
+
+      // Screenshot images in collapsible section
+      const screenshotContent = hasScreenshots
+        ? Object.entries(node.screenshotPaths!)
             .map(([timing, screenshotPath]) => {
-              const relativePath = path.relative(this.outputDirectory, screenshotPath);
-              return `<a href="${relativePath}" target="_blank">${timing.toUpperCase()}</a>`;
+              // Calculate path relative to HTML report directory
+              // HTML report is in: output/workflow-timestamp/html/report.html
+              // Screenshots are in: output/workflow-timestamp/screenshots/
+              // So we need to go up one level from html/ to access screenshots/
+              let relativePath: string;
+              if (htmlReportDir) {
+                // Calculate relative path from HTML report directory to screenshot
+                relativePath = path.relative(htmlReportDir, screenshotPath);
+                // Normalize path separators for web (use forward slashes)
+                relativePath = relativePath.replace(/\\/g, '/');
+              } else {
+                // Fallback: relative to output directory (for backwards compatibility)
+                relativePath = path.relative(this.outputDirectory, screenshotPath);
+                relativePath = relativePath.replace(/\\/g, '/');
+              }
+              return `
+                <div class="screenshot-item">
+                  <div class="screenshot-label">${timing.toUpperCase()}</div>
+                  <img src="${relativePath}" alt="Screenshot ${timing}" class="screenshot-image" loading="lazy" />
+                  <a href="${relativePath}" target="_blank" class="screenshot-link">Open in new tab</a>
+                </div>
+              `;
             })
-            .join(' ')
+            .join('')
         : '';
 
       return `
-        <tr>
+        <tr class="node-row">
           <td>${node.nodeLabel || node.nodeId}</td>
           <td>${node.nodeType}</td>
           <td>${statusBadge}</td>
           <td>${nodeDuration}s</td>
           <td>${node.error || '-'}</td>
-          <td>${screenshots || '-'}</td>
+          <td>${screenshotToggle}</td>
+        </tr>
+        <tr class="screenshot-row" id="screenshot-row-${index}" style="display: none;">
+          <td colspan="6" class="screenshot-cell">
+            <div class="screenshot-container">
+              ${screenshotContent}
+            </div>
+          </td>
         </tr>
       `;
     }).join('');
@@ -166,7 +226,102 @@ export class ReportGenerator {
     .badge-running { background: #3b82f6; color: #fff; }
     a { color: #4a9eff; text-decoration: none; }
     a:hover { text-decoration: underline; }
+    .screenshot-toggle {
+      background: #4a9eff;
+      color: #fff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .screenshot-toggle:hover {
+      background: #3a8eef;
+    }
+    .toggle-icon {
+      transition: transform 0.2s;
+      font-size: 10px;
+    }
+    .screenshot-toggle[aria-expanded="true"] .toggle-icon {
+      transform: rotate(180deg);
+    }
+    .screenshot-row {
+      background: #252525;
+    }
+    .screenshot-cell {
+      padding: 0 !important;
+      border-bottom: 2px solid #3a3a3a;
+    }
+    .screenshot-container {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    .screenshot-item {
+      background: #1f1f1f;
+      border-radius: 8px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .screenshot-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .screenshot-image {
+      width: 100%;
+      height: auto;
+      border-radius: 4px;
+      border: 1px solid #3a3a3a;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .screenshot-image:hover {
+      transform: scale(1.02);
+      box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+    }
+    .screenshot-link {
+      font-size: 12px;
+      color: #4a9eff;
+      text-align: center;
+      padding: 4px;
+    }
+    .screenshot-link:hover {
+      text-decoration: underline;
+    }
   </style>
+  <script>
+    function toggleScreenshots(index) {
+      const row = document.getElementById('screenshot-row-' + index);
+      const button = event.target.closest('.screenshot-toggle');
+      
+      if (row.style.display === 'none') {
+        row.style.display = '';
+        button.setAttribute('aria-expanded', 'true');
+      } else {
+        row.style.display = 'none';
+        button.setAttribute('aria-expanded', 'false');
+      }
+    }
+    
+    // Make screenshots clickable to open in new tab
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('.screenshot-image').forEach(img => {
+        img.addEventListener('click', function() {
+          window.open(this.src, '_blank');
+        });
+      });
+    });
+  </script>
 </head>
 <body>
   <div class="container">
@@ -217,6 +372,7 @@ export class ReportGenerator {
   }
 
   private async generateJSONReport(reportDir: string): Promise<void> {
+    const testNodes = this.getTestNodes();
     const reportData = {
       executionId: this.metadata.executionId,
       workflowName: this.metadata.workflowName,
@@ -226,7 +382,7 @@ export class ReportGenerator {
       duration: this.metadata.endTime 
         ? this.metadata.endTime - this.metadata.startTime 
         : null,
-      nodes: this.metadata.nodes.map(node => ({
+      nodes: testNodes.map(node => ({
         nodeId: node.nodeId,
         nodeType: node.nodeType,
         nodeLabel: node.nodeLabel,
@@ -246,7 +402,8 @@ export class ReportGenerator {
   }
 
   private async generateJUnitReport(reportDir: string): Promise<void> {
-    const testsuites = this.metadata.nodes.map((node, index) => {
+    const testNodes = this.getTestNodes();
+    const testsuites = testNodes.map((node, index) => {
       const duration = node.endTime && node.startTime
         ? (node.endTime - node.startTime) / 1000
         : 0;
@@ -264,9 +421,9 @@ export class ReportGenerator {
       }
     }).join('\n');
 
-    const totalTests = this.metadata.nodes.length;
-    const failures = this.metadata.nodes.filter(n => n.status === 'error').length;
-    const skipped = this.metadata.nodes.filter(n => n.status === 'bypassed').length;
+    const totalTests = testNodes.length;
+    const failures = testNodes.filter(n => n.status === 'error').length;
+    const skipped = testNodes.filter(n => n.status === 'bypassed').length;
     const totalTime = this.metadata.endTime && this.metadata.startTime
       ? (this.metadata.endTime - this.metadata.startTime) / 1000
       : 0;
@@ -283,8 +440,9 @@ ${testsuites}
   }
 
   private async generateCSVReport(reportDir: string): Promise<void> {
+    const testNodes = this.getTestNodes();
     const headers = ['Node ID', 'Node Label', 'Node Type', 'Status', 'Start Time', 'End Time', 'Duration (ms)', 'Error'];
-    const rows = this.metadata.nodes.map(node => {
+    const rows = testNodes.map(node => {
       const duration = node.endTime && node.startTime
         ? node.endTime - node.startTime
         : '';
@@ -306,15 +464,16 @@ ${testsuites}
   }
 
   private async generateMarkdownReport(reportDir: string): Promise<void> {
+    const testNodes = this.getTestNodes();
     const duration = this.metadata.endTime 
       ? ((this.metadata.endTime - this.metadata.startTime) / 1000).toFixed(2)
       : 'N/A';
     
-    const passedNodes = this.metadata.nodes.filter(n => n.status === 'completed').length;
-    const failedNodes = this.metadata.nodes.filter(n => n.status === 'error').length;
-    const totalNodes = this.metadata.nodes.length;
+    const passedNodes = testNodes.filter(n => n.status === 'completed').length;
+    const failedNodes = testNodes.filter(n => n.status === 'error').length;
+    const totalNodes = testNodes.length;
 
-    const nodeRows = this.metadata.nodes.map(node => {
+    const nodeRows = testNodes.map(node => {
       const nodeDuration = node.endTime && node.startTime
         ? ((node.endTime - node.startTime) / 1000).toFixed(2)
         : 'N/A';
@@ -359,8 +518,9 @@ ${nodeRows}
       fs.mkdirSync(resultsDir, { recursive: true });
     }
 
-    // Generate Allure results JSON files for each node
-    this.metadata.nodes.forEach((node, index) => {
+    const testNodes = this.getTestNodes();
+    // Generate Allure results JSON files for each test node
+    testNodes.forEach((node, index) => {
       const allureResult = {
         uuid: `${this.metadata.executionId}-${node.nodeId}`,
         name: node.nodeLabel || node.nodeId,
@@ -395,20 +555,16 @@ ${nodeRows}
       fs.writeFileSync(filePath, JSON.stringify(allureResult, null, 2), 'utf-8');
     });
 
-    // Copy screenshots to allure attachments directory
+    // Copy screenshots to allure results directory (attachments must be in same dir as results JSON)
+    // Allure expects attachments to be in the same directory as the results JSON files
     if (fs.existsSync(this.metadata.screenshotsDirectory)) {
-      const attachmentsDir = path.join(reportDir, 'attachments');
-      if (!fs.existsSync(attachmentsDir)) {
-        fs.mkdirSync(attachmentsDir, { recursive: true });
-      }
-      
-      // Copy screenshots
+      // Copy screenshots to results directory (same directory as JSON files)
       try {
         const screenshotFiles = fs.readdirSync(this.metadata.screenshotsDirectory);
         screenshotFiles.forEach(file => {
           if (file.endsWith('.png')) {
             const srcPath = path.join(this.metadata.screenshotsDirectory, file);
-            const destPath = path.join(attachmentsDir, file);
+            const destPath = path.join(resultsDir, file);
             fs.copyFileSync(srcPath, destPath);
           }
         });
@@ -559,15 +715,16 @@ They are in the correct format for Allure CLI to process.
   }
 
   private generateAllureIndexHtml(): string {
-    const passedNodes = this.metadata.nodes.filter(n => n.status === 'completed').length;
-    const failedNodes = this.metadata.nodes.filter(n => n.status === 'error').length;
-    const skippedNodes = this.metadata.nodes.filter(n => n.status === 'bypassed').length;
-    const totalNodes = this.metadata.nodes.length;
+    const testNodes = this.getTestNodes();
+    const passedNodes = testNodes.filter(n => n.status === 'completed').length;
+    const failedNodes = testNodes.filter(n => n.status === 'error').length;
+    const skippedNodes = testNodes.filter(n => n.status === 'bypassed').length;
+    const totalNodes = testNodes.length;
     const duration = this.metadata.endTime 
       ? ((this.metadata.endTime - this.metadata.startTime) / 1000).toFixed(2)
       : 'N/A';
 
-    const nodeRows = this.metadata.nodes.map(node => {
+    const nodeRows = testNodes.map(node => {
       const nodeDuration = node.endTime && node.startTime
         ? ((node.endTime - node.startTime) / 1000).toFixed(2)
         : 'N/A';

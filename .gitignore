@@ -15,6 +15,10 @@ build/
 out/
 *.tsbuildinfo
 
+# Application output directories
+output/
+backend/output/
+
 # Compiled JavaScript
 *.js.map
 *.d.ts.map
@@ -110,6 +114,9 @@ dist/
 
 # BrowserFlow runtime files
 .browserflow-port
+
+# AutoMflows runtime files
+.automflows-port
 
 # Database files
 *.db

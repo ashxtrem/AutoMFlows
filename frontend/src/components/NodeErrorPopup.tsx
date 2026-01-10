@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, AlertCircle, FileText, ChevronDown, ChevronUp, Copy, Code, Globe, Search } from 'lucide-react';
 import { useWorkflowStore } from '../store/workflowStore';
 import { PageDebugInfo, SelectorSuggestion } from '@automflows/shared';

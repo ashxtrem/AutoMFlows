@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useWorkflowStore } from '../store/workflowStore';
 import { serializeWorkflow } from '../utils/serialization';
 import { ExecutionEventType, ScreenshotConfig, ReportConfig } from '@automflows/shared';
 import { validateInputConnections } from '../utils/validation';
+import { useNotificationStore } from '../store/notificationStore';
 
 let socket: Socket | null = null;
 let backendPort: number | null = null;
@@ -46,8 +47,11 @@ async function getBackendPortSync(): Promise<number> {
 
 export function useExecution() {
   const { nodes, edges, setExecutionStatus, setExecutingNodeId, resetExecution, setNodeError, clearAllNodeErrors } = useWorkflowStore();
+  const failedNodes = useWorkflowStore((state) => state.failedNodes);
   const [port, setPort] = useState<number | null>(null);
   const [validationErrors, setValidationErrors] = useState<any[]>([]);
+  const addNotification = useNotificationStore((state) => state.addNotification);
+  const executionStartTimeRef = useRef<number | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -73,6 +77,12 @@ export function useExecution() {
         case ExecutionEventType.EXECUTION_START:
           setExecutionStatus('running');
           clearAllNodeErrors(); // Clear previous errors when starting new execution
+          executionStartTimeRef.current = Date.now();
+          addNotification({
+            type: 'info',
+            title: 'Execution Started',
+            message: 'Workflow execution has begun',
+          });
           break;
         case ExecutionEventType.NODE_START:
           setExecutingNodeId(event.nodeId);
@@ -99,6 +109,28 @@ export function useExecution() {
         case ExecutionEventType.EXECUTION_COMPLETE:
           setExecutionStatus('completed');
           setExecutingNodeId(null);
+          // Check if there were any failures - get current state from store
+          setTimeout(() => {
+            const currentFailedNodes = useWorkflowStore.getState().failedNodes;
+            const hasFailures = currentFailedNodes.size > 0;
+            if (!hasFailures) {
+              const duration = executionStartTimeRef.current 
+                ? ((Date.now() - executionStartTimeRef.current) / 1000).toFixed(1)
+                : null;
+              addNotification({
+                type: 'success',
+                title: 'Execution Completed',
+                message: duration ? `Workflow executed successfully in ${duration}s` : 'Workflow executed successfully with no failures',
+              });
+            } else {
+              addNotification({
+                type: 'error',
+                title: 'Execution Completed with Errors',
+                message: `${currentFailedNodes.size} node(s) failed during execution`,
+              });
+            }
+          }, 100); // Small delay to ensure all node errors are recorded
+          executionStartTimeRef.current = null;
           // Don't clear failedNodes here - let user see errors until they dismiss or start new execution
           setTimeout(() => {
             // Only reset execution status, keep failed nodes visible
@@ -109,6 +141,12 @@ export function useExecution() {
         case ExecutionEventType.EXECUTION_ERROR:
           setExecutionStatus('error');
           setExecutingNodeId(null);
+          addNotification({
+            type: 'error',
+            title: 'Execution Failed',
+            message: event.message || 'Workflow execution encountered an error',
+          });
+          executionStartTimeRef.current = null;
           // Don't clear failedNodes here - let user see errors until they dismiss or start new execution
           setTimeout(() => {
             // Only reset execution status, keep failed nodes visible
@@ -138,7 +176,7 @@ export function useExecution() {
         socket = null;
       }
     };
-  }, [setExecutionStatus, setExecutingNodeId, resetExecution, setNodeError, clearAllNodeErrors]);
+  }, [setExecutionStatus, setExecutingNodeId, resetExecution, setNodeError, clearAllNodeErrors, addNotification]);
 
   const executeWorkflow = async (traceLogs: boolean = false) => {
     try {
@@ -200,6 +238,7 @@ export function useExecution() {
 
       const result = await response.json();
       console.log('Execution started:', result);
+      // Notification for execution start is handled by socket event
     } catch (error: any) {
       console.error('Execution error:', error);
       
@@ -212,8 +251,13 @@ export function useExecution() {
         errorMessage = `Cannot connect to backend server on port ${currentPort}. Please ensure the backend server is running.`;
       }
       
-      alert(errorMessage);
+      addNotification({
+        type: 'error',
+        title: 'Execution Failed',
+        message: errorMessage,
+      });
       setExecutionStatus('error');
+      executionStartTimeRef.current = null;
     }
   };
 

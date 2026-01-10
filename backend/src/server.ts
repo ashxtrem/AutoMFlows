@@ -10,6 +10,7 @@ import { findAvailablePort } from './utils/portFinder';
 import { writePortFile, deletePortFile } from './utils/writePort';
 import { PluginLoader } from './plugins/loader';
 import { pluginRegistry } from './plugins/registry';
+import { resolveFromProjectRoot } from './utils/pathUtils';
 
 const app = express();
 const httpServer = createServer(app);
@@ -36,8 +37,8 @@ app.use('/api/workflows', workflowRoutes(io));
 app.use('/api/plugins', pluginRoutes());
 app.use('/api/reports', reportRoutes());
 
-// Serve static report files from output directory
-const outputDir = path.resolve('./output');
+// Serve static report files from output directory (project root)
+const outputDir = resolveFromProjectRoot('./output');
 app.use('/reports', express.static(outputDir));
 
 // Serve port file for frontend to discover backend port

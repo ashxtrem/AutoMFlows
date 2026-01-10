@@ -38,10 +38,7 @@ export class JavaScriptCodeHandler implements NodeHandler {
         context.setData('result', result);
       }
     } catch (error: any) {
-      if (data.failSilently) {
-        console.warn(`JavaScript execution failed silently: ${error.message}`);
-        return;
-      }
+      // Always throw error - let executor handle failSilently logic
       throw new Error(`JavaScript execution error: ${error.message}`);
     }
   }

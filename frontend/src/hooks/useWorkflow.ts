@@ -18,7 +18,7 @@ export function useWorkflowAutoSave() {
 }
 
 export function useWorkflowLoad() {
-  const { setNodes, setEdges, saveToHistory } = useWorkflowStore();
+  const { setNodes, setEdges, saveToHistory, clearAllNodeErrors } = useWorkflowStore();
 
   useEffect(() => {
     // Load workflow from localStorage on mount
@@ -26,11 +26,13 @@ export function useWorkflowLoad() {
     if (loaded) {
       setNodes(loaded.nodes);
       setEdges(loaded.edges);
+      // Clear error states on page refresh (execution state is lost)
+      clearAllNodeErrors();
       // Save initial loaded state to history
       setTimeout(() => {
         saveToHistory();
       }, 100);
     }
-  }, [setNodes, setEdges, saveToHistory]);
+  }, [setNodes, setEdges, saveToHistory, clearAllNodeErrors]);
 }
 

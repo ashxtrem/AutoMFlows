@@ -101,6 +101,10 @@ interface WorkflowState {
   
   // Node reload
   reloadNode: (nodeId: string) => void;
+  
+  // Failed node navigation
+  navigateToFailedNode: (() => void) | null;
+  setNavigateToFailedNode: (fn: (() => void) | null) => void;
 }
 
 export const useWorkflowStore = create<WorkflowState>((set, get) => {
@@ -118,6 +122,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     historyIndex: 0,
     maxHistorySize: 10,
     clipboard: null,
+    navigateToFailedNode: null,
 
   setNodes: (nodes) => {
     set({ nodes });
@@ -415,10 +420,10 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
       selectedNode: updatedSelectedNode,
     });
     
-    // Hide loader after a short delay to allow ReactFlow to reload
-    setTimeout(() => {
-      set({ canvasReloading: false });
-    }, 100);
+      // Hide loader after a short delay to allow ReactFlow to reload
+      setTimeout(() => {
+        set({ canvasReloading: false });
+      }, 100);
     
     // Don't auto-save to history - let calling code decide when to save
   },
@@ -771,6 +776,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     
     setTimeout(() => get().saveToHistory(), 100);
   },
+  
+  setNavigateToFailedNode: (fn) => set({ navigateToFailedNode: fn }),
   };
 });
 

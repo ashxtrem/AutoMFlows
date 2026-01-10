@@ -220,7 +220,32 @@ export default function LeftSidebar() {
     }
   };
 
-  const allCategories = [...NODE_CATEGORIES, ...pluginCategories];
+  // Merge categories with the same label to avoid duplicates
+  const allCategories = useMemo(() => {
+    const categoryMap = new Map<string, Array<{ type: string; label: string; icon?: string }>>();
+    
+    // Add predefined categories
+    NODE_CATEGORIES.forEach((category) => {
+      categoryMap.set(category.label, [...category.nodes]);
+    });
+    
+    // Merge plugin categories (add nodes to existing categories or create new ones)
+    pluginCategories.forEach((category) => {
+      if (categoryMap.has(category.label)) {
+        // Merge nodes into existing category
+        const existingNodes = categoryMap.get(category.label)!;
+        categoryMap.set(category.label, [...existingNodes, ...category.nodes]);
+      } else {
+        // Create new category
+        categoryMap.set(category.label, [...category.nodes]);
+      }
+    });
+    
+    return Array.from(categoryMap.entries()).map(([label, nodes]) => ({
+      label,
+      nodes,
+    }));
+  }, [pluginCategories]);
 
   return (
     <div

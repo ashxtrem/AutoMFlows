@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Plus, Trash2, HelpCircle } from 'lucide-react';
 import { Node } from 'reactflow';
 import { OpenBrowserNodeData } from '@automflows/shared';

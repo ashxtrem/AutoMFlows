@@ -1,13 +1,14 @@
 import { Router, Request, Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
+import { resolveFromProjectRoot } from '../utils/pathUtils';
 
 export default function reportRoutes() {
   const router = Router();
 
-  // Get default output directory
+  // Get default output directory (project root)
   const getOutputDir = (): string => {
-    return path.resolve('./output');
+    return resolveFromProjectRoot('./output');
   };
 
   // List all report folders with metadata

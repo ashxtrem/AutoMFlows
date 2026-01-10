@@ -5,6 +5,7 @@ import SaveIcon from '@mui/icons-material/Save';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import HistoryIcon from '@mui/icons-material/History';
+import ErrorIcon from '@mui/icons-material/Error';
 import { useWorkflowStore } from '../store/workflowStore';
 import { useExecution } from '../hooks/useExecution';
 import { serializeWorkflow, deserializeWorkflow } from '../utils/serialization';
@@ -13,13 +14,17 @@ import ResetWarning from './ResetWarning';
 import LoadWarning from './LoadWarning';
 import SettingsDropdown from './SettingsDropdown';
 import ReportSettingsPopup from './ReportSettingsPopup';
+import NotificationContainer from './NotificationContainer';
 import { NodeType } from '@automflows/shared';
+import { useNotificationStore } from '../store/notificationStore';
 
 const STORAGE_KEY_TRACE_LOGS = 'automflows_trace_logs';
+const STORAGE_KEY_MENU_FIXED = 'automflows_menu_fixed';
 
 export default function TopBar() {
-  const { nodes, edges, setNodes, setEdges, executionStatus, resetExecution } = useWorkflowStore();
+  const { nodes, edges, setNodes, setEdges, executionStatus, resetExecution, failedNodes, navigateToFailedNode } = useWorkflowStore();
   const { executeWorkflow, stopExecution, validationErrors, setValidationErrors } = useExecution();
+  const addNotification = useNotificationStore((state) => state.addNotification);
   
   const [showResetWarning, setShowResetWarning] = useState(false);
   const [showLoadWarning, setShowLoadWarning] = useState(false);
@@ -34,13 +39,34 @@ export default function TopBar() {
     return saved === 'true';
   });
 
+  // Load menu fixed state from localStorage on mount
+  const [menuFixed, setMenuFixed] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_MENU_FIXED);
+    return saved === 'true';
+  });
+
   // Save trace logs state to localStorage when it changes
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_TRACE_LOGS, String(traceLogs));
   }, [traceLogs]);
 
-  // Auto-hide functionality
+  // Save menu fixed state to localStorage when it changes
   useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_MENU_FIXED, String(menuFixed));
+    // If menu is set to fixed, ensure it's visible
+    if (menuFixed) {
+      setIsVisible(true);
+    }
+  }, [menuFixed]);
+
+  // Auto-hide functionality (only enabled when menuFixed is false)
+  useEffect(() => {
+    // If menu is fixed, don't set up auto-hide
+    if (menuFixed) {
+      setIsVisible(true);
+      return;
+    }
+
     let hideTimeout: NodeJS.Timeout | null = null;
 
     const handleMouseMove = (e: MouseEvent) => {
@@ -91,7 +117,7 @@ export default function TopBar() {
         clearTimeout(hideTimeout);
       }
     };
-  }, []);
+  }, [menuFixed]);
 
   const handleRun = async () => {
     resetExecution();
@@ -109,9 +135,16 @@ export default function TopBar() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `workflow-${Date.now()}.json`;
+    const filename = `workflow-${Date.now()}.json`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+    
+    addNotification({
+      type: 'info',
+      title: 'Workflow Saved',
+      message: `Saved as ${filename}`,
+    });
   };
 
   const performLoad = () => {
@@ -128,8 +161,17 @@ export default function TopBar() {
             const { nodes: loadedNodes, edges: loadedEdges } = deserializeWorkflow(workflow);
             setNodes(loadedNodes);
             setEdges(loadedEdges);
+            addNotification({
+              type: 'info',
+              title: 'Workflow Loaded',
+              message: `Loaded workflow with ${loadedNodes.length} node(s)`,
+            });
           } catch (error) {
-            alert('Failed to load workflow: ' + (error as Error).message);
+            addNotification({
+              type: 'error',
+              title: 'Load Failed',
+              message: 'Failed to load workflow: ' + (error as Error).message,
+            });
           }
         };
         reader.readAsText(file);
@@ -308,6 +350,11 @@ export default function TopBar() {
   const confirmReset = () => {
     loadSampleTemplate();
     setShowResetWarning(false);
+    addNotification({
+      type: 'info',
+      title: 'Workflow Reset',
+      message: 'Workflow has been reset to sample template',
+    });
   };
 
   const confirmLoad = () => {
@@ -344,6 +391,15 @@ export default function TopBar() {
             <StopIcon sx={{ fontSize: '16px', color: '#ffffff' }} className="flex-shrink-0" />
             Stop
           </button>
+          <button
+            onClick={() => navigateToFailedNode?.()}
+            disabled={failedNodes.size === 0 || !navigateToFailedNode}
+            className="px-4 py-1.5 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded flex items-center gap-2 text-sm font-medium"
+            title={failedNodes.size > 0 ? `Go to failed node (${failedNodes.size} failed) - Ctrl/Cmd+Shift+F` : 'No failed nodes'}
+          >
+            <ErrorIcon sx={{ fontSize: '16px', color: '#ffffff' }} className="flex-shrink-0" />
+            Go to Failed Node
+          </button>
           <div className="w-px h-6 bg-gray-700 mx-2" />
           <button
             onClick={handleSave}
@@ -371,6 +427,8 @@ export default function TopBar() {
             traceLogs={traceLogs}
             onTraceLogsChange={setTraceLogs}
             onReportSettingsClick={() => setShowReportSettings(true)}
+            menuFixed={menuFixed}
+            onMenuFixedChange={setMenuFixed}
           />
           <button
             onClick={() => {
@@ -409,6 +467,7 @@ export default function TopBar() {
       {showReportSettings && (
         <ReportSettingsPopup onClose={() => setShowReportSettings(false)} />
       )}
+      <NotificationContainer />
     </>
   );
 }

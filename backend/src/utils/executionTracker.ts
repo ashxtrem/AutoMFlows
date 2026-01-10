@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { Workflow, BaseNode } from '@automflows/shared';
+import { resolveFromProjectRoot } from './pathUtils';
 
 export interface NodeExecutionEvent {
   nodeId: string;
@@ -31,18 +32,23 @@ export class ExecutionTracker {
   private metadata: ExecutionMetadata;
   private outputDirectory: string;
   private screenshotsDirectory: string;
+  private workflow: Workflow; // Store workflow to access node properties like isTest
 
   constructor(
     executionId: string,
     workflow: Workflow,
     outputPath: string = './output'
   ) {
+    this.workflow = workflow; // Store workflow for later use
+    
     // Get workflow name from workflow file or use default
     const workflowName = this.extractWorkflowName(workflow);
     const timestamp = Date.now();
     const folderName = `${workflowName}-${timestamp}`;
     
-    this.outputDirectory = path.resolve(outputPath, folderName);
+    // Resolve output path relative to project root
+    const resolvedOutputPath = resolveFromProjectRoot(outputPath);
+    this.outputDirectory = path.resolve(resolvedOutputPath, folderName);
     this.screenshotsDirectory = path.join(this.outputDirectory, 'screenshots');
 
     // Create directories
@@ -125,6 +131,10 @@ export class ExecutionTracker {
         nodeEvent.screenshotPaths = {};
       }
       nodeEvent.screenshotPaths[timing] = screenshotPath;
+    } else {
+      // If node event doesn't exist yet (shouldn't happen, but handle gracefully),
+      // log a warning. This can happen if screenshot is taken before node start is recorded.
+      console.warn(`Cannot record screenshot for node ${nodeId}: node event not found. Screenshot path: ${screenshotPath}`);
     }
   }
 
@@ -139,5 +149,9 @@ export class ExecutionTracker {
 
   getFolderName(): string {
     return path.basename(this.outputDirectory);
+  }
+
+  getWorkflow(): Workflow {
+    return this.workflow;
   }
 }

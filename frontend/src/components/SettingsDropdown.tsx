@@ -1,20 +1,26 @@
 import { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { useNotificationStore } from '../store/notificationStore';
 
 const STORAGE_KEY_TRACE_LOGS = 'automflows_trace_logs';
 const STORAGE_KEY_SCREENSHOT_ON_NODE = 'automflows_screenshot_on_node';
 const STORAGE_KEY_SCREENSHOT_TIMING = 'automflows_screenshot_timing';
+const STORAGE_KEY_MENU_FIXED = 'automflows_menu_fixed';
 
 interface SettingsDropdownProps {
   traceLogs: boolean;
   onTraceLogsChange: (value: boolean) => void;
   onReportSettingsClick: () => void;
+  menuFixed: boolean;
+  onMenuFixedChange: (value: boolean) => void;
 }
 
 export default function SettingsDropdown({
   traceLogs,
   onTraceLogsChange,
   onReportSettingsClick,
+  menuFixed,
+  onMenuFixedChange,
 }: SettingsDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [screenshotOnNode, setScreenshotOnNode] = useState(() => {
@@ -26,28 +32,105 @@ export default function SettingsDropdown({
     return (saved as 'pre' | 'post' | 'both') || 'post';
   });
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const addNotification = useNotificationStore((state) => state.addNotification);
+  
+  // Track previous settings to detect changes
+  const prevSettingsRef = useRef({
+    traceLogs,
+    screenshotOnNode,
+    screenshotTiming,
+    menuFixed,
+  });
+
+  // Track trace logs changes
+  useEffect(() => {
+    if (prevSettingsRef.current.traceLogs !== traceLogs) {
+      addNotification({
+        type: 'settings',
+        title: 'Settings Applied',
+        details: [traceLogs ? 'Trace logs enabled' : 'Trace logs disabled'],
+      });
+      
+      prevSettingsRef.current.traceLogs = traceLogs;
+    }
+  }, [traceLogs, addNotification]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_SCREENSHOT_ON_NODE, String(screenshotOnNode));
-  }, [screenshotOnNode]);
+    
+    // Check if screenshot setting changed
+    if (prevSettingsRef.current.screenshotOnNode !== screenshotOnNode) {
+      const changedSettings: string[] = [];
+      changedSettings.push(screenshotOnNode ? 'Screenshot enabled' : 'Screenshot disabled');
+      
+      addNotification({
+        type: 'settings',
+        title: 'Settings Applied',
+        details: changedSettings,
+      });
+      
+      prevSettingsRef.current.screenshotOnNode = screenshotOnNode;
+    }
+  }, [screenshotOnNode, addNotification]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_SCREENSHOT_TIMING, screenshotTiming);
-  }, [screenshotTiming]);
+    
+    // Check if screenshot timing changed (only if screenshot is enabled)
+    if (screenshotOnNode && prevSettingsRef.current.screenshotTiming !== screenshotTiming) {
+      addNotification({
+        type: 'settings',
+        title: 'Settings Applied',
+        details: [`Screenshot timing set to ${screenshotTiming}`],
+      });
+      
+      prevSettingsRef.current.screenshotTiming = screenshotTiming;
+    }
+  }, [screenshotTiming, screenshotOnNode, addNotification]);
+  
+  // Track menu fixed changes (handled by parent, but we can show notification here)
+  useEffect(() => {
+    if (prevSettingsRef.current.menuFixed !== menuFixed) {
+      addNotification({
+        type: 'settings',
+        title: 'Settings Applied',
+        details: [menuFixed ? 'Menu fixed' : 'Menu auto-hide enabled'],
+      });
+      
+      prevSettingsRef.current.menuFixed = menuFixed;
+    }
+  }, [menuFixed, addNotification]);
 
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+      // Close dropdown if clicking outside the dropdown element
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
+        setIsOpen(false);
+      }
+    };
+
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
         setIsOpen(false);
       }
     };
 
     if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      // Use capture phase (true) to catch events before they're stopped by React Flow
+      // This ensures clicks on canvas/react-flow elements are caught
+      // Also listen to both mouse and touch events for better mobile support
+      document.addEventListener('mousedown', handleClickOutside, true);
+      document.addEventListener('click', handleClickOutside, true);
+      document.addEventListener('touchstart', handleClickOutside, true);
+      document.addEventListener('keydown', handleEscapeKey);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('mousedown', handleClickOutside, true);
+      document.removeEventListener('click', handleClickOutside, true);
+      document.removeEventListener('touchstart', handleClickOutside, true);
+      document.removeEventListener('keydown', handleEscapeKey);
     };
   }, [isOpen]);
 
@@ -97,6 +180,31 @@ export default function SettingsDropdown({
                   <div
                     className={`dot absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${
                       traceLogs ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </div>
+              </label>
+            </div>
+
+            {/* Fixed Menu Toggle */}
+            <div className="px-3 py-2 hover:bg-gray-700 rounded">
+              <label className="flex items-center justify-between cursor-pointer">
+                <span className="text-sm text-white">Fixed Menu</span>
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={menuFixed}
+                    onChange={(e) => onMenuFixedChange(e.target.checked)}
+                    className="sr-only"
+                  />
+                  <div
+                    className={`block h-6 w-11 rounded-full transition-colors ${
+                      menuFixed ? 'bg-green-600' : 'bg-gray-600'
+                    }`}
+                  />
+                  <div
+                    className={`dot absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${
+                      menuFixed ? 'translate-x-5' : 'translate-x-0'
                     }`}
                   />
                 </div>
