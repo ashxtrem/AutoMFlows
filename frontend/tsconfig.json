@@ -16,9 +16,13 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@plugins/*": ["../plugins/*"]
+    }
   },
-  "include": ["src"],
+  "include": ["src", "../plugins"],
   "references": [
     { "path": "../shared" }
   ]

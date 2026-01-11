@@ -1,4 +1,3 @@
-import { useWorkflowStore } from '../store/workflowStore';
 import { NodeType } from '@automflows/shared';
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { frontendPluginRegistry } from '../plugins/registry';
@@ -142,11 +141,39 @@ export default function LeftSidebar() {
   const [activeNode, setActiveNode] = useState<string | null>(null);
   const [showTooltip, setShowTooltip] = useState<string | null>(null);
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // Track plugin count to trigger re-render when plugins load
+  const [pluginCount, setPluginCount] = useState(0);
 
   // Save collapsed state to localStorage whenever it changes
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, String(isCollapsed));
   }, [isCollapsed]);
+
+  // Monitor plugin registry changes
+  useEffect(() => {
+    const checkPlugins = () => {
+      const currentCount = frontendPluginRegistry.getAllNodeDefinitions().length;
+      if (currentCount !== pluginCount) {
+        setPluginCount(currentCount);
+      }
+    };
+    
+    // Check immediately
+    checkPlugins();
+    
+    // Poll for plugin changes (plugins load asynchronously)
+    const interval = setInterval(checkPlugins, 100);
+    
+    // Stop polling after 5 seconds (plugins should load by then)
+    const timeout = setTimeout(() => {
+      clearInterval(interval);
+    }, 5000);
+    
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
+  }, [pluginCount]);
 
   // Get plugin nodes and group by category
   const pluginCategories = useMemo(() => {
@@ -169,7 +196,7 @@ export default function LeftSidebar() {
       label,
       nodes,
     }));
-  }, []);
+  }, [pluginCount]);
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>, type: NodeType | string) => {
     e.dataTransfer.setData('application/reactflow', type);
@@ -323,7 +350,7 @@ export default function LeftSidebar() {
                         const iconConfig = getNodeIconConfig(node.type);
                         if (iconConfig) {
                           const IconComponent = iconConfig.icon;
-                          return <IconComponent sx={{ fontSize: '1.25rem', color: iconConfig.color }} className="flex-shrink-0" />;
+                          return <IconComponent sx={{ fontSize: '1.25rem', color: iconConfig.color }} />;
                         }
                         // Fallback for plugin nodes that still use string icons
                         const pluginNode = frontendPluginRegistry.getPluginNode(node.type);

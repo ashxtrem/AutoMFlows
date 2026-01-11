@@ -9,7 +9,6 @@ interface ApiRequestConfigProps {
 
 export default function ApiRequestConfig({ node, onChange }: ApiRequestConfigProps) {
   const data = node.data;
-  const [showAdvanced, setShowAdvanced] = useState(false);
   const [headers, setHeaders] = useState<Array<{ key: string; value: string }>>(() => {
     if (data.headers && typeof data.headers === 'object') {
       return Object.entries(data.headers).map(([key, value]) => ({

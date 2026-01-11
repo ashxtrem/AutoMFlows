@@ -1,0 +1,40 @@
+{
+  "name": "reusable-node",
+  "version": "1.0.0",
+  "description": "Plugin for defining and executing reusable flows",
+  "author": "AutoMFlows Team",
+  "nodes": [
+    {
+      "type": "reusable.reusable",
+      "label": "Reusable",
+      "category": "Flow Control",
+      "icon": "🔄",
+      "description": "Defines a reusable flow with a context name",
+      "handlerPath": "handler.js",
+      "defaultData": {
+        "contextName": ""
+      }
+    },
+    {
+      "type": "reusable.end",
+      "label": "End",
+      "category": "Flow Control",
+      "icon": "🏁",
+      "description": "Marks the end of a reusable flow",
+      "handlerPath": "handler.js",
+      "defaultData": {}
+    },
+    {
+      "type": "reusable.runReusable",
+      "label": "Run Reusable",
+      "category": "Flow Control",
+      "icon": "▶️",
+      "description": "Executes a reusable flow by matching its context name",
+      "handlerPath": "handler.js",
+      "configComponentPath": "config.tsx",
+      "defaultData": {
+        "contextName": ""
+      }
+    }
+  ]
+}

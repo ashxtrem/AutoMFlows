@@ -6,7 +6,7 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import HistoryIcon from '@mui/icons-material/History';
 import ErrorIcon from '@mui/icons-material/Error';
-import { useWorkflowStore } from '../store/workflowStore';
+import { useWorkflowStore, getDefaultNodeData } from '../store/workflowStore';
 import { useExecution } from '../hooks/useExecution';
 import { serializeWorkflow, deserializeWorkflow } from '../utils/serialization';
 import ValidationErrorPopup from './ValidationErrorPopup';
@@ -193,149 +193,141 @@ export default function TopBar() {
   };
 
   const loadSampleTemplate = () => {
-    // Clear existing workflow
+    // Clear existing workflow first
+    resetExecution();
     setNodes([]);
     setEdges([]);
-    resetExecution();
+    
+    // Use setTimeout to ensure ReactFlow processes the clearing before setting new nodes
+    setTimeout(() => {
+      // Create nodes with proper spacing (200px horizontal spacing)
+      const startX = 100;
+      const y = 200;
+      const spacing = 250;
+      const baseTimestamp = Date.now();
 
-    // Create nodes with proper spacing (200px horizontal spacing)
-    const startX = 100;
-    const y = 200;
-    const spacing = 250;
+      // Helper function to create a node with default data
+      let nodeCounter = 0;
+      const createNodeWithDefaults = (nodeType: NodeType, position: { x: number; y: number }, label: string, overrides?: any) => {
+      const id = `${nodeType}-${baseTimestamp}-${nodeCounter++}`;
+      const defaultData = getDefaultNodeData(nodeType);
+      return {
+        id,
+        type: 'custom' as const,
+        position,
+        data: {
+          type: nodeType,
+          label,
+          ...defaultData,
+          ...overrides,
+        },
+      };
+      };
 
-    // Start node
-    const startId = `${NodeType.START}-${Date.now()}`;
-    const startNode = {
-      id: startId,
-      type: 'custom' as const,
-      position: { x: startX, y },
-      data: {
-        type: NodeType.START,
-        label: 'Start',
-      },
-    };
+      // Start node
+      const startNode = createNodeWithDefaults(NodeType.START, { x: startX, y }, 'Start');
+      const startId = startNode.id;
 
-    // Open Browser node
-    const openBrowserId = `${NodeType.OPEN_BROWSER}-${Date.now()}`;
-    const openBrowserNode = {
-      id: openBrowserId,
-      type: 'custom' as const,
-      position: { x: startX + spacing, y },
-      data: {
-        type: NodeType.OPEN_BROWSER,
-        label: 'Open Browser',
-        headless: false,
-        viewportWidth: 1280,
-        viewportHeight: 720,
-      },
-    };
+      // Open Browser node
+      const openBrowserNode = createNodeWithDefaults(
+        NodeType.OPEN_BROWSER,
+        { x: startX + spacing, y },
+        'Open Browser',
+        { headless: false, viewportWidth: 1280, viewportHeight: 720 }
+      );
+      const openBrowserId = openBrowserNode.id;
 
-    // Navigate node
-    const navigateId = `${NodeType.NAVIGATE}-${Date.now()}`;
-    const navigateNode = {
-      id: navigateId,
-      type: 'custom' as const,
-      position: { x: startX + spacing * 2, y },
-      data: {
-        type: NodeType.NAVIGATE,
-        label: 'Navigate',
-        url: 'https://example.com',
-        timeout: 30000,
-        waitUntil: 'networkidle',
-      },
-    };
+      // Navigate node
+      const navigateNode = createNodeWithDefaults(
+        NodeType.NAVIGATE,
+        { x: startX + spacing * 2, y },
+        'Navigate',
+        { url: 'https://example.com', timeout: 30000, waitUntil: 'networkidle' }
+      );
+      const navigateId = navigateNode.id;
 
-    // Wait node
-    const waitId = `${NodeType.WAIT}-${Date.now()}`;
-    const waitNode = {
-      id: waitId,
-      type: 'custom' as const,
-      position: { x: startX + spacing * 3, y },
-      data: {
-        type: NodeType.WAIT,
-        label: 'Wait',
-        waitType: 'timeout',
-        value: 2000,
-      },
-    };
+      // Wait node
+      const waitNode = createNodeWithDefaults(
+        NodeType.WAIT,
+        { x: startX + spacing * 3, y },
+        'Wait',
+        { waitType: 'timeout', value: 2000 }
+      );
+      const waitId = waitNode.id;
 
-    // Screenshot node
-    const screenshotId = `${NodeType.SCREENSHOT}-${Date.now()}`;
-    const screenshotNode = {
-      id: screenshotId,
-      type: 'custom' as const,
-      position: { x: startX + spacing * 4, y },
-      data: {
-        type: NodeType.SCREENSHOT,
-        label: 'Screenshot',
-        fullPage: false,
-      },
-    };
+      // Screenshot node
+      const screenshotNode = createNodeWithDefaults(
+        NodeType.SCREENSHOT,
+        { x: startX + spacing * 4, y },
+        'Screenshot',
+        { fullPage: false }
+      );
+      const screenshotId = screenshotNode.id;
 
-    // Set all nodes
-    setNodes([startNode, openBrowserNode, navigateNode, waitNode, screenshotNode]);
+      // Create edges
+      const newEdges = [
+        {
+          id: `edge-${startId}-output-${openBrowserId}-input`,
+          source: startId,
+          target: openBrowserId,
+          sourceHandle: 'output',
+          targetHandle: 'input',
+        },
+        {
+          id: `edge-${startId}-output-${openBrowserId}-driver`,
+          source: startId,
+          target: openBrowserId,
+          sourceHandle: 'output',
+          targetHandle: 'driver',
+        },
+        {
+          id: `edge-${openBrowserId}-output-${navigateId}-input`,
+          source: openBrowserId,
+          target: navigateId,
+          sourceHandle: 'output',
+          targetHandle: 'input',
+        },
+        {
+          id: `edge-${openBrowserId}-output-${navigateId}-driver`,
+          source: openBrowserId,
+          target: navigateId,
+          sourceHandle: 'output',
+          targetHandle: 'driver',
+        },
+        {
+          id: `edge-${navigateId}-output-${waitId}-input`,
+          source: navigateId,
+          target: waitId,
+          sourceHandle: 'output',
+          targetHandle: 'input',
+        },
+        {
+          id: `edge-${navigateId}-output-${waitId}-driver`,
+          source: navigateId,
+          target: waitId,
+          sourceHandle: 'output',
+          targetHandle: 'driver',
+        },
+        {
+          id: `edge-${waitId}-output-${screenshotId}-input`,
+          source: waitId,
+          target: screenshotId,
+          sourceHandle: 'output',
+          targetHandle: 'input',
+        },
+        {
+          id: `edge-${waitId}-output-${screenshotId}-driver`,
+          source: waitId,
+          target: screenshotId,
+          sourceHandle: 'output',
+          targetHandle: 'driver',
+        },
+      ];
 
-    // Create edges
-    const newEdges = [
-      {
-        id: `edge-${startId}-output-${openBrowserId}-input`,
-        source: startId,
-        target: openBrowserId,
-        sourceHandle: 'output',
-        targetHandle: 'input',
-      },
-      {
-        id: `edge-${startId}-output-${openBrowserId}-driver`,
-        source: startId,
-        target: openBrowserId,
-        sourceHandle: 'output',
-        targetHandle: 'driver',
-      },
-      {
-        id: `edge-${openBrowserId}-output-${navigateId}-input`,
-        source: openBrowserId,
-        target: navigateId,
-        sourceHandle: 'output',
-        targetHandle: 'input',
-      },
-      {
-        id: `edge-${openBrowserId}-output-${navigateId}-driver`,
-        source: openBrowserId,
-        target: navigateId,
-        sourceHandle: 'output',
-        targetHandle: 'driver',
-      },
-      {
-        id: `edge-${navigateId}-output-${waitId}-input`,
-        source: navigateId,
-        target: waitId,
-        sourceHandle: 'output',
-        targetHandle: 'input',
-      },
-      {
-        id: `edge-${navigateId}-output-${waitId}-driver`,
-        source: navigateId,
-        target: waitId,
-        sourceHandle: 'output',
-        targetHandle: 'driver',
-      },
-      {
-        id: `edge-${waitId}-output-${screenshotId}-input`,
-        source: waitId,
-        target: screenshotId,
-        sourceHandle: 'output',
-        targetHandle: 'input',
-      },
-      {
-        id: `edge-${waitId}-output-${screenshotId}-driver`,
-        source: waitId,
-        target: screenshotId,
-        sourceHandle: 'output',
-        targetHandle: 'driver',
-      },
-    ];
-
-    setEdges(newEdges);
+      // Set nodes and edges together to ensure ReactFlow updates properly
+      setNodes([startNode, openBrowserNode, navigateNode, waitNode, screenshotNode]);
+      setEdges(newEdges);
+    }, 10);
   };
 
   const handleReset = () => {

@@ -97,7 +97,7 @@ export class ReportGenerator {
         : '<span class="badge badge-running">Running</span>';
 
       const hasScreenshots = node.screenshotPaths && Object.keys(node.screenshotPaths).length > 0;
-      const screenshotCount = hasScreenshots ? Object.keys(node.screenshotPaths).length : 0;
+      const screenshotCount = hasScreenshots && node.screenshotPaths ? Object.keys(node.screenshotPaths).length : 0;
       
       // Screenshot toggle button
       const screenshotToggle = hasScreenshots

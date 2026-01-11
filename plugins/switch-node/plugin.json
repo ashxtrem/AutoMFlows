@@ -1,0 +1,44 @@
+{
+  "name": "switch-node",
+  "version": "1.0.0",
+  "description": "Switch node plugin for conditional branching in workflows",
+  "author": "AutoMFlows Team",
+  "nodes": [
+    {
+      "type": "switch.switch",
+      "label": "Switch",
+      "category": "Control Flow",
+      "icon": "🔀",
+      "description": "Conditional branching node that evaluates conditions and executes only the matching branch",
+      "handlerPath": "handler.js",
+      "configComponentPath": "config.tsx",
+      "defaultData": {
+        "cases": [
+          {
+            "id": "case-1",
+            "label": "Case 1",
+            "condition": {
+              "type": "ui-element",
+              "selector": "",
+              "selectorType": "css",
+              "elementCheck": "visible"
+            }
+          },
+          {
+            "id": "case-2",
+            "label": "Case 2",
+            "condition": {
+              "type": "ui-element",
+              "selector": "",
+              "selectorType": "css",
+              "elementCheck": "visible"
+            }
+          }
+        ],
+        "defaultCase": {
+          "label": "Default"
+        }
+      }
+    }
+  ]
+}

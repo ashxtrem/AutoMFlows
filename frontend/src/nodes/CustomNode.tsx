@@ -376,6 +376,16 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const hasDriverConnection = edgesRaw.some(e => e.target === id && e.targetHandle === 'driver');
   const hasOutputConnection = edgesRaw.some(e => e.source === id && e.sourceHandle === 'output');
   
+  // Check if this is a switch node
+  const isSwitchNode = nodeType === 'switch.switch';
+  
+  // Check if this is a reusable node
+  const isReusableNode = nodeType === 'reusable.reusable';
+  const isEndNode = nodeType === 'reusable.end';
+  const isRunReusableNode = nodeType === 'reusable.runReusable';
+  const switchCases = isSwitchNode ? (renderData.cases || []) : [];
+  const switchDefaultCase = isSwitchNode ? (renderData.defaultCase || { label: 'Default' }) : null;
+  
   const currentWidth = width || stableData.width || 200;
   const currentHeight = height || stableData.height || undefined;
   // Use node-specific data from store selector to ensure we always get latest values
@@ -1802,6 +1812,21 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
             title={isFailed ? 'Click to view error details | Double-click to rename' : 'Double-click to rename'}
           >
             {label}
+            {isReusableNode && renderData.contextName && (
+              <span className="ml-2 text-xs text-blue-400" title="Reusable flow definition">
+                ({renderData.contextName})
+              </span>
+            )}
+            {isRunReusableNode && renderData.contextName && (
+              <span className="ml-2 text-xs text-green-400" title="Executes reusable flow">
+                → {renderData.contextName}
+              </span>
+            )}
+            {isEndNode && (
+              <span className="ml-2 text-xs text-gray-400" title="End of reusable flow">
+                (End)
+              </span>
+            )}
             {bypass && <span className="ml-2 text-xs text-yellow-400">(bypassed)</span>}
             {failSilently && <span className="ml-2 text-xs text-orange-400">(failSilently)</span>}
           </div>
@@ -1850,21 +1875,120 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
       {selected && (
         <ResizeHandle onResize={handleResize} />
       )}
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="output"
-        className={`transition-all duration-200 ${
-          connectingHandleId === 'output' 
-            ? 'connecting' 
-            : hasOutputConnection 
-              ? '!bg-green-500 hover:!bg-green-400' 
-              : '!bg-blue-500 hover:!bg-blue-400'
-        }`}
-        style={{ display: nodeType === NodeType.START ? 'block' : 'block' }}
-        onMouseEnter={() => setConnectingHandleId('output')}
-        onMouseLeave={() => setConnectingHandleId(null)}
-      />
+      {/* Render output handles */}
+      {isSwitchNode ? (
+        // Switch node: render multiple output handles
+        <>
+          {/* Case handles */}
+          {switchCases.map((caseItem: any, index: number) => {
+            const handleId = caseItem.id || `case-${index + 1}`;
+            const hasCaseConnection = edgesRaw.some(e => e.source === id && e.sourceHandle === handleId);
+            const caseLabel = caseItem.label || `Case ${index + 1}`;
+            // Calculate vertical position: distribute evenly
+            // Total height includes header (~50px) + properties if not minimized
+            const totalHeight = currentHeight || (hasProperties && !isMinimized ? 200 : 50);
+            const totalHandles = switchCases.length + (switchDefaultCase ? 1 : 0);
+            const handleSpacing = totalHeight / (totalHandles + 1);
+            const topPercent = ((index + 1) * handleSpacing / totalHeight) * 100;
+            
+            return (
+              <div key={handleId} className="absolute inset-0 pointer-events-none">
+                {/* Case label */}
+                <div 
+                  className="absolute text-xs text-gray-400 text-right pr-2"
+                  style={{ 
+                    right: '20px',
+                    top: `${topPercent}%`,
+                    transform: 'translateY(-50%)',
+                    color: textColor,
+                  }}
+                >
+                  {caseLabel}
+                </div>
+                {/* Handle */}
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  id={handleId}
+                  className={`transition-all duration-200 pointer-events-auto ${
+                    connectingHandleId === handleId
+                      ? 'connecting'
+                      : hasCaseConnection
+                        ? '!bg-green-500 hover:!bg-green-400'
+                        : '!bg-blue-500 hover:!bg-blue-400'
+                  }`}
+                  style={{
+                    top: `${topPercent}%`,
+                  }}
+                  onMouseEnter={() => setConnectingHandleId(handleId)}
+                  onMouseLeave={() => setConnectingHandleId(null)}
+                />
+              </div>
+            );
+          })}
+          {/* Default case handle */}
+          {switchDefaultCase && (() => {
+            const handleId = 'default';
+            const hasDefaultConnection = edgesRaw.some(e => e.source === id && e.sourceHandle === handleId);
+            const totalHeight = currentHeight || (hasProperties && !isMinimized ? 200 : 50);
+            const totalHandles = switchCases.length + 1;
+            const handleSpacing = totalHeight / (totalHandles + 1);
+            const topPercent = ((switchCases.length + 1) * handleSpacing / totalHeight) * 100;
+            
+            return (
+              <div key={handleId} className="absolute inset-0 pointer-events-none">
+                {/* Default label */}
+                <div 
+                  className="absolute text-xs text-gray-400 text-right pr-2"
+                  style={{ 
+                    right: '20px',
+                    top: `${topPercent}%`,
+                    transform: 'translateY(-50%)',
+                    color: textColor,
+                  }}
+                >
+                  {switchDefaultCase.label || 'Default'}
+                </div>
+                {/* Handle */}
+                <Handle
+                  type="source"
+                  position={Position.Right}
+                  id={handleId}
+                  className={`transition-all duration-200 pointer-events-auto ${
+                    connectingHandleId === handleId
+                      ? 'connecting'
+                      : hasDefaultConnection
+                        ? '!bg-green-500 hover:!bg-green-400'
+                        : '!bg-blue-500 hover:!bg-blue-400'
+                  }`}
+                  style={{
+                    top: `${topPercent}%`,
+                  }}
+                  onMouseEnter={() => setConnectingHandleId(handleId)}
+                  onMouseLeave={() => setConnectingHandleId(null)}
+                />
+              </div>
+            );
+          })()}
+        </>
+      ) : (
+        // Regular node: render single output handle
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="output"
+          className={`transition-all duration-200 ${
+            connectingHandleId === 'output' 
+              ? 'connecting' 
+              : hasOutputConnection 
+                ? '!bg-green-500 hover:!bg-green-400' 
+                : '!bg-blue-500 hover:!bg-blue-400'
+          }`}
+          style={{ display: nodeType === NodeType.START ? 'block' : 'block' }}
+          onMouseEnter={() => setConnectingHandleId('output')}
+          onMouseLeave={() => setConnectingHandleId(null)}
+        />
+      )}
     </div>
   );
 }

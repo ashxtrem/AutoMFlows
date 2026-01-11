@@ -20,8 +20,7 @@ export default function NotificationNudge({ notification }: NotificationNudgePro
 
     // Calculate progress update interval (update every 50ms for smooth animation)
     const updateInterval = 50;
-    const totalDuration = notification.duration;
-    const progressStep = (updateInterval / totalDuration) * 100;
+    const totalDuration = notification.duration || 3000; // Default to 3 seconds if not provided
 
     // Start progress bar animation
     progressIntervalRef.current = setInterval(() => {
@@ -39,7 +38,7 @@ export default function NotificationNudge({ notification }: NotificationNudgePro
     // Set auto-dismiss timeout
     timeoutRef.current = setTimeout(() => {
       handleDismiss();
-    }, notification.duration);
+    }, totalDuration);
 
     return () => {
       if (timeoutRef.current) {

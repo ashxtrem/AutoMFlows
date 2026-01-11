@@ -28,6 +28,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@automflows/shared': path.resolve(__dirname, '../shared/src'),
+      '@plugins': path.resolve(__dirname, '../plugins'),
     },
   },
   server: {

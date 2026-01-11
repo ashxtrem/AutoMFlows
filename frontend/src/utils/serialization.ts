@@ -77,6 +77,11 @@ function getNodeLabel(type: NodeType): string {
     [NodeType.STRING_VALUE]: 'String Value',
     [NodeType.BOOLEAN_VALUE]: 'Boolean Value',
     [NodeType.INPUT_VALUE]: 'Input Value',
+    [NodeType.VERIFY]: 'Verify',
+    [NodeType.API_REQUEST]: 'API Request',
+    [NodeType.API_CURL]: 'API cURL',
+    [NodeType.LOAD_CONFIG_FILE]: 'Load Config File',
+    [NodeType.SELECT_CONFIG_FILE]: 'Select Config File',
   };
   return labels[type] || type;
 }

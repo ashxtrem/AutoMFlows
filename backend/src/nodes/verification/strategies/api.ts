@@ -1,4 +1,4 @@
-import { VerifyNodeData, MatchType } from '@automflows/shared';
+import { VerifyNodeData } from '@automflows/shared';
 import { ContextManager } from '../../../engine/context';
 import { BaseVerificationStrategy, VerificationResult } from './base';
 

@@ -20,6 +20,10 @@ import LoadConfigFileConfig from './nodeConfigs/LoadConfigFileConfig';
 import SelectConfigFileConfig from './nodeConfigs/SelectConfigFileConfig';
 import { frontendPluginRegistry } from '../plugins/registry';
 import { useCallback } from 'react';
+// Import switch node config component directly (until plugin loader supports dynamic loading)
+import SwitchConfig from '@plugins/switch-node/config';
+// Import reusable node config components directly (until plugin loader supports dynamic loading)
+import ReusableNodeConfig, { ReusableConfig, RunReusableConfig } from '@plugins/reusable-node/config';
 
 interface NodeConfigFormProps {
   node: Node;
@@ -83,6 +87,19 @@ export default function NodeConfigForm({ node }: NodeConfigFormProps) {
     // Check if it's a plugin node
     const pluginNode = frontendPluginRegistry.getPluginNode(nodeType);
     if (pluginNode) {
+      // Special handling for switch node (until plugin loader supports dynamic loading)
+      if (nodeType === 'switch.switch') {
+        return <SwitchConfig node={node} onChange={handleChange} />;
+      }
+      
+      // Special handling for reusable nodes (until plugin loader supports dynamic loading)
+      if (nodeType === 'reusable.reusable') {
+        return <ReusableConfig node={node} onChange={handleChange} />;
+      }
+      if (nodeType === 'reusable.runReusable') {
+        return <RunReusableConfig node={node} onChange={handleChange} />;
+      }
+      
       // If plugin has a custom config component, use it
       if (pluginNode.configComponent) {
         const ConfigComponent = pluginNode.configComponent;

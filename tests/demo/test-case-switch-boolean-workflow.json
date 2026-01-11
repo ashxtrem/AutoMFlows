@@ -1,0 +1,164 @@
+{
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 200
+      },
+      "data": {
+        "type": "start",
+        "label": "Start"
+      }
+    },
+    {
+      "id": "openBrowser-1",
+      "type": "openBrowser",
+      "position": {
+        "x": 350,
+        "y": 200
+      },
+      "data": {
+        "type": "openBrowser",
+        "label": "Open Browser",
+        "headless": false,
+        "viewportWidth": 1280,
+        "viewportHeight": 720
+      }
+    },
+    {
+      "id": "javascriptCode-1",
+      "type": "javascriptCode",
+      "position": {
+        "x": 600,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set Value",
+        "code": "context.setData('value', true);"
+      }
+    },
+    {
+      "id": "switch-1",
+      "type": "switch.switch",
+      "position": {
+        "x": 850,
+        "y": 200
+      },
+      "data": {
+        "type": "switch.switch",
+        "label": "Switch",
+        "cases": [
+          {
+            "id": "case-1",
+            "label": "True",
+            "condition": {
+              "type": "javascript",
+              "javascriptExpression": "context.getData('value') === true"
+            }
+          }
+        ],
+        "defaultCase": {
+          "label": "False"
+        }
+      }
+    },
+    {
+      "id": "navigate-google-1",
+      "type": "navigate",
+      "position": {
+        "x": 1100,
+        "y": 100
+      },
+      "data": {
+        "type": "navigate",
+        "label": "Navigate to Google",
+        "url": "https://google.com",
+        "timeout": 30000,
+        "waitUntil": "networkidle"
+      }
+    },
+    {
+      "id": "navigate-wiki-1",
+      "type": "navigate",
+      "position": {
+        "x": 1100,
+        "y": 300
+      },
+      "data": {
+        "type": "navigate",
+        "label": "Navigate to Wikipedia",
+        "url": "https://wiki.com",
+        "timeout": 30000,
+        "waitUntil": "networkidle"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-openBrowser-input",
+      "source": "start-1",
+      "target": "openBrowser-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-start-openBrowser-driver",
+      "source": "start-1",
+      "target": "openBrowser-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-openBrowser-javascriptCode-input",
+      "source": "openBrowser-1",
+      "target": "javascriptCode-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-javascriptCode-switch-input",
+      "source": "javascriptCode-1",
+      "target": "switch-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-javascriptCode-switch-driver",
+      "source": "openBrowser-1",
+      "target": "switch-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-switch-navigate-google-case1",
+      "source": "switch-1",
+      "target": "navigate-google-1",
+      "sourceHandle": "case-1",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-switch-navigate-google-driver",
+      "source": "openBrowser-1",
+      "target": "navigate-google-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-switch-navigate-wiki-default",
+      "source": "switch-1",
+      "target": "navigate-wiki-1",
+      "sourceHandle": "default",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-switch-navigate-wiki-driver",
+      "source": "openBrowser-1",
+      "target": "navigate-wiki-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    }
+  ]
+}

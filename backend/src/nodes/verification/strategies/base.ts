@@ -33,8 +33,8 @@ export abstract class BaseVerificationStrategy implements VerificationStrategy {
   protected resolveValue(
     value: any,
     context: ContextManager,
-    config: VerifyNodeData,
-    propertyName: string
+    _config: VerifyNodeData,
+    _propertyName: string
   ): any {
     // If value is null or undefined, return as-is
     if (value === null || value === undefined) {

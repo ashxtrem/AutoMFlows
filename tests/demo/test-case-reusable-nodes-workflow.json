@@ -1,0 +1,295 @@
+{
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 400
+      },
+      "data": {
+        "type": "start",
+        "label": "Start"
+      }
+    },
+    {
+      "id": "reusable-visit-page",
+      "type": "reusable.reusable",
+      "position": {
+        "x": 100,
+        "y": 100
+      },
+      "data": {
+        "type": "reusable.reusable",
+        "label": "Reusable: visit_page",
+        "contextName": "visit_page"
+      }
+    },
+    {
+      "id": "openBrowser-visit",
+      "type": "openBrowser",
+      "position": {
+        "x": 350,
+        "y": 100
+      },
+      "data": {
+        "type": "openBrowser",
+        "label": "Open Browser",
+        "headless": false,
+        "viewportWidth": 1280,
+        "viewportHeight": 720
+      }
+    },
+    {
+      "id": "navigate-todolist",
+      "type": "navigate",
+      "position": {
+        "x": 600,
+        "y": 100
+      },
+      "data": {
+        "type": "navigate",
+        "label": "Navigate to Todo List",
+        "url": "https://todolist.james.am",
+        "timeout": 30000,
+        "waitUntil": "networkidle"
+      }
+    },
+    {
+      "id": "verify-homepage",
+      "type": "verify",
+      "position": {
+        "x": 850,
+        "y": 100
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Home Page",
+        "domain": "browser",
+        "verificationType": "text",
+        "selector": "h1",
+        "selectorType": "css",
+        "expectedText": "To Do List",
+        "matchType": "equals",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "end-visit-page",
+      "type": "reusable.end",
+      "position": {
+        "x": 1100,
+        "y": 100
+      },
+      "data": {
+        "type": "reusable.end",
+        "label": "End"
+      }
+    },
+    {
+      "id": "reusable-add-note",
+      "type": "reusable.reusable",
+      "position": {
+        "x": 100,
+        "y": 250
+      },
+      "data": {
+        "type": "reusable.reusable",
+        "label": "Reusable: add_note",
+        "contextName": "add_note"
+      }
+    },
+    {
+      "id": "wait-newtodo",
+      "type": "wait",
+      "position": {
+        "x": 350,
+        "y": 250
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for New Todo Input",
+        "waitType": "selector",
+        "value": "[ng-model=\"newTodo\"]",
+        "selectorType": "css",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "javascript-get-todo-text",
+      "type": "javascriptCode",
+      "position": {
+        "x": 600,
+        "y": 250
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Get Todo Text and Type",
+        "code": "const todoText = context.getData('todo_text');\nif (!todoText) {\n  throw new Error('todo_text variable not found in context');\n}\nconst page = context.page;\nif (!page) {\n  throw new Error('Page not available');\n}\nawait page.fill('[ng-model=\"newTodo\"]', todoText, { timeout: 30000 });\nawait page.press('[ng-model=\"newTodo\"]', 'Enter');\nconsole.log('Typed and submitted todo text:', todoText);"
+      }
+    },
+    {
+      "id": "end-add-note",
+      "type": "reusable.end",
+      "position": {
+        "x": 850,
+        "y": 250
+      },
+      "data": {
+        "type": "reusable.end",
+        "label": "End"
+      }
+    },
+    {
+      "id": "run-visit-page",
+      "type": "reusable.runReusable",
+      "position": {
+        "x": 350,
+        "y": 400
+      },
+      "data": {
+        "type": "reusable.runReusable",
+        "label": "Run Reusable: visit_page",
+        "contextName": "visit_page"
+      }
+    },
+    {
+      "id": "javascript-gen-todo-1",
+      "type": "javascriptCode",
+      "position": {
+        "x": 600,
+        "y": 400
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Generate Random Todo Text",
+        "code": "const randomText = 'Todo ' + Math.random().toString(36).substring(2, 15);\ncontext.setData('todo_text', randomText);\nconsole.log('Generated todo_text:', randomText);"
+      }
+    },
+    {
+      "id": "run-add-note-1",
+      "type": "reusable.runReusable",
+      "position": {
+        "x": 850,
+        "y": 400
+      },
+      "data": {
+        "type": "reusable.runReusable",
+        "label": "Run Reusable: add_note",
+        "contextName": "add_note"
+      }
+    },
+    {
+      "id": "javascript-gen-todo-2",
+      "type": "javascriptCode",
+      "position": {
+        "x": 1100,
+        "y": 400
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Update Todo Text",
+        "code": "const randomText = 'Updated Todo ' + Math.random().toString(36).substring(2, 15);\ncontext.setData('todo_text', randomText);\nconsole.log('Updated todo_text:', randomText);"
+      }
+    },
+    {
+      "id": "run-add-note-2",
+      "type": "reusable.runReusable",
+      "position": {
+        "x": 1350,
+        "y": 400
+      },
+      "data": {
+        "type": "reusable.runReusable",
+        "label": "Run Reusable: add_note (2nd)",
+        "contextName": "add_note"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-run-visit-page",
+      "source": "start-1",
+      "target": "run-visit-page",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-reusable-visit-openBrowser",
+      "source": "reusable-visit-page",
+      "target": "openBrowser-visit",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-openBrowser-navigate",
+      "source": "openBrowser-visit",
+      "target": "navigate-todolist",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-navigate-verify",
+      "source": "navigate-todolist",
+      "target": "verify-homepage",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-end-visit",
+      "source": "verify-homepage",
+      "target": "end-visit-page",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-reusable-add-wait",
+      "source": "reusable-add-note",
+      "target": "wait-newtodo",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-javascript-todo",
+      "source": "wait-newtodo",
+      "target": "javascript-get-todo-text",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-todo-end-add",
+      "source": "javascript-get-todo-text",
+      "target": "end-add-note",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-run-visit-javascript-1",
+      "source": "run-visit-page",
+      "target": "javascript-gen-todo-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-1-run-add-1",
+      "source": "javascript-gen-todo-1",
+      "target": "run-add-note-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-run-add-1-javascript-2",
+      "source": "run-add-note-1",
+      "target": "javascript-gen-todo-2",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-2-run-add-2",
+      "source": "javascript-gen-todo-2",
+      "target": "run-add-note-2",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    }
+  ]
+}

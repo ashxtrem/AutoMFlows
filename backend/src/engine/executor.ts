@@ -9,6 +9,7 @@ import { TypeConverter } from '../utils/typeConverter';
 import { PageDebugHelper } from '../utils/pageDebugHelper';
 import { ExecutionTracker } from '../utils/executionTracker';
 import { ReportGenerator } from '../utils/reportGenerator';
+import { getAllReusableScopes } from '../utils/reusableFlowExtractor';
 import * as path from 'path';
 
 export class Executor {
@@ -64,6 +65,9 @@ export class Executor {
     
     // Store playwright in context for node handlers
     (this.context as any).playwright = this.playwright;
+    
+    // Store workflow in context for node handlers (needed for RunReusableHandler)
+    (this.context as any).workflow = this.workflow;
   }
 
   getExecutionId(): string {
@@ -87,8 +91,20 @@ export class Executor {
       // Validate workflow
       const validation = this.parser.validate();
       if (!validation.valid) {
-        throw new Error(`Workflow validation failed: ${validation.errors.join(', ')}`);
+        const errorMsg = validation.errors.join(', ');
+        const warningMsg = validation.warnings && validation.warnings.length > 0 ? ` Warnings: ${validation.warnings.join(', ')}` : '';
+        throw new Error(`Workflow validation failed: ${errorMsg}${warningMsg}`);
       }
+      
+      // Log warnings if any
+      if (validation.warnings && validation.warnings.length > 0) {
+        this.traceLog(`[TRACE] Validation warnings: ${validation.warnings.join(', ')}`);
+      }
+
+      // Store workflow and reusable scopes in context for RunReusableHandler
+      this.context.setData('fullWorkflow', this.workflow);
+      this.context.setData('reusableScopes', this.parser.getReusableScopes());
+      this.context.setData('resolvePropertyInputs', (node: BaseNode) => this.resolvePropertyInputs(node));
 
       this.status = ExecutionStatus.RUNNING;
       this.traceLog(`[TRACE] Execution started - ID: ${this.executionId}`);
@@ -97,12 +113,24 @@ export class Executor {
         timestamp: Date.now(),
       });
 
-      // Get execution order
-      const executionOrder = this.parser.getExecutionOrder();
+      // Get execution order (excludes nodes in reusable scopes)
+      const executionOrder = this.parser.getExecutionOrder(true);
       this.traceLog(`[TRACE] Execution order: ${executionOrder.join(' -> ')}`);
 
-      // Execute nodes in order
-      for (const nodeId of executionOrder) {
+      // Track skipped nodes (nodes unreachable due to switch node branching)
+      const skippedNodes = new Set<string>();
+      
+      // Get reusable scopes to identify which nodes to skip
+      const reusableScopes = getAllReusableScopes(this.workflow);
+      const nodesInReusableScopes = new Set<string>();
+      for (const scope of reusableScopes.values()) {
+        for (const nodeId of scope) {
+          nodesInReusableScopes.add(nodeId);
+        }
+      }
+
+        // Execute nodes in order
+        for (const nodeId of executionOrder) {
         if (this.stopRequested) {
           this.status = ExecutionStatus.STOPPED;
           this.traceLog(`[TRACE] Execution stopped by user`);
@@ -117,6 +145,63 @@ export class Executor {
         const node = this.parser.getNode(nodeId);
         if (!node) {
           throw new Error(`Node ${nodeId} not found`);
+        }
+
+        // Skip Reusable and End nodes (they're just definitions/markers)
+        if (node.type === 'reusable.reusable' || node.type === 'reusable.end') {
+          this.traceLog(`[TRACE] Skipping reusable definition/marker node: ${nodeId} (type: ${node.type})`);
+          
+          // Record node skipped in tracker
+          if (this.executionTracker) {
+            this.executionTracker.recordNodeStart(node);
+            this.executionTracker.recordNodeBypassed(nodeId);
+          }
+          
+          this.emitEvent({
+            type: ExecutionEventType.NODE_COMPLETE,
+            nodeId,
+            message: 'Node skipped (reusable definition/marker)',
+            timestamp: Date.now(),
+          });
+          continue;
+        }
+        
+        // Skip nodes that belong to reusable scopes (they're executed via Run Reusable)
+        if (nodesInReusableScopes.has(nodeId)) {
+          this.traceLog(`[TRACE] Skipping node in reusable scope: ${nodeId} (type: ${node.type})`);
+          
+          // Record node skipped in tracker
+          if (this.executionTracker) {
+            this.executionTracker.recordNodeStart(node);
+            this.executionTracker.recordNodeBypassed(nodeId);
+          }
+          
+          this.emitEvent({
+            type: ExecutionEventType.NODE_COMPLETE,
+            nodeId,
+            message: 'Node skipped (in reusable scope)',
+            timestamp: Date.now(),
+          });
+          continue;
+        }
+
+        // Check if node is skipped due to switch node branching
+        if (skippedNodes.has(nodeId)) {
+          this.traceLog(`[TRACE] Skipping unreachable node: ${nodeId} (type: ${node.type})`);
+          
+          // Record node skipped in tracker
+          if (this.executionTracker) {
+            this.executionTracker.recordNodeStart(node);
+            this.executionTracker.recordNodeBypassed(nodeId);
+          }
+          
+          this.emitEvent({
+            type: ExecutionEventType.NODE_COMPLETE,
+            nodeId,
+            message: 'Node skipped (unreachable branch)',
+            timestamp: Date.now(),
+          });
+          continue;
         }
 
         // Check if node is bypassed
@@ -178,6 +263,28 @@ export class Executor {
           this.traceLog(`[TRACE] Executing node handler for: ${resolvedNode.type}`);
           await handler.execute(resolvedNode, this.context);
           this.traceLog(`[TRACE] Node ${nodeId} completed successfully`);
+
+          // Check if this is a switch node and handle conditional branching
+          if (resolvedNode.type === 'switch.switch') {
+            const selectedHandle = this.context.getData('switchOutput') as string | undefined;
+            if (selectedHandle) {
+              this.traceLog(`[TRACE] Switch node ${nodeId} selected handle: ${selectedHandle}`);
+              
+              // Get all output handles for this switch node
+              const allHandles = this.parser.getSwitchOutputHandles(nodeId);
+              
+              // Mark nodes from unselected handles as skipped
+              for (const handle of allHandles) {
+                if (handle !== selectedHandle) {
+                  const unreachableNodes = this.parser.getNodesReachableFromHandle(nodeId, handle);
+                  for (const unreachableNodeId of unreachableNodes) {
+                    skippedNodes.add(unreachableNodeId);
+                    this.traceLog(`[TRACE] Marking node ${unreachableNodeId} as skipped (unreachable from handle ${handle})`);
+                  }
+                }
+              }
+            }
+          }
 
           // Clear trace logs on success (we only need them for errors)
           this.nodeTraceLogs.delete(nodeId);

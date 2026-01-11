@@ -2,10 +2,8 @@ import { useState, useRef, useEffect } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { useNotificationStore } from '../store/notificationStore';
 
-const STORAGE_KEY_TRACE_LOGS = 'automflows_trace_logs';
 const STORAGE_KEY_SCREENSHOT_ON_NODE = 'automflows_screenshot_on_node';
 const STORAGE_KEY_SCREENSHOT_TIMING = 'automflows_screenshot_timing';
-const STORAGE_KEY_MENU_FIXED = 'automflows_menu_fixed';
 
 interface SettingsDropdownProps {
   traceLogs: boolean;

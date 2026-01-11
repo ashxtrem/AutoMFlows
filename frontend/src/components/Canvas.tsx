@@ -452,7 +452,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
         onPaneClick={onPaneClick}
         onNodeContextMenu={onNodeContextMenu}
         onPaneContextMenu={onPaneContextMenu}
-        onMove={(event, viewport) => {
+        onMove={(_event, viewport) => {
           // Update lastKnownViewport on every move to persist across remounts
           // Only update if viewport is not default (0,0,1) to avoid overwriting with default during remounts
           if (!(viewport.x === 0 && viewport.y === 0 && viewport.zoom === 1)) {

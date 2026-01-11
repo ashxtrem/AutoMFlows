@@ -1,4 +1,4 @@
-import { VerifyNodeData, MatchType } from '@automflows/shared';
+import { VerifyNodeData } from '@automflows/shared';
 import { ContextManager } from '../../../engine/context';
 import { BaseVerificationStrategy, VerificationResult } from './base';
 
@@ -14,7 +14,6 @@ export class BrowserUrlStrategy extends BaseVerificationStrategy {
 
     const urlPattern = this.resolveValue(config.urlPattern, context, config, 'urlPattern');
     const matchType = config.matchType || 'contains';
-    const timeout = config.timeout || 30000;
 
     if (!urlPattern) {
       throw new Error('URL pattern is required for URL verification');
@@ -404,7 +403,7 @@ export class BrowserCookieStrategy extends BaseVerificationStrategy {
     }
 
     const cookies = await page.context().cookies();
-    const cookie = cookies.find(c => c.name === cookieName);
+    const cookie = cookies.find((c: { name: string; value: string }) => c.name === cookieName);
 
     if (!cookie) {
       return {
@@ -462,7 +461,7 @@ export class BrowserStorageStrategy extends BaseVerificationStrategy {
       throw new Error('Storage key is required for storage verification');
     }
 
-    const actualValue = await page.evaluate(({ type, key }) => {
+    const actualValue = await page.evaluate(({ type, key }: { type: string; key: string }) => {
       if (type === 'local') {
         return localStorage.getItem(key);
       } else {
@@ -520,7 +519,6 @@ export class BrowserCssStrategy extends BaseVerificationStrategy {
     const cssProperty = config.cssProperty;
     const expectedValue = this.resolveValue(config.expectedValue, context, config, 'expectedValue');
     const matchType = config.matchType || 'equals';
-    const timeout = config.timeout || 30000;
 
     if (!selector) {
       throw new Error('Selector is required for CSS verification');
@@ -533,7 +531,7 @@ export class BrowserCssStrategy extends BaseVerificationStrategy {
       ? page.locator(`xpath=${selector}`).first()
       : page.locator(selector).first();
 
-    const actualValue = await locator.evaluate((el, prop) => {
+    const actualValue = await locator.evaluate((el: HTMLElement, prop: string) => {
       return window.getComputedStyle(el).getPropertyValue(prop);
     }, cssProperty);
 

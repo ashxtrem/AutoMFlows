@@ -8,7 +8,7 @@ export interface Notification {
   title: string;
   message?: string;
   details?: string[];
-  duration: number; // Auto-dismiss duration in milliseconds
+  duration?: number; // Auto-dismiss duration in milliseconds (optional, defaults based on type)
 }
 
 interface NotificationState {

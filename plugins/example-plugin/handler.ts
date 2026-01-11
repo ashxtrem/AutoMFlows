@@ -86,7 +86,7 @@ export class ScrollToHandler implements NodeHandler {
       
       // Optionally scroll with smooth behavior using JavaScript
       if (behavior === 'smooth') {
-        await page.evaluate((sel) => {
+        await page.evaluate((sel: string) => {
           const el = document.querySelector(sel);
           if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'center' });

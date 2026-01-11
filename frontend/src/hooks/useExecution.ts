@@ -47,7 +47,6 @@ async function getBackendPortSync(): Promise<number> {
 
 export function useExecution() {
   const { nodes, edges, setExecutionStatus, setExecutingNodeId, resetExecution, setNodeError, clearAllNodeErrors } = useWorkflowStore();
-  const failedNodes = useWorkflowStore((state) => state.failedNodes);
   const [port, setPort] = useState<number | null>(null);
   const [validationErrors, setValidationErrors] = useState<any[]>([]);
   const addNotification = useNotificationStore((state) => state.addNotification);

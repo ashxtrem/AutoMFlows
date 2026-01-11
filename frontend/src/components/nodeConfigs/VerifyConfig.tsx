@@ -1,5 +1,4 @@
 import { Node } from 'reactflow';
-import { useState } from 'react';
 import RetryConfigSection from '../RetryConfigSection';
 import { VerificationDomain, BrowserVerificationType, MatchType, ComparisonOperator } from '@automflows/shared';
 

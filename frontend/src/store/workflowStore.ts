@@ -752,6 +752,11 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
       _inputConnections: undefined,
     };
     
+    // Ensure switch node has defaultCase if it's missing
+    if (nodeType === 'switch.switch' && (!resetData.defaultCase || !resetData.defaultCase.label)) {
+      resetData.defaultCase = { label: 'Default' };
+    }
+    
     // Reset node completely - data, dimensions, and custom properties
     const updatedNodes = state.nodes.map((n) => {
       if (n.id === nodeId) {
@@ -800,6 +805,10 @@ function getNodeLabel(type: NodeType | string): string {
       [NodeType.BOOLEAN_VALUE]: 'Boolean Value',
       [NodeType.INPUT_VALUE]: 'Input Value',
       [NodeType.VERIFY]: 'Verify',
+      [NodeType.API_REQUEST]: 'API Request',
+      [NodeType.API_CURL]: 'API cURL',
+      [NodeType.LOAD_CONFIG_FILE]: 'Load Config File',
+      [NodeType.SELECT_CONFIG_FILE]: 'Select Config File',
     };
     return labels[type as NodeType] || type;
   }
@@ -813,7 +822,7 @@ function getNodeLabel(type: NodeType | string): string {
   return type;
 }
 
-function getDefaultNodeData(type: NodeType | string): any {
+export function getDefaultNodeData(type: NodeType | string): any {
   // Check if it's a built-in node type (check if value exists in enum values)
   if (Object.values(NodeType).includes(type as NodeType)) {
     const defaults: Record<NodeType, any> = {
@@ -867,9 +876,33 @@ function getDefaultNodeData(type: NodeType | string): any {
   // Check if it's a plugin node
   const nodeDef = frontendPluginRegistry.getNodeDefinition(type);
   if (nodeDef && nodeDef.defaultData) {
-    return { ...nodeDef.defaultData, isTest: true };
+    const defaultData = { ...nodeDef.defaultData, isTest: true };
+    // Ensure switch node has defaultCase if it's missing
+    if (type === 'switch.switch' && (!defaultData.defaultCase || !defaultData.defaultCase.label)) {
+      defaultData.defaultCase = { label: 'Default' };
+    }
+    return defaultData;
+  }
+  
+  // Fallback for switch node if plugin not loaded
+  if (type === 'switch.switch') {
+    return {
+      cases: [
+        {
+          id: 'case-1',
+          label: 'Case 1',
+          condition: {
+            type: 'ui-element',
+            selector: '',
+            selectorType: 'css',
+            elementCheck: 'visible',
+          },
+        },
+      ],
+      defaultCase: { label: 'Default' },
+      isTest: true,
+    };
   }
   
   return { isTest: true };
 }
-

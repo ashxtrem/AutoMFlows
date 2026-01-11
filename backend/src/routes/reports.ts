@@ -32,7 +32,7 @@ export default function reportRoutes() {
           
           // List report types in this folder
           const reportTypes: string[] = [];
-          const files: string[] = [];
+          const files: Array<{ name: string; path: string; type: string }> = [];
           
           if (fs.existsSync(folderPath)) {
             const entries = fs.readdirSync(folderPath, { withFileTypes: true });
