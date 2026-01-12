@@ -1,4 +1,4 @@
-import { BaseNode, NodeType, OpenBrowserNodeData, NavigateNodeData } from '@automflows/shared';
+import { BaseNode, OpenBrowserNodeData, NavigateNodeData } from '@automflows/shared';
 import { NodeHandler } from './base';
 import { ContextManager } from '../engine/context';
 import { PlaywrightManager } from '../utils/playwright';

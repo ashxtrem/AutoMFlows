@@ -11,7 +11,7 @@ import { pluginRegistry } from '../plugins/registry';
 
 // Start node handler (no-op)
 class StartHandler implements NodeHandler {
-  async execute(node: BaseNode, context: ContextManager): Promise<void> {
+  async execute(_node: BaseNode, _context: ContextManager): Promise<void> {
     // Start node is a no-op, just marks the beginning of the workflow
   }
 }

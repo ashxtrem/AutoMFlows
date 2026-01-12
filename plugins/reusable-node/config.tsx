@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import { useMemo } from 'react';
 import { Node } from 'reactflow';
 import { useWorkflowStore } from '../../frontend/src/store/workflowStore';
 

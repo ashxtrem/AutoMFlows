@@ -1,8 +1,7 @@
-import { Workflow, BaseNode, Edge } from '@automflows/shared';
+import { Workflow, BaseNode } from '@automflows/shared';
 
 const REUSABLE_NODE_TYPE = 'reusable.reusable';
 const END_NODE_TYPE = 'reusable.end';
-const RUN_REUSABLE_NODE_TYPE = 'reusable.runReusable';
 
 /**
  * Finds a Reusable node by its context name

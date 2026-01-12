@@ -1,8 +1,6 @@
 import { BaseNode, JavaScriptCodeNodeData, LoopNodeData } from '@automflows/shared';
 import { NodeHandler } from './base';
 import { ContextManager } from '../engine/context';
-import { WorkflowParser } from '../engine/parser';
-import { Workflow } from '@automflows/shared';
 
 export class JavaScriptCodeHandler implements NodeHandler {
   async execute(node: BaseNode, context: ContextManager): Promise<void> {

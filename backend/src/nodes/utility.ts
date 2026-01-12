@@ -1,4 +1,4 @@
-import { BaseNode, GetTextNodeData, ScreenshotNodeData, WaitNodeData, IntValueNodeData, StringValueNodeData, BooleanValueNodeData, InputValueNodeData, VerifyNodeData, NodeType } from '@automflows/shared';
+import { BaseNode, GetTextNodeData, ScreenshotNodeData, WaitNodeData, IntValueNodeData, StringValueNodeData, BooleanValueNodeData, InputValueNodeData, VerifyNodeData } from '@automflows/shared';
 import { NodeHandler } from './base';
 import { ContextManager } from '../engine/context';
 import { WaitHelper } from '../utils/waitHelper';
@@ -453,7 +453,6 @@ export class VerifyHandler implements NodeHandler {
       throw new Error(`Verification configuration invalid: ${validation.error}`);
     }
 
-    const timeout = data.timeout || 30000;
     const failSilently = data.failSilently || false;
 
     let result: any;

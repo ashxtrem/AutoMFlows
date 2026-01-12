@@ -14,9 +14,6 @@ function mergeIntoContext(context: ContextManager, data: Record<string, any>, co
     context.setData(contextKey, data);
   } else {
     // Merge into root of context.data
-    const existingData = context.getAllData();
-    const merged = { ...existingData, ...data };
-    
     // Set each top-level key individually to preserve nested structure
     for (const [key, value] of Object.entries(data)) {
       context.setData(key, value);

@@ -66,7 +66,6 @@ export class CurlParser {
     // Improved pattern to handle nested quotes in JSON bodies
     const dataFlags = ['-d', '--data', '--data-raw', '--data-binary'];
     let dataMatch: RegExpMatchArray | null = null;
-    let dataFlag = '';
     
     for (const flag of dataFlags) {
       const flagIndex = command.indexOf(flag);
@@ -99,7 +98,6 @@ export class CurlParser {
           
           if (body) {
             dataMatch = [flag, body] as any;
-            dataFlag = flag;
             break;
           }
         }

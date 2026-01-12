@@ -18,7 +18,7 @@ export interface RunReusableNodeData {
 }
 
 export class ReusableHandler implements NodeHandler {
-  async execute(node: BaseNode, context: ContextManager): Promise<void> {
+  async execute(node: BaseNode, _context: ContextManager): Promise<void> {
     const data = node.data as ReusableNodeData;
     
     // Validate that context name is provided
@@ -32,7 +32,7 @@ export class ReusableHandler implements NodeHandler {
 }
 
 export class EndHandler implements NodeHandler {
-  async execute(node: BaseNode, context: ContextManager): Promise<void> {
+  async execute(_node: BaseNode, _context: ContextManager): Promise<void> {
     // No-op execution - end nodes are skipped in main workflow
     // They act as markers to indicate the end of a reusable flow
   }

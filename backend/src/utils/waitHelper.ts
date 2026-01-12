@@ -157,13 +157,11 @@ export class WaitHelper {
     try {
       // Try to compile as regex first, fallback to string match
       let regex: RegExp;
-      let isRegexPattern = false;
       try {
         // Check if it's a regex pattern (starts and ends with /)
         if (urlPattern.startsWith('/') && urlPattern.endsWith('/')) {
           const pattern = urlPattern.slice(1, -1);
           regex = new RegExp(pattern);
-          isRegexPattern = true;
         } else {
           // Treat as literal string match
           regex = new RegExp(urlPattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));

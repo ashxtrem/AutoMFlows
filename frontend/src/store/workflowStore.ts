@@ -907,7 +907,7 @@ export function getDefaultNodeData(type: NodeType | string): any {
   // Check if it's a plugin node
   const nodeDef = frontendPluginRegistry.getNodeDefinition(type);
   if (nodeDef && nodeDef.defaultData) {
-    const defaultData = { ...nodeDef.defaultData, isTest: true };
+    const defaultData: any = { ...nodeDef.defaultData, isTest: true };
     // Ensure switch node has defaultCase if it's missing
     if (type === 'switch.switch' && (!defaultData.defaultCase || !defaultData.defaultCase.label)) {
       defaultData.defaultCase = { label: 'Default' };

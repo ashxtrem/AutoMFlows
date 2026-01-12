@@ -23,7 +23,7 @@ import { useCallback } from 'react';
 // Import switch node config component directly (until plugin loader supports dynamic loading)
 import SwitchConfig from '@plugins/switch-node/config';
 // Import reusable node config components directly (until plugin loader supports dynamic loading)
-import ReusableNodeConfig, { ReusableConfig, RunReusableConfig } from '@plugins/reusable-node/config';
+import { ReusableConfig, RunReusableConfig } from '@plugins/reusable-node/config';
 
 interface NodeConfigFormProps {
   node: Node;

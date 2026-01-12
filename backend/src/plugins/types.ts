@@ -1,4 +1,4 @@
-import { PluginManifest, PluginMetadata } from '@automflows/shared';
+import { PluginMetadata } from '@automflows/shared';
 import { NodeHandler } from '../nodes/base';
 
 export interface LoadedPlugin {
