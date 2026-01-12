@@ -87,6 +87,9 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
   }, [reactFlowInstance, reactFlowInstanceRef]);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId?: string } | null>(null);
   
+  // Edge visibility state from store
+  const edgesHidden = useWorkflowStore((state) => state.edgesHidden);
+  
   // Track if we've restored viewport after remount (local to this instance)
   const hasRestoredViewportRef = useRef(false);
   
@@ -317,6 +320,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
       bypass: n.data.bypass,
       isMinimized: n.data.isMinimized,
       failSilently: n.data.failSilently,
+      isPinned: n.data.isPinned,
     });
     return `${n.id}:${n.position.x},${n.position.y}:${n.selected ? '1' : '0'}:${dataHash}`;
   }).join('|');
@@ -349,12 +353,24 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
       return lastNodesRef.current;
     }
     
-    // Content or references changed, update refs and return new nodes
-    lastNodesRef.current = nodes;
+    // Content or references changed, update refs and return new nodes with draggable property
+    const nodesWithDraggable = nodes.map(node => ({
+      ...node,
+      draggable: !node.data.isPinned,
+    }));
+    lastNodesRef.current = nodesWithDraggable;
     nodesContentKeyRef.current = currentNodesContentKey;
     nodesMapRef.current = new Map(nodes.map(n => [n.id, n]));
-    return nodes;
+    return nodesWithDraggable;
   }, [nodes, nodesContentChanged, nodesRefsChanged, currentNodesContentKey]);
+
+  // Map edges with hidden property based on edgesHidden state
+  const mappedEdges = useMemo(() => {
+    return edges.map(edge => ({
+      ...edge,
+      hidden: edgesHidden,
+    }));
+  }, [edges, edgesHidden]);
 
   // Load viewport from localStorage on mount (for page refresh persistence)
   useEffect(() => {
@@ -401,7 +417,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     <div className="flex-1 relative" ref={reactFlowWrapper}>
       <ReactFlow
         nodes={mappedNodes}
-        edges={edges}
+        edges={mappedEdges}
         onInit={onInit}
         onNodesChange={(changes) => {
           // Prevent infinite loops - if we're already processing a change, ignore it

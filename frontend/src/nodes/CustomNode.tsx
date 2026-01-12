@@ -313,6 +313,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
         failSilently: node?.data?.failSilently || false,
         isMinimized: node?.data?.isMinimized || false,
         isTest: node?.data?.isTest !== undefined ? node?.data?.isTest : true,
+        isPinned: node?.data?.isPinned || false,
       };
     },
     shallow
@@ -393,6 +394,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const isMinimized = nodeDataFromStore.isMinimized;
   const bypass = nodeDataFromStore.bypass;
   const failSilently = nodeDataFromStore.failSilently;
+  const isPinned = nodeDataFromStore.isPinned ?? false;
   // Use custom background color if set, otherwise use default
   // Read directly from data prop (not stableData) to get real-time updates
   const backgroundColor = data.backgroundColor || '#1f2937';
@@ -1751,12 +1753,13 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     >
       {selected && (
         <NodeMenuBar
-          key={`${id}-${bypass}-${nodeDataFromStore.failSilently}-${isMinimized}-${nodeDataFromStore.isTest}`}
+          key={`${id}-${bypass}-${nodeDataFromStore.failSilently}-${isMinimized}-${nodeDataFromStore.isTest}-${isPinned}`}
           nodeId={id}
           bypass={bypass}
           failSilently={nodeDataFromStore.failSilently}
           isMinimized={isMinimized}
           isTest={nodeDataFromStore.isTest}
+          isPinned={isPinned}
         />
       )}
       {/* Default control flow handle (driver) */}

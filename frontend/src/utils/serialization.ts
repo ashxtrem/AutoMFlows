@@ -10,8 +10,8 @@ export function serializeWorkflow(nodes: Node[], edges: Edge[]): Workflow {
       ...node.data,
       // Remove ReactFlow-specific fields
       isExecuting: undefined,
-      // Preserve custom label, background color, bypass, minimized state, width, height
-      // label, backgroundColor, bypass, isMinimized, width, height are kept
+      // Preserve custom label, background color, bypass, minimized state, width, height, isPinned
+      // label, backgroundColor, bypass, isMinimized, width, height, isPinned are kept
     },
   }));
 
@@ -41,10 +41,11 @@ export function deserializeWorkflow(workflow: Workflow): { nodes: Node[]; edges:
       type: node.type,
       // Preserve custom label if exists, otherwise use default
       label: (node.data as any).label || getNodeLabel(node.type as NodeType),
-      // Preserve background color, bypass, minimized state, isTest (borderColor removed)
+      // Preserve background color, bypass, minimized state, isTest, isPinned (borderColor removed)
       backgroundColor: (node.data as any).backgroundColor,
       bypass: (node.data as any).bypass,
       isMinimized: (node.data as any).isMinimized,
+      isPinned: (node.data as any).isPinned || false,
       // Default isTest to true if not present (for backward compatibility)
       isTest: (node.data as any).isTest !== undefined ? (node.data as any).isTest : true,
     },

@@ -1,4 +1,4 @@
-import { Copy, Trash2, SkipForward, AlertCircle, Minimize2, Maximize2, Files, CheckSquare, Wrench } from 'lucide-react';
+import { Copy, Trash2, SkipForward, AlertCircle, Minimize2, Maximize2, Files, CheckSquare, Wrench, Pin } from 'lucide-react';
 import { useWorkflowStore } from '../store/workflowStore';
 import Tooltip from './Tooltip';
 
@@ -8,15 +8,19 @@ interface NodeMenuBarProps {
   failSilently?: boolean;
   isMinimized?: boolean;
   isTest?: boolean;
+  isPinned?: boolean;
 }
 
-export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized, isTest }: NodeMenuBarProps) {
+export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized, isTest, isPinned }: NodeMenuBarProps) {
+  // Ensure isPinned is always a boolean
+  const pinned = isPinned ?? false;
   const {
     copyNode,
     duplicateNode,
     deleteNode,
     toggleBypass,
     toggleMinimize,
+    togglePin,
     updateNodeData,
   } = useWorkflowStore();
 
@@ -62,6 +66,12 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized,
     updateNodeData(nodeId, { isTest: !isTest });
   };
 
+  const handlePin = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    togglePin(nodeId);
+  };
+
   return (
     <div
       className="absolute -top-8 left-1/2 transform -translate-x-1/2 flex items-center gap-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 shadow-lg z-10"
@@ -97,6 +107,16 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized,
           }`}
         >
           {isTest ? <CheckSquare size={14} /> : <Wrench size={14} />}
+        </button>
+      </Tooltip>
+      <Tooltip content={pinned ? 'Unpin' : 'Pin'}>
+        <button
+          onClick={handlePin}
+          className={`p-1.5 rounded hover:bg-gray-700 transition-colors ${
+            pinned ? 'text-red-500' : 'text-gray-400'
+          }`}
+        >
+          <Pin size={14} />
         </button>
       </Tooltip>
       <div className="w-px h-4 bg-gray-700 mx-0.5" />

@@ -88,6 +88,7 @@ interface WorkflowState {
   deleteNode: (nodeId: string) => void;
   toggleBypass: (nodeId: string) => void;
   toggleMinimize: (nodeId: string) => void;
+  togglePin: (nodeId: string) => void;
   setNodeColor: (nodeId: string, borderColor?: string, backgroundColor?: string) => void;
   autoResizeNode: (nodeId: string) => void;
   
@@ -105,6 +106,10 @@ interface WorkflowState {
   // Failed node navigation
   navigateToFailedNode: (() => void) | null;
   setNavigateToFailedNode: (fn: (() => void) | null) => void;
+  
+  // Edge visibility
+  edgesHidden: boolean;
+  setEdgesHidden: (hidden: boolean) => void;
 }
 
 export const useWorkflowStore = create<WorkflowState>((set, get) => {
@@ -123,6 +128,14 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     maxHistorySize: 10,
     clipboard: null,
     navigateToFailedNode: null,
+    edgesHidden: (() => {
+      try {
+        const saved = localStorage.getItem('reactflow-edges-hidden');
+        return saved === 'true';
+      } catch (error) {
+        return false;
+      }
+    })(),
 
   setNodes: (nodes) => {
     set({ nodes });
@@ -628,6 +641,15 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     }
   },
 
+  togglePin: (nodeId) => {
+    const node = get().nodes.find((n) => n.id === nodeId);
+    if (node) {
+      const currentPinned = node.data.isPinned || false;
+      get().updateNodeData(nodeId, { isPinned: !currentPinned });
+      setTimeout(() => get().saveToHistory(), 100);
+    }
+  },
+
   setNodeColor: (nodeId, _borderColor, backgroundColor) => {
     const updates: any = {};
     // Only set backgroundColor (borderColor is no longer customizable)
@@ -783,6 +805,15 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
   },
   
   setNavigateToFailedNode: (fn) => set({ navigateToFailedNode: fn }),
+  
+  setEdgesHidden: (hidden) => {
+    set({ edgesHidden: hidden });
+    try {
+      localStorage.setItem('reactflow-edges-hidden', String(hidden));
+    } catch (error) {
+      console.warn('Failed to save edge visibility to localStorage:', error);
+    }
+  },
   };
 });
 
