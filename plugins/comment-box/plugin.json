@@ -1,0 +1,20 @@
+{
+  "name": "comment-box",
+  "version": "1.0.0",
+  "description": "Add markdown comments to your workflow",
+  "author": "AutoMFlows",
+  "nodes": [
+    {
+      "type": "comment-box.comment",
+      "label": "Comment Box",
+      "category": "Utility",
+      "icon": "💬",
+      "description": "Add markdown comments to document your workflow",
+      "handlerPath": "handler.js",
+      "defaultData": {
+        "content": "",
+        "label": "Comment"
+      }
+    }
+  ]
+}

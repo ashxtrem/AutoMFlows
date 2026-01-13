@@ -10,7 +10,8 @@ export interface ValidationError {
 }
 
 /**
- * Validate workflow for missing required input connections
+ * Validate workflow for missing input connections
+ * Checks ALL properties that are converted to input (not just required ones)
  */
 export function validateInputConnections(nodes: Node[], edges: Edge[]): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -28,15 +29,15 @@ export function validateInputConnections(nodes: Node[], edges: Edge[]): Validati
           e => e.target === node.id && e.targetHandle === handleId
         );
 
-        // If required and not connected, add error
-        if (property.required && !hasConnection) {
+        // If not connected, add error (check ALL convert-to-input properties, not just required)
+        if (!hasConnection) {
           const nodeName = node.data.label || nodeType;
           errors.push({
             nodeId: node.id,
             nodeName,
             propertyName: property.name,
             propertyLabel: property.label,
-            message: `Required property "${property.label}" is converted to input but not connected`,
+            message: `Property "${property.label}" is converted to input but not connected`,
           });
         }
       }

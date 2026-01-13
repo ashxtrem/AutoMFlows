@@ -3,6 +3,7 @@ import { Node, Edge, Connection, addEdge, applyNodeChanges, applyEdgeChanges, No
 import { NodeType, PropertyDataType, PageDebugInfo } from '@automflows/shared';
 import { frontendPluginRegistry } from '../plugins/registry';
 import { getNodeProperties, getPropertyInputHandleId } from '../utils/nodeProperties';
+import { ValidationError } from '../utils/validation';
 
 // Type conversion helper (frontend version)
 function canConvertType(sourceType: PropertyDataType, targetType: PropertyDataType): boolean {
@@ -41,6 +42,7 @@ interface WorkflowState {
   executionStatus: 'idle' | 'running' | 'completed' | 'error';
   executingNodeId: string | null;
   failedNodes: Map<string, NodeError>; // Track failed nodes with error details
+  validationErrors: Map<string, ValidationError[]>; // Track validation errors by node ID
   errorPopupNodeId: string | null; // Which failed node's error popup is currently shown
   canvasReloading: boolean; // Global loader state for canvas reload
   
@@ -70,6 +72,8 @@ interface WorkflowState {
   clearNodeError: (nodeId: string) => void;
   clearAllNodeErrors: () => void;
   showErrorPopupForNode: (nodeId: string | null) => void;
+  setValidationErrors: (errors: ValidationError[]) => void;
+  clearValidationErrors: () => void;
   
   // Undo/Redo methods
   saveToHistory: () => void;
@@ -121,6 +125,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     executionStatus: 'idle',
     executingNodeId: null,
     failedNodes: new Map(),
+    validationErrors: new Map(),
     errorPopupNodeId: null,
     canvasReloading: false,
     history: [initialState],
@@ -138,14 +143,31 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     })(),
 
   setNodes: (nodes) => {
-    set({ nodes });
+    const state = get();
+    // Clear validation errors when nodes are set directly (e.g., when loading a workflow)
+    if (state.validationErrors.size > 0) {
+      set({ nodes, validationErrors: new Map() });
+    } else {
+      set({ nodes });
+    }
   },
   setEdges: (edges) => {
-    set({ edges });
+    const state = get();
+    // Clear validation errors when edges are set directly (e.g., when loading a workflow)
+    if (state.validationErrors.size > 0) {
+      set({ edges, validationErrors: new Map() });
+    } else {
+      set({ edges });
+    }
   },
 
   onNodesChange: (changes) => {
     const state = get();
+    
+    // Clear validation errors when nodes change (validation state may become stale)
+    if (state.validationErrors.size > 0) {
+      set({ validationErrors: new Map() });
+    }
     
     // Filter out dimension changes from ReactFlow if we have explicit dimensions set
     // This prevents ReactFlow from overriding our manual resize dimensions
@@ -257,7 +279,14 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
   },
 
   onEdgesChange: (changes) => {
-    const updatedEdges = applyEdgeChanges(changes, get().edges);
+    const state = get();
+    
+    // Clear validation errors when edges change (validation state may become stale)
+    if (state.validationErrors.size > 0) {
+      set({ validationErrors: new Map() });
+    }
+    
+    const updatedEdges = applyEdgeChanges(changes, state.edges);
     set({
       edges: updatedEdges,
     });
@@ -494,6 +523,18 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
       set({ errorPopupNodeId: null });
     }
   },
+  setValidationErrors: (errors) => {
+    const validationErrorsMap = new Map<string, ValidationError[]>();
+    // Group errors by nodeId
+    for (const error of errors) {
+      if (!validationErrorsMap.has(error.nodeId)) {
+        validationErrorsMap.set(error.nodeId, []);
+      }
+      validationErrorsMap.get(error.nodeId)!.push(error);
+    }
+    set({ validationErrors: validationErrorsMap });
+  },
+  clearValidationErrors: () => set({ validationErrors: new Map() }),
 
   // Undo/Redo implementation
   saveToHistory: () => {
@@ -704,15 +745,23 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     const handleId = `${propertyName}-input`;
     const inputConnections = node.data._inputConnections || {};
     
-    // Mark property as input connection
+    // Store the old value before clearing it
+    const oldValue = node.data[propertyName];
+    
+    // Mark property as input connection and store old value
     inputConnections[propertyName] = {
       isInput: true,
       handleId,
+      oldValue, // Store old value for display in properties tab
     };
 
-    get().updateNodeData(nodeId, {
+    // Clear the property value when converting to input
+    const updates: any = {
       _inputConnections: inputConnections,
-    });
+      [propertyName]: null, // Set property value to null
+    };
+
+    get().updateNodeData(nodeId, updates);
     setTimeout(() => get().saveToHistory(), 100);
   },
 
@@ -722,6 +771,9 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     if (!node) return;
 
     const inputConnections = { ...(node.data._inputConnections || {}) };
+    const connectionInfo = inputConnections[propertyName];
+    const oldValue = connectionInfo?.oldValue; // Get stored old value
+    
     delete inputConnections[propertyName];
 
     // Remove any edges connected to this property input handle
@@ -730,9 +782,17 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
       (e) => !(e.target === nodeId && e.targetHandle === handleId)
     );
 
-    get().updateNodeData(nodeId, {
+    // Restore old value if it exists, otherwise keep it as null
+    const updates: any = {
       _inputConnections: Object.keys(inputConnections).length > 0 ? inputConnections : undefined,
-    });
+    };
+    
+    // Restore the old value when converting back to property
+    if (oldValue !== undefined) {
+      updates[propertyName] = oldValue;
+    }
+
+    get().updateNodeData(nodeId, updates);
     
     if (updatedEdges.length !== state.edges.length) {
       set({ edges: updatedEdges });
@@ -857,7 +917,12 @@ export function getDefaultNodeData(type: NodeType | string): any {
   // Check if it's a built-in node type (check if value exists in enum values)
   if (Object.values(NodeType).includes(type as NodeType)) {
     const defaults: Record<NodeType, any> = {
-      [NodeType.START]: { isTest: true },
+      [NodeType.START]: { 
+        isTest: true,
+        recordSession: false,
+        screenshotAllNodes: false,
+        screenshotTiming: 'post',
+      },
       [NodeType.OPEN_BROWSER]: { 
         headless: true, 
         viewportWidth: 1280, 

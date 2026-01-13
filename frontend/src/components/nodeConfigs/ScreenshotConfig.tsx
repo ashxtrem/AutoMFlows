@@ -1,6 +1,7 @@
 import { Node } from 'reactflow';
 import { useState } from 'react';
 import RetryConfigSection from '../RetryConfigSection';
+import { usePropertyInput } from '../../hooks/usePropertyInput';
 
 interface ScreenshotConfigProps {
   node: Node;
@@ -10,6 +11,7 @@ interface ScreenshotConfigProps {
 export default function ScreenshotConfig({ node, onChange }: ScreenshotConfigProps) {
   const data = node.data;
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const { getPropertyValue, isPropertyDisabled, getInputClassName } = usePropertyInput(node);
 
   // Validate regex pattern
   const validateRegex = (pattern: string): boolean => {
@@ -46,11 +48,17 @@ export default function ScreenshotConfig({ node, onChange }: ScreenshotConfigPro
         <label className="block text-sm font-medium text-gray-300 mb-1">File Path (Optional)</label>
         <input
           type="text"
-          value={data.path || ''}
+          value={getPropertyValue('path', '')}
           onChange={(e) => onChange('path', e.target.value)}
           placeholder="screenshot.png (leave empty for auto-generated name)"
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+          disabled={isPropertyDisabled('path')}
+          className={getInputClassName('path', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
         />
+        {isPropertyDisabled('path') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Fail Silently</label>

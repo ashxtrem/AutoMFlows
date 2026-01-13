@@ -98,12 +98,21 @@ export class ReportGenerator {
 
       const hasScreenshots = node.screenshotPaths && Object.keys(node.screenshotPaths).length > 0;
       const screenshotCount = hasScreenshots && node.screenshotPaths ? Object.keys(node.screenshotPaths).length : 0;
+      const hasVideo = !!node.videoPath;
       
       // Screenshot toggle button
       const screenshotToggle = hasScreenshots
         ? `<button class="screenshot-toggle" onclick="toggleScreenshots(${index})" aria-expanded="false">
             <span class="toggle-icon">▼</span>
             Screenshots (${screenshotCount})
+          </button>`
+        : '-';
+      
+      // Video toggle button
+      const videoToggle = hasVideo
+        ? `<button class="video-toggle" onclick="toggleVideo(${index})" aria-expanded="false">
+            <span class="toggle-icon">▼</span>
+            Video
           </button>`
         : '-';
 
@@ -137,6 +146,29 @@ export class ReportGenerator {
             .join('')
         : '';
 
+      // Video content
+      const videoContent = hasVideo && node.videoPath
+        ? (() => {
+            let relativePath: string;
+            if (htmlReportDir) {
+              relativePath = path.relative(htmlReportDir, node.videoPath);
+              relativePath = relativePath.replace(/\\/g, '/');
+            } else {
+              relativePath = path.relative(this.outputDirectory, node.videoPath);
+              relativePath = relativePath.replace(/\\/g, '/');
+            }
+            return `
+              <div class="video-item">
+                <video controls class="video-player">
+                  <source src="${relativePath}" type="video/webm">
+                  Your browser does not support the video tag.
+                </video>
+                <a href="${relativePath}" target="_blank" class="video-link">Download video</a>
+              </div>
+            `;
+          })()
+        : '';
+
       return `
         <tr class="node-row">
           <td>${node.nodeLabel || node.nodeId}</td>
@@ -145,11 +177,19 @@ export class ReportGenerator {
           <td>${nodeDuration}s</td>
           <td>${node.error || '-'}</td>
           <td>${screenshotToggle}</td>
+          <td>${videoToggle}</td>
         </tr>
         <tr class="screenshot-row" id="screenshot-row-${index}" style="display: none;">
-          <td colspan="6" class="screenshot-cell">
+          <td colspan="7" class="screenshot-cell">
             <div class="screenshot-container">
               ${screenshotContent}
+            </div>
+          </td>
+        </tr>
+        <tr class="video-row" id="video-row-${index}" style="display: none;">
+          <td colspan="7" class="video-cell">
+            <div class="video-container">
+              ${videoContent}
             </div>
           </td>
         </tr>
@@ -298,11 +338,77 @@ export class ReportGenerator {
     .screenshot-link:hover {
       text-decoration: underline;
     }
+    .video-toggle {
+      background: #10b981;
+      color: #fff;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s;
+    }
+    .video-toggle:hover {
+      background: #059669;
+    }
+    .video-row {
+      background: #252525;
+    }
+    .video-cell {
+      padding: 0 !important;
+      border-bottom: 2px solid #3a3a3a;
+    }
+    .video-container {
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+    .video-item {
+      background: #1f1f1f;
+      border-radius: 8px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 800px;
+      width: 100%;
+    }
+    .video-player {
+      width: 100%;
+      height: auto;
+      border-radius: 4px;
+      border: 1px solid #3a3a3a;
+    }
+    .video-link {
+      font-size: 12px;
+      color: #4a9eff;
+      text-align: center;
+      padding: 4px;
+    }
+    .video-link:hover {
+      text-decoration: underline;
+    }
   </style>
   <script>
     function toggleScreenshots(index) {
       const row = document.getElementById('screenshot-row-' + index);
       const button = event.target.closest('.screenshot-toggle');
+      
+      if (row.style.display === 'none') {
+        row.style.display = '';
+        button.setAttribute('aria-expanded', 'true');
+      } else {
+        row.style.display = 'none';
+        button.setAttribute('aria-expanded', 'false');
+      }
+    }
+    
+    function toggleVideo(index) {
+      const row = document.getElementById('video-row-' + index);
+      const button = event.target.closest('.video-toggle');
       
       if (row.style.display === 'none') {
         row.style.display = '';
@@ -360,6 +466,7 @@ export class ReportGenerator {
           <th>Duration</th>
           <th>Error</th>
           <th>Screenshots</th>
+          <th>Video</th>
         </tr>
       </thead>
       <tbody>
@@ -542,13 +649,22 @@ ${nodeRows}
         links: [],
         parameters: [],
         steps: [],
-        attachments: node.screenshotPaths 
-          ? Object.entries(node.screenshotPaths).map(([timing, screenshotPath]) => ({
-              name: `screenshot-${timing}`,
-              source: path.basename(screenshotPath),
-              type: 'image/png',
-            }))
-          : [],
+        attachments: [
+          // Screenshot attachments
+          ...(node.screenshotPaths 
+            ? Object.entries(node.screenshotPaths).map(([timing, screenshotPath]) => ({
+                name: `screenshot-${timing}`,
+                source: path.basename(screenshotPath),
+                type: 'image/png',
+              }))
+            : []),
+          // Video attachment
+          ...(node.videoPath ? [{
+            name: 'video-recording',
+            source: path.basename(node.videoPath),
+            type: 'video/webm',
+          }] : []),
+        ],
       };
 
       const filePath = path.join(resultsDir, `${this.metadata.executionId}-${node.nodeId}-result.json`);
@@ -570,6 +686,22 @@ ${nodeRows}
         });
       } catch (error: any) {
         console.warn('Failed to copy screenshots for Allure report:', error.message);
+      }
+    }
+
+    // Copy videos to allure results directory
+    if (fs.existsSync(this.metadata.videosDirectory)) {
+      try {
+        const videoFiles = fs.readdirSync(this.metadata.videosDirectory);
+        videoFiles.forEach(file => {
+          if (file.endsWith('.webm')) {
+            const srcPath = path.join(this.metadata.videosDirectory, file);
+            const destPath = path.join(resultsDir, file);
+            fs.copyFileSync(srcPath, destPath);
+          }
+        });
+      } catch (error: any) {
+        console.warn('Failed to copy videos for Allure report:', error.message);
       }
     }
 

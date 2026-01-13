@@ -1,0 +1,165 @@
+{
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 200
+      },
+      "data": {
+        "type": "start",
+        "label": "Start",
+        "isTest": true,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "openBrowser-1",
+      "type": "openBrowser",
+      "position": {
+        "x": 350,
+        "y": 200
+      },
+      "data": {
+        "type": "openBrowser",
+        "label": "Open Browser (Stealth Mode)",
+        "headless": false,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "maxWindow": true,
+        "browser": "chromium",
+        "stealthMode": true,
+        "capabilities": {},
+        "launchOptions": {},
+        "isTest": true,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "navigate-1",
+      "type": "navigate",
+      "position": {
+        "x": 596.2796009086089,
+        "y": 37.542573009253374
+      },
+      "data": {
+        "type": "navigate",
+        "label": "Navigate to Bot Detection Site",
+        "url": "https://bot.sannysoft.com/",
+        "timeout": 30000,
+        "waitUntil": "load",
+        "isTest": true,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "wait-1",
+      "type": "wait",
+      "position": {
+        "x": 850,
+        "y": 200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for Page Load",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": true,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "getText-1",
+      "type": "getText",
+      "position": {
+        "x": 1100,
+        "y": 200
+      },
+      "data": {
+        "type": "getText",
+        "label": "Get WebDriver Result",
+        "selector": "#webdriver-result",
+        "selectorType": "css",
+        "outputVariable": "webdriverResult",
+        "timeout": 30000,
+        "isTest": true,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "verify-1",
+      "type": "verify",
+      "position": {
+        "x": 1350,
+        "y": 200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Stealth Mode",
+        "domain": "browser",
+        "verificationType": "text",
+        "selector": "#webdriver-result",
+        "selectorType": "css",
+        "expectedText": "passed",
+        "matchType": "contains",
+        "caseSensitive": false,
+        "timeout": 30000,
+        "isTest": true,
+        "isPinned": false
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-openBrowser-input",
+      "source": "start-1",
+      "target": "openBrowser-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-start-openBrowser-driver",
+      "source": "start-1",
+      "target": "openBrowser-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-openBrowser-navigate-input",
+      "source": "openBrowser-1",
+      "target": "navigate-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-openBrowser-navigate-driver",
+      "source": "openBrowser-1",
+      "target": "navigate-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-navigate-wait-input",
+      "source": "navigate-1",
+      "target": "wait-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-getText-input",
+      "source": "wait-1",
+      "target": "getText-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-getText-verify-input",
+      "source": "getText-1",
+      "target": "verify-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    }
+  ]
+}

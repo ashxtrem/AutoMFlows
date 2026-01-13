@@ -1,6 +1,7 @@
 import { Node } from 'reactflow';
 import { useState } from 'react';
 import RetryConfigSection from '../RetryConfigSection';
+import { usePropertyInput } from '../../hooks/usePropertyInput';
 
 interface NavigateConfigProps {
   node: Node;
@@ -10,6 +11,7 @@ interface NavigateConfigProps {
 export default function NavigateConfig({ node, onChange }: NavigateConfigProps) {
   const data = node.data;
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const { getPropertyValue, isPropertyDisabled, getInputClassName } = usePropertyInput(node);
 
   // Validate regex pattern
   const validateRegex = (pattern: string): boolean => {
@@ -34,20 +36,32 @@ export default function NavigateConfig({ node, onChange }: NavigateConfigProps) 
         <label className="block text-sm font-medium text-gray-300 mb-1">URL</label>
         <input
           type="text"
-          value={data.url || ''}
+          value={getPropertyValue('url', '')}
           onChange={(e) => onChange('url', e.target.value)}
           placeholder="https://example.com"
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+          disabled={isPropertyDisabled('url')}
+          className={getInputClassName('url', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
         />
+        {isPropertyDisabled('url') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
         <input
           type="number"
-          value={data.timeout || 30000}
+          value={getPropertyValue('timeout', 30000)}
           onChange={(e) => onChange('timeout', parseInt(e.target.value, 10) || 30000)}
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+          disabled={isPropertyDisabled('timeout')}
+          className={getInputClassName('timeout', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
         />
+        {isPropertyDisabled('timeout') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -55,9 +69,10 @@ export default function NavigateConfig({ node, onChange }: NavigateConfigProps) 
           <span className="ml-2 text-xs text-gray-400">(hover for details)</span>
         </label>
         <select
-          value={data.waitUntil || 'networkidle'}
+          value={getPropertyValue('waitUntil', 'networkidle')}
           onChange={(e) => onChange('waitUntil', e.target.value)}
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+          disabled={isPropertyDisabled('waitUntil')}
+          className={getInputClassName('waitUntil', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
         >
           <option 
             value="load"
@@ -91,6 +106,11 @@ export default function NavigateConfig({ node, onChange }: NavigateConfigProps) 
           {data.waitUntil === 'commit' && "Waits for the navigation to commit. This is the earliest point when navigation is considered successful."}
           {!data.waitUntil && "Waits until there are no network connections for at least 500ms. Useful for SPAs that load content dynamically."}
         </div>
+        {isPropertyDisabled('waitUntil') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Fail Silently</label>
@@ -110,11 +130,17 @@ export default function NavigateConfig({ node, onChange }: NavigateConfigProps) 
         <label className="block text-sm font-medium text-gray-300 mb-1">Referer (Optional)</label>
         <input
           type="text"
-          value={data.referer || ''}
+          value={getPropertyValue('referer', '')}
           onChange={(e) => onChange('referer', e.target.value)}
           placeholder="https://example.com"
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+          disabled={isPropertyDisabled('referer')}
+          className={getInputClassName('referer', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
         />
+        {isPropertyDisabled('referer') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
       </div>
 
       {/* Advanced Waiting Options */}

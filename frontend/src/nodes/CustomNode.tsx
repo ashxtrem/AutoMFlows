@@ -9,8 +9,11 @@ import { InlineTextInput, InlineNumberInput, InlineSelect, InlineTextarea, Inlin
 import NodeMenuBar from '../components/NodeMenuBar';
 import CapabilitiesPopup from '../components/CapabilitiesPopup';
 import PropertyEditorPopup, { PropertyEditorType } from '../components/PropertyEditorPopup';
+import MarkdownEditorPopup from '../components/MarkdownEditorPopup';
+import MarkdownRenderer from '../components/MarkdownRenderer';
 import { getNodeProperties, isPropertyInputConnection, getPropertyInputHandleId } from '../utils/nodeProperties';
 import { getContrastTextColor } from '../utils/colorContrast';
+import { validateShortcut } from '../utils/shortcutValidator';
 import PlayCircleFilledWhiteTwoToneIcon from '@mui/icons-material/PlayCircleFilledWhiteTwoTone';
 import LanguageIcon from '@mui/icons-material/Language';
 import LinkIcon from '@mui/icons-material/Link';
@@ -192,6 +195,12 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     max?: number;
   } | null>(null);
   
+  // State for markdown editor popup (for comment box)
+  const [showMarkdownEditor, setShowMarkdownEditor] = useState(false);
+  
+  // State for shortcut validation error
+  const [shortcutError, setShortcutError] = useState<string | null>(null);
+  
   // Get latest node data from store to avoid stale prop issues
   const storeNodes = useWorkflowStore((state) => state.nodes);
   const latestNodeData = storeNodes.find(n => n.id === id)?.data || data;
@@ -361,9 +370,11 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     [nodes, sourceNodeIds]
   );
   const failedNodes = useWorkflowStore((state) => state.failedNodes);
+  const validationErrors = useWorkflowStore((state) => state.validationErrors);
   const executingNodeId = useWorkflowStore((state) => state.executingNodeId);
   const showErrorPopupForNode = useWorkflowStore((state) => state.showErrorPopupForNode);
   const isFailed = failedNodes.has(id);
+  const hasValidationError = validationErrors.has(id);
   // Read isExecuting directly from store instead of node data to avoid triggering ReactFlow sync
   const isExecuting = executingNodeId === id;
 
@@ -386,6 +397,11 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const isRunReusableNode = nodeType === 'reusable.runReusable';
   const switchCases = isSwitchNode ? (renderData.cases || []) : [];
   const switchDefaultCase = isSwitchNode ? (renderData.defaultCase || { label: 'Default' }) : null;
+  
+  // Check if this is a utility node (no handles)
+  const isCommentBox = nodeType === 'comment-box.comment';
+  const isShortcut = nodeType === 'shortcut.shortcut';
+  const isUtilityNode = isCommentBox || isShortcut;
   
   const currentWidth = width || stableData.width || 200;
   const currentHeight = height || stableData.height || undefined;
@@ -604,7 +620,36 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     if (Object.values(NodeType).includes(nodeType as NodeType)) {
       switch (nodeType as NodeType) {
         case NodeType.START:
-          return null;
+          return (
+            <div className="mt-2 space-y-1">
+              {renderPropertyRow('recordSession', (
+                <InlineCheckbox
+                  label="Record Session"
+                  value={renderData.recordSession || false}
+                  onChange={(value) => handlePropertyChange('recordSession', value)}
+                />
+              ), 0)}
+              {renderPropertyRow('screenshotAllNodes', (
+                <InlineCheckbox
+                  label="Screenshot All Nodes"
+                  value={renderData.screenshotAllNodes || false}
+                  onChange={(value) => handlePropertyChange('screenshotAllNodes', value)}
+                />
+              ), 1)}
+              {renderData.screenshotAllNodes && renderPropertyRow('screenshotTiming', (
+                <InlineSelect
+                  label="Screenshot Timing"
+                  value={renderData.screenshotTiming || 'post'}
+                  onChange={(value) => handlePropertyChange('screenshotTiming', value)}
+                  options={[
+                    { label: 'Pre', value: 'pre' },
+                    { label: 'Post', value: 'post' },
+                    { label: 'Both', value: 'both' },
+                  ]}
+                />
+              ), 2)}
+            </div>
+          );
         
         case NodeType.NAVIGATE:
           return (
@@ -1641,7 +1686,86 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
       }
     }
 
-    // Plugin nodes
+    // Special handling for comment box plugin
+    if (isCommentBox) {
+      const content = renderData.content || '';
+      return (
+        <div className="mt-2">
+          <div
+            onClick={() => setShowMarkdownEditor(true)}
+            className="cursor-pointer min-h-[60px] p-2 rounded border border-gray-600 hover:border-gray-500 transition-colors"
+            style={{ color: textColor }}
+          >
+            <MarkdownRenderer content={content} />
+          </div>
+        </div>
+      );
+    }
+
+    // Special handling for shortcut plugin
+    if (isShortcut) {
+      const shortcut = renderData.shortcut || '';
+      const nodes = useWorkflowStore.getState().nodes;
+      
+      // Get existing shortcuts for validation
+      const existingShortcuts = nodes
+        .filter(n => n.data.type === 'shortcut.shortcut' && n.id !== id)
+        .map(n => (n.data.shortcut || '').toLowerCase())
+        .filter(s => s.length === 1);
+
+      const handleShortcutChange = (value: string) => {
+        // Only allow single character
+        const newShortcut = value.slice(-1).toLowerCase();
+        const validation = validateShortcut(newShortcut, existingShortcuts);
+        
+        if (validation.isValid) {
+          setShortcutError(null);
+          handlePropertyChange('shortcut', newShortcut);
+        } else {
+          setShortcutError(validation.error || 'Invalid shortcut');
+          // Still update the value so user can see what they typed
+          handlePropertyChange('shortcut', newShortcut);
+        }
+      };
+
+      return (
+        <div className="mt-2">
+          <div>
+            <label className="text-xs mb-1 block" style={{ color: textColor, opacity: 0.7 }}>
+              Shortcut Key
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={shortcut}
+                onChange={(e) => handleShortcutChange(e.target.value)}
+                maxLength={1}
+                placeholder="a-z, 0-9"
+                className={`w-full px-2 py-1.5 bg-gray-700 border rounded text-sm ${
+                  shortcutError ? 'border-red-500' : 'border-gray-600'
+                }`}
+                style={{ color: textColor }}
+              />
+              {shortcut && !shortcutError && (
+                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs font-mono bg-blue-600 px-2 py-0.5 rounded">
+                  {shortcut.toUpperCase()}
+                </div>
+              )}
+            </div>
+            {shortcutError && (
+              <div className="text-xs text-red-400 mt-1">{shortcutError}</div>
+            )}
+            {shortcut && !shortcutError && (
+              <div className="text-xs text-gray-400 mt-1">
+                Press "{shortcut.toUpperCase()}" to navigate to this node
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+
+    // Plugin nodes (generic handling)
     const pluginNode = frontendPluginRegistry.getPluginNode(nodeType);
     if (pluginNode && pluginNode.definition.defaultData) {
       const properties = Object.keys(pluginNode.definition.defaultData);
@@ -1732,13 +1856,14 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const hasProperties = properties !== null;
 
   // Build style object with colors
+  // Priority: validation error > execution error > executing > default
   const nodeStyle: React.CSSProperties = {
     width: currentWidth,
     height: currentHeight,
     minWidth: 150,
     minHeight: hasProperties && !isMinimized ? undefined : 50,
     backgroundColor: backgroundColor,
-    borderColor: isFailed ? '#ef4444' : (isExecuting ? '#22c55e' : borderColor),
+    borderColor: hasValidationError ? '#ef4444' : (isFailed ? '#ef4444' : (isExecuting ? '#22c55e' : borderColor)),
     borderWidth: '2px',
     borderStyle: 'solid',
   };
@@ -1762,26 +1887,28 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
           isPinned={isPinned}
         />
       )}
-      {/* Default control flow handle (driver) */}
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="driver"
-        className={`transition-all duration-200 ${
-          connectingHandleId === 'driver' 
-            ? 'connecting' 
-            : hasDriverConnection 
-              ? '!bg-green-500 hover:!bg-green-400' 
-              : '!bg-blue-500 hover:!bg-blue-400'
-        }`}
-        style={{ 
-          display: nodeType === NodeType.START || nodeType === 'start' ? 'none' : 'block',
-          top: '50%',
-          transform: 'translateY(-50%)',
-        }}
-        onMouseEnter={() => setConnectingHandleId('driver')}
-        onMouseLeave={() => setConnectingHandleId(null)}
-      />
+      {/* Default control flow handle (driver) - skip for utility nodes */}
+      {!isUtilityNode && (
+        <Handle
+          type="target"
+          position={Position.Left}
+          id="driver"
+          className={`transition-all duration-200 ${
+            connectingHandleId === 'driver' 
+              ? 'connecting' 
+              : hasDriverConnection 
+                ? '!bg-green-500 hover:!bg-green-400' 
+                : '!bg-blue-500 hover:!bg-blue-400'
+          }`}
+          style={{ 
+            display: nodeType === NodeType.START || nodeType === 'start' ? 'none' : 'block',
+            top: '50%',
+            transform: 'translateY(-50%)',
+          }}
+          onMouseEnter={() => setConnectingHandleId('driver')}
+          onMouseLeave={() => setConnectingHandleId(null)}
+        />
+      )}
       <div className="flex items-center gap-2">
         {icon ? (() => {
           const IconComponent = icon.icon;
@@ -1803,16 +1930,19 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
           />
         ) : (
           <div
-            className={`text-sm font-medium ${isFailed ? 'cursor-pointer hover:underline' : 'cursor-text'}`}
+            className={`text-sm font-medium ${(isFailed || hasValidationError) ? 'cursor-pointer hover:underline' : 'cursor-text'}`}
             style={{ color: textColor }}
             onDoubleClick={handleDoubleClickHeader}
             onClick={(e) => {
-              if (isFailed) {
+              if (isFailed || hasValidationError) {
                 e.stopPropagation();
-                showErrorPopupForNode(id);
+                if (isFailed) {
+                  showErrorPopupForNode(id);
+                }
+                // Validation errors are shown in ValidationErrorPopup, not NodeErrorPopup
               }
             }}
-            title={isFailed ? 'Click to view error details | Double-click to rename' : 'Double-click to rename'}
+            title={(isFailed || hasValidationError) ? 'Click to view error details | Double-click to rename' : 'Double-click to rename'}
           >
             {label}
             {isReusableNode && renderData.contextName && (
@@ -1872,6 +2002,17 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
           placeholder={propertyPopup.placeholder}
           min={propertyPopup.min}
           max={propertyPopup.max}
+        />,
+        document.body
+      )}
+      {/* Render MarkdownEditorPopup via portal for comment box */}
+      {showMarkdownEditor && isCommentBox && typeof document !== 'undefined' && createPortal(
+        <MarkdownEditorPopup
+          value={renderData.content || ''}
+          onChange={(newValue) => {
+            handlePropertyChange('content', newValue);
+          }}
+          onClose={() => setShowMarkdownEditor(false)}
         />,
         document.body
       )}
@@ -1975,22 +2116,24 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
           })()}
         </>
       ) : (
-        // Regular node: render single output handle
-        <Handle
-          type="source"
-          position={Position.Right}
-          id="output"
-          className={`transition-all duration-200 ${
-            connectingHandleId === 'output' 
-              ? 'connecting' 
-              : hasOutputConnection 
-                ? '!bg-green-500 hover:!bg-green-400' 
-                : '!bg-blue-500 hover:!bg-blue-400'
-          }`}
-          style={{ display: nodeType === NodeType.START ? 'block' : 'block' }}
-          onMouseEnter={() => setConnectingHandleId('output')}
-          onMouseLeave={() => setConnectingHandleId(null)}
-        />
+        // Regular node: render single output handle - skip for utility nodes
+        !isUtilityNode && (
+          <Handle
+            type="source"
+            position={Position.Right}
+            id="output"
+            className={`transition-all duration-200 ${
+              connectingHandleId === 'output' 
+                ? 'connecting' 
+                : hasOutputConnection 
+                  ? '!bg-green-500 hover:!bg-green-400' 
+                  : '!bg-blue-500 hover:!bg-blue-400'
+            }`}
+            style={{ display: nodeType === NodeType.START ? 'block' : 'block' }}
+            onMouseEnter={() => setConnectingHandleId('output')}
+            onMouseLeave={() => setConnectingHandleId(null)}
+          />
+        )
       )}
     </div>
   );

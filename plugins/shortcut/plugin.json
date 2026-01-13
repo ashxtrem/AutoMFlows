@@ -1,0 +1,21 @@
+{
+  "name": "shortcut",
+  "version": "1.0.0",
+  "description": "Keyboard shortcuts for quick node navigation",
+  "author": "AutoMFlows",
+  "nodes": [
+    {
+      "type": "shortcut.shortcut",
+      "label": "Shortcut",
+      "category": "Utility",
+      "icon": "⌨️",
+      "description": "Assign keyboard shortcuts to navigate to nodes",
+      "handlerPath": "handler.js",
+      "defaultData": {
+        "shortcut": "",
+        "targetNodeId": "",
+        "label": "Shortcut"
+      }
+    }
+  ]
+}

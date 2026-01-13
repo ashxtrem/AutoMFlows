@@ -1,6 +1,7 @@
 import { Node } from 'reactflow';
 import { useState } from 'react';
 import RetryConfigSection from '../RetryConfigSection';
+import { usePropertyInput } from '../../hooks/usePropertyInput';
 
 interface ApiRequestConfigProps {
   node: Node;
@@ -9,6 +10,7 @@ interface ApiRequestConfigProps {
 
 export default function ApiRequestConfig({ node, onChange }: ApiRequestConfigProps) {
   const data = node.data;
+  const { getPropertyValue, isPropertyDisabled, getInputClassName } = usePropertyInput(node);
   const [headers, setHeaders] = useState<Array<{ key: string; value: string }>>(() => {
     if (data.headers && typeof data.headers === 'object') {
       return Object.entries(data.headers).map(([key, value]) => ({
@@ -50,9 +52,10 @@ export default function ApiRequestConfig({ node, onChange }: ApiRequestConfigPro
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">HTTP Method</label>
         <select
-          value={data.method || 'GET'}
+          value={getPropertyValue('method', 'GET')}
           onChange={(e) => onChange('method', e.target.value)}
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+          disabled={isPropertyDisabled('method')}
+          className={getInputClassName('method', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
         >
           <option value="GET">GET</option>
           <option value="POST">POST</option>
@@ -62,6 +65,11 @@ export default function ApiRequestConfig({ node, onChange }: ApiRequestConfigPro
           <option value="HEAD">HEAD</option>
           <option value="OPTIONS">OPTIONS</option>
         </select>
+        {isPropertyDisabled('method') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
       </div>
 
       <div>
@@ -71,11 +79,17 @@ export default function ApiRequestConfig({ node, onChange }: ApiRequestConfigPro
         </label>
         <input
           type="text"
-          value={data.url || ''}
+          value={getPropertyValue('url', '')}
           onChange={(e) => onChange('url', e.target.value)}
           placeholder="https://api.example.com/users/${data.api1.body.userId}"
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+          disabled={isPropertyDisabled('url')}
+          className={getInputClassName('url', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
         />
+        {isPropertyDisabled('url') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
         <div className="mt-1 text-xs text-gray-400">
           Supports variable interpolation: ${'{data.key.path}'} or ${'{variables.key.path}'}
         </div>
@@ -161,11 +175,17 @@ export default function ApiRequestConfig({ node, onChange }: ApiRequestConfigPro
         <label className="block text-sm font-medium text-gray-300 mb-1">Context Key</label>
         <input
           type="text"
-          value={data.contextKey || 'apiResponse'}
+          value={getPropertyValue('contextKey', 'apiResponse')}
           onChange={(e) => onChange('contextKey', e.target.value)}
           placeholder="apiResponse"
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+          disabled={isPropertyDisabled('contextKey')}
+          className={getInputClassName('contextKey', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
         />
+        {isPropertyDisabled('contextKey') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
         <div className="mt-1 text-xs text-gray-400">
           Key to store API response in context (accessible via ${'{data.'}contextKey{'}'})
         </div>
@@ -175,10 +195,16 @@ export default function ApiRequestConfig({ node, onChange }: ApiRequestConfigPro
         <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
         <input
           type="number"
-          value={data.timeout || 30000}
+          value={getPropertyValue('timeout', 30000)}
           onChange={(e) => onChange('timeout', parseInt(e.target.value, 10) || 30000)}
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+          disabled={isPropertyDisabled('timeout')}
+          className={getInputClassName('timeout', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
         />
+        {isPropertyDisabled('timeout') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
       </div>
 
       <div>

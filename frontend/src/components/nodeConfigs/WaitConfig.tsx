@@ -1,5 +1,6 @@
 import { Node } from 'reactflow';
 import RetryConfigSection from '../RetryConfigSection';
+import { usePropertyInput } from '../../hooks/usePropertyInput';
 
 interface WaitConfigProps {
   node: Node;
@@ -8,6 +9,7 @@ interface WaitConfigProps {
 
 export default function WaitConfig({ node, onChange }: WaitConfigProps) {
   const data = node.data;
+  const { getPropertyValue, isPropertyDisabled, getInputClassName } = usePropertyInput(node);
 
   // Validate regex pattern
   const validateRegex = (pattern: string): boolean => {
@@ -31,7 +33,7 @@ export default function WaitConfig({ node, onChange }: WaitConfigProps) {
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Wait Type</label>
         <select
-          value={data.waitType || 'timeout'}
+          value={getPropertyValue('waitType', 'timeout')}
           onChange={(e) => {
             onChange('waitType', e.target.value);
             // Reset API wait config when switching away from api-response
@@ -39,7 +41,8 @@ export default function WaitConfig({ node, onChange }: WaitConfigProps) {
               onChange('apiWaitConfig', undefined);
             }
           }}
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+          disabled={isPropertyDisabled('waitType')}
+          className={getInputClassName('waitType', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
         >
           <option value="timeout">Timeout (milliseconds)</option>
           <option value="selector">Wait for Selector</option>
@@ -53,42 +56,66 @@ export default function WaitConfig({ node, onChange }: WaitConfigProps) {
           <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
           <input
             type="number"
-            value={typeof data.value === 'number' ? data.value : parseInt(String(data.value || 1000), 10)}
+            value={typeof getPropertyValue('value', 1000) === 'number' ? getPropertyValue('value', 1000) : parseInt(String(getPropertyValue('value', 1000) || 1000), 10)}
             onChange={(e) => onChange('value', parseInt(e.target.value, 10))}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+            disabled={isPropertyDisabled('value')}
+            className={getInputClassName('value', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
           />
+          {isPropertyDisabled('value') && (
+            <div className="mt-1 text-xs text-gray-500 italic">
+              This property is converted to input. Connect a node to provide the value.
+            </div>
+          )}
         </div>
       ) : data.waitType === 'selector' ? (
         <>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
             <select
-              value={data.selectorType || 'css'}
+              value={getPropertyValue('selectorType', 'css')}
               onChange={(e) => onChange('selectorType', e.target.value)}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              disabled={isPropertyDisabled('selectorType')}
+              className={getInputClassName('selectorType', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
             >
               <option value="css">CSS Selector</option>
               <option value="xpath">XPath</option>
             </select>
+            {isPropertyDisabled('selectorType') && (
+              <div className="mt-1 text-xs text-gray-500 italic">
+                This property is converted to input. Connect a node to provide the value.
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Selector</label>
             <input
               type="text"
-              value={typeof data.value === 'string' ? data.value : ''}
+              value={typeof getPropertyValue('value', '') === 'string' ? getPropertyValue('value', '') : ''}
               onChange={(e) => onChange('value', e.target.value)}
               placeholder="#element or //div[@class='element']"
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              disabled={isPropertyDisabled('value')}
+              className={getInputClassName('value', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
             />
+            {isPropertyDisabled('value') && (
+              <div className="mt-1 text-xs text-gray-500 italic">
+                This property is converted to input. Connect a node to provide the value.
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
             <input
               type="number"
-              value={data.timeout || 30000}
+              value={getPropertyValue('timeout', 30000)}
               onChange={(e) => onChange('timeout', parseInt(e.target.value, 10))}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              disabled={isPropertyDisabled('timeout')}
+              className={getInputClassName('timeout', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
             />
+            {isPropertyDisabled('timeout') && (
+              <div className="mt-1 text-xs text-gray-500 italic">
+                This property is converted to input. Connect a node to provide the value.
+              </div>
+            )}
           </div>
         </>
       ) : data.waitType === 'url' ? (
@@ -97,18 +124,24 @@ export default function WaitConfig({ node, onChange }: WaitConfigProps) {
             <label className="block text-sm font-medium text-gray-300 mb-1">URL Pattern</label>
             <input
               type="text"
-              value={typeof data.value === 'string' ? data.value : ''}
+              value={typeof getPropertyValue('value', '') === 'string' ? getPropertyValue('value', '') : ''}
               onChange={(e) => onChange('value', e.target.value)}
               placeholder="/pattern/ or exact-url"
-              className={`w-full px-3 py-2 bg-gray-700 border rounded text-white text-sm ${
-                typeof data.value === 'string' && data.value && !isUrlPatternValid
+              disabled={isPropertyDisabled('value')}
+              className={`${getInputClassName('value', 'w-full px-3 py-2 bg-gray-700 border rounded text-sm')} ${
+                typeof getPropertyValue('value', '') === 'string' && getPropertyValue('value', '') && !isUrlPatternValid
                   ? 'border-red-500'
                   : 'border-gray-600'
               }`}
             />
-            {typeof data.value === 'string' && data.value && !isUrlPatternValid && (
+            {typeof getPropertyValue('value', '') === 'string' && getPropertyValue('value', '') && !isUrlPatternValid && (
               <div className="mt-1 text-xs text-red-400">
                 Invalid regex pattern. Use /pattern/ for regex or plain text for exact match.
+              </div>
+            )}
+            {isPropertyDisabled('value') && (
+              <div className="mt-1 text-xs text-gray-500 italic">
+                This property is converted to input. Connect a node to provide the value.
               </div>
             )}
             <div className="mt-1 text-xs text-gray-400">
@@ -119,10 +152,16 @@ export default function WaitConfig({ node, onChange }: WaitConfigProps) {
             <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
             <input
               type="number"
-              value={data.timeout || 30000}
+              value={getPropertyValue('timeout', 30000)}
               onChange={(e) => onChange('timeout', parseInt(e.target.value, 10))}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              disabled={isPropertyDisabled('timeout')}
+              className={getInputClassName('timeout', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
             />
+            {isPropertyDisabled('timeout') && (
+              <div className="mt-1 text-xs text-gray-500 italic">
+                This property is converted to input. Connect a node to provide the value.
+              </div>
+            )}
           </div>
         </>
       ) : data.waitType === 'api-response' ? (
@@ -229,12 +268,18 @@ export default function WaitConfig({ node, onChange }: WaitConfigProps) {
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">JavaScript Condition</label>
             <textarea
-              value={typeof data.value === 'string' ? data.value : ''}
+              value={typeof getPropertyValue('value', '') === 'string' ? getPropertyValue('value', '') : ''}
               onChange={(e) => onChange('value', e.target.value)}
               placeholder="() => document.querySelector('.loaded') !== null"
               rows={3}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm font-mono text-xs"
+              disabled={isPropertyDisabled('value')}
+              className={getInputClassName('value', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm font-mono text-xs')}
             />
+            {isPropertyDisabled('value') && (
+              <div className="mt-1 text-xs text-gray-500 italic">
+                This property is converted to input. Connect a node to provide the value.
+              </div>
+            )}
             <div className="mt-1 text-xs text-gray-400">
               JavaScript expression that returns a truthy value when condition is met. Executed in page context.
             </div>
@@ -243,10 +288,16 @@ export default function WaitConfig({ node, onChange }: WaitConfigProps) {
             <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
             <input
               type="number"
-              value={data.timeout || 30000}
+              value={getPropertyValue('timeout', 30000)}
               onChange={(e) => onChange('timeout', parseInt(e.target.value, 10))}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              disabled={isPropertyDisabled('timeout')}
+              className={getInputClassName('timeout', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
             />
+            {isPropertyDisabled('timeout') && (
+              <div className="mt-1 text-xs text-gray-500 italic">
+                This property is converted to input. Connect a node to provide the value.
+              </div>
+            )}
           </div>
         </>
       )}

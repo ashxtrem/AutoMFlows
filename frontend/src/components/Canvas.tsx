@@ -10,6 +10,7 @@ import { useWorkflowStore } from '../store/workflowStore';
 import CustomNode from '../nodes/CustomNode';
 import CustomEdge from './CustomEdge';
 import ContextMenu from './ContextMenu';
+import { useShortcutNavigation } from '../hooks/useShortcutNavigation';
 
 const nodeTypes = {
   custom: CustomNode,
@@ -68,6 +69,9 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useReactFlow();
   const { screenToFlowPosition, getViewport, setViewport: originalSetViewport, fitView } = reactFlowInstance;
+  
+  // Enable shortcut navigation
+  useShortcutNavigation();
   
   // Wrap setViewport to update lastKnownViewport and localStorage
   const setViewport = useCallback((viewport: { x: number; y: number; zoom: number }, options?: { duration?: number }) => {

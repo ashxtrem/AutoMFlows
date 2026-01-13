@@ -1,5 +1,6 @@
 import { Node } from 'reactflow';
 import { useState } from 'react';
+import { usePropertyInput } from '../../hooks/usePropertyInput';
 
 interface ClickConfigProps {
   node: Node;
@@ -10,6 +11,7 @@ export default function ClickConfig({ node, onChange }: ClickConfigProps) {
   const data = node.data;
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showRetry, setShowRetry] = useState(false);
+  const { getPropertyValue, isPropertyDisabled, getInputClassName } = usePropertyInput(node);
 
   // Validate regex pattern
   const validateRegex = (pattern: string): boolean => {
@@ -33,32 +35,50 @@ export default function ClickConfig({ node, onChange }: ClickConfigProps) {
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
         <select
-          value={data.selectorType || 'css'}
+          value={getPropertyValue('selectorType', 'css')}
           onChange={(e) => onChange('selectorType', e.target.value)}
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+          disabled={isPropertyDisabled('selectorType')}
+          className={getInputClassName('selectorType', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
         >
           <option value="css">CSS Selector</option>
           <option value="xpath">XPath</option>
         </select>
+        {isPropertyDisabled('selectorType') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Selector</label>
         <input
           type="text"
-          value={data.selector || ''}
+          value={getPropertyValue('selector', '')}
           onChange={(e) => onChange('selector', e.target.value)}
           placeholder="#button or //button[@id='button']"
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+          disabled={isPropertyDisabled('selector')}
+          className={getInputClassName('selector', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
         />
+        {isPropertyDisabled('selector') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
         <input
           type="number"
-          value={data.timeout || 30000}
+          value={getPropertyValue('timeout', 30000)}
           onChange={(e) => onChange('timeout', parseInt(e.target.value, 10))}
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+          disabled={isPropertyDisabled('timeout')}
+          className={getInputClassName('timeout', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
         />
+        {isPropertyDisabled('timeout') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Fail Silently</label>

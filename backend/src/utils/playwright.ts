@@ -10,8 +10,10 @@ export class PlaywrightManager {
   private context: BrowserContext | null = null;
   private page: Page | null = null;
   private screenshotsDir: string;
+  private videosDir: string | null = null;
+  private recordSession: boolean = false;
 
-  constructor(screenshotsDirectory?: string) {
+  constructor(screenshotsDirectory?: string, videosDirectory?: string, recordSession: boolean = false) {
     // Use provided directory or fallback to default
     if (screenshotsDirectory) {
       this.screenshotsDir = screenshotsDirectory;
@@ -22,6 +24,15 @@ export class PlaywrightManager {
     }
     if (!fs.existsSync(this.screenshotsDir)) {
       fs.mkdirSync(this.screenshotsDir, { recursive: true });
+    }
+    
+    // Set video recording options
+    this.recordSession = recordSession;
+    if (videosDirectory) {
+      this.videosDir = videosDirectory;
+      if (!fs.existsSync(this.videosDir)) {
+        fs.mkdirSync(this.videosDir, { recursive: true });
+      }
     }
   }
 
@@ -67,28 +78,44 @@ export class PlaywrightManager {
   private async applyStealthMode(context: BrowserContext): Promise<void> {
     // Remove webdriver traces
     await context.addInitScript(() => {
-      // Remove webdriver property
-      Object.defineProperty(navigator, 'webdriver', {
-        get: () => undefined,
-      });
+      try {
+        // Remove webdriver property - delete first, then redefine
+        try {
+          delete (navigator as any).webdriver;
+        } catch (e) {
+          // Ignore if deletion fails
+        }
+        
+        // Redefine webdriver property to return undefined
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => undefined,
+          configurable: true,
+          enumerable: false,
+        });
 
-      // Override plugins
-      Object.defineProperty(navigator, 'plugins', {
-        get: () => [1, 2, 3, 4, 5],
-      });
+        // Override plugins
+        Object.defineProperty(navigator, 'plugins', {
+          get: () => [1, 2, 3, 4, 5],
+          configurable: true,
+        });
 
-      // Override languages
-      Object.defineProperty(navigator, 'languages', {
-        get: () => ['en-US', 'en'],
-      });
+        // Override languages
+        Object.defineProperty(navigator, 'languages', {
+          get: () => ['en-US', 'en'],
+          configurable: true,
+        });
 
-      // Override permissions
-      const originalQuery = window.navigator.permissions.query;
-      window.navigator.permissions.query = (parameters: any) => (
-        parameters.name === 'notifications' ?
-          Promise.resolve({ state: Notification.permission } as PermissionStatus) :
-          originalQuery(parameters)
-      );
+        // Override permissions
+        const originalQuery = window.navigator.permissions.query;
+        window.navigator.permissions.query = (parameters: any) => (
+          parameters.name === 'notifications' ?
+            Promise.resolve({ state: Notification.permission } as PermissionStatus) :
+            originalQuery(parameters)
+        );
+      } catch (e) {
+        // Silently fail - don't break page load
+        console.error('Stealth mode init script error:', e);
+      }
     });
   }
 
@@ -131,6 +158,24 @@ export class PlaywrightManager {
         headless,
         ...launchOptions, // User-provided launch options override defaults
       };
+      
+      // Add stealth mode launch args for Chromium
+      if (stealthMode && browserType === 'chromium') {
+        if (!launchOpts.args) {
+          launchOpts.args = [];
+        }
+        // Disable automation controlled features
+        if (!launchOpts.args.includes('--disable-blink-features=AutomationControlled')) {
+          launchOpts.args.push('--disable-blink-features=AutomationControlled');
+        }
+        // Remove the "Chrome is being controlled by automated test software" banner
+        if (!launchOpts.ignoreDefaultArgs) {
+          launchOpts.ignoreDefaultArgs = [];
+        }
+        if (Array.isArray(launchOpts.ignoreDefaultArgs) && !launchOpts.ignoreDefaultArgs.includes('--enable-automation')) {
+          launchOpts.ignoreDefaultArgs.push('--enable-automation');
+        }
+      }
       
       this.browser = await browserLauncher.launch(launchOpts);
     } catch (error: any) {
@@ -254,6 +299,13 @@ export class PlaywrightManager {
       Object.assign(browserContextOptions, capabilities);
     }
 
+    // Add video recording if enabled
+    if (this.recordSession && this.videosDir) {
+      browserContextOptions.recordVideo = {
+        dir: this.videosDir,
+      };
+    }
+
     this.context = await this.browser.newContext(browserContextOptions);
 
     // Apply stealth mode if enabled
@@ -304,7 +356,27 @@ export class PlaywrightManager {
     return this.browser;
   }
 
-  async close(): Promise<void> {
+  async close(): Promise<string[]> {
+    const videoPaths: string[] = [];
+    
+    // Get video paths from all pages before closing
+    if (this.context) {
+      const pages = this.context.pages();
+      for (const page of pages) {
+        try {
+          const video = page.video();
+          if (video) {
+            const videoPath = await video.path();
+            if (videoPath && fs.existsSync(videoPath)) {
+              videoPaths.push(videoPath);
+            }
+          }
+        } catch (error) {
+          // Video might not be available, ignore
+        }
+      }
+    }
+    
     if (this.page) {
       await this.page.close();
       this.page = null;
@@ -317,6 +389,8 @@ export class PlaywrightManager {
       await this.browser.close();
       this.browser = null;
     }
+    
+    return videoPaths;
   }
 
   async takeScreenshot(filePath?: string, fullPage: boolean = false): Promise<string> {

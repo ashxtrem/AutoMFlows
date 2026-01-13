@@ -3,11 +3,53 @@ import { io, Socket } from 'socket.io-client';
 import { useWorkflowStore } from '../store/workflowStore';
 import { serializeWorkflow } from '../utils/serialization';
 import { ExecutionEventType, ScreenshotConfig, ReportConfig } from '@automflows/shared';
-import { validateInputConnections } from '../utils/validation';
+import { validateInputConnections, ValidationError } from '../utils/validation';
 import { useNotificationStore } from '../store/notificationStore';
+import { Node } from 'reactflow';
 
 let socket: Socket | null = null;
 let backendPort: number | null = null;
+
+/**
+ * Parse backend validation error messages to extract node IDs and create ValidationError objects
+ * Backend errors are formatted like: "Workflow validation failed: Node <nodeId> has multiple control flow input connections..."
+ * Multiple errors may be joined with commas
+ */
+function parseBackendValidationErrors(errorMessage: string, nodes: Node[]): ValidationError[] {
+  const errors: ValidationError[] = [];
+  
+  // Remove "Workflow validation failed: " prefix if present
+  let cleanMessage = errorMessage.replace(/^Workflow validation failed:\s*/i, '');
+  
+  // Split by comma to handle multiple errors, but be careful not to split within quoted strings
+  // Simple approach: split by ", " (comma followed by space) which is how backend joins errors
+  const errorParts = cleanMessage.split(/,\s*(?=Node\s+)/i);
+  
+  // Pattern to match "Node <nodeId> has..." or "Node <nodeId> must..." etc.
+  const nodeErrorPattern = /Node\s+([^\s]+)\s+(has|must|references|does not have|must specify|references non-existent)/i;
+  
+  for (const errorPart of errorParts) {
+    const match = errorPart.match(nodeErrorPattern);
+    if (match) {
+      const nodeId = match[1];
+      const node = nodes.find(n => n.id === nodeId);
+      const nodeName = node?.data?.label || nodeId;
+      
+      // Use the full error part as the message
+      const fullMessage = errorPart.trim();
+      
+      errors.push({
+        nodeId,
+        nodeName,
+        propertyName: 'validation', // Backend validation errors don't have specific property names
+        propertyLabel: 'Validation',
+        message: fullMessage,
+      });
+    }
+  }
+  
+  return errors;
+}
 
 async function getBackendPortSync(): Promise<number> {
   if (backendPort) {
@@ -46,7 +88,7 @@ async function getBackendPortSync(): Promise<number> {
 }
 
 export function useExecution() {
-  const { nodes, edges, setExecutionStatus, setExecutingNodeId, resetExecution, setNodeError, clearAllNodeErrors } = useWorkflowStore();
+  const { nodes, edges, setExecutionStatus, setExecutingNodeId, resetExecution, setNodeError, clearAllNodeErrors, setValidationErrors: setStoreValidationErrors, clearValidationErrors } = useWorkflowStore();
   const [port, setPort] = useState<number | null>(null);
   const [validationErrors, setValidationErrors] = useState<any[]>([]);
   const addNotification = useNotificationStore((state) => state.addNotification);
@@ -140,6 +182,16 @@ export function useExecution() {
         case ExecutionEventType.EXECUTION_ERROR:
           setExecutionStatus('error');
           setExecutingNodeId(null);
+          
+          // Check if this is a backend validation error and parse it
+          if (event.message && event.message.includes('Workflow validation failed')) {
+            const backendValidationErrors = parseBackendValidationErrors(event.message, nodes);
+            if (backendValidationErrors.length > 0) {
+              setValidationErrors(backendValidationErrors);
+              setStoreValidationErrors(backendValidationErrors);
+            }
+          }
+          
           addNotification({
             type: 'error',
             title: 'Execution Failed',
@@ -183,27 +235,33 @@ export function useExecution() {
       const errors = validateInputConnections(nodes, edges);
       if (errors.length > 0) {
         setValidationErrors(errors);
+        setStoreValidationErrors(errors); // Sync to store for node highlighting
         return; // Don't execute if there are validation errors
       }
       setValidationErrors([]);
+      clearValidationErrors(); // Clear validation errors from store when validation passes
 
       const workflow = serializeWorkflow(nodes, edges);
 
-      // Ensure there's a Start node
-      const hasStartNode = nodes.some((node) => node.data.type === 'start');
-      if (!hasStartNode) {
+      // Find Start node and extract configuration
+      const startNode = nodes.find((node) => node.data.type === 'start');
+      if (!startNode) {
         alert('Workflow must contain a Start node');
         return;
       }
 
-      // Read screenshot and report config from localStorage
-      const screenshotOnNode = localStorage.getItem('automflows_screenshot_on_node') === 'true';
-      const screenshotTiming = (localStorage.getItem('automflows_screenshot_timing') || 'post') as 'pre' | 'post' | 'both';
+      // Extract settings from Start node data
+      const startNodeData = startNode.data as any;
+      const screenshotAllNodes = startNodeData.screenshotAllNodes || false;
+      const screenshotTiming = startNodeData.screenshotTiming || 'post';
+      const recordSession = startNodeData.recordSession || false;
+
+      // Read report config from localStorage (still global)
       const reportingEnabled = localStorage.getItem('automflows_reporting_enabled') === 'true';
       const reportPath = localStorage.getItem('automflows_report_path') || './output';
       const reportTypes = JSON.parse(localStorage.getItem('automflows_report_types') || '["html"]');
 
-      const screenshotConfig: ScreenshotConfig | undefined = screenshotOnNode
+      const screenshotConfig: ScreenshotConfig | undefined = screenshotAllNodes
         ? { enabled: true, timing: screenshotTiming }
         : undefined;
 
@@ -225,6 +283,7 @@ export function useExecution() {
           traceLogs,
           screenshotConfig,
           reportConfig,
+          recordSession,
         }),
         signal: fetchController.signal,
       });
@@ -232,6 +291,14 @@ export function useExecution() {
 
       if (!response.ok) {
         const error = await response.json();
+        
+        // Parse backend validation errors to extract node IDs
+        const backendValidationErrors = parseBackendValidationErrors(error.message || '', nodes);
+        if (backendValidationErrors.length > 0) {
+          setValidationErrors(backendValidationErrors);
+          setStoreValidationErrors(backendValidationErrors);
+        }
+        
         throw new Error(error.message || 'Failed to execute workflow');
       }
 
@@ -240,6 +307,15 @@ export function useExecution() {
       // Notification for execution start is handled by socket event
     } catch (error: any) {
       console.error('Execution error:', error);
+      
+      // Check if this is a backend validation error and parse it
+      if (error.message && error.message.includes('Workflow validation failed')) {
+        const backendValidationErrors = parseBackendValidationErrors(error.message, nodes);
+        if (backendValidationErrors.length > 0) {
+          setValidationErrors(backendValidationErrors);
+          setStoreValidationErrors(backendValidationErrors);
+        }
+      }
       
       let errorMessage = 'Failed to execute workflow: ' + error.message;
       if (error.name === 'AbortError') {

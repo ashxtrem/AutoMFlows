@@ -3,6 +3,7 @@ import { Node } from 'reactflow';
 import { OpenBrowserNodeData } from '@automflows/shared';
 import CapabilitiesPopup from '../CapabilitiesPopup';
 import ScriptEditorPopup from '../ScriptEditorPopup';
+import { usePropertyInput } from '../../hooks/usePropertyInput';
 
 interface OpenBrowserConfigProps {
   node: Node;
@@ -13,6 +14,7 @@ export default function OpenBrowserConfig({ node, onChange }: OpenBrowserConfigP
   const data = node.data as OpenBrowserNodeData;
   const [showCapabilitiesPopup, setShowCapabilitiesPopup] = useState(false);
   const [showScriptEditorPopup, setShowScriptEditorPopup] = useState(false);
+  const { getPropertyValue, isPropertyDisabled, getInputClassName } = usePropertyInput(node);
   
   const maxWindow = data.maxWindow !== false; // Default to true
   const capabilitiesCount = data.capabilities ? Object.keys(data.capabilities).length : 0;
@@ -32,14 +34,20 @@ export default function OpenBrowserConfig({ node, onChange }: OpenBrowserConfigP
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1">Browser</label>
           <select
-            value={data.browser || 'chromium'}
+            value={getPropertyValue('browser', 'chromium')}
             onChange={(e) => onChange('browser', e.target.value)}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+            disabled={isPropertyDisabled('browser')}
+            className={getInputClassName('browser', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
           >
             <option value="chromium">Chromium</option>
             <option value="firefox">Firefox</option>
             <option value="webkit">WebKit</option>
           </select>
+          {isPropertyDisabled('browser') && (
+            <div className="mt-1 text-xs text-gray-500 italic">
+              This property is converted to input. Connect a node to provide the value.
+            </div>
+          )}
         </div>
         
         <div>
@@ -66,25 +74,35 @@ export default function OpenBrowserConfig({ node, onChange }: OpenBrowserConfigP
           <label className="block text-sm font-medium text-gray-300 mb-1">Viewport Width</label>
           <input
             type="number"
-            value={data.viewportWidth || 1280}
+            value={getPropertyValue('viewportWidth', 1280)}
             onChange={(e) => onChange('viewportWidth', parseInt(e.target.value, 10))}
-            disabled={maxWindow}
-            className={`w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm ${
+            disabled={maxWindow || isPropertyDisabled('viewportWidth')}
+            className={`${getInputClassName('viewportWidth', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')} ${
               maxWindow ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           />
+          {isPropertyDisabled('viewportWidth') && (
+            <div className="mt-1 text-xs text-gray-500 italic">
+              This property is converted to input. Connect a node to provide the value.
+            </div>
+          )}
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1">Viewport Height</label>
           <input
             type="number"
-            value={data.viewportHeight || 720}
+            value={getPropertyValue('viewportHeight', 720)}
             onChange={(e) => onChange('viewportHeight', parseInt(e.target.value, 10))}
-            disabled={maxWindow}
-            className={`w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm ${
+            disabled={maxWindow || isPropertyDisabled('viewportHeight')}
+            className={`${getInputClassName('viewportHeight', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')} ${
               maxWindow ? 'opacity-50 cursor-not-allowed' : ''
             }`}
           />
+          {isPropertyDisabled('viewportHeight') && (
+            <div className="mt-1 text-xs text-gray-500 italic">
+              This property is converted to input. Connect a node to provide the value.
+            </div>
+          )}
         </div>
 
         <div>

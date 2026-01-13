@@ -123,6 +123,12 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
         ];
       
       case NodeType.START:
+        return [
+          { name: 'recordSession', label: 'Record Session', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+          { name: 'screenshotAllNodes', label: 'Screenshot All Nodes', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+          { name: 'screenshotTiming', label: 'Screenshot Timing', dataType: PropertyDataType.STRING, required: false, defaultValue: 'post' },
+        ];
+      
       case NodeType.INT_VALUE:
       case NodeType.STRING_VALUE:
       case NodeType.BOOLEAN_VALUE:
@@ -144,6 +150,14 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
  */
 export function isPropertyInputConnection(nodeData: any, propertyName: string): boolean {
   return nodeData._inputConnections?.[propertyName]?.isInput === true;
+}
+
+/**
+ * Get the old value for a property that was converted to input
+ * Returns undefined if property is not converted to input or has no old value stored
+ */
+export function getPropertyOldValue(nodeData: any, propertyName: string): any {
+  return nodeData._inputConnections?.[propertyName]?.oldValue;
 }
 
 /**

@@ -1,5 +1,6 @@
 import { Node } from 'reactflow';
 import RetryConfigSection from '../RetryConfigSection';
+import { usePropertyInput } from '../../hooks/usePropertyInput';
 
 interface ApiCurlConfigProps {
   node: Node;
@@ -8,6 +9,7 @@ interface ApiCurlConfigProps {
 
 export default function ApiCurlConfig({ node, onChange }: ApiCurlConfigProps) {
   const data = node.data;
+  const { getPropertyValue, isPropertyDisabled, getInputClassName } = usePropertyInput(node);
 
   return (
     <div className="space-y-4">
@@ -17,12 +19,18 @@ export default function ApiCurlConfig({ node, onChange }: ApiCurlConfigProps) {
           <span className="ml-2 text-xs text-gray-400">(supports ${'{data.key.path}'})</span>
         </label>
         <textarea
-          value={data.curlCommand || ''}
+          value={getPropertyValue('curlCommand', '')}
           onChange={(e) => onChange('curlCommand', e.target.value)}
           placeholder={`curl -X POST https://api.example.com/users -H "Content-Type: application/json" -d '{"name": "John"}'`}
           rows={8}
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm font-mono"
+          disabled={isPropertyDisabled('curlCommand')}
+          className={getInputClassName('curlCommand', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm font-mono')}
         />
+        {isPropertyDisabled('curlCommand') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
         <div className="mt-1 text-xs text-gray-400">
           Supports variable interpolation: ${'{data.key.path}'} or ${'{variables.key.path}'}
         </div>
@@ -41,11 +49,17 @@ export default function ApiCurlConfig({ node, onChange }: ApiCurlConfigProps) {
         <label className="block text-sm font-medium text-gray-300 mb-1">Context Key</label>
         <input
           type="text"
-          value={data.contextKey || 'apiResponse'}
+          value={getPropertyValue('contextKey', 'apiResponse')}
           onChange={(e) => onChange('contextKey', e.target.value)}
           placeholder="apiResponse"
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+          disabled={isPropertyDisabled('contextKey')}
+          className={getInputClassName('contextKey', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
         />
+        {isPropertyDisabled('contextKey') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
         <div className="mt-1 text-xs text-gray-400">
           Key to store API response in context (accessible via ${'{data.'}contextKey{'}'})
         </div>
@@ -55,10 +69,16 @@ export default function ApiCurlConfig({ node, onChange }: ApiCurlConfigProps) {
         <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
         <input
           type="number"
-          value={data.timeout || 30000}
+          value={getPropertyValue('timeout', 30000)}
           onChange={(e) => onChange('timeout', parseInt(e.target.value, 10) || 30000)}
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+          disabled={isPropertyDisabled('timeout')}
+          className={getInputClassName('timeout', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
         />
+        {isPropertyDisabled('timeout') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
         <div className="mt-1 text-xs text-gray-400">
           Overrides --max-time if specified in cURL command
         </div>

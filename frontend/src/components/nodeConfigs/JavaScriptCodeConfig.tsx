@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Node } from 'reactflow';
 import Editor from '@monaco-editor/react';
+import { usePropertyInput } from '../../hooks/usePropertyInput';
 
 interface JavaScriptCodeConfigProps {
   node: Node;
@@ -9,17 +10,20 @@ interface JavaScriptCodeConfigProps {
 
 export default function JavaScriptCodeConfig({ node, onChange }: JavaScriptCodeConfigProps) {
   const data = node.data;
+  const { getPropertyValue, isPropertyDisabled } = usePropertyInput(node);
   const [code, setCode] = useState(data.code || '// Your code here\nreturn context.data;');
   const prevCodeRef = useRef<string>(code);
   const isInitialMountRef = useRef(true);
+  const isCodeDisabled = isPropertyDisabled('code');
 
   // Sync state when node.data.code changes externally (but not on initial mount)
   useEffect(() => {
     if (!isInitialMountRef.current && data.code !== code && data.code !== prevCodeRef.current) {
-      setCode(data.code || '// Your code here\nreturn context.data;');
+      const newCode = isCodeDisabled ? getPropertyValue('code', '// Your code here\nreturn context.data;') : (data.code || '// Your code here\nreturn context.data;');
+      setCode(newCode);
     }
     isInitialMountRef.current = false;
-  }, [data.code, code]);
+  }, [data.code, code, isCodeDisabled, getPropertyValue]);
 
   useEffect(() => {
     const codeChanged = prevCodeRef.current !== code;
@@ -37,12 +41,16 @@ export default function JavaScriptCodeConfig({ node, onChange }: JavaScriptCodeC
     <div className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">JavaScript Code</label>
-        <div className="bg-gray-900 border border-gray-700 rounded overflow-hidden">
+        <div className={`bg-gray-900 border border-gray-700 rounded overflow-hidden ${isCodeDisabled ? 'opacity-60' : ''}`}>
           <Editor
             height="300px"
             defaultLanguage="javascript"
-            value={code}
-            onChange={(value) => setCode(value || '')}
+            value={isCodeDisabled ? getPropertyValue('code', '// Your code here\nreturn context.data;') : code}
+            onChange={(value) => {
+              if (!isCodeDisabled) {
+                setCode(value || '');
+              }
+            }}
             theme="vs-dark"
             options={{
               minimap: { enabled: false },
@@ -50,9 +58,15 @@ export default function JavaScriptCodeConfig({ node, onChange }: JavaScriptCodeC
               lineNumbers: 'on',
               scrollBeyondLastLine: false,
               automaticLayout: true,
+              readOnly: isCodeDisabled,
             }}
           />
         </div>
+        {isCodeDisabled && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
         <div className="mt-2 p-2 bg-yellow-900 border border-yellow-700 rounded text-xs text-yellow-200">
           <strong>Warning:</strong> This code executes on the server. You have access to:
           <ul className="list-disc list-inside mt-1 ml-2">

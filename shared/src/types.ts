@@ -41,6 +41,9 @@ export interface BaseNode {
 // Node Data Types
 export interface StartNodeData {
   label?: string;
+  recordSession?: boolean; // Enable video recording
+  screenshotAllNodes?: boolean; // Enable screenshots on all nodes
+  screenshotTiming?: 'pre' | 'post' | 'both'; // When to take screenshots
 }
 
 export interface OpenBrowserNodeData {
@@ -537,6 +540,7 @@ export interface ExecuteWorkflowRequest {
   traceLogs?: boolean; // Enable trace logging to terminal (default: false)
   screenshotConfig?: ScreenshotConfig;
   reportConfig?: ReportConfig;
+  recordSession?: boolean; // Flag to enable video recording
 }
 
 export interface ExecuteWorkflowResponse {

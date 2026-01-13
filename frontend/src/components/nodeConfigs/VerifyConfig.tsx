@@ -1,6 +1,7 @@
 import { Node } from 'reactflow';
 import RetryConfigSection from '../RetryConfigSection';
 import { VerificationDomain, BrowserVerificationType, MatchType, ComparisonOperator } from '@automflows/shared';
+import { usePropertyInput } from '../../hooks/usePropertyInput';
 
 interface VerifyConfigProps {
   node: Node;
@@ -55,6 +56,7 @@ const ELEMENT_CHECKS = [
 
 export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
   const data = node.data;
+  const { getPropertyValue, isPropertyDisabled, getInputClassName } = usePropertyInput(node);
   const domain = (data.domain as VerificationDomain) || 'browser';
   const verificationType = data.verificationType || 'url';
 
@@ -67,11 +69,17 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
               <label className="block text-sm font-medium text-gray-300 mb-1">URL Pattern</label>
               <input
                 type="text"
-                value={data.urlPattern || ''}
+                value={getPropertyValue('urlPattern', '')}
                 onChange={(e) => onChange('urlPattern', e.target.value)}
                 placeholder="practicetestautomation.com/logged-in-successfully/"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                disabled={isPropertyDisabled('urlPattern')}
+                className={getInputClassName('urlPattern', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
               />
+              {isPropertyDisabled('urlPattern') && (
+                <div className="mt-1 text-xs text-gray-500 italic">
+                  This property is converted to input. Connect a node to provide the value.
+                </div>
+              )}
               <div className="mt-1 text-xs text-gray-400">
                 Supports context references: {'${data.keyName}'} or {'${variables.varName}'}
               </div>

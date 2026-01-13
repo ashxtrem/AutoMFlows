@@ -15,6 +15,7 @@ export interface NodeExecutionEvent {
     pre?: string;
     post?: string;
   };
+  videoPath?: string;
 }
 
 export interface ExecutionMetadata {
@@ -25,6 +26,7 @@ export interface ExecutionMetadata {
   status: 'running' | 'completed' | 'error' | 'stopped';
   outputDirectory: string;
   screenshotsDirectory: string;
+  videosDirectory: string;
   nodes: NodeExecutionEvent[];
 }
 
@@ -32,6 +34,7 @@ export class ExecutionTracker {
   private metadata: ExecutionMetadata;
   private outputDirectory: string;
   private screenshotsDirectory: string;
+  private videosDirectory: string;
   private workflow: Workflow; // Store workflow to access node properties like isTest
 
   constructor(
@@ -50,6 +53,7 @@ export class ExecutionTracker {
     const resolvedOutputPath = resolveFromProjectRoot(outputPath);
     this.outputDirectory = path.resolve(resolvedOutputPath, folderName);
     this.screenshotsDirectory = path.join(this.outputDirectory, 'screenshots');
+    this.videosDirectory = path.join(this.outputDirectory, 'videos');
 
     // Create directories
     if (!fs.existsSync(this.outputDirectory)) {
@@ -57,6 +61,9 @@ export class ExecutionTracker {
     }
     if (!fs.existsSync(this.screenshotsDirectory)) {
       fs.mkdirSync(this.screenshotsDirectory, { recursive: true });
+    }
+    if (!fs.existsSync(this.videosDirectory)) {
+      fs.mkdirSync(this.videosDirectory, { recursive: true });
     }
 
     this.metadata = {
@@ -66,6 +73,7 @@ export class ExecutionTracker {
       status: 'running',
       outputDirectory: this.outputDirectory,
       screenshotsDirectory: this.screenshotsDirectory,
+      videosDirectory: this.videosDirectory,
       nodes: [],
     };
   }
@@ -86,6 +94,10 @@ export class ExecutionTracker {
 
   getScreenshotsDirectory(): string {
     return this.screenshotsDirectory;
+  }
+
+  getVideosDirectory(): string {
+    return this.videosDirectory;
   }
 
   recordNodeStart(node: BaseNode): void {
@@ -135,6 +147,15 @@ export class ExecutionTracker {
       // If node event doesn't exist yet (shouldn't happen, but handle gracefully),
       // log a warning. This can happen if screenshot is taken before node start is recorded.
       console.warn(`Cannot record screenshot for node ${nodeId}: node event not found. Screenshot path: ${screenshotPath}`);
+    }
+  }
+
+  recordVideo(nodeId: string, videoPath: string): void {
+    const nodeEvent = this.metadata.nodes.find(n => n.nodeId === nodeId);
+    if (nodeEvent) {
+      nodeEvent.videoPath = videoPath;
+    } else {
+      console.warn(`Cannot record video for node ${nodeId}: node event not found. Video path: ${videoPath}`);
     }
   }
 

@@ -1,4 +1,4 @@
-import { Workflow, ExecutionStatus, ExecutionEventType, ExecutionEvent, BaseNode, Edge, NodeType, PropertyDataType, ScreenshotConfig, ReportConfig } from '@automflows/shared';
+import { Workflow, ExecutionStatus, ExecutionEventType, ExecutionEvent, BaseNode, Edge, NodeType, PropertyDataType, ScreenshotConfig, ReportConfig, StartNodeData } from '@automflows/shared';
 import { Server } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
 import { WorkflowParser } from './parser';
@@ -10,7 +10,9 @@ import { PageDebugHelper } from '../utils/pageDebugHelper';
 import { ExecutionTracker } from '../utils/executionTracker';
 import { ReportGenerator } from '../utils/reportGenerator';
 import { getAllReusableScopes } from '../utils/reusableFlowExtractor';
+import { resolveFromProjectRoot } from '../utils/pathUtils';
 import * as path from 'path';
+import * as fs from 'fs';
 
 export class Executor {
   private executionId: string;
@@ -28,25 +30,44 @@ export class Executor {
   private screenshotConfig?: ScreenshotConfig;
   private reportConfig?: ReportConfig;
   private executionTracker?: ExecutionTracker;
+  private recordSession: boolean;
 
   constructor(
     workflow: Workflow, 
     io: Server, 
     traceLogs: boolean = false,
     screenshotConfig?: ScreenshotConfig,
-    reportConfig?: ReportConfig
+    reportConfig?: ReportConfig,
+    recordSession: boolean = false
   ) {
     this.executionId = uuidv4();
     this.workflow = workflow;
     this.io = io;
     this.traceLogs = traceLogs;
-    this.screenshotConfig = screenshotConfig;
+    this.recordSession = recordSession;
     this.reportConfig = reportConfig;
     this.parser = new WorkflowParser(workflow);
     this.context = new ContextManager();
     
-    // Initialize execution tracker if screenshots or reporting is enabled
-    const shouldCreateTracker = (screenshotConfig?.enabled) || (reportConfig?.enabled);
+    // Extract Start node and read screenshot config from it
+    const startNode = workflow.nodes.find(node => node.type === NodeType.START);
+    if (startNode) {
+      const startNodeData = startNode.data as StartNodeData;
+      if (startNodeData.screenshotAllNodes) {
+        this.screenshotConfig = {
+          enabled: true,
+          timing: startNodeData.screenshotTiming || 'post'
+        };
+      } else {
+        this.screenshotConfig = undefined;
+      }
+    } else {
+      // Fallback to passed screenshotConfig if no Start node found
+      this.screenshotConfig = screenshotConfig;
+    }
+    
+    // Initialize execution tracker if screenshots, reporting, or recording is enabled
+    const shouldCreateTracker = (this.screenshotConfig?.enabled) || (reportConfig?.enabled) || recordSession;
     if (shouldCreateTracker) {
       // Use report config output path if available, otherwise default to './output'
       // Path will be resolved relative to project root in ExecutionTracker
@@ -57,10 +78,23 @@ export class Executor {
       this.context.setData('outputDirectory', this.executionTracker.getOutputDirectory());
       this.context.setData('screenshotsDirectory', this.executionTracker.getScreenshotsDirectory());
       
-      // Initialize PlaywrightManager with screenshots directory
-      this.playwright = new PlaywrightManager(this.executionTracker.getScreenshotsDirectory());
+      // Initialize PlaywrightManager with screenshots directory, videos directory, and recording flag
+      this.playwright = new PlaywrightManager(
+        this.executionTracker.getScreenshotsDirectory(),
+        this.executionTracker.getVideosDirectory(),
+        this.recordSession
+      );
     } else {
-      this.playwright = new PlaywrightManager();
+      // If recording is enabled but no tracker, create videos directory
+      if (this.recordSession) {
+        const videosDir = resolveFromProjectRoot('./output/videos');
+        if (!fs.existsSync(videosDir)) {
+          fs.mkdirSync(videosDir, { recursive: true });
+        }
+        this.playwright = new PlaywrightManager(undefined, videosDir, this.recordSession);
+      } else {
+        this.playwright = new PlaywrightManager();
+      }
     }
     
     // Store playwright in context for node handlers
@@ -68,6 +102,9 @@ export class Executor {
     
     // Store workflow in context for node handlers (needed for RunReusableHandler)
     (this.context as any).workflow = this.workflow;
+    
+    // Store recordSession flag in context for PlaywrightManager
+    (this.context as any).recordSession = this.recordSession;
   }
 
   getExecutionId(): string {
@@ -376,6 +413,9 @@ export class Executor {
       this.currentNodeId = null;
       this.traceLog(`[TRACE] Execution completed successfully`);
       
+      // Record videos before generating reports (videos are finalized when browser closes)
+      await this.recordVideos();
+      
       // Complete execution in tracker
       if (this.executionTracker) {
         this.executionTracker.completeExecution('completed');
@@ -394,6 +434,9 @@ export class Executor {
       this.status = ExecutionStatus.ERROR;
       this.error = error.message;
       this.traceLog(`[TRACE] Execution failed: ${error.message}`);
+      
+      // Record videos before generating reports (videos are finalized when browser closes)
+      await this.recordVideos();
       
       // Complete execution with error status in tracker
       if (this.executionTracker) {
@@ -459,9 +502,121 @@ export class Executor {
     }
   }
 
+  private async recordVideos(): Promise<void> {
+    // Videos are only finalized when browser context closes
+    // We need to close context to get video paths, but this happens before cleanup
+    if (!this.playwright || !this.executionTracker) {
+      return;
+    }
+    
+    try {
+      const playwrightAny = this.playwright as any;
+      const context = playwrightAny.context;
+      
+      if (context) {
+        const pages = context.pages();
+        const videoPaths: string[] = [];
+        
+        // Get video paths from pages before closing (videos are saved when context closes)
+        for (const page of pages) {
+          try {
+            const video = page.video();
+            if (video) {
+              const videoPath = video.path();
+              // Store the path - it will be finalized when context closes
+              if (videoPath) {
+                videoPaths.push(videoPath);
+              }
+            }
+          } catch (error) {
+            // Video might not be available, ignore
+          }
+        }
+        
+        // Close all pages first
+        for (const page of pages) {
+          try {
+            await page.close();
+          } catch (error) {
+            // Page might already be closed
+          }
+        }
+        
+        // Close context to finalize videos
+        try {
+          await context.close();
+        } catch (error) {
+          // Context might already be closed
+        }
+        
+        // Wait longer for videos to be finalized (Playwright needs time to write the file)
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        // Mark context as closed in playwright
+        playwrightAny.context = null;
+        playwrightAny.page = null;
+        
+        // Find the actual video file - Playwright saves videos in the videos directory
+        // The video.path() might return a temp path, so we need to find the actual file
+        const videosDirectory = this.executionTracker.getVideosDirectory();
+        let finalVideoPath: string | null = null;
+        
+        // First, check if any of the video paths from pages exist
+        const existingVideoPaths = videoPaths.filter(path => path && fs.existsSync(path));
+        if (existingVideoPaths.length > 0) {
+          finalVideoPath = existingVideoPaths[0];
+        } else {
+          // If not found, look for the most recent .webm file in videos directory
+          if (fs.existsSync(videosDirectory)) {
+            const videoFiles = fs.readdirSync(videosDirectory)
+              .filter(file => file.endsWith('.webm'))
+              .map(file => ({
+                name: file,
+                path: path.join(videosDirectory, file),
+                mtime: fs.statSync(path.join(videosDirectory, file)).mtime.getTime()
+              }))
+              .sort((a, b) => b.mtime - a.mtime); // Sort by modification time, newest first
+            
+            if (videoFiles.length > 0) {
+              // Use the most recent video file
+              finalVideoPath = videoFiles[0].path;
+            }
+          }
+        }
+        
+        // Record video path - associate with OpenBrowser node if it exists
+        if (finalVideoPath && fs.existsSync(finalVideoPath)) {
+          const openBrowserNode = this.workflow.nodes.find(
+            node => node.type === NodeType.OPEN_BROWSER
+          );
+          
+          if (openBrowserNode) {
+            this.executionTracker.recordVideo(openBrowserNode.id, finalVideoPath);
+            this.traceLog(`[TRACE] Recorded video: ${finalVideoPath}`);
+          }
+        } else {
+          this.traceLog(`[TRACE] No video file found to record`);
+        }
+      }
+    } catch (error) {
+      console.error('Error recording videos:', error);
+      this.traceLog(`[TRACE] Error recording videos: ${error}`);
+    }
+  }
+
   private async cleanup(): Promise<void> {
     try {
-      await this.playwright.close();
+      // Browser and context should already be closed by recordVideos()
+      // But close browser if still open
+      const playwrightAny = this.playwright as any;
+      if (playwrightAny.browser) {
+        try {
+          await playwrightAny.browser.close();
+          playwrightAny.browser = null;
+        } catch (error) {
+          // Browser might already be closed
+        }
+      }
     } catch (error) {
       console.error('Error closing playwright:', error);
     }
