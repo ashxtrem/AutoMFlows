@@ -1,0 +1,298 @@
+{
+  "nodes": [
+    {
+      "id": "start-1768324901260-0",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 200
+      },
+      "data": {
+        "type": "start",
+        "label": "Start",
+        "isTest": true,
+        "recordSession": false,
+        "screenshotAllNodes": false,
+        "screenshotTiming": "post",
+        "isPinned": false
+      }
+    },
+    {
+      "id": "openBrowser-1768324901260-1",
+      "type": "openBrowser",
+      "position": {
+        "x": 350,
+        "y": 200
+      },
+      "data": {
+        "type": "openBrowser",
+        "label": "Open Browser",
+        "headless": false,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "maxWindow": true,
+        "browser": "chromium",
+        "stealthMode": false,
+        "capabilities": {},
+        "launchOptions": {},
+        "isTest": true,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "navigate-1768324901260-2",
+      "type": "navigate",
+      "position": {
+        "x": 600.8203976160346,
+        "y": 218.44894447438435
+      },
+      "data": {
+        "type": "navigate",
+        "label": "Navigate",
+        "url": "https://www.saucedemo.com/",
+        "isTest": true,
+        "timeout": 30000,
+        "waitUntil": "networkidle",
+        "isPinned": false
+      }
+    },
+    {
+      "id": "type-1768324925588",
+      "type": "type",
+      "position": {
+        "x": 851.4166205769998,
+        "y": 176.01243970510973
+      },
+      "data": {
+        "type": "type",
+        "label": "Type username",
+        "selector": "#user-name",
+        "selectorType": "css",
+        "text": "standard_user",
+        "timeout": 30000,
+        "isTest": true,
+        "isPinned": false,
+        "width": 176.36328125,
+        "height": 262.5078125
+      }
+    },
+    {
+      "id": "shortcut.shortcut-1768325665149",
+      "type": "shortcut.shortcut",
+      "position": {
+        "x": 615.3634829781101,
+        "y": 132.34409487039161
+      },
+      "data": {
+        "type": "shortcut.shortcut",
+        "label": "Goto Navigate",
+        "shortcut": "n",
+        "targetNodeId": "",
+        "isTest": false,
+        "isPinned": true,
+        "isMinimized": true,
+        "width": 160,
+        "height": 50,
+        "failSilently": false
+      }
+    },
+    {
+      "id": "comment-box.comment-1768325924470",
+      "type": "comment-box.comment",
+      "position": {
+        "x": 592.4016799092184,
+        "y": -44.04905655736014
+      },
+      "data": {
+        "type": "comment-box.comment",
+        "label": "Comment",
+        "content": "Navigate to https://www.saucedemo.com/ and login ",
+        "isTest": false,
+        "isPinned": true,
+        "width": 999.03515625,
+        "height": 153.15234375
+      }
+    },
+    {
+      "id": "type-1768326666742",
+      "type": "type",
+      "position": {
+        "x": 1056.7550963899366,
+        "y": 180.9642817193581
+      },
+      "data": {
+        "type": "type",
+        "label": "Type password",
+        "selector": "#password",
+        "selectorType": "css",
+        "text": "secret_sauce",
+        "timeout": 30000,
+        "isTest": true,
+        "isPinned": false,
+        "width": 164.0703125,
+        "height": 258
+      }
+    },
+    {
+      "id": "wait-1768326832864",
+      "type": "wait",
+      "position": {
+        "x": 1938.070604525266,
+        "y": 255.06149076261158
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait",
+        "waitType": "timeout",
+        "value": 1000000,
+        "timeout": 30000,
+        "isTest": true,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "click-1768326864564",
+      "type": "click",
+      "position": {
+        "x": 1257.6880804646032,
+        "y": 206.90656326060122
+      },
+      "data": {
+        "type": "click",
+        "label": "Click Login button",
+        "selector": "#login-button",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": true,
+        "width": 250,
+        "height": 210,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "comment-box.comment-1768327084291",
+      "type": "comment-box.comment",
+      "position": {
+        "x": 355.17153599144115,
+        "y": 504.2244059665618
+      },
+      "data": {
+        "type": "comment-box.comment",
+        "label": "Comment",
+        "content": "Product add resuable\n",
+        "isTest": true,
+        "width": 1078.08984375,
+        "height": 146.44921875,
+        "isPinned": true
+      }
+    },
+    {
+      "id": "reusable.reusable-1768327114843",
+      "type": "reusable.reusable",
+      "position": {
+        "x": 359.8316902658296,
+        "y": 709.2711940396382
+      },
+      "data": {
+        "type": "reusable.reusable",
+        "label": "Reusable",
+        "contextName": "add_prod",
+        "isTest": true
+      }
+    },
+    {
+      "id": "reusable.end-1768327131487",
+      "type": "reusable.end",
+      "position": {
+        "x": 1444.0942514401277,
+        "y": 726.3584263790611
+      },
+      "data": {
+        "type": "reusable.end",
+        "label": "End",
+        "isTest": true
+      }
+    },
+    {
+      "id": "click-1768327170470",
+      "type": "click",
+      "position": {
+        "x": 689.149258989255,
+        "y": 699.950885490862
+      },
+      "data": {
+        "type": "click",
+        "label": "Click",
+        "selector": "(//*[@class=\"inventory_item\"])[1]",
+        "selectorType": "xpath",
+        "timeout": 30000,
+        "isTest": true
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-1768324901260-0-output-openBrowser-1768324901260-1-input",
+      "source": "start-1768324901260-0",
+      "target": "openBrowser-1768324901260-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-start-1768324901260-0-output-openBrowser-1768324901260-1-driver",
+      "source": "start-1768324901260-0",
+      "target": "openBrowser-1768324901260-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-openBrowser-1768324901260-1-output-navigate-1768324901260-2-input",
+      "source": "openBrowser-1768324901260-1",
+      "target": "navigate-1768324901260-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-openBrowser-1768324901260-1-output-navigate-1768324901260-2-driver",
+      "source": "openBrowser-1768324901260-1",
+      "target": "navigate-1768324901260-2",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-navigate-1768324901260-2output-type-1768324925588driver",
+      "source": "navigate-1768324901260-2",
+      "target": "type-1768324925588",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-type-1768324925588output-type-1768326666742driver",
+      "source": "type-1768324925588",
+      "target": "type-1768326666742",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-type-1768326666742output-click-1768326864564driver",
+      "source": "type-1768326666742",
+      "target": "click-1768326864564",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-click-1768326864564output-wait-1768326832864driver",
+      "source": "click-1768326864564",
+      "target": "wait-1768326832864",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-reusable.reusable-1768327114843output-click-1768327170470driver",
+      "source": "reusable.reusable-1768327114843",
+      "target": "click-1768327170470",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    }
+  ]
+}

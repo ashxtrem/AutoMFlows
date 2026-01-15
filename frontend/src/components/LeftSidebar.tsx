@@ -1,7 +1,7 @@
 import { NodeType } from '@automflows/shared';
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { frontendPluginRegistry } from '../plugins/registry';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 import PlayCircleFilledWhiteTwoToneIcon from '@mui/icons-material/PlayCircleFilledWhiteTwoTone';
 import LanguageIcon from '@mui/icons-material/Language';
 import LinkIcon from '@mui/icons-material/Link';
@@ -143,6 +143,7 @@ export default function LeftSidebar() {
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   // Track plugin count to trigger re-render when plugins load
   const [pluginCount, setPluginCount] = useState(0);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Save collapsed state to localStorage whenever it changes
   useEffect(() => {
@@ -247,6 +248,24 @@ export default function LeftSidebar() {
     }
   };
 
+  // Search function that matches two-word combinations
+  const matchesSearch = (text: string, query: string): boolean => {
+    if (!query.trim()) return true;
+    
+    const normalizedText = text.toLowerCase();
+    const normalizedQuery = query.toLowerCase().trim();
+    const queryWords = normalizedQuery.split(/\s+/).filter(word => word.length > 0);
+    
+    // If single word, check if it matches anywhere in the text
+    if (queryWords.length === 1) {
+      return normalizedText.includes(queryWords[0]);
+    }
+    
+    // For two or more words, check if all words appear in the text
+    // This allows matching "open browser" with "Open Browser"
+    return queryWords.every(word => normalizedText.includes(word));
+  };
+
   // Merge categories with the same label to avoid duplicates
   const allCategories = useMemo(() => {
     const categoryMap = new Map<string, Array<{ type: string; label: string; icon?: string }>>();
@@ -274,6 +293,31 @@ export default function LeftSidebar() {
     }));
   }, [pluginCategories]);
 
+  // Filter categories and nodes based on search query
+  const filteredCategories = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return allCategories;
+    }
+
+    return allCategories
+      .map((category) => {
+        // Filter nodes that match the search query
+        const filteredNodes = category.nodes.filter((node) =>
+          matchesSearch(node.label, searchQuery) || matchesSearch(category.label, searchQuery)
+        );
+        
+        // Only include category if it has matching nodes or the category name matches
+        if (filteredNodes.length > 0 || matchesSearch(category.label, searchQuery)) {
+          return {
+            ...category,
+            nodes: filteredNodes.length > 0 ? filteredNodes : category.nodes,
+          };
+        }
+        return null;
+      })
+      .filter((category): category is NonNullable<typeof category> => category !== null);
+  }, [allCategories, searchQuery]);
+
   return (
     <div
       className={`relative bg-gray-800 border-r border-gray-700 overflow-y-auto transition-all duration-300 ease-in-out ${
@@ -297,10 +341,34 @@ export default function LeftSidebar() {
 
       <div className={`p-4 ${isCollapsed ? 'px-2' : ''}`}>
         {!isCollapsed && (
-          <h2 className="text-sm font-semibold text-gray-400 uppercase mb-4 pr-8">Node Library</h2>
+          <>
+            <h2 className="text-sm font-semibold text-gray-400 uppercase mb-4 pr-8">Node Library</h2>
+            {/* Search Box */}
+            <div className="relative mb-4">
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <Search size={16} />
+              </div>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search nodes..."
+                className="w-full pl-10 pr-8 py-2 bg-gray-700 text-gray-200 placeholder-gray-400 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                  aria-label="Clear search"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          </>
         )}
         <div className="space-y-6">
-          {allCategories.map((category) => (
+          {filteredCategories.map((category) => (
             <div key={category.label}>
               {!isCollapsed && (
                 <h3 className="text-xs font-medium text-gray-500 uppercase mb-2 px-1">
