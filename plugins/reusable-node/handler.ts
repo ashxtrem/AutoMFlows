@@ -163,6 +163,23 @@ export class RunReusableHandler implements NodeHandler {
         continue;
       }
       
+      // Check if node is bypassed
+      const nodeDataInReusable = node.data as any;
+      if (nodeDataInReusable?.bypass === true) {
+        if (traceLog) {
+          traceLog(`[TRACE] Skipping bypassed node in reusable flow: ${nodeId} (type: ${node.type})`);
+        }
+        if (emitEvent) {
+          emitEvent({
+            type: ExecutionEventType.NODE_COMPLETE,
+            nodeId,
+            message: 'Node bypassed',
+            timestamp: Date.now(),
+          });
+        }
+        continue;
+      }
+      
       // Set current node ID for trace logging
       if (setCurrentNodeId) {
         setCurrentNodeId(nodeId);
@@ -223,14 +240,39 @@ export class RunReusableHandler implements NodeHandler {
           traceLog(`[TRACE] Node ${nodeId} failed: ${error.message}`);
         }
         
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'handler.ts:237',message:'Error caught in reusable flow',data:{nodeId,errorMessage:error.message,failSilentlyValue:(nodeToExecute.data as any)?.failSilently,failSilentlyType:typeof (nodeToExecute.data as any)?.failSilently},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        
+        // Check if node has failSilently enabled
+        const nodeDataInReusable = nodeToExecute.data as any;
+        const failSilently = nodeDataInReusable?.failSilently === true;
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'handler.ts:245',message:'failSilently check result',data:{nodeId,failSilently,willContinue:failSilently},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        
         // Emit node error event
         if (emitEvent) {
           emitEvent({
             type: ExecutionEventType.NODE_ERROR,
             nodeId,
             message: error.message,
+            failSilently: failSilently,
             timestamp: Date.now(),
           });
+        }
+        
+        // If failSilently is enabled, continue execution instead of throwing
+        if (failSilently) {
+          if (traceLog) {
+            traceLog(`[TRACE] Node ${nodeId} failed silently in reusable flow, continuing execution`);
+          }
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'handler.ts:267',message:'Executing continue - skipping error throw',data:{nodeId,failSilently},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+          // #endregion
+          // Continue to next node instead of throwing
+          continue;
         }
         
         // Re-throw error to propagate it

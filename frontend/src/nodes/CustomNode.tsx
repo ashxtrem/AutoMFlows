@@ -76,6 +76,32 @@ function getNodeIcon(nodeType: NodeType | string): IconConfig | null {
   return { icon: InventoryIcon, color: '#757575' };
 }
 
+// Helper function to get node glow color based on node type
+// Helper function to convert hex color to rgba
+function hexToRgba(hex: string, alpha: number = 0.5): string {
+  const cleanHex = hex.replace('#', '');
+  const r = parseInt(cleanHex.substr(0, 2), 16);
+  const g = parseInt(cleanHex.substr(2, 2), 16);
+  const b = parseInt(cleanHex.substr(4, 2), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function getNodeGlowColor(nodeType: NodeType | string, userBackgroundColor?: string): string {
+  // Use user-selected backgroundColor if provided, otherwise fall back to node type color
+  if (userBackgroundColor && userBackgroundColor !== '#1f2937') {
+    return hexToRgba(userBackgroundColor, 0.5);
+  }
+  
+  // Fall back to node type color
+  if (Object.values(NodeType).includes(nodeType as NodeType)) {
+    const iconConfig = nodeIcons[nodeType as NodeType];
+    if (iconConfig) {
+      return hexToRgba(iconConfig.color, 0.5);
+    }
+  }
+  return 'rgba(117, 117, 117, 0.5)'; // Default grey glow
+}
+
 function getNodeLabel(type: NodeType | string): string {
   if (Object.values(NodeType).includes(type as NodeType)) {
     const labels: Record<NodeType, string> = {
@@ -413,7 +439,9 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const isPinned = nodeDataFromStore.isPinned ?? false;
   // Use custom background color if set, otherwise use default
   // Read directly from data prop (not stableData) to get real-time updates
-  const backgroundColor = data.backgroundColor || '#1f2937';
+  // Also check latestNodeData to ensure we have the most recent value
+  const backgroundColor = latestNodeData.backgroundColor || data.backgroundColor || '#1f2937';
+  
   // Calculate optimal text color based on background color for contrast
   const textColor = getContrastTextColor(backgroundColor);
   // Border color: red if failed, blue if selected, default gray otherwise
@@ -572,16 +600,21 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                 connectingHandleId === handleId
                   ? 'connecting'
                   : hasConnection
-                    ? '!bg-green-500 hover:!bg-green-400'
-                    : isRequired && !hasConnection
-                      ? '!bg-yellow-500 hover:!bg-yellow-400'
-                      : '!bg-blue-500 hover:!bg-blue-400'
+                    ? 'handle-connected'
+                    : ''
               }`}
               style={{
                 position: 'absolute',
                 left: '-6px',
                 top: '50%',
                 transform: 'translateY(-50%)',
+                borderColor: connectingHandleId === handleId
+                  ? '#22c55e'
+                  : hasConnection
+                    ? '#22c55e'
+                    : isRequired && !hasConnection
+                      ? '#eab308'
+                      : '#4a9eff',
               }}
               onMouseEnter={() => setConnectingHandleId(handleId)}
               onMouseLeave={() => setConnectingHandleId(null)}
@@ -1397,7 +1430,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                     onClick={() => {
                       setShowCapabilitiesPopup(true);
                     }}
-                    className="w-full px-2 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded text-white transition-colors"
+                    className="w-full px-2 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 border border-gray-600 hover:border-blue-500 rounded text-white transition-all duration-200 transform hover:-translate-y-0.5 hover:shadow-lg"
                   >
                     View/Add Options
                     {(capabilitiesCount > 0 || launchOptionsCount > 0) && (
@@ -1855,6 +1888,14 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   ]);
   const hasProperties = properties !== null;
 
+  // Get glow color - use user-selected backgroundColor if available, otherwise use node type color
+  const glowColor = getNodeGlowColor(nodeType, backgroundColor);
+  
+  // Convert backgroundColor to rgba for glassmorphism effect
+  const glassmorphismBg = backgroundColor && backgroundColor !== '#1f2937' 
+    ? hexToRgba(backgroundColor, 0.7) 
+    : 'rgba(30, 30, 30, 0.7)';
+  
   // Build style object with colors
   // Priority: validation error > execution error > executing > default
   const nodeStyle: React.CSSProperties = {
@@ -1862,10 +1903,21 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     height: currentHeight,
     minWidth: 150,
     minHeight: hasProperties && !isMinimized ? undefined : 50,
-    backgroundColor: backgroundColor,
+    backgroundColor: hasValidationError || isFailed || isExecuting 
+      ? backgroundColor 
+      : glassmorphismBg, // Glassmorphism effect using user color
+    backdropFilter: hasValidationError || isFailed || isExecuting 
+      ? 'none' 
+      : 'blur(10px)', // Glassmorphism blur
+    WebkitBackdropFilter: hasValidationError || isFailed || isExecuting 
+      ? 'none' 
+      : 'blur(10px)', // Safari support
     borderColor: hasValidationError ? '#ef4444' : (isFailed ? '#ef4444' : (isExecuting ? '#22c55e' : borderColor)),
     borderWidth: '2px',
     borderStyle: 'solid',
+    boxShadow: hasValidationError || isFailed || isExecuting
+      ? undefined
+      : `0 0 20px ${glowColor}, 0 4px 6px rgba(0, 0, 0, 0.3)`, // Color-coded glow using user color
   };
 
   return (
@@ -1897,19 +1949,61 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
             connectingHandleId === 'driver' 
               ? 'connecting' 
               : hasDriverConnection 
-                ? '!bg-green-500 hover:!bg-green-400' 
-                : '!bg-blue-500 hover:!bg-blue-400'
+                ? 'handle-connected' 
+                : ''
           }`}
           style={{ 
             display: nodeType === NodeType.START || nodeType === 'start' ? 'none' : 'block',
             top: '50%',
             transform: 'translateY(-50%)',
+            borderColor: connectingHandleId === 'driver' 
+              ? '#22c55e' 
+              : hasDriverConnection 
+                ? '#22c55e' 
+                : '#4a9eff',
           }}
           onMouseEnter={() => setConnectingHandleId('driver')}
           onMouseLeave={() => setConnectingHandleId(null)}
         />
       )}
-      <div className="flex items-center gap-2">
+      {/* Header Block with Status Dot */}
+      <div 
+        className="flex items-center gap-2 px-2 py-1.5 -mx-4 -mt-3 mb-2 rounded-t-lg"
+        style={{ 
+          backgroundColor: 'rgba(40, 40, 40, 0.8)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        }}
+      >
+        {/* Status Dot */}
+        <div
+          className="w-2 h-2 rounded-full flex-shrink-0"
+          style={{
+            backgroundColor: isExecuting 
+              ? '#22c55e' 
+              : hasValidationError 
+                ? '#eab308' 
+                : isFailed 
+                  ? '#ef4444' 
+                  : '#6b7280',
+            boxShadow: isExecuting 
+              ? '0 0 6px rgba(34, 197, 94, 0.8)' 
+              : hasValidationError 
+                ? '0 0 6px rgba(234, 179, 8, 0.8)' 
+                : isFailed 
+                  ? '0 0 6px rgba(239, 68, 68, 0.8)' 
+                  : undefined,
+            animation: isExecuting ? 'pulse 2s ease-in-out infinite' : undefined,
+          }}
+          title={
+            isExecuting 
+              ? 'Executing' 
+              : hasValidationError 
+                ? 'Validation Error' 
+                : isFailed 
+                  ? 'Failed' 
+                  : 'Idle'
+          }
+        />
         {icon ? (() => {
           const IconComponent = icon.icon;
           return <IconComponent sx={{ fontSize: '1.25rem', color: icon.color }} />;
@@ -2058,11 +2152,16 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                     connectingHandleId === handleId
                       ? 'connecting'
                       : hasCaseConnection
-                        ? '!bg-green-500 hover:!bg-green-400'
-                        : '!bg-blue-500 hover:!bg-blue-400'
+                        ? 'handle-connected'
+                        : ''
                   }`}
                   style={{
                     top: `${topPercent}%`,
+                    borderColor: connectingHandleId === handleId
+                      ? '#22c55e'
+                      : hasCaseConnection
+                        ? '#22c55e'
+                        : '#4a9eff',
                   }}
                   onMouseEnter={() => setConnectingHandleId(handleId)}
                   onMouseLeave={() => setConnectingHandleId(null)}
@@ -2102,11 +2201,16 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                     connectingHandleId === handleId
                       ? 'connecting'
                       : hasDefaultConnection
-                        ? '!bg-green-500 hover:!bg-green-400'
-                        : '!bg-blue-500 hover:!bg-blue-400'
+                        ? 'handle-connected'
+                        : ''
                   }`}
                   style={{
                     top: `${topPercent}%`,
+                    borderColor: connectingHandleId === handleId
+                      ? '#22c55e'
+                      : hasDefaultConnection
+                        ? '#22c55e'
+                        : '#4a9eff',
                   }}
                   onMouseEnter={() => setConnectingHandleId(handleId)}
                   onMouseLeave={() => setConnectingHandleId(null)}
@@ -2126,10 +2230,17 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
               connectingHandleId === 'output' 
                 ? 'connecting' 
                 : hasOutputConnection 
-                  ? '!bg-green-500 hover:!bg-green-400' 
-                  : '!bg-blue-500 hover:!bg-blue-400'
+                  ? 'handle-connected' 
+                  : ''
             }`}
-            style={{ display: nodeType === NodeType.START ? 'block' : 'block' }}
+            style={{ 
+              display: nodeType === NodeType.START ? 'block' : 'block',
+              borderColor: connectingHandleId === 'output' 
+                ? '#22c55e' 
+                : hasOutputConnection 
+                  ? '#22c55e' 
+                  : '#4a9eff',
+            }}
             onMouseEnter={() => setConnectingHandleId('output')}
             onMouseLeave={() => setConnectingHandleId(null)}
           />

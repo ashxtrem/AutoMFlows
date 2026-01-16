@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState, useEffect, useMemo } from 'react';
 import ReactFlow, {
   Background,
+  BackgroundVariant,
   Controls,
   useReactFlow,
   Node,
@@ -368,11 +369,12 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     return nodesWithDraggable;
   }, [nodes, nodesContentChanged, nodesRefsChanged, currentNodesContentKey]);
 
-  // Map edges with hidden property based on edgesHidden state
+  // Map edges with hidden property and animated prop based on edgesHidden state
   const mappedEdges = useMemo(() => {
     return edges.map(edge => ({
       ...edge,
       hidden: edgesHidden,
+      animated: true, // Enable animation for all edges
     }));
   }, [edges, edgesHidden]);
 
@@ -418,7 +420,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
   }, [setViewport, getViewport]);
 
   return (
-    <div className="flex-1 relative" ref={reactFlowWrapper}>
+    <div className="flex-1 relative canvas-vignette" ref={reactFlowWrapper}>
       <ReactFlow
         nodes={mappedNodes}
         edges={mappedEdges}
@@ -488,7 +490,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
         className="bg-gray-900"
         proOptions={{ hideAttribution: true }}
       >
-        <Background color="#4a4a4a" gap={16} />
+        <Background color="#4a4a4a" gap={16} variant={BackgroundVariant.Lines} />
         <Controls className="bg-gray-800 border border-gray-700" />
       </ReactFlow>
       {contextMenu && (

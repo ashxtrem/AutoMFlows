@@ -139,24 +139,26 @@ export function InlineTextarea({ label, value, onChange, placeholder, onOpenPopu
 export function InlineCheckbox({ label, value, onChange }: Omit<InlinePropertyEditorProps, 'type'>) {
   return (
     <div 
-      className="flex items-center gap-1 cursor-pointer hover:bg-gray-700/50 rounded px-1 py-0.5"
+      className="flex items-center gap-2 cursor-pointer hover:bg-gray-700/50 rounded px-1 py-0.5"
       onClick={(e) => {
         e.stopPropagation();
         onChange(!value);
       }}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      <input
-        type="checkbox"
-        checked={value || false}
-        onChange={(e) => {
-          e.stopPropagation();
-          onChange(e.target.checked);
-        }}
-        onClick={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
-        className="w-3 h-3 rounded"
-      />
+      <div className="relative">
+        <input
+          type="checkbox"
+          checked={value || false}
+          onChange={(e) => {
+            e.stopPropagation();
+            onChange(e.target.checked);
+          }}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          className="custom-checkbox"
+        />
+      </div>
       <span className="text-xs text-gray-400">{label}</span>
     </div>
   );

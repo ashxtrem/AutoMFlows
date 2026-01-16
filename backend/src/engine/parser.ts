@@ -46,8 +46,28 @@ export class WorkflowParser {
       const targetNode = this.nodes.get(edge.target);
 
       if (sourceNode && targetNode) {
-        // Both driver (control flow) and property input connections create dependencies
-        // Target depends on source (for both control flow and data flow)
+        // Property input connections create one-way dependencies (target depends on source)
+        // but NOT bidirectional dependents to avoid circular dependencies
+        // Property input handles end with "-input" (e.g., "headless-input", "timeout-input")
+        // but exclude the generic "input" handle which is control flow
+        const isPropertyInputConnection = edge.targetHandle && 
+          edge.targetHandle !== 'driver' && 
+          edge.targetHandle !== 'input' && 
+          !edge.targetHandle.startsWith('case-') && 
+          edge.targetHandle !== 'default';
+        
+        if (isPropertyInputConnection) {
+          // Property input: create one-way dependency only (target depends on source)
+          // This ensures source executes before target, but doesn't create cycles
+          if (!targetNode.dependencies.includes(edge.source)) {
+            targetNode.dependencies.push(edge.source);
+          }
+          // DO NOT add target as dependent of source - this prevents circular dependencies
+          continue; // Skip bidirectional dependent relationship
+        }
+        
+        // Control flow edges (driver, input, or no handle) create bidirectional execution dependencies
+        // Target depends on source (for control flow)
         if (!targetNode.dependencies.includes(edge.source)) {
           targetNode.dependencies.push(edge.source);
         }
