@@ -4,7 +4,7 @@ import StopIcon from '@mui/icons-material/Stop';
 import SaveIcon from '@mui/icons-material/Save';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import HistoryIcon from '@mui/icons-material/History';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 import ErrorIcon from '@mui/icons-material/Error';
 import { Eye, EyeOff, ChevronDown } from 'lucide-react';
 import { useWorkflowStore, getDefaultNodeData } from '../store/workflowStore';
@@ -22,7 +22,11 @@ import { useNotificationStore } from '../store/notificationStore';
 const STORAGE_KEY_TRACE_LOGS = 'automflows_trace_logs';
 const STORAGE_KEY_MENU_FIXED = 'automflows_menu_fixed';
 
-export default function TopBar() {
+interface TopBarProps {
+  onVisibilityChange?: (isVisible: boolean) => void;
+}
+
+export default function TopBar({ onVisibilityChange }: TopBarProps) {
   const { nodes, edges, setNodes, setEdges, executionStatus, resetExecution, failedNodes, navigateToFailedNode, edgesHidden, setEdgesHidden } = useWorkflowStore();
   const { executeWorkflow, stopExecution, validationErrors, setValidationErrors } = useExecution();
   const addNotification = useNotificationStore((state) => state.addNotification);
@@ -67,6 +71,11 @@ export default function TopBar() {
       setIsVisible(true);
     }
   }, [menuFixed]);
+
+  // Notify parent of visibility changes
+  useEffect(() => {
+    onVisibilityChange?.(isVisible);
+  }, [isVisible, onVisibilityChange]);
 
   // Auto-hide functionality (only enabled when menuFixed is false)
   useEffect(() => {
@@ -563,12 +572,13 @@ export default function TopBar() {
     <>
       <div
         ref={topBarRef}
-        className={`fixed top-0 left-0 right-0 bg-gray-800 border-b border-gray-700 px-4 py-2 flex items-center justify-between z-40 transition-transform duration-300 ${
+        className={`fixed top-0 left-0 right-0 bg-gray-900 border-b border-gray-700 px-4 py-2 flex items-center justify-between z-40 transition-transform duration-300 ${
           isVisible ? 'translate-y-0' : '-translate-y-full'
         }`}
       >
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-0.5">
           <h1 className="text-xl font-bold text-white">AutoMFlows</h1>
+          <span className="text-xs text-gray-400">Workspace</span>
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -661,11 +671,10 @@ export default function TopBar() {
               const url = window.location.origin + '/reports/history';
               window.open(url, '_blank');
             }}
-            className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-2 text-sm"
+            className="px-2 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center justify-center"
             title="Go to Report History"
           >
-            <HistoryIcon sx={{ fontSize: '16px', color: '#ffffff' }} className="flex-shrink-0" />
-            Report History
+            <AssessmentIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
           </button>
         </div>
       </div>
