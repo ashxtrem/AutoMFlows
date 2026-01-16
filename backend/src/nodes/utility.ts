@@ -1,4 +1,4 @@
-import { BaseNode, GetTextNodeData, ScreenshotNodeData, WaitNodeData, IntValueNodeData, StringValueNodeData, BooleanValueNodeData, InputValueNodeData, VerifyNodeData } from '@automflows/shared';
+import { BaseNode, ElementQueryNodeData, ScreenshotNodeData, WaitNodeData, IntValueNodeData, StringValueNodeData, BooleanValueNodeData, InputValueNodeData, VerifyNodeData, StorageNodeData, DialogNodeData, DownloadNodeData, IframeNodeData } from '@automflows/shared';
 import { NodeHandler } from './base';
 import { ContextManager } from '../engine/context';
 import { WaitHelper } from '../utils/waitHelper';
@@ -6,9 +6,9 @@ import { RetryHelper } from '../utils/retryHelper';
 import { VariableInterpolator } from '../utils/variableInterpolator';
 import { verificationStrategyRegistry } from './verification/strategies';
 
-export class GetTextHandler implements NodeHandler {
+export class ElementQueryHandler implements NodeHandler {
   async execute(node: BaseNode, context: ContextManager): Promise<void> {
-    const data = node.data as GetTextNodeData;
+    const data = node.data as ElementQueryNodeData;
     const page = context.getPage();
 
     if (!page) {
@@ -16,16 +16,50 @@ export class GetTextHandler implements NodeHandler {
     }
 
     if (!data.selector) {
-      throw new Error('Selector is required for Get Text node');
+      throw new Error('Selector is required for Element Query node');
+    }
+
+    if (!data.action) {
+      throw new Error('Action is required for Element Query node');
     }
 
     const timeout = data.timeout || 30000;
     // Interpolate template variables in selector (e.g., ${data.productIndex})
     const selector = VariableInterpolator.interpolateString(data.selector, context);
-    const outputVariable = data.outputVariable || 'text';
+    
+    // Determine output variable name based on action
+    let outputVariable: string;
+    switch (data.action) {
+      case 'getText':
+        outputVariable = data.outputVariable || 'text';
+        break;
+      case 'getAttribute':
+        outputVariable = data.outputVariable || 'attribute';
+        break;
+      case 'getCount':
+        outputVariable = data.outputVariable || 'count';
+        break;
+      case 'isVisible':
+        outputVariable = data.outputVariable || 'isVisible';
+        break;
+      case 'isEnabled':
+        outputVariable = data.outputVariable || 'isEnabled';
+        break;
+      case 'isChecked':
+        outputVariable = data.outputVariable || 'isChecked';
+        break;
+      case 'getBoundingBox':
+        outputVariable = data.outputVariable || 'boundingBox';
+        break;
+      case 'getAllText':
+        outputVariable = data.outputVariable || 'text';
+        break;
+      default:
+        outputVariable = data.outputVariable || 'result';
+    }
 
-    // Execute getText operation with retry logic (includes wait conditions)
-    const text = await RetryHelper.executeWithRetry(
+    // Execute query operation with retry logic (includes wait conditions)
+    const result = await RetryHelper.executeWithRetry(
       async () => {
         const waitAfterOperation = data.waitAfterOperation || false;
         
@@ -46,12 +80,70 @@ export class GetTextHandler implements NodeHandler {
           });
         }
 
-        // Execute getText operation
-        let result: string | null;
-        if (data.selectorType === 'xpath') {
-          result = await page.locator(`xpath=${selector}`).textContent({ timeout });
-        } else {
-          result = await page.textContent(selector, { timeout });
+        // Execute action based on action type
+        let queryResult: any;
+        const locator = data.selectorType === 'xpath' 
+          ? page.locator(`xpath=${selector}`)
+          : page.locator(selector);
+
+        switch (data.action) {
+          case 'getText':
+            queryResult = await locator.textContent({ timeout });
+            queryResult = queryResult || '';
+            break;
+
+          case 'getAttribute':
+            if (!data.attributeName) {
+              throw new Error('Attribute name is required for getAttribute action');
+            }
+            const attributeName = VariableInterpolator.interpolateString(data.attributeName, context);
+            queryResult = await locator.getAttribute(attributeName, { timeout });
+            queryResult = queryResult || null;
+            break;
+
+          case 'getCount':
+            const count = await locator.count();
+            queryResult = count;
+            break;
+
+          case 'isVisible':
+            try {
+              await locator.waitFor({ state: 'visible', timeout });
+              queryResult = true;
+            } catch {
+              queryResult = false;
+            }
+            break;
+
+          case 'isEnabled':
+            const isEnabled = await locator.isEnabled({ timeout }).catch(() => false);
+            queryResult = isEnabled;
+            break;
+
+          case 'isChecked':
+            const isChecked = await locator.isChecked({ timeout }).catch(() => false);
+            queryResult = isChecked;
+            break;
+
+          case 'getBoundingBox':
+            const box = await locator.boundingBox({ timeout });
+            queryResult = box || { x: 0, y: 0, width: 0, height: 0 };
+            break;
+
+          case 'getAllText':
+            const allElements = await locator.all();
+            const allTexts: string[] = [];
+            for (const element of allElements) {
+              const text = await element.textContent();
+              if (text !== null) {
+                allTexts.push(text);
+              }
+            }
+            queryResult = allTexts;
+            break;
+
+          default:
+            throw new Error(`Unknown action type: ${data.action}`);
         }
 
         // Execute waits after operation if waitAfterOperation is true
@@ -71,7 +163,7 @@ export class GetTextHandler implements NodeHandler {
           });
         }
 
-        return result || '';
+        return queryResult;
       },
       {
         enabled: data.retryEnabled || false,
@@ -87,11 +179,12 @@ export class GetTextHandler implements NodeHandler {
     );
 
     // If RetryHelper returned undefined (failSilently), throw error so executor can track it
-    if (text === undefined && data.failSilently) {
-      throw new Error(`Get Text operation failed silently on selector: ${selector}`);
+    if (result === undefined && data.failSilently) {
+      throw new Error(`Element Query operation failed silently on selector: ${selector} with action: ${data.action}`);
     }
     
-    context.setData(outputVariable, text || '');
+    // Store result in context
+    context.setData(outputVariable, result);
   }
 }
 
@@ -137,9 +230,66 @@ export class ScreenshotHandler implements NodeHandler {
           });
         }
 
-        // Execute screenshot operation
-        const fullPage = data.fullPage || false;
-        const screenshotPath = await playwright.takeScreenshot(data.path, fullPage);
+        // Execute screenshot operation based on action
+        const action = data.action || (data.fullPage ? 'fullPage' : 'viewport'); // Support legacy fullPage property
+        let screenshotPath: string;
+        
+        switch (action) {
+          case 'fullPage':
+            screenshotPath = await playwright.takeScreenshot(data.path, true);
+            break;
+            
+          case 'viewport':
+            screenshotPath = await playwright.takeScreenshot(data.path, false);
+            break;
+            
+          case 'element':
+            if (!data.selector) {
+              throw new Error('Selector is required for element screenshot action');
+            }
+            const selector = VariableInterpolator.interpolateString(data.selector, context);
+            const locator = data.selectorType === 'xpath' ? page.locator(`xpath=${selector}`) : page.locator(selector);
+            
+            // Handle masking if specified
+            const maskLocators = data.mask?.map(m => {
+              const maskSelector = VariableInterpolator.interpolateString(m, context);
+              return data.selectorType === 'xpath' ? page.locator(`xpath=${maskSelector}`) : page.locator(maskSelector);
+            });
+            
+            const screenshotOptions: any = { path: data.path, timeout };
+            if (maskLocators && maskLocators.length > 0) {
+              screenshotOptions.mask = maskLocators;
+            }
+            
+            await locator.screenshot(screenshotOptions);
+            screenshotPath = data.path || 'element-screenshot.png';
+            break;
+            
+          case 'pdf':
+            if (!data.path) {
+              throw new Error('Path is required for PDF generation');
+            }
+            const pdfPath = VariableInterpolator.interpolateString(data.path, context);
+            const pdfOptions: any = {
+              path: pdfPath,
+              format: data.format || 'A4',
+              printBackground: data.printBackground !== false,
+              landscape: data.landscape || false,
+            };
+            if (data.margin) {
+              pdfOptions.margin = data.margin;
+            }
+            await page.pdf(pdfOptions);
+            screenshotPath = pdfPath;
+            break;
+            
+          default:
+            // Legacy: use fullPage property
+            const fullPage = data.fullPage || false;
+            screenshotPath = await playwright.takeScreenshot(data.path, fullPage);
+            break;
+        }
+        
         context.setData('screenshotPath', screenshotPath);
 
         // Execute waits after operation if waitAfterOperation is true
@@ -590,6 +740,630 @@ export class VerifyHandler implements NodeHandler {
       if (result.actualValue !== undefined && result.expectedValue !== undefined) {
         console.log(`[VERIFY] Expected: ${JSON.stringify(result.expectedValue)}, Actual: ${JSON.stringify(result.actualValue)}`);
       }
+    }
+  }
+}
+
+export class StorageHandler implements NodeHandler {
+  async execute(node: BaseNode, context: ContextManager): Promise<void> {
+    const data = node.data as StorageNodeData;
+    const page = context.getPage();
+
+    if (!page) {
+      throw new Error('No page available. Ensure Open Browser node is executed first.');
+    }
+
+    if (!data.action) {
+      throw new Error('Action is required for Storage node');
+    }
+
+    const timeout = data.timeout || 30000;
+    const contextKey = data.contextKey || 'storageResult';
+
+    // Execute storage operation with retry logic (includes wait conditions)
+    const result = await RetryHelper.executeWithRetry(
+      async () => {
+        const waitAfterOperation = data.waitAfterOperation || false;
+        
+        // Execute waits before operation if waitAfterOperation is false
+        if (!waitAfterOperation) {
+          await WaitHelper.executeWaits(page, {
+            waitForSelector: data.waitForSelector,
+            waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorTimeout: data.waitForSelectorTimeout,
+            waitForUrl: data.waitForUrl,
+            waitForUrlTimeout: data.waitForUrlTimeout,
+            waitForCondition: data.waitForCondition,
+            waitForConditionTimeout: data.waitForConditionTimeout,
+            waitStrategy: data.waitStrategy,
+            failSilently: data.failSilently || false,
+            defaultTimeout: timeout,
+            waitTiming: 'before',
+          });
+        }
+
+        let storageResult: any;
+
+        // Execute action based on action type
+        switch (data.action) {
+          case 'getCookie':
+            if (data.name) {
+              const name = VariableInterpolator.interpolateString(data.name, context);
+              const cookies = await page.context().cookies(data.url ? VariableInterpolator.interpolateString(data.url, context) : undefined);
+              const cookie = cookies.find(c => c.name === name);
+              storageResult = cookie ? cookie.value : null;
+            } else {
+              const url = data.url ? VariableInterpolator.interpolateString(data.url, context) : undefined;
+              storageResult = await page.context().cookies(url);
+            }
+            break;
+
+          case 'setCookie':
+            if (!data.cookies || !Array.isArray(data.cookies)) {
+              throw new Error('Cookies array is required for setCookie action');
+            }
+            const url = data.url ? VariableInterpolator.interpolateString(data.url, context) : page.url();
+            const cookiesToSet = data.cookies.map(cookie => ({
+              name: VariableInterpolator.interpolateString(cookie.name, context),
+              value: VariableInterpolator.interpolateString(cookie.value, context),
+              domain: cookie.domain ? VariableInterpolator.interpolateString(cookie.domain, context) : undefined,
+              path: cookie.path,
+              expires: cookie.expires,
+              httpOnly: cookie.httpOnly,
+              secure: cookie.secure,
+              sameSite: cookie.sameSite as 'Strict' | 'Lax' | 'None' | undefined,
+              url: url,
+            }));
+            await page.context().addCookies(cookiesToSet);
+            storageResult = cookiesToSet;
+            break;
+
+          case 'clearCookies':
+            if (data.domain) {
+              const domain = VariableInterpolator.interpolateString(data.domain, context);
+              const cookies = await page.context().cookies();
+              const cookiesToDelete = cookies.filter(c => c.domain === domain || c.domain?.endsWith(`.${domain}`));
+              await page.context().clearCookies();
+              // Re-add cookies not matching domain
+              const cookiesToKeep = cookies.filter(c => !cookiesToDelete.includes(c));
+              if (cookiesToKeep.length > 0) {
+                await page.context().addCookies(cookiesToKeep);
+              }
+              storageResult = { deleted: cookiesToDelete.length, kept: cookiesToKeep.length };
+            } else {
+              await page.context().clearCookies();
+              storageResult = { deleted: 'all' };
+            }
+            break;
+
+          case 'getLocalStorage':
+            if (data.key) {
+              const key = VariableInterpolator.interpolateString(data.key, context);
+              storageResult = await page.evaluate((k) => localStorage.getItem(k), key);
+            } else {
+              storageResult = await page.evaluate(() => {
+                const items: Record<string, string> = {};
+                for (let i = 0; i < localStorage.length; i++) {
+                  const key = localStorage.key(i);
+                  if (key) {
+                    items[key] = localStorage.getItem(key) || '';
+                  }
+                }
+                return items;
+              });
+            }
+            break;
+
+          case 'setLocalStorage':
+            if (!data.key || data.value === undefined) {
+              throw new Error('Key and value are required for setLocalStorage action');
+            }
+            const setKey = VariableInterpolator.interpolateString(data.key, context);
+            const setValue = VariableInterpolator.interpolateString(String(data.value), context);
+            await page.evaluate((k, v) => localStorage.setItem(k, v), setKey, setValue);
+            storageResult = { key: setKey, value: setValue };
+            break;
+
+          case 'clearLocalStorage':
+            await page.evaluate(() => localStorage.clear());
+            storageResult = { cleared: true };
+            break;
+
+          case 'getSessionStorage':
+            if (data.key) {
+              const key = VariableInterpolator.interpolateString(data.key, context);
+              storageResult = await page.evaluate((k) => sessionStorage.getItem(k), key);
+            } else {
+              storageResult = await page.evaluate(() => {
+                const items: Record<string, string> = {};
+                for (let i = 0; i < sessionStorage.length; i++) {
+                  const key = sessionStorage.key(i);
+                  if (key) {
+                    items[key] = sessionStorage.getItem(key) || '';
+                  }
+                }
+                return items;
+              });
+            }
+            break;
+
+          case 'setSessionStorage':
+            if (!data.key || data.value === undefined) {
+              throw new Error('Key and value are required for setSessionStorage action');
+            }
+            const sessionKey = VariableInterpolator.interpolateString(data.key, context);
+            const sessionValue = VariableInterpolator.interpolateString(String(data.value), context);
+            await page.evaluate((k, v) => sessionStorage.setItem(k, v), sessionKey, sessionValue);
+            storageResult = { key: sessionKey, value: sessionValue };
+            break;
+
+          case 'clearSessionStorage':
+            await page.evaluate(() => sessionStorage.clear());
+            storageResult = { cleared: true };
+            break;
+
+          default:
+            throw new Error(`Unknown storage action type: ${data.action}`);
+        }
+
+        // Store result in context
+        context.setData(contextKey, storageResult);
+
+        // Execute waits after operation if waitAfterOperation is true
+        if (waitAfterOperation) {
+          await WaitHelper.executeWaits(page, {
+            waitForSelector: data.waitForSelector,
+            waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorTimeout: data.waitForSelectorTimeout,
+            waitForUrl: data.waitForUrl,
+            waitForUrlTimeout: data.waitForUrlTimeout,
+            waitForCondition: data.waitForCondition,
+            waitForConditionTimeout: data.waitForConditionTimeout,
+            waitStrategy: data.waitStrategy,
+            failSilently: data.failSilently || false,
+            defaultTimeout: timeout,
+            waitTiming: 'after',
+          });
+        }
+      },
+      {
+        enabled: data.retryEnabled || false,
+        strategy: data.retryStrategy || 'count',
+        count: data.retryCount,
+        untilCondition: data.retryUntilCondition,
+        delay: data.retryDelay || 1000,
+        delayStrategy: data.retryDelayStrategy || 'fixed',
+        maxDelay: data.retryMaxDelay,
+        failSilently: data.failSilently || false,
+      },
+      page
+    );
+    
+    // If RetryHelper returned undefined (failSilently), throw error so executor can track it
+    if (result === undefined && data.failSilently) {
+      throw new Error(`Storage operation failed silently with action: ${data.action}`);
+    }
+  }
+}
+
+export class DialogHandler implements NodeHandler {
+  async execute(node: BaseNode, context: ContextManager): Promise<void> {
+    const data = node.data as DialogNodeData;
+    const page = context.getPage();
+
+    if (!page) {
+      throw new Error('No page available. Ensure Open Browser node is executed first.');
+    }
+
+    if (!data.action) {
+      throw new Error('Action is required for Dialog node');
+    }
+
+    const timeout = data.timeout || 30000;
+
+    // Execute dialog operation with retry logic (includes wait conditions)
+    const result = await RetryHelper.executeWithRetry(
+      async () => {
+        const waitAfterOperation = data.waitAfterOperation || false;
+        
+        // Execute waits before operation if waitAfterOperation is false
+        if (!waitAfterOperation) {
+          await WaitHelper.executeWaits(page, {
+            waitForSelector: data.waitForSelector,
+            waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorTimeout: data.waitForSelectorTimeout,
+            waitForUrl: data.waitForUrl,
+            waitForUrlTimeout: data.waitForUrlTimeout,
+            waitForCondition: data.waitForCondition,
+            waitForConditionTimeout: data.waitForConditionTimeout,
+            waitStrategy: data.waitStrategy,
+            failSilently: data.failSilently || false,
+            defaultTimeout: timeout,
+            waitTiming: 'before',
+          });
+        }
+
+        // Set up dialog listener
+        const dialogPromise = new Promise<any>((resolve) => {
+          page.once('dialog', (dialog) => {
+            resolve(dialog);
+          });
+        });
+
+        // Execute action based on action type
+        switch (data.action) {
+          case 'accept':
+            const acceptDialog = await Promise.race([
+              dialogPromise,
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Dialog timeout')), timeout))
+            ]) as any;
+            if (data.message) {
+              const expectedMessage = VariableInterpolator.interpolateString(data.message, context);
+              if (acceptDialog.message() !== expectedMessage) {
+                throw new Error(`Dialog message mismatch. Expected: ${expectedMessage}, Got: ${acceptDialog.message()}`);
+              }
+            }
+            await acceptDialog.accept();
+            break;
+
+          case 'dismiss':
+            const dismissDialog = await Promise.race([
+              dialogPromise,
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Dialog timeout')), timeout))
+            ]) as any;
+            if (data.message) {
+              const expectedMessage = VariableInterpolator.interpolateString(data.message, context);
+              if (dismissDialog.message() !== expectedMessage) {
+                throw new Error(`Dialog message mismatch. Expected: ${expectedMessage}, Got: ${dismissDialog.message()}`);
+              }
+            }
+            await dismissDialog.dismiss();
+            break;
+
+          case 'prompt':
+            if (!data.inputText) {
+              throw new Error('Input text is required for prompt action');
+            }
+            const promptDialog = await Promise.race([
+              dialogPromise,
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Dialog timeout')), timeout))
+            ]) as any;
+            if (data.message) {
+              const expectedMessage = VariableInterpolator.interpolateString(data.message, context);
+              if (promptDialog.message() !== expectedMessage) {
+                throw new Error(`Dialog message mismatch. Expected: ${expectedMessage}, Got: ${promptDialog.message()}`);
+              }
+            }
+            const inputText = VariableInterpolator.interpolateString(data.inputText, context);
+            await promptDialog.accept(inputText);
+            break;
+
+          case 'waitForDialog':
+            const waitDialog = await Promise.race([
+              dialogPromise,
+              new Promise((_, reject) => setTimeout(() => reject(new Error('Dialog timeout')), timeout))
+            ]) as any;
+            const dialogMessage = waitDialog.message();
+            if (data.message) {
+              const expectedPattern = VariableInterpolator.interpolateString(data.message, context);
+              const regex = expectedPattern.startsWith('/') && expectedPattern.endsWith('/')
+                ? new RegExp(expectedPattern.slice(1, -1))
+                : new RegExp(expectedPattern);
+              if (!regex.test(dialogMessage)) {
+                throw new Error(`Dialog message does not match pattern. Expected: ${expectedPattern}, Got: ${dialogMessage}`);
+              }
+            }
+            const outputVar = data.outputVariable || 'dialogMessage';
+            context.setData(outputVar, dialogMessage);
+            // Don't accept/dismiss - just wait and capture message
+            break;
+
+          default:
+            throw new Error(`Unknown dialog action type: ${data.action}`);
+        }
+
+        // Execute waits after operation if waitAfterOperation is true
+        if (waitAfterOperation) {
+          await WaitHelper.executeWaits(page, {
+            waitForSelector: data.waitForSelector,
+            waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorTimeout: data.waitForSelectorTimeout,
+            waitForUrl: data.waitForUrl,
+            waitForUrlTimeout: data.waitForUrlTimeout,
+            waitForCondition: data.waitForCondition,
+            waitForConditionTimeout: data.waitForConditionTimeout,
+            waitStrategy: data.waitStrategy,
+            failSilently: data.failSilently || false,
+            defaultTimeout: timeout,
+            waitTiming: 'after',
+          });
+        }
+      },
+      {
+        enabled: data.retryEnabled || false,
+        strategy: data.retryStrategy || 'count',
+        count: data.retryCount,
+        untilCondition: data.retryUntilCondition,
+        delay: data.retryDelay || 1000,
+        delayStrategy: data.retryDelayStrategy || 'fixed',
+        maxDelay: data.retryMaxDelay,
+        failSilently: data.failSilently || false,
+      },
+      page
+    );
+    
+    // If RetryHelper returned undefined (failSilently), throw error so executor can track it
+    if (result === undefined && data.failSilently) {
+      throw new Error(`Dialog operation failed silently with action: ${data.action}`);
+    }
+  }
+}
+
+export class DownloadHandler implements NodeHandler {
+  async execute(node: BaseNode, context: ContextManager): Promise<void> {
+    const data = node.data as DownloadNodeData;
+    const page = context.getPage();
+
+    if (!page) {
+      throw new Error('No page available. Ensure Open Browser node is executed first.');
+    }
+
+    if (!data.action) {
+      throw new Error('Action is required for Download node');
+    }
+
+    const timeout = data.timeout || 30000;
+
+    // Execute download operation with retry logic (includes wait conditions)
+    const result = await RetryHelper.executeWithRetry(
+      async () => {
+        const waitAfterOperation = data.waitAfterOperation || false;
+        
+        // Execute waits before operation if waitAfterOperation is false
+        if (!waitAfterOperation) {
+          await WaitHelper.executeWaits(page, {
+            waitForSelector: data.waitForSelector,
+            waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorTimeout: data.waitForSelectorTimeout,
+            waitForUrl: data.waitForUrl,
+            waitForUrlTimeout: data.waitForUrlTimeout,
+            waitForCondition: data.waitForCondition,
+            waitForConditionTimeout: data.waitForConditionTimeout,
+            waitStrategy: data.waitStrategy,
+            failSilently: data.failSilently || false,
+            defaultTimeout: timeout,
+            waitTiming: 'before',
+          });
+        }
+
+        // Execute action based on action type
+        switch (data.action) {
+          case 'waitForDownload':
+            const downloadPromise = page.waitForEvent('download', { timeout });
+            let download: any;
+            
+            if (data.urlPattern) {
+              const pattern = VariableInterpolator.interpolateString(data.urlPattern, context);
+              const regex = pattern.startsWith('/') && pattern.endsWith('/')
+                ? new RegExp(pattern.slice(1, -1))
+                : new RegExp(pattern);
+              
+              // Wait for download matching URL pattern
+              download = await downloadPromise;
+              const downloadUrl = download.url();
+              if (!regex.test(downloadUrl)) {
+                throw new Error(`Download URL does not match pattern. Expected: ${pattern}, Got: ${downloadUrl}`);
+              }
+            } else {
+              download = await downloadPromise;
+            }
+            
+            const outputVar = data.outputVariable || 'download';
+            context.setData(outputVar, download);
+            break;
+
+          case 'saveDownload':
+            if (!data.downloadObject) {
+              throw new Error('Download object is required for saveDownload action');
+            }
+            const downloadObj = context.getData(data.downloadObject);
+            if (!downloadObj) {
+              throw new Error(`Download object not found in context with key: ${data.downloadObject}`);
+            }
+            if (!data.savePath) {
+              throw new Error('Save path is required for saveDownload action');
+            }
+            const savePath = VariableInterpolator.interpolateString(data.savePath, context);
+            await downloadObj.saveAs(savePath);
+            context.setData('downloadSavedPath', savePath);
+            break;
+
+          case 'getDownloadPath':
+            if (!data.downloadObject) {
+              throw new Error('Download object is required for getDownloadPath action');
+            }
+            const downloadForPath = context.getData(data.downloadObject);
+            if (!downloadForPath) {
+              throw new Error(`Download object not found in context with key: ${data.downloadObject}`);
+            }
+            const downloadPath = await downloadForPath.path();
+            const pathOutputVar = data.outputVariable || 'downloadPath';
+            context.setData(pathOutputVar, downloadPath);
+            break;
+
+          default:
+            throw new Error(`Unknown download action type: ${data.action}`);
+        }
+
+        // Execute waits after operation if waitAfterOperation is true
+        if (waitAfterOperation) {
+          await WaitHelper.executeWaits(page, {
+            waitForSelector: data.waitForSelector,
+            waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorTimeout: data.waitForSelectorTimeout,
+            waitForUrl: data.waitForUrl,
+            waitForUrlTimeout: data.waitForUrlTimeout,
+            waitForCondition: data.waitForCondition,
+            waitForConditionTimeout: data.waitForConditionTimeout,
+            waitStrategy: data.waitStrategy,
+            failSilently: data.failSilently || false,
+            defaultTimeout: timeout,
+            waitTiming: 'after',
+          });
+        }
+      },
+      {
+        enabled: data.retryEnabled || false,
+        strategy: data.retryStrategy || 'count',
+        count: data.retryCount,
+        untilCondition: data.retryUntilCondition,
+        delay: data.retryDelay || 1000,
+        delayStrategy: data.retryDelayStrategy || 'fixed',
+        maxDelay: data.retryMaxDelay,
+        failSilently: data.failSilently || false,
+      },
+      page
+    );
+    
+    // If RetryHelper returned undefined (failSilently), throw error so executor can track it
+    if (result === undefined && data.failSilently) {
+      throw new Error(`Download operation failed silently with action: ${data.action}`);
+    }
+  }
+}
+
+export class IframeHandler implements NodeHandler {
+  async execute(node: BaseNode, context: ContextManager): Promise<void> {
+    const data = node.data as IframeNodeData;
+    const page = context.getPage();
+
+    if (!page) {
+      throw new Error('No page available. Ensure Open Browser node is executed first.');
+    }
+
+    if (!data.action) {
+      throw new Error('Action is required for Iframe node');
+    }
+
+    const timeout = data.timeout || 30000;
+
+    // Execute iframe operation with retry logic (includes wait conditions)
+    const result = await RetryHelper.executeWithRetry(
+      async () => {
+        const waitAfterOperation = data.waitAfterOperation || false;
+        
+        // Execute waits before operation if waitAfterOperation is false
+        if (!waitAfterOperation) {
+          await WaitHelper.executeWaits(page, {
+            waitForSelector: data.waitForSelector,
+            waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorTimeout: data.waitForSelectorTimeout,
+            waitForUrl: data.waitForUrl,
+            waitForUrlTimeout: data.waitForUrlTimeout,
+            waitForCondition: data.waitForCondition,
+            waitForConditionTimeout: data.waitForConditionTimeout,
+            waitStrategy: data.waitStrategy,
+            failSilently: data.failSilently || false,
+            defaultTimeout: timeout,
+            waitTiming: 'before',
+          });
+        }
+
+        // Execute action based on action type
+        switch (data.action) {
+          case 'switchToIframe':
+            let frame: any = null;
+            
+            if (data.selector) {
+              const selector = VariableInterpolator.interpolateString(data.selector, context);
+              const locator = data.selectorType === 'xpath' ? page.locator(`xpath=${selector}`) : page.locator(selector);
+              frame = await locator.contentFrame();
+            } else if (data.name) {
+              const name = VariableInterpolator.interpolateString(data.name, context);
+              frame = page.frame({ name });
+            } else if (data.url) {
+              const urlPattern = VariableInterpolator.interpolateString(data.url, context);
+              const regex = urlPattern.startsWith('/') && urlPattern.endsWith('/')
+                ? new RegExp(urlPattern.slice(1, -1))
+                : new RegExp(urlPattern);
+              frame = page.frames().find(f => regex.test(f.url()));
+            } else {
+              // Default: get first iframe
+              const frames = page.frames();
+              frame = frames.length > 1 ? frames[1] : null; // frames[0] is main frame
+            }
+            
+            if (!frame) {
+              throw new Error('Iframe not found');
+            }
+            
+            const contextKey = data.contextKey || 'iframePage';
+            context.setData(contextKey, frame);
+            // Note: Playwright doesn't have a direct "switch context" - we store frame reference
+            // Subsequent operations on this frame should use the stored frame reference
+            break;
+
+          case 'switchToMainFrame':
+            // Switch back to main frame (just clear iframe reference)
+            context.setData('iframePage', undefined);
+            break;
+
+          case 'getIframeContent':
+            if (!data.iframeSelector || !data.contentSelector) {
+              throw new Error('Iframe selector and content selector are required for getIframeContent action');
+            }
+            const iframeSelector = VariableInterpolator.interpolateString(data.iframeSelector, context);
+            const contentSelector = VariableInterpolator.interpolateString(data.contentSelector, context);
+            const iframeLocator = data.selectorType === 'xpath' ? page.locator(`xpath=${iframeSelector}`) : page.locator(iframeSelector);
+            const iframeFrame = await iframeLocator.contentFrame();
+            
+            if (!iframeFrame) {
+              throw new Error('Iframe not found');
+            }
+            
+            const contentLocator = data.selectorType === 'xpath' ? iframeFrame.locator(`xpath=${contentSelector}`) : iframeFrame.locator(contentSelector);
+            const content = await contentLocator.textContent({ timeout });
+            const outputVar = data.outputVariable || 'iframeContent';
+            context.setData(outputVar, content);
+            break;
+
+          default:
+            throw new Error(`Unknown iframe action type: ${data.action}`);
+        }
+
+        // Execute waits after operation if waitAfterOperation is true
+        if (waitAfterOperation) {
+          await WaitHelper.executeWaits(page, {
+            waitForSelector: data.waitForSelector,
+            waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorTimeout: data.waitForSelectorTimeout,
+            waitForUrl: data.waitForUrl,
+            waitForUrlTimeout: data.waitForUrlTimeout,
+            waitForCondition: data.waitForCondition,
+            waitForConditionTimeout: data.waitForConditionTimeout,
+            waitStrategy: data.waitStrategy,
+            failSilently: data.failSilently || false,
+            defaultTimeout: timeout,
+            waitTiming: 'after',
+          });
+        }
+      },
+      {
+        enabled: data.retryEnabled || false,
+        strategy: data.retryStrategy || 'count',
+        count: data.retryCount,
+        untilCondition: data.retryUntilCondition,
+        delay: data.retryDelay || 1000,
+        delayStrategy: data.retryDelayStrategy || 'fixed',
+        maxDelay: data.retryMaxDelay,
+        failSilently: data.failSilently || false,
+      },
+      page
+    );
+    
+    // If RetryHelper returned undefined (failSilently), throw error so executor can track it
+    if (result === undefined && data.failSilently) {
+      throw new Error(`Iframe operation failed silently with action: ${data.action}`);
     }
   }
 }

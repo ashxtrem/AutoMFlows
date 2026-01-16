@@ -1,14 +1,14 @@
 import { Node } from 'reactflow';
 import { useState } from 'react';
-import RetryConfigSection from '../RetryConfigSection';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
+import RetryConfigSection from '../RetryConfigSection';
 
-interface NavigateConfigProps {
+interface ElementQueryConfigProps {
   node: Node;
   onChange: (field: string, value: any) => void;
 }
 
-export default function NavigateConfig({ node, onChange }: NavigateConfigProps) {
+export default function ElementQueryConfig({ node, onChange }: ElementQueryConfigProps) {
   const data = node.data;
   const [showAdvanced, setShowAdvanced] = useState(false);
   const { getPropertyValue, isPropertyDisabled, getInputClassName } = usePropertyInput(node);
@@ -29,84 +29,146 @@ export default function NavigateConfig({ node, onChange }: NavigateConfigProps) 
   };
 
   const isUrlPatternValid = validateRegex(data.waitForUrl || '');
+  const action = data.action || 'getText';
+
+  // Get default output variable based on action
+  const getDefaultOutputVariable = (actionType: string): string => {
+    switch (actionType) {
+      case 'getText':
+      case 'getAllText':
+        return 'text';
+      case 'getAttribute':
+        return 'attribute';
+      case 'getCount':
+        return 'count';
+      case 'isVisible':
+        return 'isVisible';
+      case 'isEnabled':
+        return 'isEnabled';
+      case 'isChecked':
+        return 'isChecked';
+      case 'getBoundingBox':
+        return 'boundingBox';
+      default:
+        return 'result';
+    }
+  };
 
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1">URL</label>
-        <input
-          type="text"
-          value={getPropertyValue('url', '')}
-          onChange={(e) => onChange('url', e.target.value)}
-          placeholder="https://example.com"
-          disabled={isPropertyDisabled('url')}
-          className={getInputClassName('url', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
-        />
-        {isPropertyDisabled('url') && (
+        <label className="block text-sm font-medium text-gray-300 mb-1">Action</label>
+        <select
+          value={getPropertyValue('action', 'getText')}
+          onChange={(e) => {
+            const newAction = e.target.value;
+            onChange('action', newAction);
+            // Clear action-specific properties when action changes
+            if (newAction !== 'getAttribute') {
+              onChange('attributeName', undefined);
+            }
+            // Set default output variable
+            onChange('outputVariable', getDefaultOutputVariable(newAction));
+          }}
+          disabled={isPropertyDisabled('action')}
+          className={getInputClassName('action', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+        >
+          <option value="getText">Get Text</option>
+          <option value="getAttribute">Get Attribute</option>
+          <option value="getCount">Get Count</option>
+          <option value="isVisible">Is Visible</option>
+          <option value="isEnabled">Is Enabled</option>
+          <option value="isChecked">Is Checked</option>
+          <option value="getBoundingBox">Get Bounding Box</option>
+          <option value="getAllText">Get All Text</option>
+        </select>
+        {isPropertyDisabled('action') && (
           <div className="mt-1 text-xs text-gray-500 italic">
             This property is converted to input. Connect a node to provide the value.
           </div>
         )}
       </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
+        <select
+          value={getPropertyValue('selectorType', 'css')}
+          onChange={(e) => onChange('selectorType', e.target.value)}
+          disabled={isPropertyDisabled('selectorType')}
+          className={getInputClassName('selectorType', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+        >
+          <option value="css">CSS Selector</option>
+          <option value="xpath">XPath</option>
+        </select>
+        {isPropertyDisabled('selectorType') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Selector</label>
+        <input
+          type="text"
+          value={getPropertyValue('selector', '')}
+          onChange={(e) => onChange('selector', e.target.value)}
+          placeholder="#element or //div[@class='text']"
+          disabled={isPropertyDisabled('selector')}
+          className={getInputClassName('selector', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+        />
+        {isPropertyDisabled('selector') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
+      </div>
+      
+      {/* Action-specific properties */}
+      {action === 'getAttribute' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">Attribute Name</label>
+          <input
+            type="text"
+            value={data.attributeName || ''}
+            onChange={(e) => onChange('attributeName', e.target.value)}
+            placeholder="id, class, href, etc."
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+          />
+          <div className="mt-1 text-xs text-gray-400">
+            Name of the attribute to retrieve (e.g., id, class, href, data-*)
+          </div>
+        </div>
+      )}
+      
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Output Variable Name</label>
+        <input
+          type="text"
+          value={getPropertyValue('outputVariable', getDefaultOutputVariable(action))}
+          onChange={(e) => onChange('outputVariable', e.target.value)}
+          placeholder={getDefaultOutputVariable(action)}
+          disabled={isPropertyDisabled('outputVariable')}
+          className={getInputClassName('outputVariable', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+        />
+        {isPropertyDisabled('outputVariable') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
+        <div className="mt-1 text-xs text-gray-400">
+          Variable name to store the result in context
+        </div>
+      </div>
+
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
         <input
           type="number"
           value={getPropertyValue('timeout', 30000)}
-          onChange={(e) => onChange('timeout', parseInt(e.target.value, 10) || 30000)}
+          onChange={(e) => onChange('timeout', parseInt(e.target.value, 10))}
           disabled={isPropertyDisabled('timeout')}
           className={getInputClassName('timeout', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
         />
         {isPropertyDisabled('timeout') && (
-          <div className="mt-1 text-xs text-gray-500 italic">
-            This property is converted to input. Connect a node to provide the value.
-          </div>
-        )}
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1">
-          Wait Until
-          <span className="ml-2 text-xs text-gray-400">(hover for details)</span>
-        </label>
-        <select
-          value={getPropertyValue('waitUntil', 'networkidle')}
-          onChange={(e) => onChange('waitUntil', e.target.value)}
-          disabled={isPropertyDisabled('waitUntil')}
-          className={getInputClassName('waitUntil', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
-        >
-          <option 
-            value="load"
-            title="Waits for the 'load' event to fire. This is when the page and all its resources have finished loading."
-          >
-            load
-          </option>
-          <option 
-            value="domcontentloaded"
-            title="Waits for the 'DOMContentLoaded' event. This fires when the HTML document has been completely loaded and parsed."
-          >
-            domcontentloaded
-          </option>
-          <option 
-            value="networkidle"
-            title="Waits until there are no network connections for at least 500ms. Useful for SPAs that load content dynamically."
-          >
-            networkidle
-          </option>
-          <option 
-            value="commit"
-            title="Waits for the navigation to commit. This is the earliest point when navigation is considered successful."
-          >
-            commit
-          </option>
-        </select>
-        <div className="mt-1 text-xs text-gray-400">
-          {data.waitUntil === 'load' && "Waits for the 'load' event to fire. This is when the page and all its resources have finished loading."}
-          {data.waitUntil === 'domcontentloaded' && "Waits for the 'DOMContentLoaded' event. This fires when the HTML document has been completely loaded and parsed."}
-          {data.waitUntil === 'networkidle' && "Waits until there are no network connections for at least 500ms. Useful for SPAs that load content dynamically."}
-          {data.waitUntil === 'commit' && "Waits for the navigation to commit. This is the earliest point when navigation is considered successful."}
-          {!data.waitUntil && "Waits until there are no network connections for at least 500ms. Useful for SPAs that load content dynamically."}
-        </div>
-        {isPropertyDisabled('waitUntil') && (
           <div className="mt-1 text-xs text-gray-500 italic">
             This property is converted to input. Connect a node to provide the value.
           </div>
@@ -122,25 +184,9 @@ export default function NavigateConfig({ node, onChange }: NavigateConfigProps) 
             className="rounded"
           />
           <span className="text-sm text-gray-400">
-            Continue execution even if navigation fails
+            Continue execution even if this node fails
           </span>
         </label>
-      </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1">Referer (Optional)</label>
-        <input
-          type="text"
-          value={getPropertyValue('referer', '')}
-          onChange={(e) => onChange('referer', e.target.value)}
-          placeholder="https://example.com"
-          disabled={isPropertyDisabled('referer')}
-          className={getInputClassName('referer', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
-        />
-        {isPropertyDisabled('referer') && (
-          <div className="mt-1 text-xs text-gray-500 italic">
-            This property is converted to input. Connect a node to provide the value.
-          </div>
-        )}
       </div>
 
       {/* Advanced Waiting Options */}
@@ -171,8 +217,8 @@ export default function NavigateConfig({ node, onChange }: NavigateConfigProps) 
               </label>
               <div className="mt-1 text-xs text-gray-400 ml-6">
                 {data.waitAfterOperation
-                  ? 'Wait conditions will execute after navigation (default for navigation)'
-                  : 'Wait conditions will execute before navigation'}
+                  ? `Wait conditions will execute after the ${action} operation`
+                  : `Wait conditions will execute before the ${action} operation (default)`}
               </div>
             </div>
 
@@ -209,7 +255,7 @@ export default function NavigateConfig({ node, onChange }: NavigateConfigProps) 
                 <span className="text-xs text-gray-400">Timeout for selector wait</span>
               </div>
               <div className="mt-1 text-xs text-gray-400">
-                Wait for a specific element to appear after navigation. Useful for SPAs with dynamic content.
+                Wait for a specific element to appear before performing the query. Useful for elements that appear after AJAX loads.
               </div>
             </div>
 
@@ -245,7 +291,7 @@ export default function NavigateConfig({ node, onChange }: NavigateConfigProps) 
                 <span className="text-xs text-gray-400">Timeout for URL pattern wait</span>
               </div>
               <div className="mt-1 text-xs text-gray-400">
-                Wait until URL matches pattern. Use /pattern/ for regex (e.g., /\/dashboard\/.*/) or plain text for exact match.
+                Wait until URL matches pattern before performing the query. Use /pattern/ for regex (e.g., /\/dashboard\/.*/) or plain text for exact match.
               </div>
             </div>
 
@@ -305,4 +351,3 @@ export default function NavigateConfig({ node, onChange }: NavigateConfigProps) 
     </div>
   );
 }
-

@@ -14,6 +14,7 @@ import MarkdownRenderer from '../components/MarkdownRenderer';
 import { getNodeProperties, isPropertyInputConnection, getPropertyInputHandleId } from '../utils/nodeProperties';
 import { getContrastTextColor } from '../utils/colorContrast';
 import { validateShortcut } from '../utils/shortcutValidator';
+import { isDeprecatedNodeType, getMigrationSuggestion } from '../utils/migration';
 import PlayCircleFilledWhiteTwoToneIcon from '@mui/icons-material/PlayCircleFilledWhiteTwoTone';
 import LanguageIcon from '@mui/icons-material/Language';
 import LinkIcon from '@mui/icons-material/Link';
@@ -27,6 +28,7 @@ import LoopIcon from '@mui/icons-material/Loop';
 import NumbersIcon from '@mui/icons-material/Numbers';
 import DescriptionIcon from '@mui/icons-material/Description';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import CheckBoxIcon from '@mui/icons-material/CheckBox';
 import InputIcon from '@mui/icons-material/Input';
 import VerifiedIcon from '@mui/icons-material/Verified';
 import HttpIcon from '@mui/icons-material/Http';
@@ -43,10 +45,11 @@ interface IconConfig {
 const nodeIcons: Record<NodeType, IconConfig> = {
   [NodeType.START]: { icon: PlayCircleFilledWhiteTwoToneIcon, color: '#4CAF50' },
   [NodeType.OPEN_BROWSER]: { icon: LanguageIcon, color: '#2196F3' },
-  [NodeType.NAVIGATE]: { icon: LinkIcon, color: '#2196F3' },
-  [NodeType.CLICK]: { icon: TouchAppIcon, color: '#9C27B0' },
+  [NodeType.NAVIGATION]: { icon: LinkIcon, color: '#2196F3' },
+  [NodeType.ACTION]: { icon: TouchAppIcon, color: '#9C27B0' },
+  [NodeType.ELEMENT_QUERY]: { icon: TextFieldsIcon, color: '#4CAF50' },
+  [NodeType.FORM_INPUT]: { icon: CheckBoxIcon, color: '#FF9800' },
   [NodeType.TYPE]: { icon: KeyboardIcon, color: '#FF9800' },
-  [NodeType.GET_TEXT]: { icon: TextFieldsIcon, color: '#4CAF50' },
   [NodeType.SCREENSHOT]: { icon: CameraAltIcon, color: '#F44336' },
   [NodeType.WAIT]: { icon: ScheduleIcon, color: '#FFC107' },
   [NodeType.JAVASCRIPT_CODE]: { icon: CodeIcon, color: '#2196F3' },
@@ -107,10 +110,17 @@ function getNodeLabel(type: NodeType | string): string {
     const labels: Record<NodeType, string> = {
       [NodeType.START]: 'Start',
       [NodeType.OPEN_BROWSER]: 'Open Browser',
-      [NodeType.NAVIGATE]: 'Navigate',
-      [NodeType.CLICK]: 'Click',
+      [NodeType.NAVIGATION]: 'Navigation',
+      [NodeType.KEYBOARD]: 'Keyboard',
+      [NodeType.SCROLL]: 'Scroll',
+      [NodeType.STORAGE]: 'Storage',
+      [NodeType.DIALOG]: 'Dialog',
+      [NodeType.DOWNLOAD]: 'Download',
+      [NodeType.IFRAME]: 'Iframe',
+      [NodeType.ACTION]: 'Action',
+      [NodeType.ELEMENT_QUERY]: 'Element Query',
+      [NodeType.FORM_INPUT]: 'Form Input',
       [NodeType.TYPE]: 'Type',
-      [NodeType.GET_TEXT]: 'Get Text',
       [NodeType.SCREENSHOT]: 'Screenshot',
       [NodeType.WAIT]: 'Wait',
       [NodeType.JAVASCRIPT_CODE]: 'JavaScript Code',
@@ -263,23 +273,13 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const browserDataKey = latestNodeData.type === NodeType.OPEN_BROWSER 
     ? `|maxWindow:${latestNodeData.maxWindow}|browser:${latestNodeData.browser || 'chromium'}|stealthMode:${latestNodeData.stealthMode || false}|capabilities:${latestNodeData.capabilities ? Object.keys(latestNodeData.capabilities).length : 0}|launchOptions:${latestNodeData.launchOptions ? Object.keys(latestNodeData.launchOptions).length : 0}`
     : '';
-  // Include url and timeout for NAVIGATE nodes, selector/timeout for CLICK/GET_TEXT nodes
-  const navigateDataKey = latestNodeData.type === NodeType.NAVIGATE 
-    ? `|url:${latestNodeData.url || ''}|timeout:${latestNodeData.timeout || ''}|waitUntil:${latestNodeData.waitUntil || ''}|referer:${latestNodeData.referer || ''}` 
-    : '';
-  const clickDataKey = latestNodeData.type === NodeType.CLICK 
-    ? `|selector:${latestNodeData.selector || ''}|timeout:${latestNodeData.timeout || ''}` 
-    : '';
-  const getTextDataKey = latestNodeData.type === NodeType.GET_TEXT 
-    ? `|selector:${latestNodeData.selector || ''}|timeout:${latestNodeData.timeout || ''}|outputVariable:${latestNodeData.outputVariable || ''}` 
-    : '';
   const apiRequestDataKey = latestNodeData.type === NodeType.API_REQUEST 
     ? `|method:${latestNodeData.method || 'GET'}|url:${latestNodeData.url || ''}|timeout:${latestNodeData.timeout || ''}|contextKey:${latestNodeData.contextKey || ''}` 
     : '';
   const apiCurlDataKey = latestNodeData.type === NodeType.API_CURL 
     ? `|curlCommand:${latestNodeData.curlCommand || ''}|timeout:${latestNodeData.timeout || ''}|contextKey:${latestNodeData.contextKey || ''}` 
     : '';
-  const currentDataKey = `${latestNodeData.type}|${latestNodeData.label || ''}|${latestNodeData.code || ''}|${latestNodeData.width || ''}|${latestNodeData.height || ''}|${inputConnectionsKey}|${backgroundColorKey}|isMinimized:${isMinimizedKey}|bypass:${bypassKey}|failSilently:${failSilentlyKey}${valueKey}${dataTypeKey}${browserDataKey}${navigateDataKey}${clickDataKey}${getTextDataKey}${apiRequestDataKey}${apiCurlDataKey}`;
+  const currentDataKey = `${latestNodeData.type}|${latestNodeData.label || ''}|${latestNodeData.code || ''}|${latestNodeData.width || ''}|${latestNodeData.height || ''}|${inputConnectionsKey}|${backgroundColorKey}|isMinimized:${isMinimizedKey}|bypass:${bypassKey}|failSilently:${failSilentlyKey}${valueKey}${dataTypeKey}${browserDataKey}${apiRequestDataKey}${apiCurlDataKey}`;
   const dataContentChanged = dataKeyRef.current !== currentDataKey;
   
   if (dataContentChanged) {
@@ -684,104 +684,32 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
             </div>
           );
         
-        case NodeType.NAVIGATE:
+        case NodeType.ACTION:
+          const action = renderData.action || 'click';
           return (
             <div className="mt-2 space-y-1">
-              {renderPropertyRow('url', (
-                <InlineTextInput
-                  label="URL"
-                  value={renderData.url || ''}
-                  onChange={(value) => handlePropertyChange('url', value)}
-                  placeholder="https://example.com"
-                  onOpenPopup={handleOpenPopup}
+              {renderPropertyRow('action', (
+                <InlineSelect
+                  label="Action"
+                  value={action}
+                  onChange={(value) => {
+                    handlePropertyChange('action', value);
+                    // Clear action-specific properties when action changes
+                    if (value !== 'click' && value !== 'rightClick') {
+                      handlePropertyChange('button', undefined);
+                    }
+                    if (value !== 'hover' && value !== 'doubleClick') {
+                      handlePropertyChange('delay', undefined);
+                    }
+                  }}
+                  options={[
+                    { label: 'Click', value: 'click' },
+                    { label: 'Double Click', value: 'doubleClick' },
+                    { label: 'Right Click', value: 'rightClick' },
+                    { label: 'Hover', value: 'hover' },
+                  ]}
                 />
               ), 0)}
-              {renderPropertyRow('timeout', (
-                <InlineNumberInput
-                  label="Timeout"
-                  value={renderData.timeout || 30000}
-                  onChange={(value) => handlePropertyChange('timeout', value)}
-                  placeholder="30000"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 1)}
-              {renderPropertyRow('waitUntil', (
-                <InlineSelect
-                  label="Wait Until"
-                  value={renderData.waitUntil || 'networkidle'}
-                  onChange={(value) => handlePropertyChange('waitUntil', value)}
-                  options={[
-                    { label: 'load', value: 'load' },
-                    { label: 'domcontentloaded', value: 'domcontentloaded' },
-                    { label: 'networkidle', value: 'networkidle' },
-                    { label: 'commit', value: 'commit' },
-                  ]}
-                />
-              ), 2)}
-              {renderPropertyRow('referer', (
-                <InlineTextInput
-                  label="Referer"
-                  value={renderData.referer || ''}
-                  onChange={(value) => handlePropertyChange('referer', value)}
-                  placeholder="https://example.com (optional)"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 3)}
-              {renderData.waitForSelector && renderPropertyRow('waitForSelector', (
-                <InlineTextInput
-                  label={renderData.waitAfterOperation ? "Wait After: Selector" : "Wait Before: Selector"}
-                  value={renderData.waitForSelector || ''}
-                  onChange={(value) => handlePropertyChange('waitForSelector', value)}
-                  placeholder=".my-class"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 4)}
-              {renderData.waitForSelector && renderPropertyRow('waitForSelectorType', (
-                <InlineSelect
-                  label="Selector Type"
-                  value={renderData.waitForSelectorType || 'css'}
-                  onChange={(value) => handlePropertyChange('waitForSelectorType', value)}
-                  options={[
-                    { label: 'CSS', value: 'css' },
-                    { label: 'XPath', value: 'xpath' },
-                  ]}
-                />
-              ), 5)}
-              {renderData.waitForUrl && renderPropertyRow('waitForUrl', (
-                <InlineTextInput
-                  label={renderData.waitAfterOperation ? "Wait After: URL" : "Wait Before: URL"}
-                  value={renderData.waitForUrl || ''}
-                  onChange={(value) => handlePropertyChange('waitForUrl', value)}
-                  placeholder="/pattern/ or exact-url"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 6)}
-              {renderData.waitForCondition && renderPropertyRow('waitForCondition', (
-                <InlineTextarea
-                  label={renderData.waitAfterOperation ? "Wait After: Condition" : "Wait Before: Condition"}
-                  value={renderData.waitForCondition || ''}
-                  onChange={(value) => handlePropertyChange('waitForCondition', value)}
-                  placeholder="() => document.querySelector('.loaded')"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 7)}
-              {(renderData.waitForSelector || renderData.waitForUrl || renderData.waitForCondition) && renderPropertyRow('waitStrategy', (
-                <InlineSelect
-                  label="Wait Strategy"
-                  value={renderData.waitStrategy || 'parallel'}
-                  onChange={(value) => handlePropertyChange('waitStrategy', value)}
-                  options={[
-                    { label: 'Parallel', value: 'parallel' },
-                    { label: 'Sequential', value: 'sequential' },
-                  ]}
-                />
-              ), 8)}
-            </div>
-          );
-        
-        case NodeType.CLICK:
-          return (
-            <div className="mt-2 space-y-1">
               {renderPropertyRow('selectorType', (
                 <InlineSelect
                   label="Selector Type"
@@ -792,13 +720,471 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                     { label: 'XPath', value: 'xpath' },
                   ]}
                 />
-              ), 0)}
+              ), 1)}
               {renderPropertyRow('selector', (
                 <InlineTextInput
                   label="Selector"
                   value={renderData.selector || ''}
                   onChange={(value) => handlePropertyChange('selector', value)}
                   placeholder="#button or //button[@id='button']"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 2)}
+              {(action === 'click' || action === 'rightClick') && renderPropertyRow('button', (
+                <InlineSelect
+                  label="Button"
+                  value={renderData.button || 'left'}
+                  onChange={(value) => handlePropertyChange('button', value)}
+                  options={[
+                    { label: 'Left', value: 'left' },
+                    { label: 'Right', value: 'right' },
+                    { label: 'Middle', value: 'middle' },
+                  ]}
+                />
+              ), 3)}
+              {(action === 'hover' || action === 'doubleClick') && renderPropertyRow('delay', (
+                <InlineNumberInput
+                  label="Delay (ms)"
+                  value={renderData.delay || 0}
+                  onChange={(value) => handlePropertyChange('delay', value)}
+                  placeholder="0"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 3)}
+              {renderPropertyRow('timeout', (
+                <InlineNumberInput
+                  label="Timeout"
+                  value={renderData.timeout || 30000}
+                  onChange={(value) => handlePropertyChange('timeout', value)}
+                  placeholder="30000"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 4)}
+              {renderData.waitForSelector && renderPropertyRow('waitForSelector', (
+                <InlineTextInput
+                  label="Wait Selector"
+                  value={renderData.waitForSelector || ''}
+                  onChange={(value) => handlePropertyChange('waitForSelector', value)}
+                  placeholder=".my-class"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 5)}
+              {renderData.waitForSelector && renderPropertyRow('waitForSelectorType', (
+                <InlineSelect
+                  label="Wait Selector Type"
+                  value={renderData.waitForSelectorType || 'css'}
+                  onChange={(value) => handlePropertyChange('waitForSelectorType', value)}
+                  options={[
+                    { label: 'CSS', value: 'css' },
+                    { label: 'XPath', value: 'xpath' },
+                  ]}
+                />
+              ), 6)}
+              {renderData.waitForUrl && renderPropertyRow('waitForUrl', (
+                <InlineTextInput
+                  label="Wait URL"
+                  value={renderData.waitForUrl || ''}
+                  onChange={(value) => handlePropertyChange('waitForUrl', value)}
+                  placeholder="/pattern/ or exact-url"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 7)}
+              {renderData.waitForCondition && renderPropertyRow('waitForCondition', (
+                <InlineTextarea
+                  label="Wait Condition"
+                  value={renderData.waitForCondition || ''}
+                  onChange={(value) => handlePropertyChange('waitForCondition', value)}
+                  placeholder="() => document.querySelector('.loaded')"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 8)}
+              {(renderData.waitForSelector || renderData.waitForUrl || renderData.waitForCondition) && renderPropertyRow('waitStrategy', (
+                <InlineSelect
+                  label="Wait Strategy"
+                  value={renderData.waitStrategy || 'parallel'}
+                  onChange={(value) => handlePropertyChange('waitStrategy', value)}
+                  options={[
+                    { label: 'Parallel', value: 'parallel' },
+                    { label: 'Sequential', value: 'sequential' },
+                  ]}
+                />
+              ), 9)}
+              {renderData.retryEnabled && renderPropertyRow('retryStrategy', (
+                <InlineSelect
+                  label="Retry Strategy"
+                  value={renderData.retryStrategy || 'count'}
+                  onChange={(value) => handlePropertyChange('retryStrategy', value)}
+                  options={[
+                    { label: 'Count', value: 'count' },
+                    { label: 'Until Condition', value: 'untilCondition' },
+                  ]}
+                />
+              ), 10)}
+              {renderData.retryEnabled && renderData.retryStrategy === 'count' && renderPropertyRow('retryCount', (
+                <InlineNumberInput
+                  label="Retry Count"
+                  value={renderData.retryCount || 3}
+                  onChange={(value) => handlePropertyChange('retryCount', value)}
+                  placeholder="3"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 11)}
+            </div>
+          );
+        
+        case NodeType.ELEMENT_QUERY:
+          const elementQueryAction = renderData.action || 'getText';
+          const getDefaultOutputVar = (actionType: string): string => {
+            switch (actionType) {
+              case 'getText':
+              case 'getAllText':
+                return 'text';
+              case 'getAttribute':
+                return 'attribute';
+              case 'getCount':
+                return 'count';
+              case 'isVisible':
+                return 'isVisible';
+              case 'isEnabled':
+                return 'isEnabled';
+              case 'isChecked':
+                return 'isChecked';
+              case 'getBoundingBox':
+                return 'boundingBox';
+              default:
+                return 'result';
+            }
+          };
+          return (
+            <div className="mt-2 space-y-1">
+              {renderPropertyRow('action', (
+                <InlineSelect
+                  label="Action"
+                  value={elementQueryAction}
+                  onChange={(value) => {
+                    handlePropertyChange('action', value);
+                    // Clear action-specific properties when action changes
+                    if (value !== 'getAttribute') {
+                      handlePropertyChange('attributeName', undefined);
+                    }
+                    // Set default output variable
+                    handlePropertyChange('outputVariable', getDefaultOutputVar(value));
+                  }}
+                  options={[
+                    { label: 'Get Text', value: 'getText' },
+                    { label: 'Get Attribute', value: 'getAttribute' },
+                    { label: 'Get Count', value: 'getCount' },
+                    { label: 'Is Visible', value: 'isVisible' },
+                    { label: 'Is Enabled', value: 'isEnabled' },
+                    { label: 'Is Checked', value: 'isChecked' },
+                    { label: 'Get Bounding Box', value: 'getBoundingBox' },
+                    { label: 'Get All Text', value: 'getAllText' },
+                  ]}
+                />
+              ), 0)}
+              {renderPropertyRow('selectorType', (
+                <InlineSelect
+                  label="Selector Type"
+                  value={renderData.selectorType || 'css'}
+                  onChange={(value) => handlePropertyChange('selectorType', value)}
+                  options={[
+                    { label: 'CSS', value: 'css' },
+                    { label: 'XPath', value: 'xpath' },
+                  ]}
+                />
+              ), 1)}
+              {renderPropertyRow('selector', (
+                <InlineTextInput
+                  label="Selector"
+                  value={renderData.selector || ''}
+                  onChange={(value) => handlePropertyChange('selector', value)}
+                  placeholder="#element or //div[@class='text']"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 2)}
+              {elementQueryAction === 'getAttribute' && renderPropertyRow('attributeName', (
+                <InlineTextInput
+                  label="Attribute Name"
+                  value={renderData.attributeName || ''}
+                  onChange={(value) => handlePropertyChange('attributeName', value)}
+                  placeholder="id, class, href, etc."
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 3)}
+              {renderPropertyRow('outputVariable', (
+                <InlineTextInput
+                  label="Output Variable"
+                  value={renderData.outputVariable || getDefaultOutputVar(elementQueryAction)}
+                  onChange={(value) => handlePropertyChange('outputVariable', value)}
+                  placeholder={getDefaultOutputVar(elementQueryAction)}
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 4)}
+              {renderPropertyRow('timeout', (
+                <InlineNumberInput
+                  label="Timeout"
+                  value={renderData.timeout || 30000}
+                  onChange={(value) => handlePropertyChange('timeout', value)}
+                  placeholder="30000"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 5)}
+            </div>
+          );
+        
+        case NodeType.FORM_INPUT:
+          const formInputAction = renderData.action || 'select';
+          return (
+            <div className="mt-2 space-y-1">
+              {renderPropertyRow('action', (
+                <InlineSelect
+                  label="Action"
+                  value={formInputAction}
+                  onChange={(value) => {
+                    handlePropertyChange('action', value);
+                    // Clear action-specific properties when action changes
+                    if (value !== 'select') {
+                      handlePropertyChange('values', undefined);
+                      handlePropertyChange('selectBy', undefined);
+                      handlePropertyChange('multiple', undefined);
+                    }
+                    if (value !== 'check' && value !== 'uncheck') {
+                      handlePropertyChange('force', undefined);
+                    }
+                    if (value !== 'upload') {
+                      handlePropertyChange('filePaths', undefined);
+                      handlePropertyChange('multiple', undefined);
+                    }
+                  }}
+                  options={[
+                    { label: 'Select', value: 'select' },
+                    { label: 'Check', value: 'check' },
+                    { label: 'Uncheck', value: 'uncheck' },
+                    { label: 'Upload', value: 'upload' },
+                  ]}
+                />
+              ), 0)}
+              {renderPropertyRow('selectorType', (
+                <InlineSelect
+                  label="Selector Type"
+                  value={renderData.selectorType || 'css'}
+                  onChange={(value) => handlePropertyChange('selectorType', value)}
+                  options={[
+                    { label: 'CSS', value: 'css' },
+                    { label: 'XPath', value: 'xpath' },
+                  ]}
+                />
+              ), 1)}
+              {renderPropertyRow('selector', (
+                <InlineTextInput
+                  label="Selector"
+                  value={renderData.selector || ''}
+                  onChange={(value) => handlePropertyChange('selector', value)}
+                  placeholder="#select or //select[@id='select']"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 2)}
+              {formInputAction === 'select' && renderPropertyRow('values', (
+                <InlineTextInput
+                  label="Values"
+                  value={Array.isArray(renderData.values) ? renderData.values.join(', ') : (renderData.values || '')}
+                  onChange={(value) => {
+                    // Handle comma-separated or single value
+                    const values = value.includes(',') ? value.split(',').map(v => v.trim()) : value;
+                    handlePropertyChange('values', values);
+                  }}
+                  placeholder="option1, option2"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 3)}
+              {formInputAction === 'upload' && renderPropertyRow('filePaths', (
+                <InlineTextInput
+                  label="File Paths"
+                  value={Array.isArray(renderData.filePaths) ? renderData.filePaths.join(', ') : (renderData.filePaths || '')}
+                  onChange={(value) => {
+                    // Handle comma-separated or single value
+                    const paths = value.includes(',') ? value.split(',').map(p => p.trim()) : value;
+                    handlePropertyChange('filePaths', paths);
+                  }}
+                  placeholder="/path/to/file.txt"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 3)}
+              {renderPropertyRow('timeout', (
+                <InlineNumberInput
+                  label="Timeout"
+                  value={renderData.timeout || 30000}
+                  onChange={(value) => handlePropertyChange('timeout', value)}
+                  placeholder="30000"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 4)}
+            </div>
+          );
+        
+        case NodeType.NAVIGATION:
+          const navAction = renderData.action || 'navigate';
+          return (
+            <div className="mt-2 space-y-1">
+              {renderPropertyRow('action', (
+                <InlineSelect
+                  label="Action"
+                  value={navAction}
+                  onChange={(value) => {
+                    handlePropertyChange('action', value);
+                    // Clear action-specific properties when action changes
+                    if (value !== 'navigate' && value !== 'newTab') {
+                      handlePropertyChange('url', undefined);
+                    }
+                    if (value !== 'navigate') {
+                      handlePropertyChange('referer', undefined);
+                    }
+                    if (value !== 'navigate' && value !== 'goBack' && value !== 'goForward' && value !== 'reload') {
+                      handlePropertyChange('waitUntil', undefined);
+                    }
+                    if (value !== 'switchTab') {
+                      handlePropertyChange('tabIndex', undefined);
+                      handlePropertyChange('urlPattern', undefined);
+                    }
+                    if (value !== 'closeTab') {
+                      handlePropertyChange('tabIndex', undefined);
+                    }
+                  }}
+                  options={[
+                    { label: 'Navigate', value: 'navigate' },
+                    { label: 'Go Back', value: 'goBack' },
+                    { label: 'Go Forward', value: 'goForward' },
+                    { label: 'Reload', value: 'reload' },
+                    { label: 'New Tab', value: 'newTab' },
+                    { label: 'Switch Tab', value: 'switchTab' },
+                    { label: 'Close Tab', value: 'closeTab' },
+                  ]}
+                />
+              ), 0)}
+              {(navAction === 'navigate' || navAction === 'newTab') && renderPropertyRow('url', (
+                <InlineTextInput
+                  label="URL"
+                  value={renderData.url || ''}
+                  onChange={(value) => handlePropertyChange('url', value)}
+                  placeholder="https://example.com"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 1)}
+              {navAction === 'navigate' && renderPropertyRow('referer', (
+                <InlineTextInput
+                  label="Referer"
+                  value={renderData.referer || ''}
+                  onChange={(value) => handlePropertyChange('referer', value)}
+                  placeholder="https://referer.com"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 2)}
+              {(navAction === 'navigate' || navAction === 'goBack' || navAction === 'goForward' || navAction === 'reload') && renderPropertyRow('waitUntil', (
+                <InlineSelect
+                  label="Wait Until"
+                  value={renderData.waitUntil || 'networkidle'}
+                  onChange={(value) => handlePropertyChange('waitUntil', value)}
+                  options={[
+                    { label: 'Load', value: 'load' },
+                    { label: 'DOMContentLoaded', value: 'domcontentloaded' },
+                    { label: 'Network Idle', value: 'networkidle' },
+                    { label: 'Commit', value: 'commit' },
+                  ]}
+                />
+              ), 3)}
+              {navAction === 'switchTab' && renderPropertyRow('tabIndex', (
+                <InlineNumberInput
+                  label="Tab Index"
+                  value={renderData.tabIndex !== undefined ? renderData.tabIndex : ''}
+                  onChange={(value) => handlePropertyChange('tabIndex', value !== '' ? value : undefined)}
+                  placeholder="Leave empty for URL pattern"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 3)}
+              {navAction === 'switchTab' && renderPropertyRow('urlPattern', (
+                <InlineTextInput
+                  label="URL Pattern"
+                  value={renderData.urlPattern || ''}
+                  onChange={(value) => handlePropertyChange('urlPattern', value)}
+                  placeholder="/example\.com/ or example.com"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 4)}
+              {navAction === 'closeTab' && renderPropertyRow('tabIndex', (
+                <InlineNumberInput
+                  label="Tab Index"
+                  value={renderData.tabIndex !== undefined ? renderData.tabIndex : ''}
+                  onChange={(value) => handlePropertyChange('tabIndex', value !== '' ? value : undefined)}
+                  placeholder="Leave empty for current tab"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 3)}
+              {renderPropertyRow('timeout', (
+                <InlineNumberInput
+                  label="Timeout"
+                  value={renderData.timeout || 30000}
+                  onChange={(value) => handlePropertyChange('timeout', value)}
+                  placeholder="30000"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 5)}
+            </div>
+          );
+        
+        case NodeType.KEYBOARD:
+          const keyboardAction = renderData.action || 'press';
+          return (
+            <div className="mt-2 space-y-1">
+              {renderPropertyRow('action', (
+                <InlineSelect
+                  label="Action"
+                  value={keyboardAction}
+                  onChange={(value) => {
+                    handlePropertyChange('action', value);
+                    if (value !== 'press' && value !== 'down' && value !== 'up') {
+                      handlePropertyChange('key', undefined);
+                    }
+                    if (value !== 'type' && value !== 'insertText') {
+                      handlePropertyChange('text', undefined);
+                    }
+                    if (value !== 'shortcut') {
+                      handlePropertyChange('shortcut', undefined);
+                    }
+                  }}
+                  options={[
+                    { label: 'Press', value: 'press' },
+                    { label: 'Type', value: 'type' },
+                    { label: 'Insert Text', value: 'insertText' },
+                    { label: 'Shortcut', value: 'shortcut' },
+                    { label: 'Hold Down', value: 'down' },
+                    { label: 'Release', value: 'up' },
+                  ]}
+                />
+              ), 0)}
+              {(keyboardAction === 'press' || keyboardAction === 'down' || keyboardAction === 'up') && renderPropertyRow('key', (
+                <InlineTextInput
+                  label="Key"
+                  value={renderData.key || ''}
+                  onChange={(value) => handlePropertyChange('key', value)}
+                  placeholder="Enter, Tab"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 1)}
+              {(keyboardAction === 'type' || keyboardAction === 'insertText') && renderPropertyRow('text', (
+                <InlineTextarea
+                  label="Text"
+                  value={renderData.text || ''}
+                  onChange={(value) => handlePropertyChange('text', value)}
+                  placeholder="Text to type"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 1)}
+              {keyboardAction === 'shortcut' && renderPropertyRow('shortcut', (
+                <InlineTextInput
+                  label="Shortcut"
+                  value={renderData.shortcut || ''}
+                  onChange={(value) => handlePropertyChange('shortcut', value)}
+                  placeholder="Control+C"
                   onOpenPopup={handleOpenPopup}
                 />
               ), 1)}
@@ -811,75 +1197,102 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   onOpenPopup={handleOpenPopup}
                 />
               ), 2)}
-              {renderData.waitForSelector && renderPropertyRow('waitForSelector', (
+            </div>
+          );
+        
+        case NodeType.SCROLL:
+          const scrollAction = renderData.action || 'scrollToElement';
+          return (
+            <div className="mt-2 space-y-1">
+              {renderPropertyRow('action', (
+                <InlineSelect
+                  label="Action"
+                  value={scrollAction}
+                  onChange={(value) => {
+                    handlePropertyChange('action', value);
+                    if (value !== 'scrollToElement') {
+                      handlePropertyChange('selector', undefined);
+                    }
+                    if (value !== 'scrollToPosition') {
+                      handlePropertyChange('x', undefined);
+                      handlePropertyChange('y', undefined);
+                    }
+                    if (value !== 'scrollBy') {
+                      handlePropertyChange('deltaX', undefined);
+                      handlePropertyChange('deltaY', undefined);
+                    }
+                  }}
+                  options={[
+                    { label: 'To Element', value: 'scrollToElement' },
+                    { label: 'To Position', value: 'scrollToPosition' },
+                    { label: 'By', value: 'scrollBy' },
+                    { label: 'To Top', value: 'scrollToTop' },
+                    { label: 'To Bottom', value: 'scrollToBottom' },
+                  ]}
+                />
+              ), 0)}
+              {scrollAction === 'scrollToElement' && renderPropertyRow('selector', (
                 <InlineTextInput
-                  label={renderData.waitAfterOperation ? "Wait After: Selector" : "Wait Before: Selector"}
-                  value={renderData.waitForSelector || ''}
-                  onChange={(value) => handlePropertyChange('waitForSelector', value)}
-                  placeholder=".my-class"
+                  label="Selector"
+                  value={renderData.selector || ''}
+                  onChange={(value) => handlePropertyChange('selector', value)}
+                  placeholder="#element"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 1)}
+              {scrollAction === 'scrollToPosition' && (
+                <>
+                  {renderPropertyRow('x', (
+                    <InlineNumberInput
+                      label="X"
+                      value={renderData.x || 0}
+                      onChange={(value) => handlePropertyChange('x', value)}
+                      placeholder="0"
+                      onOpenPopup={handleOpenPopup}
+                    />
+                  ), 1)}
+                  {renderPropertyRow('y', (
+                    <InlineNumberInput
+                      label="Y"
+                      value={renderData.y || 0}
+                      onChange={(value) => handlePropertyChange('y', value)}
+                      placeholder="0"
+                      onOpenPopup={handleOpenPopup}
+                    />
+                  ), 2)}
+                </>
+              )}
+              {scrollAction === 'scrollBy' && (
+                <>
+                  {renderPropertyRow('deltaX', (
+                    <InlineNumberInput
+                      label="Delta X"
+                      value={renderData.deltaX || 0}
+                      onChange={(value) => handlePropertyChange('deltaX', value)}
+                      placeholder="0"
+                      onOpenPopup={handleOpenPopup}
+                    />
+                  ), 1)}
+                  {renderPropertyRow('deltaY', (
+                    <InlineNumberInput
+                      label="Delta Y"
+                      value={renderData.deltaY || 0}
+                      onChange={(value) => handlePropertyChange('deltaY', value)}
+                      placeholder="0"
+                      onOpenPopup={handleOpenPopup}
+                    />
+                  ), 2)}
+                </>
+              )}
+              {renderPropertyRow('timeout', (
+                <InlineNumberInput
+                  label="Timeout"
+                  value={renderData.timeout || 30000}
+                  onChange={(value) => handlePropertyChange('timeout', value)}
+                  placeholder="30000"
                   onOpenPopup={handleOpenPopup}
                 />
               ), 3)}
-              {renderData.waitForSelector && renderPropertyRow('waitForSelectorType', (
-                <InlineSelect
-                  label="Selector Type"
-                  value={renderData.waitForSelectorType || 'css'}
-                  onChange={(value) => handlePropertyChange('waitForSelectorType', value)}
-                  options={[
-                    { label: 'CSS', value: 'css' },
-                    { label: 'XPath', value: 'xpath' },
-                  ]}
-                />
-              ), 4)}
-              {renderData.waitForUrl && renderPropertyRow('waitForUrl', (
-                <InlineTextInput
-                  label={renderData.waitAfterOperation ? "Wait After: URL" : "Wait Before: URL"}
-                  value={renderData.waitForUrl || ''}
-                  onChange={(value) => handlePropertyChange('waitForUrl', value)}
-                  placeholder="/pattern/ or exact-url"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 5)}
-              {renderData.waitForCondition && renderPropertyRow('waitForCondition', (
-                <InlineTextarea
-                  label={renderData.waitAfterOperation ? "Wait After: Condition" : "Wait Before: Condition"}
-                  value={renderData.waitForCondition || ''}
-                  onChange={(value) => handlePropertyChange('waitForCondition', value)}
-                  placeholder="() => document.querySelector('.loaded')"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 6)}
-              {(renderData.waitForSelector || renderData.waitForUrl || renderData.waitForCondition) && renderPropertyRow('waitStrategy', (
-                <InlineSelect
-                  label="Wait Strategy"
-                  value={renderData.waitStrategy || 'parallel'}
-                  onChange={(value) => handlePropertyChange('waitStrategy', value)}
-                  options={[
-                    { label: 'Parallel', value: 'parallel' },
-                    { label: 'Sequential', value: 'sequential' },
-                  ]}
-                />
-              ), 7)}
-              {renderData.retryEnabled && renderPropertyRow('retryStrategy', (
-                <InlineSelect
-                  label="Retry Strategy"
-                  value={renderData.retryStrategy || 'count'}
-                  onChange={(value) => handlePropertyChange('retryStrategy', value)}
-                  options={[
-                    { label: 'Count', value: 'count' },
-                    { label: 'Until Condition', value: 'untilCondition' },
-                  ]}
-                />
-              ), 8)}
-              {renderData.retryEnabled && renderData.retryStrategy === 'count' && renderPropertyRow('retryCount', (
-                <InlineNumberInput
-                  label="Retry Count"
-                  value={renderData.retryCount || 3}
-                  onChange={(value) => handlePropertyChange('retryCount', value)}
-                  placeholder="3"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 9)}
             </div>
           );
         
@@ -996,129 +1409,53 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
             </div>
           );
         
-        case NodeType.GET_TEXT:
+        case NodeType.SCREENSHOT:
+          const screenshotAction = renderData.action || (renderData.fullPage ? 'fullPage' : 'viewport');
           return (
             <div className="mt-2 space-y-1">
-              {renderPropertyRow('selectorType', (
+              {renderPropertyRow('action', (
                 <InlineSelect
-                  label="Selector Type"
-                  value={stableData.selectorType || 'css'}
-                  onChange={(value) => handlePropertyChange('selectorType', value)}
+                  label="Action"
+                  value={screenshotAction}
+                  onChange={(value) => {
+                    handlePropertyChange('action', value);
+                    if (value !== 'element') {
+                      handlePropertyChange('selector', undefined);
+                    }
+                    if (value !== 'pdf') {
+                      handlePropertyChange('format', undefined);
+                    }
+                    // Legacy: update fullPage
+                    handlePropertyChange('fullPage', value === 'fullPage');
+                  }}
                   options={[
-                    { label: 'CSS', value: 'css' },
-                    { label: 'XPath', value: 'xpath' },
+                    { label: 'Full Page', value: 'fullPage' },
+                    { label: 'Viewport', value: 'viewport' },
+                    { label: 'Element', value: 'element' },
+                    { label: 'PDF', value: 'pdf' },
                   ]}
                 />
               ), 0)}
-              {renderPropertyRow('selector', (
+              {screenshotAction === 'element' && renderPropertyRow('selector', (
                 <InlineTextInput
                   label="Selector"
-                  value={stableData.selector || ''}
+                  value={renderData.selector || ''}
                   onChange={(value) => handlePropertyChange('selector', value)}
-                  placeholder="#element or //div[@class='text']"
+                  placeholder="#element"
                   onOpenPopup={handleOpenPopup}
                 />
               ), 1)}
-              {renderPropertyRow('outputVariable', (
-                <InlineTextInput
-                  label="Output Var"
-                  value={renderData.outputVariable || 'text'}
-                  onChange={(value) => handlePropertyChange('outputVariable', value)}
-                  placeholder="text"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 2)}
-              {renderPropertyRow('timeout', (
-                <InlineNumberInput
-                  label="Timeout"
-                  value={stableData.timeout || 30000}
-                  onChange={(value) => handlePropertyChange('timeout', value)}
-                  placeholder="30000"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 3)}
-              {renderData.waitForSelector && renderPropertyRow('waitForSelector', (
-                <InlineTextInput
-                  label="Wait Selector"
-                  value={renderData.waitForSelector || ''}
-                  onChange={(value) => handlePropertyChange('waitForSelector', value)}
-                  placeholder=".my-class"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 4)}
-              {renderData.waitForSelector && renderPropertyRow('waitForSelectorType', (
-                <InlineSelect
-                  label="Wait Selector Type"
-                  value={renderData.waitForSelectorType || 'css'}
-                  onChange={(value) => handlePropertyChange('waitForSelectorType', value)}
-                  options={[
-                    { label: 'CSS', value: 'css' },
-                    { label: 'XPath', value: 'xpath' },
-                  ]}
-                />
-              ), 5)}
-              {renderData.waitForUrl && renderPropertyRow('waitForUrl', (
-                <InlineTextInput
-                  label="Wait URL"
-                  value={renderData.waitForUrl || ''}
-                  onChange={(value) => handlePropertyChange('waitForUrl', value)}
-                  placeholder="/pattern/ or exact-url"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 6)}
-              {renderData.waitForCondition && renderPropertyRow('waitForCondition', (
-                <InlineTextarea
-                  label="Wait Condition"
-                  value={renderData.waitForCondition || ''}
-                  onChange={(value) => handlePropertyChange('waitForCondition', value)}
-                  placeholder="() => document.querySelector('.loaded')"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 7)}
-              {(renderData.waitForSelector || renderData.waitForUrl || renderData.waitForCondition) && renderPropertyRow('waitStrategy', (
-                <InlineSelect
-                  label="Wait Strategy"
-                  value={renderData.waitStrategy || 'parallel'}
-                  onChange={(value) => handlePropertyChange('waitStrategy', value)}
-                  options={[
-                    { label: 'Parallel', value: 'parallel' },
-                    { label: 'Sequential', value: 'sequential' },
-                  ]}
-                />
-              ), 8)}
-              {renderData.retryEnabled && renderPropertyRow('retryStrategy', (
-                <InlineSelect
-                  label="Retry Strategy"
-                  value={renderData.retryStrategy || 'count'}
-                  onChange={(value) => handlePropertyChange('retryStrategy', value)}
-                  options={[
-                    { label: 'Count', value: 'count' },
-                    { label: 'Until Condition', value: 'untilCondition' },
-                  ]}
-                />
-              ), 9)}
-              {renderData.retryEnabled && renderData.retryStrategy === 'count' && renderPropertyRow('retryCount', (
-                <InlineNumberInput
-                  label="Retry Count"
-                  value={renderData.retryCount || 3}
-                  onChange={(value) => handlePropertyChange('retryCount', value)}
-                  placeholder="3"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 10)}
-            </div>
-          );
-        
-        case NodeType.SCREENSHOT:
-          return (
-            <div className="mt-2 space-y-1">
-              {renderPropertyRow('fullPage', (
+              {/* Legacy: Keep fullPage checkbox for backward compatibility */}
+              {!renderData.action && renderPropertyRow('fullPage', (
                 <InlineCheckbox
                   label="Full Page"
                   value={renderData.fullPage || false}
-                  onChange={(value) => handlePropertyChange('fullPage', value)}
+                  onChange={(value) => {
+                    handlePropertyChange('fullPage', value);
+                    handlePropertyChange('action', value ? 'fullPage' : 'viewport');
+                  }}
                 />
-              ), 0)}
+              ), 1)}
               {renderPropertyRow('path', (
                 <InlineTextInput
                   label="Path"
@@ -1197,6 +1534,125 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   onOpenPopup={handleOpenPopup}
                 />
               ), 8)}
+            </div>
+          );
+        
+        case NodeType.STORAGE:
+          const storageAction = renderData.action || 'getCookie';
+          return (
+            <div className="mt-2 space-y-1">
+              {renderPropertyRow('action', (
+                <InlineSelect
+                  label="Action"
+                  value={storageAction}
+                  onChange={(value) => handlePropertyChange('action', value)}
+                  options={[
+                    { label: 'Get Cookie', value: 'getCookie' },
+                    { label: 'Set Cookie', value: 'setCookie' },
+                    { label: 'Clear Cookies', value: 'clearCookies' },
+                    { label: 'Get Local Storage', value: 'getLocalStorage' },
+                    { label: 'Set Local Storage', value: 'setLocalStorage' },
+                    { label: 'Clear Local Storage', value: 'clearLocalStorage' },
+                    { label: 'Get Session Storage', value: 'getSessionStorage' },
+                    { label: 'Set Session Storage', value: 'setSessionStorage' },
+                    { label: 'Clear Session Storage', value: 'clearSessionStorage' },
+                  ]}
+                />
+              ), 0)}
+              {renderPropertyRow('contextKey', (
+                <InlineTextInput
+                  label="Context Key"
+                  value={renderData.contextKey || 'storageResult'}
+                  onChange={(value) => handlePropertyChange('contextKey', value)}
+                  placeholder="storageResult"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 1)}
+            </div>
+          );
+        
+        case NodeType.DIALOG:
+          const dialogAction = renderData.action || 'accept';
+          return (
+            <div className="mt-2 space-y-1">
+              {renderPropertyRow('action', (
+                <InlineSelect
+                  label="Action"
+                  value={dialogAction}
+                  onChange={(value) => handlePropertyChange('action', value)}
+                  options={[
+                    { label: 'Accept', value: 'accept' },
+                    { label: 'Dismiss', value: 'dismiss' },
+                    { label: 'Prompt', value: 'prompt' },
+                    { label: 'Wait', value: 'waitForDialog' },
+                  ]}
+                />
+              ), 0)}
+              {renderPropertyRow('timeout', (
+                <InlineNumberInput
+                  label="Timeout"
+                  value={renderData.timeout || 30000}
+                  onChange={(value) => handlePropertyChange('timeout', value)}
+                  placeholder="30000"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 1)}
+            </div>
+          );
+        
+        case NodeType.DOWNLOAD:
+          const downloadAction = renderData.action || 'waitForDownload';
+          return (
+            <div className="mt-2 space-y-1">
+              {renderPropertyRow('action', (
+                <InlineSelect
+                  label="Action"
+                  value={downloadAction}
+                  onChange={(value) => handlePropertyChange('action', value)}
+                  options={[
+                    { label: 'Wait', value: 'waitForDownload' },
+                    { label: 'Save', value: 'saveDownload' },
+                    { label: 'Get Path', value: 'getDownloadPath' },
+                  ]}
+                />
+              ), 0)}
+              {renderPropertyRow('timeout', (
+                <InlineNumberInput
+                  label="Timeout"
+                  value={renderData.timeout || 30000}
+                  onChange={(value) => handlePropertyChange('timeout', value)}
+                  placeholder="30000"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 1)}
+            </div>
+          );
+        
+        case NodeType.IFRAME:
+          const iframeAction = renderData.action || 'switchToIframe';
+          return (
+            <div className="mt-2 space-y-1">
+              {renderPropertyRow('action', (
+                <InlineSelect
+                  label="Action"
+                  value={iframeAction}
+                  onChange={(value) => handlePropertyChange('action', value)}
+                  options={[
+                    { label: 'Switch To', value: 'switchToIframe' },
+                    { label: 'Switch Back', value: 'switchToMainFrame' },
+                    { label: 'Get Content', value: 'getIframeContent' },
+                  ]}
+                />
+              ), 0)}
+              {renderPropertyRow('timeout', (
+                <InlineNumberInput
+                  label="Timeout"
+                  value={renderData.timeout || 30000}
+                  onChange={(value) => handlePropertyChange('timeout', value)}
+                  placeholder="30000"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 1)}
             </div>
           );
         
@@ -1966,6 +2422,25 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
           onMouseLeave={() => setConnectingHandleId(null)}
         />
       )}
+      {/* Deprecation Warning Banner */}
+      {isDeprecatedNodeType(nodeType as NodeType) && (() => {
+        const suggestion = getMigrationSuggestion(nodeType as NodeType);
+        return (
+          <div 
+            className="px-2 py-1 -mx-4 -mt-3 mb-1 rounded-t-lg bg-yellow-900/30 border-b border-yellow-600/50"
+            style={{ fontSize: '0.7rem' }}
+          >
+            <div className="flex items-center gap-1 text-yellow-400">
+              <span>⚠️</span>
+              <span className="font-semibold">Deprecated:</span>
+              <span>This node type is deprecated.</span>
+              {suggestion && (
+                <span>Use <strong>{suggestion.newType}</strong> with action="{suggestion.action}" instead.</span>
+              )}
+            </div>
+          </div>
+        );
+      })()}
       {/* Header Block with Status Dot */}
       <div 
         className="flex items-center gap-2 px-2 py-1.5 -mx-4 -mt-3 mb-2 rounded-t-lg"

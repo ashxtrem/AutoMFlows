@@ -441,12 +441,12 @@ export default function TopBar() {
       );
       const openBrowserId = openBrowserNode.id;
 
-      // Navigate node
+      // Navigation node
       const navigateNode = createNodeWithDefaults(
-        NodeType.NAVIGATE,
+        NodeType.NAVIGATION,
         { x: startX + spacing * 2, y },
-        'Navigate',
-        { url: 'https://example.com', timeout: 30000, waitUntil: 'networkidle' }
+        'Navigation',
+        { action: 'navigate', url: 'https://example.com', timeout: 30000, waitUntil: 'networkidle' }
       );
       const navigateId = navigateNode.id;
 

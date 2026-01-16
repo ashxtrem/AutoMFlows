@@ -1,14 +1,14 @@
 import { Node } from 'reactflow';
 import { useState } from 'react';
-import RetryConfigSection from '../RetryConfigSection';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
+import RetryConfigSection from '../RetryConfigSection';
 
-interface GetTextConfigProps {
+interface FormInputConfigProps {
   node: Node;
   onChange: (field: string, value: any) => void;
 }
 
-export default function GetTextConfig({ node, onChange }: GetTextConfigProps) {
+export default function FormInputConfig({ node, onChange }: FormInputConfigProps) {
   const data = node.data;
   const [showAdvanced, setShowAdvanced] = useState(false);
   const { getPropertyValue, isPropertyDisabled, getInputClassName } = usePropertyInput(node);
@@ -29,9 +29,45 @@ export default function GetTextConfig({ node, onChange }: GetTextConfigProps) {
   };
 
   const isUrlPatternValid = validateRegex(data.waitForUrl || '');
+  const action = data.action || 'select';
 
   return (
     <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Action</label>
+        <select
+          value={getPropertyValue('action', 'select')}
+          onChange={(e) => {
+            const newAction = e.target.value;
+            onChange('action', newAction);
+            // Clear action-specific properties when action changes
+            if (newAction !== 'select') {
+              onChange('values', undefined);
+              onChange('selectBy', undefined);
+              onChange('multiple', undefined);
+            }
+            if (newAction !== 'check' && newAction !== 'uncheck') {
+              onChange('force', undefined);
+            }
+            if (newAction !== 'upload') {
+              onChange('filePaths', undefined);
+              onChange('multiple', undefined);
+            }
+          }}
+          disabled={isPropertyDisabled('action')}
+          className={getInputClassName('action', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+        >
+          <option value="select">Select</option>
+          <option value="check">Check</option>
+          <option value="uncheck">Uncheck</option>
+          <option value="upload">Upload</option>
+        </select>
+        {isPropertyDisabled('action') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
+      </div>
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
         <select
@@ -55,7 +91,7 @@ export default function GetTextConfig({ node, onChange }: GetTextConfigProps) {
           type="text"
           value={getPropertyValue('selector', '')}
           onChange={(e) => onChange('selector', e.target.value)}
-          placeholder="#element or //div[@class='text']"
+          placeholder="#select or //select[@id='select']"
           disabled={isPropertyDisabled('selector')}
           className={getInputClassName('selector', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
         />
@@ -65,22 +101,105 @@ export default function GetTextConfig({ node, onChange }: GetTextConfigProps) {
           </div>
         )}
       </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1">Output Variable Name</label>
-        <input
-          type="text"
-          value={getPropertyValue('outputVariable', 'text')}
-          onChange={(e) => onChange('outputVariable', e.target.value)}
-          placeholder="text"
-          disabled={isPropertyDisabled('outputVariable')}
-          className={getInputClassName('outputVariable', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
-        />
-        {isPropertyDisabled('outputVariable') && (
-          <div className="mt-1 text-xs text-gray-500 italic">
-            This property is converted to input. Connect a node to provide the value.
+      
+      {/* Action-specific properties */}
+      {action === 'select' && (
+        <>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Values</label>
+            <textarea
+              value={Array.isArray(data.values) ? data.values.join('\n') : (data.values || '')}
+              onChange={(e) => {
+                const value = e.target.value;
+                // If multiple lines, treat as array; otherwise single value
+                const values = value.includes('\n') ? value.split('\n').filter(v => v.trim()) : value;
+                onChange('values', values);
+              }}
+              placeholder="option1 or option1&#10;option2 (for multiple)"
+              rows={3}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+            />
+            <div className="mt-1 text-xs text-gray-400">
+              Option values, labels, or indices. One per line for multiple selection.
+            </div>
           </div>
-        )}
-      </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Select By</label>
+            <select
+              value={data.selectBy || 'value'}
+              onChange={(e) => onChange('selectBy', e.target.value)}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+            >
+              <option value="value">Value</option>
+              <option value="label">Label</option>
+              <option value="index">Index</option>
+            </select>
+          </div>
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={data.multiple || false}
+                onChange={(e) => onChange('multiple', e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-sm text-gray-300">Allow Multiple Selection</span>
+            </label>
+          </div>
+        </>
+      )}
+      
+      {(action === 'check' || action === 'uncheck') && (
+        <div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={data.force || false}
+              onChange={(e) => onChange('force', e.target.checked)}
+              className="rounded"
+            />
+            <span className="text-sm text-gray-300">Force</span>
+          </label>
+          <div className="mt-1 text-xs text-gray-400 ml-6">
+            Force check/uncheck even if element is not visible
+          </div>
+        </div>
+      )}
+      
+      {action === 'upload' && (
+        <>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">File Paths</label>
+            <textarea
+              value={Array.isArray(data.filePaths) ? data.filePaths.join('\n') : (data.filePaths || '')}
+              onChange={(e) => {
+                const value = e.target.value;
+                // If multiple lines, treat as array; otherwise single value
+                const paths = value.includes('\n') ? value.split('\n').filter(p => p.trim()) : value;
+                onChange('filePaths', paths);
+              }}
+              placeholder="/path/to/file.txt or /path/to/file1.txt&#10;/path/to/file2.txt (for multiple)"
+              rows={3}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+            />
+            <div className="mt-1 text-xs text-gray-400">
+              File paths to upload. One per line for multiple files.
+            </div>
+          </div>
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={data.multiple || false}
+                onChange={(e) => onChange('multiple', e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-sm text-gray-300">Allow Multiple Files</span>
+            </label>
+          </div>
+        </>
+      )}
+
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
         <input
@@ -139,8 +258,8 @@ export default function GetTextConfig({ node, onChange }: GetTextConfigProps) {
               </label>
               <div className="mt-1 text-xs text-gray-400 ml-6">
                 {data.waitAfterOperation
-                  ? 'Wait conditions will execute after getting text'
-                  : 'Wait conditions will execute before getting text (default)'}
+                  ? `Wait conditions will execute after the ${action} operation`
+                  : `Wait conditions will execute before the ${action} operation (default)`}
               </div>
             </div>
 
@@ -177,7 +296,7 @@ export default function GetTextConfig({ node, onChange }: GetTextConfigProps) {
                 <span className="text-xs text-gray-400">Timeout for selector wait</span>
               </div>
               <div className="mt-1 text-xs text-gray-400">
-                Wait for a specific element to appear before reading text. Useful for dynamic content that loads after page load.
+                Wait for a specific element to appear before performing the operation. Useful for elements that appear after AJAX loads.
               </div>
             </div>
 
@@ -213,7 +332,7 @@ export default function GetTextConfig({ node, onChange }: GetTextConfigProps) {
                 <span className="text-xs text-gray-400">Timeout for URL pattern wait</span>
               </div>
               <div className="mt-1 text-xs text-gray-400">
-                Wait until URL matches pattern before reading text. Use /pattern/ for regex (e.g., /\/dashboard\/.*/) or plain text for exact match.
+                Wait until URL matches pattern before performing the operation. Use /pattern/ for regex (e.g., /\/dashboard\/.*/) or plain text for exact match.
               </div>
             </div>
 
@@ -273,4 +392,3 @@ export default function GetTextConfig({ node, onChange }: GetTextConfigProps) {
     </div>
   );
 }
-

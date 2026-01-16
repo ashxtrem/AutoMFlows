@@ -1,9 +1,9 @@
 import { NodeType, BaseNode } from '@automflows/shared';
 import { NodeHandler, NodeHandlerMap } from './base';
 import { ContextManager } from '../engine/context';
-import { OpenBrowserHandler, NavigateHandler } from './browser';
-import { ClickHandler, TypeHandler } from './interaction';
-import { GetTextHandler, ScreenshotHandler, WaitHandler, IntValueHandler, StringValueHandler, BooleanValueHandler, InputValueHandler, VerifyHandler } from './utility';
+import { OpenBrowserHandler, NavigationHandler } from './browser';
+import { TypeHandler, ActionHandler, FormInputHandler, KeyboardHandler, ScrollHandler } from './interaction';
+import { ElementQueryHandler, ScreenshotHandler, WaitHandler, IntValueHandler, StringValueHandler, BooleanValueHandler, InputValueHandler, VerifyHandler, StorageHandler, DialogHandler, DownloadHandler, IframeHandler } from './utility';
 import { JavaScriptCodeHandler, LoopHandler } from './logic';
 import { ApiRequestHandler, ApiCurlHandler } from './api';
 import { LoadConfigFileHandler, SelectConfigFileHandler } from './config';
@@ -19,11 +19,18 @@ class StartHandler implements NodeHandler {
 const handlers: NodeHandlerMap = {
   [NodeType.START]: new StartHandler(),
   [NodeType.OPEN_BROWSER]: new OpenBrowserHandler(),
-  [NodeType.NAVIGATE]: new NavigateHandler(),
-  [NodeType.CLICK]: new ClickHandler(),
+  [NodeType.NAVIGATION]: new NavigationHandler(),
   [NodeType.TYPE]: new TypeHandler(),
-  [NodeType.GET_TEXT]: new GetTextHandler(),
+  [NodeType.ACTION]: new ActionHandler(),
+  [NodeType.ELEMENT_QUERY]: new ElementQueryHandler(),
+  [NodeType.FORM_INPUT]: new FormInputHandler(),
+  [NodeType.KEYBOARD]: new KeyboardHandler(),
+  [NodeType.SCROLL]: new ScrollHandler(),
   [NodeType.SCREENSHOT]: new ScreenshotHandler(),
+  [NodeType.STORAGE]: new StorageHandler(),
+  [NodeType.DIALOG]: new DialogHandler(),
+  [NodeType.DOWNLOAD]: new DownloadHandler(),
+  [NodeType.IFRAME]: new IframeHandler(),
   [NodeType.WAIT]: new WaitHandler(),
   [NodeType.JAVASCRIPT_CODE]: new JavaScriptCodeHandler(),
   [NodeType.LOOP]: new LoopHandler(),

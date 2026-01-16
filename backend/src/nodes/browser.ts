@@ -1,4 +1,4 @@
-import { BaseNode, OpenBrowserNodeData, NavigateNodeData } from '@automflows/shared';
+import { BaseNode, OpenBrowserNodeData, NavigationNodeData } from '@automflows/shared';
 import { NodeHandler } from './base';
 import { ContextManager } from '../engine/context';
 import { PlaywrightManager } from '../utils/playwright';
@@ -49,41 +49,22 @@ export class OpenBrowserHandler implements NodeHandler {
   }
 }
 
-export class NavigateHandler implements NodeHandler {
-  async execute(node: BaseNode, context: ContextManager): Promise<void> {
-    const data = node.data as NavigateNodeData;
-    const page = context.getPage();
+export class NavigationHandler implements NodeHandler {
+  async execute(node: BaseNode, contextManager: ContextManager): Promise<void> {
+    const data = node.data as NavigationNodeData;
+    const page = contextManager.getPage();
 
     if (!page) {
       throw new Error('No page available. Ensure Open Browser node is executed first.');
     }
 
-    if (!data.url) {
-      throw new Error('URL is required for Navigate node');
+    if (!data.action) {
+      throw new Error('Action is required for Navigation node');
     }
 
-    // Interpolate variables in URL
-    let url = VariableInterpolator.interpolateString(data.url, context);
-
-    // Normalize URL - add https:// if no protocol is specified
-    url = url.trim();
-    if (!url.match(/^https?:\/\//i)) {
-      url = `https://${url}`;
-    }
-
-    // Prepare navigation options
     const timeout = data.timeout || 30000;
-    const waitUntil = data.waitUntil || 'networkidle';
-    const gotoOptions: any = {
-      waitUntil,
-      timeout,
-    };
 
-    if (data.referer) {
-      gotoOptions.referer = data.referer;
-    }
-
-    // Execute navigation with retry logic (includes wait conditions)
+    // Execute navigation operation with retry logic (includes wait conditions)
     const result = await RetryHelper.executeWithRetry(
       async () => {
         const waitAfterOperation = data.waitAfterOperation || false;
@@ -105,24 +86,160 @@ export class NavigateHandler implements NodeHandler {
           });
         }
 
-        // Execute navigation
-        await page.goto(url, gotoOptions);
+        // Execute action based on action type
+        switch (data.action) {
+          case 'navigate':
+            if (!data.url) {
+              throw new Error('URL is required for navigate action');
+            }
+            // Interpolate variables in URL
+            let url = VariableInterpolator.interpolateString(data.url, contextManager);
+            // Normalize URL - add https:// if no protocol is specified
+            url = url.trim();
+            if (!url.match(/^https?:\/\//i)) {
+              url = `https://${url}`;
+            }
+            const waitUntil = data.waitUntil || 'networkidle';
+            const gotoOptions: any = { waitUntil, timeout };
+            if (data.referer) {
+              gotoOptions.referer = VariableInterpolator.interpolateString(data.referer, contextManager);
+            }
+            await page.goto(url, gotoOptions);
+            break;
+
+          case 'goBack':
+            const backWaitUntil = data.waitUntil || 'networkidle';
+            await page.goBack({ waitUntil: backWaitUntil, timeout });
+            break;
+
+          case 'goForward':
+            const forwardWaitUntil = data.waitUntil || 'networkidle';
+            await page.goForward({ waitUntil: forwardWaitUntil, timeout });
+            break;
+
+          case 'reload':
+            const reloadWaitUntil = data.waitUntil || 'networkidle';
+            await page.reload({ waitUntil: reloadWaitUntil, timeout });
+            break;
+
+          case 'newTab':
+            // Get browser context from current page
+            const newTabBrowserContext = page.context();
+            const newPage = await newTabBrowserContext.newPage();
+            const contextKey = data.contextKey || 'newPage';
+            
+            if (data.url) {
+              // Interpolate variables in URL
+              let newTabUrl = VariableInterpolator.interpolateString(data.url, contextManager);
+              // Normalize URL
+              newTabUrl = newTabUrl.trim();
+              if (!newTabUrl.match(/^https?:\/\//i)) {
+                newTabUrl = `https://${newTabUrl}`;
+              }
+              const newTabWaitUntil = data.waitUntil || 'networkidle';
+              await newPage.goto(newTabUrl, { waitUntil: newTabWaitUntil, timeout });
+            }
+            // Store new page reference in context
+            contextManager.setData(contextKey, newPage);
+            break;
+
+          case 'switchTab':
+            // Get all pages from the current browser context
+            const switchTabBrowserContext = page.context();
+            const pages = switchTabBrowserContext.pages();
+            let targetPage: any = null;
+            
+            if (data.tabIndex !== undefined) {
+              // Switch by index
+              if (data.tabIndex >= 0 && data.tabIndex < pages.length) {
+                targetPage = pages[data.tabIndex];
+              } else {
+                throw new Error(`Tab index ${data.tabIndex} is out of range. Available tabs: ${pages.length}`);
+              }
+            } else if (data.urlPattern) {
+              // Switch by URL pattern
+              const pattern = VariableInterpolator.interpolateString(data.urlPattern, contextManager);
+              const regex = pattern.startsWith('/') && pattern.endsWith('/')
+                ? new RegExp(pattern.slice(1, -1))
+                : new RegExp(pattern);
+              
+              for (const p of pages) {
+                const url = p.url();
+                if (regex.test(url)) {
+                  targetPage = p;
+                  break;
+                }
+              }
+              
+              if (!targetPage) {
+                throw new Error(`No tab found matching URL pattern: ${pattern}`);
+              }
+            } else {
+              // Default: switch to first available tab (other than current)
+              if (pages.length > 1) {
+                targetPage = pages.find(p => p !== page) || pages[0];
+              } else {
+                throw new Error('No other tabs available to switch to');
+              }
+            }
+            
+            // Switch context to target page
+            contextManager.setPage(targetPage);
+            const switchContextKey = data.contextKey || 'currentPage';
+            contextManager.setData(switchContextKey, targetPage);
+            break;
+
+          case 'closeTab':
+            // Get all pages from the current browser context
+            const closeTabBrowserContext = page.context();
+            const allPages = closeTabBrowserContext.pages();
+            let pageToClose: any = null;
+            
+            if (data.tabIndex !== undefined) {
+              // Close by index
+              if (data.tabIndex >= 0 && data.tabIndex < allPages.length) {
+                pageToClose = allPages[data.tabIndex];
+              } else {
+                throw new Error(`Tab index ${data.tabIndex} is out of range. Available tabs: ${allPages.length}`);
+              }
+            } else {
+              // Close current page
+              pageToClose = page;
+            }
+            
+            await pageToClose.close();
+            
+            // If we closed the current page, switch to another page if available
+            if (pageToClose === page) {
+              const remainingPages = closeTabBrowserContext.pages();
+              if (remainingPages.length > 0) {
+                contextManager.setPage(remainingPages[0]);
+              }
+            }
+            break;
+
+          default:
+            throw new Error(`Unknown action type: ${data.action}`);
+        }
 
         // Execute waits after operation if waitAfterOperation is true
         if (waitAfterOperation) {
-          await WaitHelper.executeWaits(page, {
-            waitForSelector: data.waitForSelector,
-            waitForSelectorType: data.waitForSelectorType,
-            waitForSelectorTimeout: data.waitForSelectorTimeout,
-            waitForUrl: data.waitForUrl,
-            waitForUrlTimeout: data.waitForUrlTimeout,
-            waitForCondition: data.waitForCondition,
-            waitForConditionTimeout: data.waitForConditionTimeout,
-            waitStrategy: data.waitStrategy,
-            failSilently: data.failSilently || false,
-            defaultTimeout: timeout,
-            waitTiming: 'after',
-          });
+          const currentPage = contextManager.getPage();
+          if (currentPage) {
+            await WaitHelper.executeWaits(currentPage, {
+              waitForSelector: data.waitForSelector,
+              waitForSelectorType: data.waitForSelectorType,
+              waitForSelectorTimeout: data.waitForSelectorTimeout,
+              waitForUrl: data.waitForUrl,
+              waitForUrlTimeout: data.waitForUrlTimeout,
+              waitForCondition: data.waitForCondition,
+              waitForConditionTimeout: data.waitForConditionTimeout,
+              waitStrategy: data.waitStrategy,
+              failSilently: data.failSilently || false,
+              defaultTimeout: timeout,
+              waitTiming: 'after',
+            });
+          }
         }
       },
       {
@@ -140,8 +257,7 @@ export class NavigateHandler implements NodeHandler {
     
     // If RetryHelper returned undefined (failSilently), throw error so executor can track it
     if (result === undefined && data.failSilently) {
-      throw new Error(`Navigation operation failed silently to URL: ${url}`);
+      throw new Error(`Navigation operation failed silently with action: ${data.action}`);
     }
   }
 }
-

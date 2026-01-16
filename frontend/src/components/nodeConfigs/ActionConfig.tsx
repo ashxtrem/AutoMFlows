@@ -2,12 +2,12 @@ import { Node } from 'reactflow';
 import { useState } from 'react';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
 
-interface ClickConfigProps {
+interface ActionConfigProps {
   node: Node;
   onChange: (field: string, value: any) => void;
 }
 
-export default function ClickConfig({ node, onChange }: ClickConfigProps) {
+export default function ActionConfig({ node, onChange }: ActionConfigProps) {
   const data = node.data;
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showRetry, setShowRetry] = useState(false);
@@ -29,9 +29,39 @@ export default function ClickConfig({ node, onChange }: ClickConfigProps) {
   };
 
   const isUrlPatternValid = validateRegex(data.waitForUrl || '');
+  const action = data.action || 'click';
 
   return (
     <div className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Action</label>
+        <select
+          value={getPropertyValue('action', 'click')}
+          onChange={(e) => {
+            const newAction = e.target.value;
+            onChange('action', newAction);
+            // Clear action-specific properties when action changes
+            if (newAction !== 'click' && newAction !== 'rightClick') {
+              onChange('button', undefined);
+            }
+            if (newAction !== 'hover' && newAction !== 'doubleClick') {
+              onChange('delay', undefined);
+            }
+          }}
+          disabled={isPropertyDisabled('action')}
+          className={getInputClassName('action', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+        >
+          <option value="click">Click</option>
+          <option value="doubleClick">Double Click</option>
+          <option value="rightClick">Right Click</option>
+          <option value="hover">Hover</option>
+        </select>
+        {isPropertyDisabled('action') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
+      </div>
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
         <select
@@ -65,6 +95,40 @@ export default function ClickConfig({ node, onChange }: ClickConfigProps) {
           </div>
         )}
       </div>
+      
+      {/* Action-specific properties */}
+      {(action === 'click' || action === 'rightClick') && (
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">Button</label>
+          <select
+            value={data.button || 'left'}
+            onChange={(e) => onChange('button', e.target.value)}
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+          >
+            <option value="left">Left</option>
+            <option value="right">Right</option>
+            <option value="middle">Middle</option>
+          </select>
+        </div>
+      )}
+      
+      {(action === 'hover' || action === 'doubleClick') && (
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">Delay (ms)</label>
+          <input
+            type="number"
+            value={data.delay || 0}
+            onChange={(e) => onChange('delay', parseInt(e.target.value, 10) || 0)}
+            placeholder="0"
+            min="0"
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+          />
+          <div className="mt-1 text-xs text-gray-400">
+            {action === 'hover' ? 'Delay before hover operation' : 'Delay between clicks for double click'}
+          </div>
+        </div>
+      )}
+
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
         <input
@@ -123,8 +187,8 @@ export default function ClickConfig({ node, onChange }: ClickConfigProps) {
               </label>
               <div className="mt-1 text-xs text-gray-400 ml-6">
                 {data.waitAfterOperation
-                  ? 'Wait conditions will execute after the click operation'
-                  : 'Wait conditions will execute before the click operation (default)'}
+                  ? `Wait conditions will execute after the ${action} operation`
+                  : `Wait conditions will execute before the ${action} operation (default)`}
               </div>
             </div>
 
@@ -161,7 +225,7 @@ export default function ClickConfig({ node, onChange }: ClickConfigProps) {
                 <span className="text-xs text-gray-400">Timeout for selector wait</span>
               </div>
               <div className="mt-1 text-xs text-gray-400">
-                Wait for a specific element to appear before clicking. Useful for buttons that appear after AJAX loads.
+                Wait for a specific element to appear before performing the action. Useful for elements that appear after AJAX loads.
               </div>
             </div>
 
@@ -197,7 +261,7 @@ export default function ClickConfig({ node, onChange }: ClickConfigProps) {
                 <span className="text-xs text-gray-400">Timeout for URL pattern wait</span>
               </div>
               <div className="mt-1 text-xs text-gray-400">
-                Wait until URL matches pattern before clicking. Use /pattern/ for regex (e.g., /\/dashboard\/.*/) or plain text for exact match.
+                Wait until URL matches pattern before performing the action. Use /pattern/ for regex (e.g., /\/dashboard\/.*/) or plain text for exact match.
               </div>
             </div>
 
@@ -436,4 +500,3 @@ export default function ClickConfig({ node, onChange }: ClickConfigProps) {
     </div>
   );
 }
-

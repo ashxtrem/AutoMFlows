@@ -11,6 +11,7 @@ import { ExecutionTracker } from '../utils/executionTracker';
 import { ReportGenerator } from '../utils/reportGenerator';
 import { getAllReusableScopes } from '../utils/reusableFlowExtractor';
 import { resolveFromProjectRoot } from '../utils/pathUtils';
+import { migrateWorkflow } from '../utils/migration';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -41,12 +42,23 @@ export class Executor {
     recordSession: boolean = false
   ) {
     this.executionId = uuidv4();
-    this.workflow = workflow;
+    
+    // Migrate old nodes to new consolidated format before execution
+    const migrationResult = migrateWorkflow(workflow);
+    if (migrationResult.warnings.length > 0) {
+      // Log migration warnings
+      console.warn('[Migration] Workflow migration warnings:');
+      migrationResult.warnings.forEach(warning => {
+        console.warn(`[Migration] ${warning}`);
+      });
+    }
+    
+    this.workflow = { ...workflow, nodes: migrationResult.nodes };
     this.io = io;
     this.traceLogs = traceLogs;
     this.recordSession = recordSession;
     this.reportConfig = reportConfig;
-    this.parser = new WorkflowParser(workflow);
+    this.parser = new WorkflowParser(this.workflow);
     this.context = new ContextManager();
     
     // Extract Start node and read screenshot config from it

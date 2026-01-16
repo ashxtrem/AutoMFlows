@@ -1,11 +1,19 @@
 import { Node } from 'reactflow';
 import { NodeType } from '@automflows/shared';
 import { useWorkflowStore } from '../store/workflowStore';
+import { isDeprecatedNodeType, getMigrationSuggestion } from '../utils/migration';
 import OpenBrowserConfig from './nodeConfigs/OpenBrowserConfig';
-import NavigateConfig from './nodeConfigs/NavigateConfig';
-import ClickConfig from './nodeConfigs/ClickConfig';
 import TypeConfig from './nodeConfigs/TypeConfig';
-import GetTextConfig from './nodeConfigs/GetTextConfig';
+import ActionConfig from './nodeConfigs/ActionConfig';
+import ElementQueryConfig from './nodeConfigs/ElementQueryConfig';
+import FormInputConfig from './nodeConfigs/FormInputConfig';
+import NavigationConfig from './nodeConfigs/NavigationConfig';
+import KeyboardConfig from './nodeConfigs/KeyboardConfig';
+import ScrollConfig from './nodeConfigs/ScrollConfig';
+import StorageConfig from './nodeConfigs/StorageConfig';
+import DialogConfig from './nodeConfigs/DialogConfig';
+import DownloadConfig from './nodeConfigs/DownloadConfig';
+import IframeConfig from './nodeConfigs/IframeConfig';
 import ScreenshotConfig from './nodeConfigs/ScreenshotConfig';
 import WaitConfig from './nodeConfigs/WaitConfig';
 import JavaScriptCodeConfig from './nodeConfigs/JavaScriptCodeConfig';
@@ -32,6 +40,8 @@ interface NodeConfigFormProps {
 export default function NodeConfigForm({ node }: NodeConfigFormProps) {
   const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
   const nodeType = node.data.type as NodeType | string;
+  const isDeprecated = Object.values(NodeType).includes(nodeType as NodeType) && isDeprecatedNodeType(nodeType as NodeType);
+  const migrationSuggestion = isDeprecated ? getMigrationSuggestion(nodeType as NodeType) : null;
 
   const handleChange = useCallback((field: string, value: any) => {
     updateNodeData(node.id, { [field]: value });
@@ -45,14 +55,28 @@ export default function NodeConfigForm({ node }: NodeConfigFormProps) {
           return <div className="text-gray-400 text-sm">Start node has no configuration.</div>;
         case NodeType.OPEN_BROWSER:
           return <OpenBrowserConfig node={node} onChange={handleChange} />;
-        case NodeType.NAVIGATE:
-          return <NavigateConfig node={node} onChange={handleChange} />;
-        case NodeType.CLICK:
-          return <ClickConfig node={node} onChange={handleChange} />;
         case NodeType.TYPE:
           return <TypeConfig node={node} onChange={handleChange} />;
-        case NodeType.GET_TEXT:
-          return <GetTextConfig node={node} onChange={handleChange} />;
+        case NodeType.ACTION:
+          return <ActionConfig node={node} onChange={handleChange} />;
+        case NodeType.ELEMENT_QUERY:
+          return <ElementQueryConfig node={node} onChange={handleChange} />;
+        case NodeType.FORM_INPUT:
+          return <FormInputConfig node={node} onChange={handleChange} />;
+        case NodeType.NAVIGATION:
+          return <NavigationConfig node={node} onChange={handleChange} />;
+        case NodeType.KEYBOARD:
+          return <KeyboardConfig node={node} onChange={handleChange} />;
+        case NodeType.SCROLL:
+          return <ScrollConfig node={node} onChange={handleChange} />;
+        case NodeType.STORAGE:
+          return <StorageConfig node={node} onChange={handleChange} />;
+        case NodeType.DIALOG:
+          return <DialogConfig node={node} onChange={handleChange} />;
+        case NodeType.DOWNLOAD:
+          return <DownloadConfig node={node} onChange={handleChange} />;
+        case NodeType.IFRAME:
+          return <IframeConfig node={node} onChange={handleChange} />;
         case NodeType.SCREENSHOT:
           return <ScreenshotConfig node={node} onChange={handleChange} />;
         case NodeType.WAIT:
@@ -136,6 +160,26 @@ export default function NodeConfigForm({ node }: NodeConfigFormProps) {
     return <div className="text-gray-400 text-sm">No configuration available.</div>;
   };
 
-  return <div className="space-y-4">{renderConfig()}</div>;
+  return (
+    <div className="space-y-4">
+      {isDeprecated && migrationSuggestion && (
+        <div className="mb-4 p-3 bg-yellow-900/30 border border-yellow-600/50 rounded-lg">
+          <div className="flex items-start gap-2">
+            <span className="text-yellow-400 text-lg">⚠️</span>
+            <div className="flex-1">
+              <div className="text-yellow-400 font-semibold mb-1">Deprecated Node Type</div>
+              <div className="text-yellow-300 text-sm mb-2">
+                This node type is deprecated and will be removed in a future version.
+              </div>
+              <div className="text-yellow-200 text-sm">
+                <strong>Migration:</strong> Use <code className="bg-gray-800 px-1 py-0.5 rounded">{migrationSuggestion.newType}</code> node with action="{migrationSuggestion.action}" instead.
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      {renderConfig()}
+    </div>
+  );
 }
 

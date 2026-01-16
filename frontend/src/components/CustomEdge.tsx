@@ -6,10 +6,7 @@ import { NodeType } from '@automflows/shared';
 const nodeColors: Record<NodeType | string, string> = {
   [NodeType.START]: '#4CAF50',
   [NodeType.OPEN_BROWSER]: '#2196F3',
-  [NodeType.NAVIGATE]: '#2196F3',
-  [NodeType.CLICK]: '#9C27B0',
   [NodeType.TYPE]: '#FF9800',
-  [NodeType.GET_TEXT]: '#4CAF50',
   [NodeType.SCREENSHOT]: '#F44336',
   [NodeType.WAIT]: '#FFC107',
   [NodeType.JAVASCRIPT_CODE]: '#2196F3',

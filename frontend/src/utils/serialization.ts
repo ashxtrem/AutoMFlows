@@ -1,5 +1,6 @@
 import { Node, Edge } from 'reactflow';
 import { Workflow, BaseNode as WorkflowNode, Edge as WorkflowEdge, NodeType } from '@automflows/shared';
+import { migrateWorkflow } from './migration';
 
 export function serializeWorkflow(nodes: Node[], edges: Edge[]): Workflow {
   const workflowNodes: WorkflowNode[] = nodes.map((node) => ({
@@ -66,10 +67,7 @@ function getNodeLabel(type: NodeType): string {
   const labels: Record<NodeType, string> = {
     [NodeType.START]: 'Start',
     [NodeType.OPEN_BROWSER]: 'Open Browser',
-    [NodeType.NAVIGATE]: 'Navigate',
-    [NodeType.CLICK]: 'Click',
     [NodeType.TYPE]: 'Type',
-    [NodeType.GET_TEXT]: 'Get Text',
     [NodeType.SCREENSHOT]: 'Screenshot',
     [NodeType.WAIT]: 'Wait',
     [NodeType.JAVASCRIPT_CODE]: 'JavaScript Code',
@@ -92,7 +90,7 @@ export function saveToLocalStorage(nodes: Node[], edges: Edge[]): void {
   localStorage.setItem('automflows-workflow', JSON.stringify(workflow));
 }
 
-export function loadFromLocalStorage(): { nodes: Node[]; edges: Edge[] } | null {
+export function loadFromLocalStorage(): { nodes: Node[]; edges: Edge[]; warnings?: string[] } | null {
   const stored = localStorage.getItem('automflows-workflow');
   if (!stored) {
     return null;
@@ -100,7 +98,28 @@ export function loadFromLocalStorage(): { nodes: Node[]; edges: Edge[] } | null 
 
   try {
     const workflow = JSON.parse(stored) as Workflow;
-    return deserializeWorkflow(workflow);
+    
+    // Migrate old nodes to new consolidated format
+    const migrationResult = migrateWorkflow(workflow);
+    
+    // Log migration warnings
+    if (migrationResult.warnings.length > 0) {
+      console.warn('Workflow migration warnings:', migrationResult.warnings);
+      // Show user-friendly notification (could be enhanced with a toast/notification system)
+      migrationResult.warnings.forEach(warning => {
+        console.warn(warning);
+      });
+    }
+    
+    // Save migrated workflow back to localStorage
+    if (migrationResult.warnings.length > 0) {
+      localStorage.setItem('automflows-workflow', JSON.stringify(migrationResult.workflow));
+    }
+    
+    return {
+      ...deserializeWorkflow(migrationResult.workflow),
+      warnings: migrationResult.warnings.length > 0 ? migrationResult.warnings : undefined,
+    };
   } catch (error) {
     console.error('Failed to load workflow from localStorage:', error);
     return null;

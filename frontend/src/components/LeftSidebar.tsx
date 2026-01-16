@@ -31,10 +31,17 @@ interface IconConfig {
 const nodeIconMap: Record<NodeType, IconConfig> = {
   [NodeType.START]: { icon: PlayCircleFilledWhiteTwoToneIcon, color: '#4CAF50' },
   [NodeType.OPEN_BROWSER]: { icon: LanguageIcon, color: '#2196F3' },
-  [NodeType.NAVIGATE]: { icon: LinkIcon, color: '#2196F3' },
-  [NodeType.CLICK]: { icon: TouchAppIcon, color: '#9C27B0' },
+  [NodeType.NAVIGATION]: { icon: LinkIcon, color: '#2196F3' },
+  [NodeType.KEYBOARD]: { icon: KeyboardIcon, color: '#FF9800' },
+  [NodeType.SCROLL]: { icon: ScheduleIcon, color: '#9C27B0' },
+  [NodeType.STORAGE]: { icon: InventoryIcon, color: '#2196F3' },
+  [NodeType.DIALOG]: { icon: VerifiedIcon, color: '#4CAF50' },
+  [NodeType.DOWNLOAD]: { icon: FolderOpenIcon, color: '#FF9800' },
+  [NodeType.IFRAME]: { icon: LanguageIcon, color: '#2196F3' },
+  [NodeType.ACTION]: { icon: TouchAppIcon, color: '#9C27B0' },
+  [NodeType.ELEMENT_QUERY]: { icon: TextFieldsIcon, color: '#4CAF50' },
+  [NodeType.FORM_INPUT]: { icon: CheckCircleIcon, color: '#FF9800' },
   [NodeType.TYPE]: { icon: KeyboardIcon, color: '#FF9800' },
-  [NodeType.GET_TEXT]: { icon: TextFieldsIcon, color: '#4CAF50' },
   [NodeType.SCREENSHOT]: { icon: CameraAltIcon, color: '#F44336' },
   [NodeType.WAIT]: { icon: ScheduleIcon, color: '#FFC107' },
   [NodeType.JAVASCRIPT_CODE]: { icon: CodeIcon, color: '#2196F3' },
@@ -68,20 +75,32 @@ const NODE_CATEGORIES = [
     label: 'Browser',
     nodes: [
       { type: NodeType.OPEN_BROWSER, label: 'Open Browser' },
-      { type: NodeType.NAVIGATE, label: 'Navigate' },
+      { type: NodeType.NAVIGATION, label: 'Navigation' },
+      { type: NodeType.KEYBOARD, label: 'Keyboard' },
+      { type: NodeType.SCROLL, label: 'Scroll' },
+      { type: NodeType.DIALOG, label: 'Dialog' },
+      { type: NodeType.DOWNLOAD, label: 'Download' },
+      { type: NodeType.IFRAME, label: 'Iframe' },
     ],
   },
   {
     label: 'Interaction',
     nodes: [
-      { type: NodeType.CLICK, label: 'Click' },
+      { type: NodeType.ACTION, label: 'Action' },
+      { type: NodeType.FORM_INPUT, label: 'Form Input' },
       { type: NodeType.TYPE, label: 'Type' },
+    ],
+  },
+  {
+    label: 'Storage',
+    nodes: [
+      { type: NodeType.STORAGE, label: 'Storage' },
     ],
   },
   {
     label: 'Data',
     nodes: [
-      { type: NodeType.GET_TEXT, label: 'Get Text' },
+      { type: NodeType.ELEMENT_QUERY, label: 'Element Query' },
       { type: NodeType.SCREENSHOT, label: 'Screenshot' },
     ],
   },
@@ -130,12 +149,65 @@ const NODE_CATEGORIES = [
 ];
 
 const STORAGE_KEY = 'leftSidebarCollapsed';
+const STORAGE_KEY_TAB = 'leftSidebarActiveTab';
+
+type TabType = 'all' | 'browser' | 'api' | 'utils';
+
+// Helper function to determine node's primary category
+function getNodeCategory(nodeType: NodeType | string, nodeLabel?: string): 'browser' | 'api' | 'utils' {
+  // Check if it's a plugin node
+  const pluginNode = frontendPluginRegistry.getNodeDefinition(nodeType);
+  if (pluginNode) {
+    const category = (pluginNode.category || '').toLowerCase();
+    if (category.includes('browser') || category.includes('ui') || category.includes('interaction')) {
+      return 'browser';
+    }
+    if (category.includes('api') || category.includes('http') || category.includes('request')) {
+      return 'api';
+    }
+    return 'utils';
+  }
+
+  // Built-in node categorization
+  switch (nodeType) {
+    case NodeType.OPEN_BROWSER:
+    case NodeType.ACTION:
+    case NodeType.TYPE:
+    case NodeType.FORM_INPUT:
+    case NodeType.ELEMENT_QUERY:
+    case NodeType.SCREENSHOT:
+      return 'browser';
+    case NodeType.VERIFY:
+      // Verify can be browser or API depending on domain, default to utils
+      return 'utils';
+    case NodeType.API_REQUEST:
+    case NodeType.API_CURL:
+      return 'api';
+    case NodeType.JAVASCRIPT_CODE:
+    case NodeType.WAIT:
+    case NodeType.LOOP:
+    case NodeType.INT_VALUE:
+    case NodeType.STRING_VALUE:
+    case NodeType.BOOLEAN_VALUE:
+    case NodeType.INPUT_VALUE:
+    case NodeType.LOAD_CONFIG_FILE:
+    case NodeType.SELECT_CONFIG_FILE:
+    case NodeType.START:
+    default:
+      return 'utils';
+  }
+}
 
 export default function LeftSidebar() {
   // Initialize collapsed state from localStorage
   const [isCollapsed, setIsCollapsed] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
     return saved === 'true';
+  });
+  // Initialize active tab from localStorage
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_TAB);
+    return (saved as TabType) || 'all';
   });
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [activeNode, setActiveNode] = useState<string | null>(null);
@@ -149,6 +221,11 @@ export default function LeftSidebar() {
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, String(isCollapsed));
   }, [isCollapsed]);
+
+  // Save active tab to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_TAB, activeTab);
+  }, [activeTab]);
 
   // Monitor plugin registry changes
   useEffect(() => {
@@ -293,13 +370,47 @@ export default function LeftSidebar() {
     }));
   }, [pluginCategories]);
 
-  // Filter categories and nodes based on search query
-  const filteredCategories = useMemo(() => {
-    if (!searchQuery.trim()) {
+  // Filter categories based on active tab
+  const tabFilteredCategories = useMemo(() => {
+    if (activeTab === 'all') {
       return allCategories;
     }
 
-    return allCategories
+    // Filter nodes by tab category
+    const filteredMap = new Map<string, Array<{ type: string; label: string; icon?: string }>>();
+    
+    allCategories.forEach((category) => {
+      const matchingNodes = category.nodes.filter((node) => {
+        const nodeCategory = getNodeCategory(node.type, node.label);
+        return nodeCategory === activeTab;
+      });
+      
+      if (matchingNodes.length > 0) {
+        // If category already exists, merge; otherwise create new
+        if (filteredMap.has(category.label)) {
+          const existingNodes = filteredMap.get(category.label)!;
+          filteredMap.set(category.label, [...existingNodes, ...matchingNodes]);
+        } else {
+          filteredMap.set(category.label, matchingNodes);
+        }
+      }
+    });
+    
+    return Array.from(filteredMap.entries()).map(([label, nodes]) => ({
+      label,
+      nodes,
+    }));
+  }, [allCategories, activeTab]);
+
+  // Filter categories and nodes based on search query
+  const filteredCategories = useMemo(() => {
+    const categoriesToFilter = tabFilteredCategories;
+    
+    if (!searchQuery.trim()) {
+      return categoriesToFilter;
+    }
+
+    return categoriesToFilter
       .map((category) => {
         // Filter nodes that match the search query
         const filteredNodes = category.nodes.filter((node) =>
@@ -316,57 +427,108 @@ export default function LeftSidebar() {
         return null;
       })
       .filter((category): category is NonNullable<typeof category> => category !== null);
-  }, [allCategories, searchQuery]);
+  }, [tabFilteredCategories, searchQuery]);
 
   return (
     <div
-      className={`relative bg-gray-800 border-r border-gray-700 overflow-y-auto transition-all duration-300 ease-in-out ${
+      className={`relative bg-gray-800 border-r border-gray-700 flex flex-col transition-all duration-300 ease-in-out ${
         isCollapsed ? 'w-16' : 'w-64'
       }`}
     >
-      {/* Toggle Button */}
-      <button
-        onClick={() => {
-          setIsCollapsed((prev) => !prev);
-        }}
-        className="absolute top-4 right-2 z-10 p-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
-        aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-      >
-        {isCollapsed ? (
-          <ChevronRight size={16} />
-        ) : (
-          <ChevronLeft size={16} />
-        )}
-      </button>
+      {/* Pinned Header Section */}
+      <div className="sticky top-0 z-20 bg-gray-800 border-b border-gray-700">
+        {/* Toggle Button */}
+        <button
+          onClick={() => {
+            setIsCollapsed((prev) => !prev);
+          }}
+          className="absolute top-4 right-2 z-10 p-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
+          aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {isCollapsed ? (
+            <ChevronRight size={16} />
+          ) : (
+            <ChevronLeft size={16} />
+          )}
+        </button>
 
-      <div className={`p-4 ${isCollapsed ? 'px-2' : ''}`}>
         {!isCollapsed && (
           <>
-            <h2 className="text-sm font-semibold text-gray-400 uppercase mb-4 pr-8">Node Library</h2>
-            {/* Search Box */}
-            <div className="relative mb-4">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <Search size={16} />
+            <div className="p-4 pb-2">
+              <h2 className="text-sm font-semibold text-gray-400 uppercase mb-4 pr-8">Node Library</h2>
+              {/* Search Box */}
+              <div className="relative mb-2">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <Search size={16} />
+                </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search nodes..."
+                  className="w-full pl-10 pr-8 py-2 bg-gray-700 text-gray-200 placeholder-gray-400 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                    aria-label="Clear search"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
               </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search nodes..."
-                className="w-full pl-10 pr-8 py-2 bg-gray-700 text-gray-200 placeholder-gray-400 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-              />
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
-                  aria-label="Clear search"
-                >
-                  <X size={16} />
-                </button>
-              )}
+            </div>
+            {/* Tabs */}
+            <div className="flex border-b border-gray-700 px-4">
+              <button
+                onClick={() => setActiveTab('all')}
+                className={`px-3 py-2 text-xs font-medium transition-colors ${
+                  activeTab === 'all'
+                    ? 'text-blue-400 border-b-2 border-blue-400'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setActiveTab('browser')}
+                className={`px-3 py-2 text-xs font-medium transition-colors ${
+                  activeTab === 'browser'
+                    ? 'text-blue-400 border-b-2 border-blue-400'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                Browser
+              </button>
+              <button
+                onClick={() => setActiveTab('api')}
+                className={`px-3 py-2 text-xs font-medium transition-colors ${
+                  activeTab === 'api'
+                    ? 'text-blue-400 border-b-2 border-blue-400'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                API
+              </button>
+              <button
+                onClick={() => setActiveTab('utils')}
+                className={`px-3 py-2 text-xs font-medium transition-colors ${
+                  activeTab === 'utils'
+                    ? 'text-blue-400 border-b-2 border-blue-400'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                Utils
+              </button>
             </div>
           </>
         )}
+      </div>
+
+      {/* Scrollable Content */}
+      <div className="flex-1 overflow-y-auto">
+        <div className={`p-4 ${isCollapsed ? 'px-2 pt-4' : 'pt-4'}`}>
         <div className="space-y-6">
           {filteredCategories.map((category) => (
             <div key={category.label}>
@@ -443,6 +605,7 @@ export default function LeftSidebar() {
               </div>
             </div>
           ))}
+        </div>
         </div>
       </div>
     </div>

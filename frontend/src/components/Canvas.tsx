@@ -11,6 +11,7 @@ import { useWorkflowStore } from '../store/workflowStore';
 import CustomNode from '../nodes/CustomNode';
 import CustomEdge from './CustomEdge';
 import ContextMenu from './ContextMenu';
+import CanvasSearchOverlay from './CanvasSearchOverlay';
 import { useShortcutNavigation } from '../hooks/useShortcutNavigation';
 
 const nodeTypes = {
@@ -91,6 +92,11 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     reactFlowInstanceRef.current = reactFlowInstance;
   }, [reactFlowInstance, reactFlowInstanceRef]);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId?: string } | null>(null);
+  const [searchOverlay, setSearchOverlay] = useState<{ screen: { x: number; y: number }; flow: { x: number; y: number } } | null>(null);
+  
+  // Double-click detection using timing
+  const lastClickRef = useRef<{ time: number; x: number; y: number } | null>(null);
+  const doubleClickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Edge visibility state from store
   const edgesHidden = useWorkflowStore((state) => state.edgesHidden);
@@ -198,10 +204,80 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     // Node click no longer opens property panel - use context menu instead
   }, [failedNodes, showErrorPopupForNode]);
 
-  const onPaneClick = useCallback(() => {
+  const onPaneClick = useCallback((e: React.MouseEvent) => {
+    const now = Date.now();
+    const clickX = e.clientX;
+    const clickY = e.clientY;
+    
+    // Check if this is a double-click (within 300ms and 10px distance)
+    if (lastClickRef.current) {
+      const timeDiff = now - lastClickRef.current.time;
+      const distance = Math.sqrt(
+        Math.pow(clickX - lastClickRef.current.x, 2) + 
+        Math.pow(clickY - lastClickRef.current.y, 2)
+      );
+      
+      if (timeDiff < 300 && distance < 10) {
+        // Clear timeout if exists
+        if (doubleClickTimeoutRef.current) {
+          clearTimeout(doubleClickTimeoutRef.current);
+          doubleClickTimeoutRef.current = null;
+        }
+        
+        // Reset last click
+        lastClickRef.current = null;
+        
+        // Prevent default behavior
+        e.preventDefault();
+        e.stopPropagation();
+        
+        // Convert screen coordinates to flow coordinates for node placement
+        const flowPosition = screenToFlowPosition({
+          x: clickX,
+          y: clickY,
+        });
+        
+        // Calculate position relative to canvas container for overlay display
+        if (reactFlowWrapper.current) {
+          const rect = reactFlowWrapper.current.getBoundingClientRect();
+          const relativeX = clickX - rect.left;
+          const relativeY = clickY - rect.top;
+          
+          setSearchOverlay({
+            screen: { x: relativeX, y: relativeY },
+            flow: flowPosition,
+          });
+        }
+        
+        return;
+      }
+    }
+    
+    // Clear any existing timeout
+    if (doubleClickTimeoutRef.current) {
+      clearTimeout(doubleClickTimeoutRef.current);
+    }
+    
+    // Set timeout to clear lastClickRef after delay
+    doubleClickTimeoutRef.current = setTimeout(() => {
+      lastClickRef.current = null;
+    }, 300);
+    
+    // Store this click for potential double-click detection
+    lastClickRef.current = { time: now, x: clickX, y: clickY };
+    
+    // Normal single-click behavior
     setSelectedNode(null);
     setContextMenu(null);
-  }, [setSelectedNode]);
+    setSearchOverlay(null);
+  }, [setSelectedNode, screenToFlowPosition]);
+
+
+  const handleNodeSelect = useCallback((nodeType: string, flowPosition: { x: number; y: number }) => {
+    const addNode = useWorkflowStore.getState().addNode;
+    addNode(nodeType, flowPosition);
+    setSearchOverlay(null);
+  }, []);
 
   const onNodeContextMenu = useCallback((e: React.MouseEvent, node: any) => {
     e.preventDefault();
@@ -487,6 +563,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
         edgeTypes={edgeTypes}
         minZoom={0.1}
         maxZoom={2}
+        zoomOnDoubleClick={false}
         className="bg-gray-900"
         proOptions={{ hideAttribution: true }}
       >
@@ -499,6 +576,14 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
           y={contextMenu.y}
           nodeId={contextMenu.nodeId}
           onClose={() => setContextMenu(null)}
+        />
+      )}
+      {searchOverlay && (
+        <CanvasSearchOverlay
+          position={searchOverlay.screen}
+          flowPosition={searchOverlay.flow}
+          onClose={() => setSearchOverlay(null)}
+          onNodeSelect={handleNodeSelect}
         />
       )}
     </div>

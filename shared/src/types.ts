@@ -11,10 +11,7 @@ export enum PropertyDataType {
 export enum NodeType {
   START = 'start',
   OPEN_BROWSER = 'openBrowser',
-  NAVIGATE = 'navigate',
-  CLICK = 'click',
   TYPE = 'type',
-  GET_TEXT = 'getText',
   SCREENSHOT = 'screenshot',
   WAIT = 'wait',
   JAVASCRIPT_CODE = 'javascriptCode',
@@ -28,6 +25,16 @@ export enum NodeType {
   API_CURL = 'apiCurl',
   LOAD_CONFIG_FILE = 'loadConfigFile',
   SELECT_CONFIG_FILE = 'selectConfigFile',
+  ACTION = 'action',
+  ELEMENT_QUERY = 'elementQuery',
+  FORM_INPUT = 'formInput',
+  NAVIGATION = 'navigation',
+  KEYBOARD = 'keyboard',
+  SCROLL = 'scroll',
+  STORAGE = 'storage',
+  DIALOG = 'dialog',
+  DOWNLOAD = 'download',
+  IFRAME = 'iframe',
 }
 
 // Base Node Interface
@@ -79,6 +86,132 @@ export interface NavigateNodeData {
   waitForConditionTimeout?: number;
   waitStrategy?: 'sequential' | 'parallel';
   waitAfterOperation?: boolean; // false = wait before (default), true = wait after
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: 'css' | 'xpath';
+    timeout?: number;
+  };
+  retryDelay?: number;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface NavigationNodeData {
+  action: 'navigate' | 'goBack' | 'goForward' | 'reload' | 'newTab' | 'switchTab' | 'closeTab';
+  timeout?: number;
+  failSilently?: boolean;
+  // Action-specific properties
+  url?: string; // For navigate/newTab actions
+  waitUntil?: 'load' | 'domcontentloaded' | 'networkidle' | 'commit'; // For navigate/goBack/goForward/reload
+  referer?: string; // For navigate action
+  tabIndex?: number; // For switchTab/closeTab actions
+  urlPattern?: string; // For switchTab action
+  contextKey?: string; // For newTab/switchTab actions (store page reference)
+  // Advanced Waiting Options
+  waitForSelector?: string;
+  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean; // false = wait before (default), true = wait after
+  // Retry Configuration
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: 'css' | 'xpath';
+    timeout?: number;
+  };
+  retryDelay?: number;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface KeyboardNodeData {
+  action: 'press' | 'type' | 'insertText' | 'shortcut' | 'down' | 'up';
+  timeout?: number;
+  failSilently?: boolean;
+  // Action-specific properties
+  key?: string; // For press/down/up actions
+  text?: string; // For type/insertText actions
+  shortcut?: string; // For shortcut action (e.g., "Control+C", "Meta+V")
+  selector?: string; // Optional - focus element first before action
+  selectorType?: 'css' | 'xpath'; // Selector type
+  delay?: number; // For type action - delay between keystrokes
+  // Advanced Waiting Options
+  waitForSelector?: string;
+  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean;
+  // Retry Configuration
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: 'css' | 'xpath';
+    timeout?: number;
+  };
+  retryDelay?: number;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface ScrollNodeData {
+  action: 'scrollToElement' | 'scrollToPosition' | 'scrollBy' | 'scrollToTop' | 'scrollToBottom';
+  timeout?: number;
+  failSilently?: boolean;
+  // Action-specific properties
+  selector?: string; // For scrollToElement action
+  selectorType?: 'css' | 'xpath'; // For scrollToElement action
+  x?: number; // For scrollToPosition action
+  y?: number; // For scrollToPosition action
+  deltaX?: number; // For scrollBy action
+  deltaY?: number; // For scrollBy action
+  // Advanced Waiting Options
+  waitForSelector?: string;
+  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean;
+  // Retry Configuration
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
   retryCount?: number;
@@ -168,6 +301,129 @@ export interface TypeNodeData {
   };
 }
 
+export interface ActionNodeData {
+  action: 'click' | 'doubleClick' | 'rightClick' | 'hover';
+  selector: string;
+  selectorType?: 'css' | 'xpath';
+  timeout?: number;
+  failSilently?: boolean;
+  // Action-specific properties
+  button?: 'left' | 'right' | 'middle'; // For click/rightClick actions
+  delay?: number; // For hover/doubleClick actions
+  // Advanced Waiting Options
+  waitForSelector?: string;
+  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean; // false = wait before (default), true = wait after
+  // Retry Configuration
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: 'css' | 'xpath';
+    timeout?: number;
+  };
+  retryDelay?: number;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface ElementQueryNodeData {
+  action: 'getText' | 'getAttribute' | 'getCount' | 'isVisible' | 'isEnabled' | 'isChecked' | 'getBoundingBox' | 'getAllText';
+  selector: string;
+  selectorType?: 'css' | 'xpath';
+  timeout?: number;
+  failSilently?: boolean;
+  // Action-specific properties
+  attributeName?: string; // For getAttribute action
+  outputVariable?: string; // For all actions (defaults vary by action)
+  // Advanced Waiting Options
+  waitForSelector?: string;
+  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean; // false = wait before (default), true = wait after
+  // Retry Configuration
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: 'css' | 'xpath';
+    timeout?: number;
+  };
+  retryDelay?: number;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface FormInputNodeData {
+  action: 'select' | 'check' | 'uncheck' | 'upload';
+  selector: string;
+  selectorType?: 'css' | 'xpath';
+  timeout?: number;
+  failSilently?: boolean;
+  // Action-specific properties
+  values?: string | string[]; // For select action
+  selectBy?: 'value' | 'label' | 'index'; // For select action
+  multiple?: boolean; // For select/upload actions
+  force?: boolean; // For check/uncheck actions
+  filePaths?: string | string[]; // For upload action
+  // Advanced Waiting Options
+  waitForSelector?: string;
+  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean; // false = wait before (default), true = wait after
+  // Retry Configuration
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: 'css' | 'xpath';
+    timeout?: number;
+  };
+  retryDelay?: number;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
 export interface GetTextNodeData {
   selector: string;
   selectorType?: 'css' | 'xpath';
@@ -204,9 +460,18 @@ export interface GetTextNodeData {
 }
 
 export interface ScreenshotNodeData {
+  action?: 'fullPage' | 'element' | 'viewport' | 'pdf'; // Enhanced: add action dropdown
   path?: string;
-  fullPage?: boolean;
+  fullPage?: boolean; // Legacy: kept for backward compatibility
   failSilently?: boolean;
+  // Action-specific properties
+  selector?: string; // For element action
+  selectorType?: 'css' | 'xpath'; // For element action
+  mask?: string[]; // For element/fullPage/viewport actions - selectors to mask
+  format?: 'A4' | 'Letter'; // For pdf action
+  margin?: { top?: number; right?: number; bottom?: number; left?: number }; // For pdf action
+  printBackground?: boolean; // For pdf action
+  landscape?: boolean; // For pdf action
   waitForSelector?: string;
   waitForSelectorType?: 'css' | 'xpath';
   waitForSelectorTimeout?: number;
@@ -216,6 +481,179 @@ export interface ScreenshotNodeData {
   waitForConditionTimeout?: number;
   waitStrategy?: 'sequential' | 'parallel';
   waitAfterOperation?: boolean; // false = wait before (default), true = wait after
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: 'css' | 'xpath';
+    timeout?: number;
+  };
+  retryDelay?: number;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface StorageNodeData {
+  action: 'getCookie' | 'setCookie' | 'clearCookies' | 'getLocalStorage' | 'setLocalStorage' | 'clearLocalStorage' | 'getSessionStorage' | 'setSessionStorage' | 'clearSessionStorage';
+  contextKey?: string; // Where to store retrieved values
+  failSilently?: boolean;
+  // Action-specific properties
+  name?: string; // For getCookie - get specific cookie, or all if not specified
+  url?: string; // For getCookie/setCookie - URL for cookie operations
+  cookies?: Array<{ // For setCookie
+    name: string;
+    value: string;
+    domain?: string;
+    path?: string;
+    expires?: number;
+    httpOnly?: boolean;
+    secure?: boolean;
+    sameSite?: 'Strict' | 'Lax' | 'None';
+  }>;
+  domain?: string; // For clearCookies - clear cookies for specific domain
+  key?: string; // For getLocalStorage/getSessionStorage/setLocalStorage/setSessionStorage
+  value?: string; // For setLocalStorage/setSessionStorage
+  // Advanced Waiting Options
+  waitForSelector?: string;
+  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean;
+  // Retry Configuration
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: 'css' | 'xpath';
+    timeout?: number;
+  };
+  retryDelay?: number;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface DialogNodeData {
+  action: 'accept' | 'dismiss' | 'prompt' | 'waitForDialog';
+  timeout?: number;
+  failSilently?: boolean;
+  // Action-specific properties
+  message?: string; // For accept/dismiss/prompt/waitForDialog - expected dialog message
+  inputText?: string; // For prompt action - text to input
+  outputVariable?: string; // For waitForDialog - store dialog message (default: 'dialogMessage')
+  // Advanced Waiting Options
+  waitForSelector?: string;
+  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean;
+  // Retry Configuration
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: 'css' | 'xpath';
+    timeout?: number;
+  };
+  retryDelay?: number;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface DownloadNodeData {
+  action: 'waitForDownload' | 'saveDownload' | 'getDownloadPath';
+  timeout?: number;
+  failSilently?: boolean;
+  // Action-specific properties
+  urlPattern?: string; // For waitForDownload - wait for download from URL matching pattern
+  outputVariable?: string; // For waitForDownload/getDownloadPath - store download object/path
+  downloadObject?: string; // For saveDownload/getDownloadPath - download object from context (from waitForDownload)
+  savePath?: string; // For saveDownload - path to save file
+  // Advanced Waiting Options
+  waitForSelector?: string;
+  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean;
+  // Retry Configuration
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: 'css' | 'xpath';
+    timeout?: number;
+  };
+  retryDelay?: number;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface IframeNodeData {
+  action: 'switchToIframe' | 'switchToMainFrame' | 'getIframeContent';
+  timeout?: number;
+  failSilently?: boolean;
+  // Action-specific properties
+  selector?: string; // For switchToIframe/getIframeContent - iframe selector
+  name?: string; // For switchToIframe - iframe name attribute
+  url?: string; // For switchToIframe - iframe URL pattern
+  contextKey?: string; // For switchToIframe - store iframe page reference (default: 'iframePage')
+  iframeSelector?: string; // For getIframeContent - iframe selector
+  contentSelector?: string; // For getIframeContent - element selector within iframe
+  outputVariable?: string; // For getIframeContent - store content (default: 'iframeContent')
+  // Advanced Waiting Options
+  waitForSelector?: string;
+  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean;
+  // Retry Configuration
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
   retryCount?: number;
@@ -432,10 +870,17 @@ export interface VerifyNodeData {
 export type NodeData =
   | StartNodeData
   | OpenBrowserNodeData
-  | NavigateNodeData
-  | ClickNodeData
   | TypeNodeData
-  | GetTextNodeData
+  | ActionNodeData
+  | ElementQueryNodeData
+  | FormInputNodeData
+  | NavigationNodeData
+  | KeyboardNodeData
+  | ScrollNodeData
+  | StorageNodeData
+  | DialogNodeData
+  | DownloadNodeData
+  | IframeNodeData
   | ScreenshotNodeData
   | WaitNodeData
   | JavaScriptCodeNodeData

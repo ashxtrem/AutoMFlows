@@ -29,21 +29,204 @@ export default function ScreenshotConfig({ node, onChange }: ScreenshotConfigPro
   };
 
   const isUrlPatternValid = validateRegex(data.waitForUrl || '');
+  const action = data.action || (data.fullPage ? 'fullPage' : 'viewport'); // Support legacy fullPage property
 
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1">Full Page</label>
-        <label className="flex items-center gap-2 cursor-pointer">
-          <input
-            type="checkbox"
-            checked={data.fullPage || false}
-            onChange={(e) => onChange('fullPage', e.target.checked)}
-            className="rounded"
-          />
-          <span className="text-sm text-gray-400">Capture full page (not just viewport)</span>
-        </label>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Action</label>
+        <select
+          value={getPropertyValue('action', action)}
+          onChange={(e) => {
+            const newAction = e.target.value;
+            onChange('action', newAction);
+            // Clear action-specific properties when action changes
+            if (newAction !== 'element') {
+              onChange('selector', undefined);
+              onChange('selectorType', undefined);
+            }
+            if (newAction !== 'pdf') {
+              onChange('format', undefined);
+              onChange('margin', undefined);
+              onChange('printBackground', undefined);
+              onChange('landscape', undefined);
+            }
+            // Legacy: update fullPage for backward compatibility
+            if (newAction === 'fullPage') {
+              onChange('fullPage', true);
+            } else if (newAction === 'viewport') {
+              onChange('fullPage', false);
+            }
+          }}
+          disabled={isPropertyDisabled('action')}
+          className={getInputClassName('action', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+        >
+          <option value="fullPage">Full Page</option>
+          <option value="viewport">Viewport</option>
+          <option value="element">Element</option>
+          <option value="pdf">PDF</option>
+        </select>
+        {isPropertyDisabled('action') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
       </div>
+
+      {/* Legacy: Keep fullPage checkbox for backward compatibility */}
+      {!data.action && (
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">Full Page</label>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={data.fullPage || false}
+              onChange={(e) => {
+                onChange('fullPage', e.target.checked);
+                onChange('action', e.target.checked ? 'fullPage' : 'viewport');
+              }}
+              className="rounded"
+            />
+            <span className="text-sm text-gray-400">Capture full page (not just viewport)</span>
+          </label>
+        </div>
+      )}
+
+      {/* Action-specific properties */}
+      {action === 'element' && (
+        <>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Selector</label>
+            <input
+              type="text"
+              value={getPropertyValue('selector', '')}
+              onChange={(e) => onChange('selector', e.target.value)}
+              placeholder="#element or //div[@id='element']"
+              disabled={isPropertyDisabled('selector')}
+              className={getInputClassName('selector', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
+            <select
+              value={getPropertyValue('selectorType', 'css')}
+              onChange={(e) => onChange('selectorType', e.target.value)}
+              disabled={isPropertyDisabled('selectorType')}
+              className={getInputClassName('selectorType', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+            >
+              <option value="css">CSS Selector</option>
+              <option value="xpath">XPath</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Mask Selectors (optional)</label>
+            <textarea
+              value={Array.isArray(data.mask) ? data.mask.join('\n') : (data.mask || '')}
+              onChange={(e) => {
+                const masks = e.target.value.split('\n').filter(m => m.trim());
+                onChange('mask', masks.length > 0 ? masks : undefined);
+              }}
+              placeholder="One selector per line"
+              rows={3}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+            />
+            <div className="mt-1 text-xs text-gray-400">
+              Selectors to mask in screenshot (one per line)
+            </div>
+          </div>
+        </>
+      )}
+
+      {(action === 'fullPage' || action === 'viewport') && (
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">Mask Selectors (optional)</label>
+          <textarea
+            value={Array.isArray(data.mask) ? data.mask.join('\n') : (data.mask || '')}
+            onChange={(e) => {
+              const masks = e.target.value.split('\n').filter(m => m.trim());
+              onChange('mask', masks.length > 0 ? masks : undefined);
+            }}
+            placeholder="One selector per line"
+            rows={3}
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+          />
+          <div className="mt-1 text-xs text-gray-400">
+            Selectors to mask in screenshot (one per line)
+          </div>
+        </div>
+      )}
+
+      {action === 'pdf' && (
+        <>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Format</label>
+            <select
+              value={getPropertyValue('format', 'A4')}
+              onChange={(e) => onChange('format', e.target.value)}
+              disabled={isPropertyDisabled('format')}
+              className={getInputClassName('format', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+            >
+              <option value="A4">A4</option>
+              <option value="Letter">Letter</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Margins (optional)</label>
+            <div className="grid grid-cols-2 gap-2">
+              <input
+                type="number"
+                value={data.margin?.top || ''}
+                onChange={(e) => onChange('margin', { ...data.margin, top: e.target.value ? parseInt(e.target.value, 10) : undefined })}
+                placeholder="Top"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+              />
+              <input
+                type="number"
+                value={data.margin?.right || ''}
+                onChange={(e) => onChange('margin', { ...data.margin, right: e.target.value ? parseInt(e.target.value, 10) : undefined })}
+                placeholder="Right"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+              />
+              <input
+                type="number"
+                value={data.margin?.bottom || ''}
+                onChange={(e) => onChange('margin', { ...data.margin, bottom: e.target.value ? parseInt(e.target.value, 10) : undefined })}
+                placeholder="Bottom"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+              />
+              <input
+                type="number"
+                value={data.margin?.left || ''}
+                onChange={(e) => onChange('margin', { ...data.margin, left: e.target.value ? parseInt(e.target.value, 10) : undefined })}
+                placeholder="Left"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={data.printBackground !== false}
+                onChange={(e) => onChange('printBackground', e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-sm text-gray-300">Print Background</span>
+            </label>
+          </div>
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={data.landscape || false}
+                onChange={(e) => onChange('landscape', e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-sm text-gray-300">Landscape</span>
+            </label>
+          </div>
+        </>
+      )}
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">File Path (Optional)</label>
         <input
