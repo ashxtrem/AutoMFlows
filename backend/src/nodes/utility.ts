@@ -3,6 +3,7 @@ import { NodeHandler } from './base';
 import { ContextManager } from '../engine/context';
 import { WaitHelper } from '../utils/waitHelper';
 import { RetryHelper } from '../utils/retryHelper';
+import { VariableInterpolator } from '../utils/variableInterpolator';
 import { verificationStrategyRegistry } from './verification/strategies';
 
 export class GetTextHandler implements NodeHandler {
@@ -19,7 +20,8 @@ export class GetTextHandler implements NodeHandler {
     }
 
     const timeout = data.timeout || 30000;
-    const selector = data.selector;
+    // Interpolate template variables in selector (e.g., ${data.productIndex})
+    const selector = VariableInterpolator.interpolateString(data.selector, context);
     const outputVariable = data.outputVariable || 'text';
 
     // Execute getText operation with retry logic (includes wait conditions)
@@ -203,7 +205,8 @@ export class WaitHandler implements NodeHandler {
           if (!page) {
             throw new Error('Page is required for selector wait');
           }
-          const selector = String(data.value);
+          // Interpolate template variables in selector (e.g., ${data.productIndex})
+          const selector = VariableInterpolator.interpolateString(String(data.value), context);
           const timeout = data.timeout || 30000;
 
           if (data.selectorType === 'xpath') {

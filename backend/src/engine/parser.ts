@@ -138,7 +138,7 @@ export class WorkflowParser {
           return;
         }
 
-        // Visit all dependencies first
+        // Visit all dependencies first (backward traversal for correct ordering)
         for (const depId of executionNode.dependencies) {
           visit(depId);
         }
@@ -146,16 +146,37 @@ export class WorkflowParser {
         visiting.delete(nodeId);
         visited.add(nodeId);
         result.push(nodeId);
+        
+        // Visit all dependents (forward traversal to continue from this node)
+        // This ensures we traverse the entire connected graph from start
+        for (const dependentId of executionNode.dependents) {
+          visit(dependentId);
+        }
       }
     };
 
     // Start from start node
     visit(this.startNodeId);
 
-    // Visit any remaining nodes (in case of disconnected graph)
-    for (const nodeId of this.nodes.keys()) {
-      if (!visited.has(nodeId)) {
-        visit(nodeId);
+    // After visiting from start, visit any remaining nodes that are reachable
+    // (have at least one visited node as a dependency) but weren't visited yet
+    // This handles cases where the graph traversal didn't catch all connected nodes
+    // But we skip truly disconnected nodes (nodes with no dependencies on visited nodes)
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const nodeId of this.nodes.keys()) {
+        if (!visited.has(nodeId)) {
+          const executionNode = this.nodes.get(nodeId);
+          if (executionNode) {
+            // Check if this node has at least one visited dependency (is reachable)
+            const hasVisitedDependency = executionNode.dependencies.some(depId => visited.has(depId));
+            if (hasVisitedDependency) {
+              visit(nodeId);
+              changed = true;
+            }
+          }
+        }
       }
     }
 

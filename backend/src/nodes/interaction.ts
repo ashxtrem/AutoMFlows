@@ -3,6 +3,7 @@ import { NodeHandler } from './base';
 import { ContextManager } from '../engine/context';
 import { WaitHelper } from '../utils/waitHelper';
 import { RetryHelper } from '../utils/retryHelper';
+import { VariableInterpolator } from '../utils/variableInterpolator';
 
 export class ClickHandler implements NodeHandler {
   async execute(node: BaseNode, context: ContextManager): Promise<void> {
@@ -18,7 +19,8 @@ export class ClickHandler implements NodeHandler {
     }
 
     const timeout = data.timeout || 30000;
-    const selector = data.selector;
+    // Interpolate template variables in selector (e.g., ${data.productIndex})
+    const selector = VariableInterpolator.interpolateString(data.selector, context);
 
     // Execute click operation with retry logic (includes wait conditions)
     const result = await RetryHelper.executeWithRetry(
@@ -104,8 +106,9 @@ export class TypeHandler implements NodeHandler {
     }
 
     const timeout = data.timeout || 30000;
-    const selector = data.selector;
-    const text = data.text;
+    // Interpolate template variables in selector and text (e.g., ${data.productIndex})
+    const selector = VariableInterpolator.interpolateString(data.selector, context);
+    const text = VariableInterpolator.interpolateString(data.text, context);
 
     // Execute type operation with retry logic (includes wait conditions)
     const result = await RetryHelper.executeWithRetry(

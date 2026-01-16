@@ -142,6 +142,12 @@ export class Executor {
       this.context.setData('fullWorkflow', this.workflow);
       this.context.setData('reusableScopes', this.parser.getReusableScopes());
       this.context.setData('resolvePropertyInputs', (node: BaseNode) => this.resolvePropertyInputs(node));
+      // Store trace logging function for RunReusableHandler to use
+      this.context.setData('traceLog', (message: string) => this.traceLog(message));
+      this.context.setData('emitEvent', (event: ExecutionEvent) => this.emitEvent(event));
+      this.context.setData('setCurrentNodeId', (nodeId: string | null) => { this.currentNodeId = nodeId; });
+      this.context.setData('getCurrentNodeId', () => this.currentNodeId);
+      this.context.setData('traceLogs', this.traceLogs);
 
       this.status = ExecutionStatus.RUNNING;
       this.traceLog(`[TRACE] Execution started - ID: ${this.executionId}`);
