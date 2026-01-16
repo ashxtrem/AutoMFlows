@@ -452,28 +452,79 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     // Minimum width: enough for label + icon + padding
     // Estimate label width: ~8px per character + icon (~24px) + padding (32px total)
     const labelWidth = (label.length * 8) + 24 + 32;
-    const minWidth = Math.max(150, labelWidth);
     
-    // Check if node has properties (without calling renderProperties to avoid circular dependency)
+    // Calculate width needed for properties
+    let maxPropertyWidth = 0;
     let hasProps = false;
     let propertyCount = 0;
     
     if (Object.values(NodeType).includes(nodeType as NodeType)) {
-      // Built-in nodes - check if they have properties
-      hasProps = nodeType !== NodeType.START;
-      if (hasProps) {
-        propertyCount = Object.keys(data).filter(
-          (key) => !['type', 'label', 'isExecuting', 'width', 'height', 'borderColor', 'backgroundColor', 'bypass', 'isMinimized'].includes(key)
-        ).length;
-      }
+      // Built-in nodes - get properties from schema
+      const properties = getNodeProperties(nodeType);
+      hasProps = properties.length > 0;
+      propertyCount = properties.length;
+      
+      // Calculate width for each property
+      properties.forEach(prop => {
+        // Skip properties that are converted to inputs (they show connection info, not values)
+        const isInput = isPropertyInputConnection(data, prop.name);
+        if (isInput) {
+          // For inputs, estimate width based on label only (connection info is shorter)
+          const inputWidth = (prop.label.length * 8) + 60 + 16; // label + min-w-[60px] + padding
+          maxPropertyWidth = Math.max(maxPropertyWidth, inputWidth);
+        } else {
+          // Get property value from data
+          const propValue = data[prop.name];
+          let valueStr = '';
+          
+          if (propValue !== undefined && propValue !== null) {
+            if (prop.dataType === PropertyDataType.STRING) {
+              valueStr = String(propValue);
+              // For long strings (like URLs or code), consider first line or reasonable max
+              // This helps prevent extremely wide nodes from very long single-line values
+              if (valueStr.length > 100 && !valueStr.includes('\n')) {
+                valueStr = valueStr.substring(0, 100);
+              } else if (valueStr.includes('\n')) {
+                // For multi-line strings, use first line for width calculation
+                const firstLine = valueStr.split('\n')[0];
+                valueStr = firstLine.length > 100 ? firstLine.substring(0, 100) : firstLine;
+              }
+            } else if (prop.dataType === PropertyDataType.INT || prop.dataType === PropertyDataType.FLOAT || prop.dataType === PropertyDataType.DOUBLE) {
+              valueStr = String(propValue);
+            } else if (prop.dataType === PropertyDataType.BOOLEAN) {
+              valueStr = String(propValue);
+            } else {
+              valueStr = String(propValue);
+            }
+          }
+          
+          // Calculate width: label length + value length * 8px + label min-width (60px) + padding (16px) + gaps (8px)
+          const propertyWidth = (prop.label.length + valueStr.length) * 8 + 60 + 16 + 8;
+          maxPropertyWidth = Math.max(maxPropertyWidth, propertyWidth);
+        }
+      });
     } else {
       // Plugin nodes
       const pluginNode = frontendPluginRegistry.getPluginNode(nodeType);
       hasProps = !!(pluginNode && pluginNode.definition.defaultData !== undefined);
       if (hasProps && pluginNode?.definition.defaultData) {
-        propertyCount = Object.keys(pluginNode.definition.defaultData).length;
+        const properties = Object.keys(pluginNode.definition.defaultData);
+        propertyCount = properties.length;
+        
+        // Calculate width for each plugin property
+        properties.forEach(propName => {
+          const propValue = data[propName] ?? pluginNode.definition.defaultData![propName];
+          const valueStr = propValue !== undefined && propValue !== null ? String(propValue) : '';
+          
+          // Use property name as label (plugin nodes use name as label)
+          const propertyWidth = (propName.length + valueStr.length) * 8 + 60 + 16 + 8;
+          maxPropertyWidth = Math.max(maxPropertyWidth, propertyWidth);
+        });
       }
     }
+    
+    // Minimum width is max of: label width, max property width, or 150px
+    const minWidth = Math.max(150, labelWidth, maxPropertyWidth);
     
     // Minimum height: header (~50px) + properties if not minimized
     let minHeight = 50; // Header height
@@ -588,7 +639,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     const sourceNodeLabel = sourceNode?.data?.label || sourceNode?.data?.type || connectedEdge?.source;
 
     return (
-      <div key={propertyName} className="relative flex items-center gap-2 min-h-[24px]">
+      <div key={propertyName} className="relative flex items-center gap-2 min-h-[24px] min-w-0">
         {/* Property input handle */}
         {isInput && (
           <>
@@ -627,18 +678,18 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
         )}
         {/* Property editor - hide if converted to input */}
         {!isInput && (
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {React.isValidElement(propertyElement) 
               ? React.cloneElement(propertyElement as React.ReactElement<any>, { field: propertyName })
               : propertyElement}
           </div>
         )}
         {isInput && (
-          <div className={`flex-1 text-xs ${!hasConnection ? 'italic' : ''}`} style={{ color: textColor, opacity: hasConnection ? 0.9 : 0.6 }}>
+          <div className={`flex-1 text-xs min-w-0 ${!hasConnection ? 'italic' : ''}`} style={{ color: textColor, opacity: hasConnection ? 0.9 : 0.6 }}>
             {hasConnection ? (
-              <span className="flex items-center gap-1">
-                <span className="text-green-400">●</span>
-                <span className="truncate" title={sourceNodeLabel}>{sourceNodeLabel}</span>
+              <span className="flex items-center gap-1 min-w-0">
+                <span className="text-green-400 flex-shrink-0">●</span>
+                <span className="truncate min-w-0" title={sourceNodeLabel}>{sourceNodeLabel}</span>
               </span>
             ) : (
               <span>Not connected</span>
@@ -2443,7 +2494,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
       })()}
       {/* Header Block with Status Dot */}
       <div 
-        className="flex items-center gap-2 px-2 py-1.5 -mx-4 -mt-3 mb-2 rounded-t-lg"
+        className="flex items-center gap-2 px-2 py-1.5 -mx-4 -mt-3 mb-2 rounded-t-lg min-w-0"
         style={{ 
           backgroundColor: 'rgba(40, 40, 40, 0.8)',
           borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
@@ -2481,9 +2532,13 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
         />
         {icon ? (() => {
           const IconComponent = icon.icon;
-          return <IconComponent sx={{ fontSize: '1.25rem', color: icon.color }} />;
+          return (
+            <div className="flex-shrink-0">
+              <IconComponent sx={{ fontSize: '1.25rem', color: icon.color }} />
+            </div>
+          );
         })() : (
-          <span className="text-lg">{frontendPluginRegistry.getPluginNode(nodeType)?.icon || '📦'}</span>
+          <span className="text-lg flex-shrink-0">{frontendPluginRegistry.getPluginNode(nodeType)?.icon || '📦'}</span>
         )}
         {isRenaming ? (
           <input
@@ -2499,7 +2554,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
           />
         ) : (
           <div
-            className={`text-sm font-medium ${(isFailed || hasValidationError) ? 'cursor-pointer hover:underline' : 'cursor-text'}`}
+            className={`text-sm font-medium flex-1 min-w-0 truncate ${(isFailed || hasValidationError) ? 'cursor-pointer hover:underline' : 'cursor-text'}`}
             style={{ color: textColor }}
             onDoubleClick={handleDoubleClickHeader}
             onClick={(e) => {
@@ -2511,7 +2566,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                 // Validation errors are shown in ValidationErrorPopup, not NodeErrorPopup
               }
             }}
-            title={(isFailed || hasValidationError) ? 'Click to view error details | Double-click to rename' : 'Double-click to rename'}
+            title={`${label}${isReusableNode && renderData.contextName ? ` (${renderData.contextName})` : ''}${isRunReusableNode && renderData.contextName ? ` → ${renderData.contextName}` : ''}${isEndNode ? ' (End)' : ''}${bypass ? ' (bypassed)' : ''}${failSilently ? ' (failSilently)' : ''} | Double-click to rename`}
           >
             {label}
             {isReusableNode && renderData.contextName && (
@@ -2535,7 +2590,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
         )}
       </div>
       {hasProperties && !isMinimized && (
-        <div className="mt-2 border-t border-gray-700 pt-2">
+        <div className="mt-2 border-t border-gray-700 pt-2 min-w-0">
           {properties}
         </div>
       )}
