@@ -116,6 +116,63 @@ interface WorkflowState {
   setEdgesHidden: (hidden: boolean) => void;
 }
 
+// Helper function to reconnect edges when a node is deleted
+function reconnectEdgesOnNodeDeletion(nodeId: string, edges: Edge[]): Edge[] {
+  // Find incoming and outgoing edges for the deleted node
+  const incomingEdges = edges.filter(e => e.target === nodeId);
+  const outgoingEdges = edges.filter(e => e.source === nodeId);
+  
+  // Separate control flow from property input connections
+  const isControlFlowEdge = (edge: Edge) => {
+    if (!edge.targetHandle) return true; // No handle = control flow
+    if (edge.targetHandle === 'driver' || edge.targetHandle === 'input') return true;
+    if (edge.targetHandle.startsWith('case-') || edge.targetHandle === 'default') return true;
+    return false; // Property input connection
+  };
+  
+  const incomingControlFlow = incomingEdges.filter(isControlFlowEdge);
+  const outgoingControlFlow = outgoingEdges.filter(isControlFlowEdge);
+  
+  // Create new edges: connect each incoming control flow source to each outgoing control flow target
+  const newEdges: Edge[] = [];
+  let edgeCounter = 0;
+  
+  // Remove all edges connected to deleted node first
+  const remainingEdges = edges.filter(
+    e => e.source !== nodeId && e.target !== nodeId
+  );
+  
+  // Helper to check if an edge already exists
+  const edgeExists = (source: string, target: string, sourceHandle: string | undefined, targetHandle: string | undefined) => {
+    return remainingEdges.some(e => 
+      e.source === source && 
+      e.target === target && 
+      e.sourceHandle === sourceHandle && 
+      e.targetHandle === targetHandle
+    );
+  };
+  
+  for (const incoming of incomingControlFlow) {
+    for (const outgoing of outgoingControlFlow) {
+      // Prevent self-connections
+      if (incoming.source !== outgoing.target) {
+        // Check if edge already exists to prevent duplicates
+        if (!edgeExists(incoming.source, outgoing.target, incoming.sourceHandle, outgoing.targetHandle)) {
+          newEdges.push({
+            id: `${incoming.source}-${outgoing.target}-${Date.now()}-${edgeCounter++}-${Math.random().toString(36).substr(2, 9)}`,
+            source: incoming.source,
+            target: outgoing.target,
+            sourceHandle: incoming.sourceHandle,
+            targetHandle: outgoing.targetHandle,
+          });
+        }
+      }
+    }
+  }
+  
+  return [...remainingEdges, ...newEdges];
+}
+
 export const useWorkflowStore = create<WorkflowState>((set, get) => {
   const initialState: WorkflowSnapshot = { nodes: [], edges: [] };
   return {
@@ -169,6 +226,17 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
       set({ validationErrors: new Map() });
     }
     
+    // Detect node removals and reconnect edges before applying changes
+    const removalChanges = changes.filter((change) => change.type === 'remove' && change.id);
+    let edgesToUpdate = state.edges;
+    
+    // Reconnect edges for each node being removed
+    for (const removalChange of removalChanges) {
+      if (removalChange.type === 'remove' && removalChange.id) {
+        edgesToUpdate = reconnectEdgesOnNodeDeletion(removalChange.id, edgesToUpdate);
+      }
+    }
+    
     // Filter out dimension changes from ReactFlow if we have explicit dimensions set
     // This prevents ReactFlow from overriding our manual resize dimensions
     const filteredChanges = changes.filter((change) => {
@@ -193,6 +261,11 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     
     // If all changes were filtered out, don't update anything
     if (filteredChanges.length === 0) {
+      // Still update edges if we reconnected any
+      if (edgesToUpdate !== state.edges) {
+        set({ edges: edgesToUpdate });
+        setTimeout(() => get().saveToHistory(), 100);
+      }
       return;
     }
     
@@ -264,6 +337,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     
     set({
       nodes: nodesToSet,
+      edges: edgesToUpdate,
       selectedNode: updatedSelectedNode,
     });
     
@@ -656,9 +730,11 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
 
   deleteNode: (nodeId) => {
     const state = get();
+    // Reconnect edges before removing the node
+    const reconnectedEdges = reconnectEdgesOnNodeDeletion(nodeId, state.edges);
     set({
       nodes: state.nodes.filter((n) => n.id !== nodeId),
-      edges: state.edges.filter((e) => e.source !== nodeId && e.target !== nodeId),
+      edges: reconnectedEdges,
       selectedNode: state.selectedNode?.id === nodeId ? null : state.selectedNode,
     });
     setTimeout(() => get().saveToHistory(), 100);
