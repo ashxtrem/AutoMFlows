@@ -23,9 +23,6 @@ function App() {
   // State for browser installation error popup
   const [browserInstallError, setBrowserInstallError] = useState<{ nodeId: string; browserName: string } | null>(null);
   
-  // State for TopBar visibility
-  const [topBarVisible, setTopBarVisible] = useState(true);
-  
   // Auto-save and load workflow
   useWorkflowAutoSave();
   useWorkflowLoad();
@@ -142,8 +139,8 @@ function App() {
             onClose={handleCloseBrowserInstallError}
           />
         )}
-        <TopBar onVisibilityChange={setTopBarVisible} />
-        <div className={`flex flex-1 overflow-hidden transition-all duration-300 ${topBarVisible ? 'pt-[56px]' : 'pt-0'}`}>
+        <TopBar />
+        <div className="flex flex-1 overflow-hidden">
           <LeftSidebar />
           <Canvas />
           {selectedNode && <RightSidebar />}

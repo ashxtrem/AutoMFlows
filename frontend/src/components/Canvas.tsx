@@ -91,7 +91,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
   useEffect(() => {
     reactFlowInstanceRef.current = reactFlowInstance;
   }, [reactFlowInstance, reactFlowInstanceRef]);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId?: string } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId?: string; flowPosition?: { x: number; y: number }; screenPosition?: { x: number; y: number } } | null>(null);
   const [searchOverlay, setSearchOverlay] = useState<{ screen: { x: number; y: number }; flow: { x: number; y: number } } | null>(null);
   
   // Double-click detection using timing
@@ -290,11 +290,30 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
 
   const onPaneContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
-    setContextMenu({
+    
+    // Calculate flow position for node placement
+    const flowPosition = screenToFlowPosition({
       x: e.clientX,
       y: e.clientY,
     });
-  }, []);
+    
+    // Calculate position relative to canvas container for overlay display
+    let screenPosition = { x: e.clientX, y: e.clientY };
+    if (reactFlowWrapper.current) {
+      const rect = reactFlowWrapper.current.getBoundingClientRect();
+      screenPosition = {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      };
+    }
+    
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      flowPosition,
+      screenPosition,
+    });
+  }, [screenToFlowPosition]);
 
   // Prevent ReactFlow from creating connections starting from input handles
   const isValidConnection = useCallback((connection: any) => {
@@ -575,7 +594,18 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
           x={contextMenu.x}
           y={contextMenu.y}
           nodeId={contextMenu.nodeId}
+          flowPosition={contextMenu.flowPosition}
+          screenPosition={contextMenu.screenPosition}
           onClose={() => setContextMenu(null)}
+          onAddNode={() => {
+            if (contextMenu.flowPosition && contextMenu.screenPosition) {
+              setSearchOverlay({
+                screen: contextMenu.screenPosition,
+                flow: contextMenu.flowPosition,
+              });
+              setContextMenu(null);
+            }
+          }}
         />
       )}
       {searchOverlay && (

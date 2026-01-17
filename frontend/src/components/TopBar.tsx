@@ -6,6 +6,8 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import ErrorIcon from '@mui/icons-material/Error';
+import MenuIcon from '@mui/icons-material/Menu';
+import SettingsIcon from '@mui/icons-material/Settings';
 import { Eye, EyeOff, ChevronDown } from 'lucide-react';
 import { useWorkflowStore, getDefaultNodeData } from '../store/workflowStore';
 import { useExecution } from '../hooks/useExecution';
@@ -13,33 +15,29 @@ import { serializeWorkflow, deserializeWorkflow } from '../utils/serialization';
 import ValidationErrorPopup from './ValidationErrorPopup';
 import ResetWarning from './ResetWarning';
 import LoadWarning from './LoadWarning';
-import SettingsDropdown from './SettingsDropdown';
 import ReportSettingsPopup from './ReportSettingsPopup';
 import NotificationContainer from './NotificationContainer';
 import { NodeType } from '@automflows/shared';
 import { useNotificationStore } from '../store/notificationStore';
 
 const STORAGE_KEY_TRACE_LOGS = 'automflows_trace_logs';
-const STORAGE_KEY_MENU_FIXED = 'automflows_menu_fixed';
 
-interface TopBarProps {
-  onVisibilityChange?: (isVisible: boolean) => void;
-}
-
-export default function TopBar({ onVisibilityChange }: TopBarProps) {
-  const { nodes, edges, setNodes, setEdges, executionStatus, resetExecution, failedNodes, navigateToFailedNode, edgesHidden, setEdgesHidden } = useWorkflowStore();
+export default function TopBar() {
+  const { nodes, edges, setNodes, setEdges, executionStatus, resetExecution, failedNodes, navigateToFailedNode, edgesHidden, setEdgesHidden, selectedNode } = useWorkflowStore();
   const { executeWorkflow, stopExecution, validationErrors, setValidationErrors } = useExecution();
   const addNotification = useNotificationStore((state) => state.addNotification);
   
   const [showResetWarning, setShowResetWarning] = useState(false);
   const [showLoadWarning, setShowLoadWarning] = useState(false);
   const [showReportSettings, setShowReportSettings] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isSettingsSubmenuOpen, setIsSettingsSubmenuOpen] = useState(false);
   const [pendingLoadAction, setPendingLoadAction] = useState<(() => void) | null>(null);
   const [currentFileHandle, setCurrentFileHandle] = useState<FileSystemFileHandle | null>(null);
   const [saveDropdownOpen, setSaveDropdownOpen] = useState(false);
   const saveDropdownRef = useRef<HTMLDivElement>(null);
-  const topBarRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const settingsSubmenuRef = useRef<HTMLDivElement>(null);
   
   // Check for File System Access API support
   const supportsFileSystemAccess = typeof window !== 'undefined' && 
@@ -52,90 +50,90 @@ export default function TopBar({ onVisibilityChange }: TopBarProps) {
     return saved === 'true';
   });
 
-  // Load menu fixed state from localStorage on mount
-  const [menuFixed, setMenuFixed] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_MENU_FIXED);
-    return saved === 'true';
-  });
+  // Track previous trace logs state to detect changes
+  const prevTraceLogsRef = useRef(traceLogs);
 
   // Save trace logs state to localStorage when it changes
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_TRACE_LOGS, String(traceLogs));
-  }, [traceLogs]);
-
-  // Save menu fixed state to localStorage when it changes
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_MENU_FIXED, String(menuFixed));
-    // If menu is set to fixed, ensure it's visible
-    if (menuFixed) {
-      setIsVisible(true);
+    
+    // Show notification when trace logs setting changes
+    if (prevTraceLogsRef.current !== traceLogs) {
+      addNotification({
+        type: 'settings',
+        title: 'Settings Applied',
+        details: [traceLogs ? 'Trace logs enabled' : 'Trace logs disabled'],
+      });
+      prevTraceLogsRef.current = traceLogs;
     }
-  }, [menuFixed]);
+  }, [traceLogs, addNotification]);
 
-  // Notify parent of visibility changes
+  // Handle click outside menu to close it
   useEffect(() => {
-    onVisibilityChange?.(isVisible);
-  }, [isVisible, onVisibilityChange]);
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as HTMLElement;
+      const targetNode = target as Node;
+      
+      // Don't close if clicking on the FAB button itself
+      const fabButton = target?.closest('[data-fab-button]');
+      if (fabButton) {
+        return;
+      }
+      
+      // Check if click is inside settings submenu - if so, don't close
+      if (settingsSubmenuRef.current && settingsSubmenuRef.current.contains(targetNode)) {
+        return; // Let the click handlers inside the submenu handle the action
+      }
+      
+      // Check if click is on Settings button in main menu
+      const settingsButton = target?.closest('[data-settings-button]');
+      if (settingsButton) {
+        return; // Let the Settings button handler toggle the submenu
+      }
+      
+      // Handle save dropdown click outside
+      if (saveDropdownRef.current && !saveDropdownRef.current.contains(targetNode)) {
+        setSaveDropdownOpen(false);
+      }
+      
+      // Handle settings submenu click outside
+      if (isSettingsSubmenuOpen && settingsSubmenuRef.current && !settingsSubmenuRef.current.contains(targetNode)) {
+        setIsSettingsSubmenuOpen(false);
+      }
+      
+      // Handle menu click outside
+      if (menuRef.current && !menuRef.current.contains(targetNode)) {
+        // If clicking outside main menu, close both menu and submenu
+        setIsMenuOpen(false);
+        setIsSettingsSubmenuOpen(false);
+      }
+    };
 
-  // Auto-hide functionality (only enabled when menuFixed is false)
-  useEffect(() => {
-    // If menu is fixed, don't set up auto-hide
-    if (menuFixed) {
-      setIsVisible(true);
-      return;
-    }
-
-    let hideTimeout: NodeJS.Timeout | null = null;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      // Show menu when cursor is near top of screen (within 50px)
-      if (e.clientY <= 50) {
-        setIsVisible(true);
-        if (hideTimeout) {
-          clearTimeout(hideTimeout);
-          hideTimeout = null;
+    const handleEscapeKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        if (saveDropdownOpen) {
+          setSaveDropdownOpen(false);
+        } else if (isSettingsSubmenuOpen) {
+          setIsSettingsSubmenuOpen(false);
+        } else if (isMenuOpen) {
+          setIsMenuOpen(false);
         }
       }
     };
 
-    const handleMouseLeave = (e: MouseEvent) => {
-      // Check if mouse is leaving the top bar area
-      const relatedTarget = e.relatedTarget as HTMLElement | null;
-      if (!relatedTarget || (topBarRef.current && !topBarRef.current.contains(relatedTarget))) {
-        // Delay hiding to allow smooth transition
-        hideTimeout = setTimeout(() => {
-          setIsVisible(false);
-        }, 300);
-      }
-    };
+    if (isMenuOpen || saveDropdownOpen || isSettingsSubmenuOpen) {
+      // Use mousedown instead of click to avoid interfering with button clicks
+      document.addEventListener('mousedown', handleClickOutside, false);
+      document.addEventListener('touchstart', handleClickOutside, false);
+      document.addEventListener('keydown', handleEscapeKey);
 
-    const handleMouseEnter = () => {
-      setIsVisible(true);
-      if (hideTimeout) {
-        clearTimeout(hideTimeout);
-        hideTimeout = null;
-      }
-    };
-
-    window.addEventListener('mousemove', handleMouseMove);
-    
-    const topBarElement = topBarRef.current;
-    if (topBarElement) {
-      topBarElement.addEventListener('mouseenter', handleMouseEnter);
-      topBarElement.addEventListener('mouseleave', handleMouseLeave);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside, false);
+        document.removeEventListener('touchstart', handleClickOutside, false);
+        document.removeEventListener('keydown', handleEscapeKey);
+      };
     }
-
-    return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      if (topBarElement) {
-        topBarElement.removeEventListener('mouseenter', handleMouseEnter);
-        topBarElement.removeEventListener('mouseleave', handleMouseLeave);
-      }
-      if (hideTimeout) {
-        clearTimeout(hideTimeout);
-      }
-    };
-  }, [menuFixed]);
+  }, [isMenuOpen, saveDropdownOpen, isSettingsSubmenuOpen]);
 
   const handleRun = async () => {
     resetExecution();
@@ -190,6 +188,7 @@ export default function TopBar({ onVisibilityChange }: TopBarProps) {
 
   const handleSave = async () => {
     setSaveDropdownOpen(false);
+    setIsMenuOpen(false);
     
     try {
       const workflow = serializeWorkflow(nodes, edges);
@@ -238,6 +237,7 @@ export default function TopBar({ onVisibilityChange }: TopBarProps) {
 
   const handleSaveAs = async () => {
     setSaveDropdownOpen(false);
+    setIsMenuOpen(false);
     
     try {
       const workflow = serializeWorkflow(nodes, edges);
@@ -570,114 +570,254 @@ export default function TopBar({ onVisibilityChange }: TopBarProps) {
 
   return (
     <>
+      {/* FAB Button */}
+      <button
+        data-fab-button
+        onClick={() => {
+          setIsMenuOpen(!isMenuOpen);
+          if (isMenuOpen) {
+            setIsSettingsSubmenuOpen(false);
+          }
+        }}
+        className={`fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110 ${
+          selectedNode ? 'z-20' : 'z-50'
+        }`}
+        title="Menu"
+      >
+        <MenuIcon sx={{ fontSize: '28px', color: '#ffffff' }} />
+      </button>
+
+      {/* Backdrop overlay */}
+      {isMenuOpen && (
+        <div
+          className={`fixed inset-0 bg-black/20 backdrop-blur-sm ${
+            selectedNode ? 'z-10' : 'z-40'
+          }`}
+          onClick={() => setIsMenuOpen(false)}
+        />
+      )}
+
+      {/* Expandable Menu Panel */}
       <div
-        ref={topBarRef}
-        className={`fixed top-0 left-0 right-0 bg-gray-900 border-b border-gray-700 px-4 py-2 flex items-center justify-between z-40 transition-transform duration-300 ${
-          isVisible ? 'translate-y-0' : '-translate-y-full'
+        ref={menuRef}
+        className={`fixed bottom-24 right-6 w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl transition-all duration-300 overflow-hidden ${
+          selectedNode ? 'z-20' : 'z-50'
+        } ${
+          isMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
         }`}
       >
-        <div className="flex flex-col gap-0.5">
-          <h1 className="text-xl font-bold text-white">AutoMFlows</h1>
-          <span className="text-xs text-gray-400">Workspace</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setEdgesHidden(!edgesHidden)}
-            className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-2 text-sm"
-            title={edgesHidden ? 'Show connections' : 'Hide connections'}
-          >
-            {edgesHidden ? <EyeOff size={16} /> : <Eye size={16} />}
-          </button>
-          <button
-            onClick={handleRun}
-            disabled={executionStatus === 'running'}
-            className="px-4 py-1.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded flex items-center gap-2 text-sm font-medium"
-          >
-            <PlayArrowIcon sx={{ fontSize: '16px', color: '#ffffff' }} className="flex-shrink-0" />
-            Run
-          </button>
-          <button
-            onClick={handleStop}
-            disabled={executionStatus !== 'running'}
-            className="px-4 py-1.5 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded flex items-center gap-2 text-sm font-medium"
-          >
-            <StopIcon sx={{ fontSize: '16px', color: '#ffffff' }} className="flex-shrink-0" />
-            Stop
-          </button>
-          <button
-            onClick={() => navigateToFailedNode?.()}
-            disabled={failedNodes.size === 0 || !navigateToFailedNode}
-            className="px-4 py-1.5 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded flex items-center gap-2 text-sm font-medium"
-            title={failedNodes.size > 0 ? `Go to failed node (${failedNodes.size} failed) - Ctrl/Cmd+Shift+F` : 'No failed nodes'}
-          >
-            <ErrorIcon sx={{ fontSize: '16px', color: '#ffffff' }} className="flex-shrink-0" />
-            Go to Failed Node
-          </button>
-          <div className="w-px h-6 bg-gray-700 mx-2" />
-          <div className="relative flex items-center" ref={saveDropdownRef}>
-            <button
-              onClick={handleSave}
-              className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-l flex items-center gap-2 text-sm border-r border-gray-600"
-              title={currentFileHandle ? `Save to ${currentFileHandle.name}` : 'Save workflow'}
-            >
-              <SaveIcon sx={{ fontSize: '16px', color: '#ffffff' }} className="flex-shrink-0" />
-              Save
-            </button>
-            <button
-              onClick={() => setSaveDropdownOpen(!saveDropdownOpen)}
-              className="px-1.5 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-r flex items-center text-sm"
-              title="Save options"
-            >
-              <ChevronDown size={14} className={saveDropdownOpen ? 'rotate-180' : ''} />
-            </button>
-            {saveDropdownOpen && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50">
-                <div className="p-1">
-                  <button
-                    onClick={handleSaveAs}
-                    className="w-full px-3 py-2 text-sm text-white hover:bg-gray-700 rounded text-left flex items-center gap-2"
-                  >
-                    <SaveIcon sx={{ fontSize: '16px', color: '#ffffff' }} className="flex-shrink-0" />
-                    Save As
-                  </button>
-                </div>
-              </div>
-            )}
+        <div className="p-4 space-y-2 max-h-[calc(100vh-120px)] overflow-y-auto">
+          {/* Header */}
+          <div className="pb-2 border-b border-gray-700 mb-2">
+            <h2 className="text-lg font-bold text-white">AutoMFlows</h2>
+            <span className="text-xs text-gray-400">Workspace</span>
           </div>
-          <button
-            onClick={handleLoad}
-            className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-2 text-sm"
-          >
-            <UploadFileIcon sx={{ fontSize: '16px', color: '#ffffff' }} className="flex-shrink-0" />
-            Load
-          </button>
-          <button
-            onClick={handleReset}
-            className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-2 text-sm"
-          >
-            <RefreshIcon sx={{ fontSize: '16px', color: '#ffffff' }} className="flex-shrink-0" />
-            Reset
-          </button>
-          <div className="w-px h-6 bg-gray-700 mx-2" />
-          <SettingsDropdown
-            traceLogs={traceLogs}
-            onTraceLogsChange={setTraceLogs}
-            onReportSettingsClick={() => setShowReportSettings(true)}
-            menuFixed={menuFixed}
-            onMenuFixedChange={setMenuFixed}
-          />
-          <button
-            onClick={() => {
-              const url = window.location.origin + '/reports/history';
-              window.open(url, '_blank');
-            }}
-            className="px-2 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center justify-center"
-            title="Go to Report History"
-          >
-            <AssessmentIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
-          </button>
+
+          {/* Actions Section */}
+          <div className="space-y-1">
+            <button
+              onClick={() => {
+                setIsMenuOpen(false);
+                handleRun();
+              }}
+              disabled={executionStatus === 'running'}
+              className="w-full px-4 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded flex items-center gap-3 text-sm font-medium transition-colors"
+            >
+              <PlayArrowIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
+              Run
+            </button>
+            <button
+              onClick={() => {
+                setIsMenuOpen(false);
+                handleStop();
+              }}
+              disabled={executionStatus !== 'running'}
+              className="w-full px-4 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded flex items-center gap-3 text-sm font-medium transition-colors"
+            >
+              <StopIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
+              Stop
+            </button>
+            <button
+              onClick={() => {
+                setIsMenuOpen(false);
+                navigateToFailedNode?.();
+              }}
+              disabled={failedNodes.size === 0 || !navigateToFailedNode}
+              className="w-full px-4 py-2.5 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded flex items-center gap-3 text-sm font-medium transition-colors"
+              title={failedNodes.size > 0 ? `Go to failed node (${failedNodes.size} failed) - Ctrl/Cmd+Shift+F` : 'No failed nodes'}
+            >
+              <ErrorIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
+              Go to Failed Node
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className="h-px bg-gray-700 my-2" />
+
+          {/* File Operations Section */}
+          <div className="space-y-1">
+            <div className="relative" ref={saveDropdownRef}>
+              <div className="flex gap-1">
+                <button
+                  onClick={handleSave}
+                  className="flex-1 px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-l flex items-center gap-3 text-sm transition-colors"
+                  title={currentFileHandle ? `Save to ${currentFileHandle.name}` : 'Save workflow'}
+                >
+                  <SaveIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
+                  Save
+                </button>
+                <button
+                  onClick={() => setSaveDropdownOpen(!saveDropdownOpen)}
+                  className="px-2 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-r flex items-center transition-colors"
+                  title="Save options"
+                >
+                  <ChevronDown size={14} className={saveDropdownOpen ? 'rotate-180' : ''} />
+                </button>
+              </div>
+              {saveDropdownOpen && (
+                <div className={`absolute left-0 top-full mt-1 w-full bg-gray-800 border border-gray-700 rounded-lg shadow-xl ${
+                  selectedNode ? 'z-20' : 'z-50'
+                }`}>
+                  <div className="p-1">
+                    <button
+                      onClick={handleSaveAs}
+                      className="w-full px-3 py-2 text-sm text-white hover:bg-gray-700 rounded text-left flex items-center gap-2"
+                    >
+                      <SaveIcon sx={{ fontSize: '16px', color: '#ffffff' }} className="flex-shrink-0" />
+                      Save As
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => {
+                setSaveDropdownOpen(false);
+                setIsMenuOpen(false);
+                handleLoad();
+              }}
+              className="w-full px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-3 text-sm transition-colors"
+            >
+              <UploadFileIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
+              Load
+            </button>
+            <button
+              onClick={() => {
+                setIsMenuOpen(false);
+                handleReset();
+              }}
+              className="w-full px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-3 text-sm transition-colors"
+            >
+              <RefreshIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
+              Reset
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className="h-px bg-gray-700 my-2" />
+
+          {/* View Section */}
+          <div className="space-y-1">
+            <button
+              onClick={() => setEdgesHidden(!edgesHidden)}
+              className="w-full px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-3 text-sm transition-colors"
+              title={edgesHidden ? 'Show connections' : 'Hide connections'}
+            >
+              {edgesHidden ? <EyeOff size={18} /> : <Eye size={18} />}
+              {edgesHidden ? 'Show Connections' : 'Hide Connections'}
+            </button>
+            <button
+              onClick={() => {
+                setIsMenuOpen(false);
+                const url = window.location.origin + '/reports/history';
+                window.open(url, '_blank');
+              }}
+              className="w-full px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-3 text-sm transition-colors"
+              title="Go to Report History"
+            >
+              <AssessmentIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
+              Report History
+            </button>
+          </div>
+
+          {/* Divider */}
+          <div className="h-px bg-gray-700 my-2" />
+
+          {/* Settings Section - Last Item */}
+          <div className="space-y-1">
+            <button
+              data-settings-button
+              onClick={() => setIsSettingsSubmenuOpen(!isSettingsSubmenuOpen)}
+              className="w-full px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-3 text-sm transition-colors"
+              title="Settings"
+            >
+              <SettingsIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
+              Settings
+            </button>
+          </div>
         </div>
       </div>
+
+      {/* Settings Submenu - Appears to the left of main menu */}
+      {isSettingsSubmenuOpen && (
+        <div
+          ref={settingsSubmenuRef}
+          className={`fixed bottom-24 right-[22rem] w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl transition-all duration-300 ${
+            selectedNode ? 'z-20' : 'z-50'
+          }`}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <div className="p-3 space-y-3">
+            {/* Trace Logs Toggle */}
+            <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+              <span className="text-sm text-white font-medium">Trace Logs</span>
+              <label 
+                className="relative inline-flex items-center cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={traceLogs}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    const newValue = e.target.checked;
+                    setTraceLogs(newValue);
+                  }}
+                  className="sr-only"
+                />
+                <div
+                  className={`w-14 h-7 rounded-lg transition-colors flex items-center px-1 cursor-pointer ${
+                    traceLogs ? 'bg-green-600' : 'bg-gray-700'
+                  }`}
+                >
+                  <div
+                    className={`w-5 h-5 rounded-md bg-white transition-transform duration-200 ${
+                      traceLogs ? 'translate-x-7' : 'translate-x-0'
+                    }`}
+                  />
+                </div>
+              </label>
+            </div>
+
+            {/* Report Settings Button */}
+            <div className="border-t border-gray-700 pt-3 mt-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsSettingsSubmenuOpen(false);
+                  setIsMenuOpen(false);
+                  setShowReportSettings(true);
+                }}
+                className="w-full px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+              >
+                Report Settings
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Popups and Warnings */}
       {validationErrors.length > 0 && (
         <ValidationErrorPopup
           errors={validationErrors}

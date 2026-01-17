@@ -897,6 +897,9 @@ function getNodeLabel(type: NodeType | string): string {
       [NodeType.API_CURL]: 'API cURL',
       [NodeType.LOAD_CONFIG_FILE]: 'Load Config File',
       [NodeType.SELECT_CONFIG_FILE]: 'Select Config File',
+      [NodeType.DB_CONNECT]: 'DB Connect',
+      [NodeType.DB_DISCONNECT]: 'DB Disconnect',
+      [NodeType.DB_QUERY]: 'DB Query',
     };
     return labels[type as NodeType] || type;
   }
@@ -968,6 +971,22 @@ export function getDefaultNodeData(type: NodeType | string): any {
       },
       [NodeType.LOAD_CONFIG_FILE]: { isTest: true },
       [NodeType.SELECT_CONFIG_FILE]: { isTest: true },
+      [NodeType.DB_CONNECT]: { 
+        dbType: 'postgres', 
+        connectionKey: 'dbConnection',
+        isTest: true 
+      },
+      [NodeType.DB_DISCONNECT]: { 
+        connectionKey: 'dbConnection',
+        isTest: true 
+      },
+      [NodeType.DB_QUERY]: { 
+        connectionKey: 'dbConnection',
+        queryType: 'sql',
+        contextKey: 'dbResult',
+        timeout: 30000,
+        isTest: true 
+      },
     };
     const defaultData = defaults[type as NodeType] || { isTest: true };
     return defaultData;

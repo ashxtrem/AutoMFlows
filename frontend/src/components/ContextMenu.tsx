@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Copy, Trash2, Palette, SkipForward, ChevronRight, Settings, Plug, RotateCw } from 'lucide-react';
+import { Copy, Trash2, Palette, SkipForward, ChevronRight, Settings, Plug, RotateCw, Plus } from 'lucide-react';
 import { useWorkflowStore } from '../store/workflowStore';
 import { getNodeProperties, isPropertyInputConnection } from '../utils/nodeProperties';
 
@@ -7,7 +7,10 @@ interface ContextMenuProps {
   x: number;
   y: number;
   nodeId?: string;
+  flowPosition?: { x: number; y: number };
+  screenPosition?: { x: number; y: number };
   onClose: () => void;
+  onAddNode?: () => void;
 }
 
 const PRESET_COLORS = [
@@ -25,7 +28,7 @@ const PRESET_COLORS = [
   { name: 'Default', value: '#1f2937' },
 ];
 
-export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps) {
+export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition, onClose, onAddNode }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const colorSubmenuRef = useRef<HTMLDivElement>(null);
   const convertInputSubmenuRef = useRef<HTMLDivElement>(null);
@@ -189,9 +192,19 @@ export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps)
 
   const handlePaste = () => {
     if (clipboard) {
-      pasteNode({ x, y });
+      // Use flow position if available (for empty canvas), otherwise use screen coordinates
+      // Note: For node context menu, flowPosition won't be set, so it falls back to x,y
+      // which should be converted by the caller, but for now we'll use flowPosition when available
+      const position = flowPosition || { x, y };
+      pasteNode(position);
     }
     onClose();
+  };
+
+  const handleAddNode = () => {
+    if (onAddNode) {
+      onAddNode();
+    }
   };
 
   const handleDelete = () => {
@@ -418,6 +431,13 @@ export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps)
           </>
         ) : (
           <>
+            <button
+              onClick={handleAddNode}
+              className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-2"
+            >
+              <Plus size={16} />
+              Add Node
+            </button>
             {clipboard && (
               <button
                 onClick={handlePaste}

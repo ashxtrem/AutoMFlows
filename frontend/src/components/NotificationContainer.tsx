@@ -14,7 +14,7 @@ export default function NotificationContainer() {
   return (
     <div
       className="fixed right-4 z-50 pointer-events-none"
-      style={{ top: '60px' }} // Below TopBar (approximately 50px height + 10px spacing)
+      style={{ top: '20px' }} // Top positioning since TopBar is now a FAB menu
     >
       <div className="flex flex-col items-end gap-0 pointer-events-auto">
         {visibleNotifications.map((notification) => (

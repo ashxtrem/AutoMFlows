@@ -7,6 +7,7 @@ import { ElementQueryHandler, ScreenshotHandler, WaitHandler, IntValueHandler, S
 import { JavaScriptCodeHandler, LoopHandler } from './logic';
 import { ApiRequestHandler, ApiCurlHandler } from './api';
 import { LoadConfigFileHandler, SelectConfigFileHandler } from './config';
+import { DbConnectHandler, DbDisconnectHandler, DbQueryHandler } from './database';
 import { pluginRegistry } from '../plugins/registry';
 
 // Start node handler (no-op)
@@ -43,6 +44,9 @@ const handlers: NodeHandlerMap = {
   [NodeType.API_CURL]: new ApiCurlHandler(),
   [NodeType.LOAD_CONFIG_FILE]: new LoadConfigFileHandler(),
   [NodeType.SELECT_CONFIG_FILE]: new SelectConfigFileHandler(),
+  [NodeType.DB_CONNECT]: new DbConnectHandler(),
+  [NodeType.DB_DISCONNECT]: new DbDisconnectHandler(),
+  [NodeType.DB_QUERY]: new DbQueryHandler(),
 };
 
 export function getNodeHandler(nodeType: NodeType | string): NodeHandler | undefined {
@@ -62,4 +66,5 @@ export * from './utility';
 export * from './logic';
 export * from './api';
 export * from './config';
+export * from './database';
 

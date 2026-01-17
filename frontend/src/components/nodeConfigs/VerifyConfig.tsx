@@ -26,6 +26,13 @@ const API_VERIFICATION_TYPES: { value: string; label: string }[] = [
   { value: 'bodyValue', label: 'Body Value' },
 ];
 
+const DATABASE_VERIFICATION_TYPES: { value: string; label: string }[] = [
+  { value: 'rowCount', label: 'Row Count' },
+  { value: 'columnValue', label: 'Column Value' },
+  { value: 'rowExists', label: 'Row Exists' },
+  { value: 'queryResult', label: 'Query Result' },
+];
+
 const MATCH_TYPES: { value: MatchType; label: string }[] = [
   { value: 'equals', label: 'Equals' },
   { value: 'contains', label: 'Contains' },
@@ -761,6 +768,253 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
     }
   };
 
+  const renderDatabaseConfig = () => {
+    switch (verificationType) {
+      case 'rowCount':
+        return (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">DB Context Key</label>
+              <input
+                type="text"
+                value={getPropertyValue('dbContextKey', 'dbResult')}
+                onChange={(e) => onChange('dbContextKey', e.target.value)}
+                placeholder="dbResult"
+                disabled={isPropertyDisabled('dbContextKey')}
+                className={getInputClassName('dbContextKey', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm')}
+              />
+              {isPropertyDisabled('dbContextKey') && (
+                <div className="mt-1 text-xs text-gray-500 italic">
+                  This property is converted to input. Connect a node to provide the value.
+                </div>
+              )}
+              <div className="mt-1 text-xs text-gray-400">
+                Context key where query results are stored. Supports: {'${data.key.path}'} or {'${variables.key}'}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Expected Count</label>
+              <input
+                type="number"
+                value={data.expectedValue !== undefined ? Number(data.expectedValue) : ''}
+                onChange={(e) => onChange('expectedValue', parseInt(e.target.value, 10) || 0)}
+                placeholder="10"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                Supports: {'${data.key.path}'} or {'${variables.key}'}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Comparison Operator</label>
+              <select
+                value={data.comparisonOperator || 'equals'}
+                onChange={(e) => onChange('comparisonOperator', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                {COMPARISON_OPERATORS.map((op) => (
+                  <option key={op.value} value={op.value}>
+                    {op.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
+        );
+
+      case 'columnValue':
+        return (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">DB Context Key</label>
+              <input
+                type="text"
+                value={getPropertyValue('dbContextKey', 'dbResult')}
+                onChange={(e) => onChange('dbContextKey', e.target.value)}
+                placeholder="dbResult"
+                disabled={isPropertyDisabled('dbContextKey')}
+                className={getInputClassName('dbContextKey', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm')}
+              />
+              {isPropertyDisabled('dbContextKey') && (
+                <div className="mt-1 text-xs text-gray-500 italic">
+                  This property is converted to input. Connect a node to provide the value.
+                </div>
+              )}
+              <div className="mt-1 text-xs text-gray-400">
+                Context key where query results are stored. Supports: {'${data.key.path}'} or {'${variables.key}'}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Column Name</label>
+              <input
+                type="text"
+                value={data.columnName || ''}
+                onChange={(e) => onChange('columnName', e.target.value)}
+                placeholder="id"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                Supports: {'${data.key.path}'} or {'${variables.key}'}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Row Index</label>
+              <input
+                type="number"
+                value={data.rowIndex !== undefined ? Number(data.rowIndex) : 0}
+                onChange={(e) => onChange('rowIndex', parseInt(e.target.value, 10) || 0)}
+                placeholder="0"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                Zero-based index of the row to check. Supports: {'${data.key.path}'} or {'${variables.key}'}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Expected Value</label>
+              <input
+                type="text"
+                value={data.expectedValue !== undefined ? String(data.expectedValue) : ''}
+                onChange={(e) => onChange('expectedValue', e.target.value)}
+                placeholder="Expected value"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                Supports: {'${data.key.path}'} or {'${variables.key}'}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Match Type</label>
+              <select
+                value={data.matchType || 'equals'}
+                onChange={(e) => onChange('matchType', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                {MATCH_TYPES.map((mt) => (
+                  <option key={mt.value} value={mt.value}>
+                    {mt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">JSON Path (Optional)</label>
+              <input
+                type="text"
+                value={data.jsonPath || ''}
+                onChange={(e) => onChange('jsonPath', e.target.value)}
+                placeholder="nested.field"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                Dot-notation path for nested values in column. Supports: {'${data.key.path}'} or {'${variables.key}'}
+              </div>
+            </div>
+          </>
+        );
+
+      case 'rowExists':
+        return (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">DB Context Key</label>
+              <input
+                type="text"
+                value={getPropertyValue('dbContextKey', 'dbResult')}
+                onChange={(e) => onChange('dbContextKey', e.target.value)}
+                placeholder="dbResult"
+                disabled={isPropertyDisabled('dbContextKey')}
+                className={getInputClassName('dbContextKey', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm')}
+              />
+              {isPropertyDisabled('dbContextKey') && (
+                <div className="mt-1 text-xs text-gray-500 italic">
+                  This property is converted to input. Connect a node to provide the value.
+                </div>
+              )}
+              <div className="mt-1 text-xs text-gray-400">
+                Context key where query results are stored. Verifies that at least one row exists. Supports: {'${data.key.path}'} or {'${variables.key}'}
+              </div>
+            </div>
+          </>
+        );
+
+      case 'queryResult':
+        return (
+          <>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">DB Context Key</label>
+              <input
+                type="text"
+                value={getPropertyValue('dbContextKey', 'dbResult')}
+                onChange={(e) => onChange('dbContextKey', e.target.value)}
+                placeholder="dbResult"
+                disabled={isPropertyDisabled('dbContextKey')}
+                className={getInputClassName('dbContextKey', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm')}
+              />
+              {isPropertyDisabled('dbContextKey') && (
+                <div className="mt-1 text-xs text-gray-500 italic">
+                  This property is converted to input. Connect a node to provide the value.
+                </div>
+              )}
+              <div className="mt-1 text-xs text-gray-400">
+                Context key where query results are stored. Supports: {'${data.key.path}'} or {'${variables.key}'}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Expected Value</label>
+              <textarea
+                value={data.expectedValue !== undefined ? (typeof data.expectedValue === 'object' ? JSON.stringify(data.expectedValue, null, 2) : String(data.expectedValue)) : ''}
+                onChange={(e) => {
+                  try {
+                    const parsed = JSON.parse(e.target.value);
+                    onChange('expectedValue', parsed);
+                  } catch {
+                    onChange('expectedValue', e.target.value);
+                  }
+                }}
+                placeholder='{"key": "value"}'
+                rows={6}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm font-mono"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                JSON object or string. Supports: {'${data.key.path}'} or {'${variables.key}'}
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Match Type</label>
+              <select
+                value={data.matchType || 'equals'}
+                onChange={(e) => onChange('matchType', e.target.value)}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                {MATCH_TYPES.map((mt) => (
+                  <option key={mt.value} value={mt.value}>
+                    {mt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">JSON Path (Optional)</label>
+              <input
+                type="text"
+                value={data.jsonPath || ''}
+                onChange={(e) => onChange('jsonPath', e.target.value)}
+                placeholder="rows[0].id"
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              />
+              <div className="mt-1 text-xs text-gray-400">
+                Dot-notation path for nested value matching. Supports: {'${data.key.path}'} or {'${variables.key}'}
+              </div>
+            </div>
+          </>
+        );
+
+      default:
+        return <div className="text-gray-400 text-sm">Select a verification type</div>;
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div>
@@ -772,7 +1026,7 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
         >
           <option value="browser">Browser</option>
           <option value="api">API</option>
-          <option value="database" disabled>Database (Coming Soon)</option>
+          <option value="database">Database</option>
         </select>
       </div>
 
@@ -810,8 +1064,26 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
         </div>
       )}
 
+      {domain === 'database' && (
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">Verification Type</label>
+          <select
+            value={verificationType}
+            onChange={(e) => onChange('verificationType', e.target.value)}
+            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+          >
+            {DATABASE_VERIFICATION_TYPES.map((vt) => (
+              <option key={vt.value} value={vt.value}>
+                {vt.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {domain === 'browser' && renderBrowserConfig()}
       {domain === 'api' && renderApiConfig()}
+      {domain === 'database' && renderDatabaseConfig()}
 
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
@@ -838,12 +1110,20 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
         </div>
       </div>
 
-      {domain !== 'api' && <RetryConfigSection data={data} onChange={onChange} />}
+      {domain !== 'api' && domain !== 'database' && <RetryConfigSection data={data} onChange={onChange} />}
       {domain === 'api' && (
         <div className="border-t border-gray-600 pt-4">
           <div className="text-xs text-gray-400">
             Retry configuration is not available for API domain verify nodes. 
             Retries are handled by the API execution node when the API request is made.
+          </div>
+        </div>
+      )}
+      {domain === 'database' && (
+        <div className="border-t border-gray-600 pt-4">
+          <div className="text-xs text-gray-400">
+            Retry configuration is not available for database domain verify nodes. 
+            Retries should be handled at the query execution level if needed.
           </div>
         </div>
       )}

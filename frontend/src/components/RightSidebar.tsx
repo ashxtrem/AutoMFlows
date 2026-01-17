@@ -39,6 +39,9 @@ function getNodeLabel(type: NodeType | string): string {
       [NodeType.API_CURL]: 'API cURL',
       [NodeType.LOAD_CONFIG_FILE]: 'Load Config File',
       [NodeType.SELECT_CONFIG_FILE]: 'Select Config File',
+      [NodeType.DB_CONNECT]: 'DB Connect',
+      [NodeType.DB_DISCONNECT]: 'DB Disconnect',
+      [NodeType.DB_QUERY]: 'DB Query',
     };
     return labels[type as NodeType] || type;
   }
@@ -149,7 +152,7 @@ export default function RightSidebar() {
 
   return (
     <div 
-      className="bg-gray-800 border-l border-gray-700 overflow-y-auto relative flex"
+      className="bg-gray-800 border-l border-gray-700 overflow-y-auto relative flex z-30"
       style={{ width: `${width}px` }}
     >
       {/* Resize handle on the left edge */}

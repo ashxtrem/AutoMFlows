@@ -6,16 +6,12 @@ interface SettingsDropdownProps {
   traceLogs: boolean;
   onTraceLogsChange: (value: boolean) => void;
   onReportSettingsClick: () => void;
-  menuFixed: boolean;
-  onMenuFixedChange: (value: boolean) => void;
 }
 
 export default function SettingsDropdown({
   traceLogs,
   onTraceLogsChange,
   onReportSettingsClick,
-  menuFixed,
-  onMenuFixedChange,
 }: SettingsDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -24,7 +20,6 @@ export default function SettingsDropdown({
   // Track previous settings to detect changes
   const prevSettingsRef = useRef({
     traceLogs,
-    menuFixed,
   });
 
   // Track trace logs changes
@@ -39,19 +34,6 @@ export default function SettingsDropdown({
       prevSettingsRef.current.traceLogs = traceLogs;
     }
   }, [traceLogs, addNotification]);
-  
-  // Track menu fixed changes (handled by parent, but we can show notification here)
-  useEffect(() => {
-    if (prevSettingsRef.current.menuFixed !== menuFixed) {
-      addNotification({
-        type: 'settings',
-        title: 'Settings Applied',
-        details: [menuFixed ? 'Menu fixed' : 'Menu auto-hide enabled'],
-      });
-      
-      prevSettingsRef.current.menuFixed = menuFixed;
-    }
-  }, [menuFixed, addNotification]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
@@ -117,30 +99,6 @@ export default function SettingsDropdown({
                   <div
                     className={`w-5 h-5 rounded-md bg-white transition-transform ${
                       traceLogs ? 'translate-x-7' : 'translate-x-0'
-                    }`}
-                  />
-                </div>
-              </label>
-            </div>
-
-            {/* Fixed Menu Toggle */}
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-white font-medium">Fixed Menu</span>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={menuFixed}
-                  onChange={(e) => onMenuFixedChange(e.target.checked)}
-                  className="sr-only"
-                />
-                <div
-                  className={`w-14 h-7 rounded-lg transition-colors flex items-center px-1 ${
-                    menuFixed ? 'bg-green-600' : 'bg-gray-700'
-                  }`}
-                >
-                  <div
-                    className={`w-5 h-5 rounded-md bg-white transition-transform ${
-                      menuFixed ? 'translate-x-7' : 'translate-x-0'
                     }`}
                   />
                 </div>

@@ -36,6 +36,7 @@ import TerminalIcon from '@mui/icons-material/Terminal';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import FolderIcon from '@mui/icons-material/Folder';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import StorageIcon from '@mui/icons-material/Storage';
 
 interface IconConfig {
   icon: React.ComponentType<{ sx?: any }>;
@@ -63,6 +64,9 @@ const nodeIcons: Record<NodeType, IconConfig> = {
   [NodeType.API_CURL]: { icon: TerminalIcon, color: '#9C27B0' },
   [NodeType.LOAD_CONFIG_FILE]: { icon: FolderIcon, color: '#FF9800' },
   [NodeType.SELECT_CONFIG_FILE]: { icon: FolderOpenIcon, color: '#FF9800' },
+  [NodeType.DB_CONNECT]: { icon: StorageIcon, color: '#4CAF50' },
+  [NodeType.DB_DISCONNECT]: { icon: StorageIcon, color: '#F44336' },
+  [NodeType.DB_QUERY]: { icon: StorageIcon, color: '#2196F3' },
 };
 
 function getNodeIcon(nodeType: NodeType | string): IconConfig | null {
@@ -2218,6 +2222,142 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   onOpenPopup={handleOpenPopup}
                 />
               ), 1)}
+            </div>
+          );
+        
+        case NodeType.DB_CONNECT:
+          return (
+            <div className="mt-2 space-y-1">
+              {renderPropertyRow('dbType', (
+                <InlineSelect
+                  label="DB Type"
+                  value={renderData.dbType || 'postgres'}
+                  onChange={(value) => handlePropertyChange('dbType', value)}
+                  options={[
+                    { label: 'PostgreSQL', value: 'postgres' },
+                    { label: 'MySQL', value: 'mysql' },
+                    { label: 'MongoDB', value: 'mongodb' },
+                    { label: 'SQLite', value: 'sqlite' },
+                  ]}
+                />
+              ), 0)}
+              {renderPropertyRow('connectionKey', (
+                <InlineTextInput
+                  label="Connection Key"
+                  value={renderData.connectionKey || 'dbConnection'}
+                  onChange={(value) => handlePropertyChange('connectionKey', value)}
+                  placeholder="dbConnection"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 1)}
+              {renderData.configKey && renderPropertyRow('configKey', (
+                <InlineTextInput
+                  label="Config Key"
+                  value={renderData.configKey || ''}
+                  onChange={(value) => handlePropertyChange('configKey', value)}
+                  placeholder="dbConfig"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 2)}
+              {!renderData.configKey && renderData.host && renderPropertyRow('host', (
+                <InlineTextInput
+                  label="Host"
+                  value={renderData.host || ''}
+                  onChange={(value) => handlePropertyChange('host', value)}
+                  placeholder="localhost"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 2)}
+              {!renderData.configKey && renderData.database && renderPropertyRow('database', (
+                <InlineTextInput
+                  label="Database"
+                  value={renderData.database || ''}
+                  onChange={(value) => handlePropertyChange('database', value)}
+                  placeholder="mydb"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 3)}
+            </div>
+          );
+        
+        case NodeType.DB_DISCONNECT:
+          return (
+            <div className="mt-2 space-y-1">
+              {renderPropertyRow('connectionKey', (
+                <InlineTextInput
+                  label="Connection Key"
+                  value={renderData.connectionKey || 'dbConnection'}
+                  onChange={(value) => handlePropertyChange('connectionKey', value)}
+                  placeholder="dbConnection"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 0)}
+            </div>
+          );
+        
+        case NodeType.DB_QUERY:
+          return (
+            <div className="mt-2 space-y-1">
+              {renderPropertyRow('connectionKey', (
+                <InlineTextInput
+                  label="Connection Key"
+                  value={renderData.connectionKey || 'dbConnection'}
+                  onChange={(value) => handlePropertyChange('connectionKey', value)}
+                  placeholder="dbConnection"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 0)}
+              {renderPropertyRow('queryType', (
+                <InlineSelect
+                  label="Query Type"
+                  value={renderData.queryType || 'sql'}
+                  onChange={(value) => handlePropertyChange('queryType', value)}
+                  options={[
+                    { label: 'SQL', value: 'sql' },
+                    { label: 'MongoDB', value: 'mongodb' },
+                    { label: 'Raw', value: 'raw' },
+                  ]}
+                />
+              ), 1)}
+              {renderData.queryKey ? (
+                renderPropertyRow('queryKey', (
+                  <InlineTextInput
+                    label="Query Key"
+                    value={renderData.queryKey || ''}
+                    onChange={(value) => handlePropertyChange('queryKey', value)}
+                    placeholder="queryFromContext"
+                    onOpenPopup={handleOpenPopup}
+                  />
+                ), 2)
+              ) : (
+                renderPropertyRow('query', (
+                  <InlineTextarea
+                    label="Query"
+                    value={typeof renderData.query === 'string' ? renderData.query : JSON.stringify(renderData.query || '')}
+                    onChange={(value) => handlePropertyChange('query', value)}
+                    placeholder="SELECT * FROM users"
+                    onOpenPopup={handleOpenPopup}
+                  />
+                ), 2)
+              )}
+              {renderPropertyRow('contextKey', (
+                <InlineTextInput
+                  label="Context Key"
+                  value={renderData.contextKey || 'dbResult'}
+                  onChange={(value) => handlePropertyChange('contextKey', value)}
+                  placeholder="dbResult"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 3)}
+              {renderPropertyRow('timeout', (
+                <InlineNumberInput
+                  label="Timeout"
+                  value={renderData.timeout || 30000}
+                  onChange={(value) => handlePropertyChange('timeout', value)}
+                  placeholder="30000"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 4)}
             </div>
           );
         

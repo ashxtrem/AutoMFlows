@@ -191,6 +191,38 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
           { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
         ];
       
+      case NodeType.DB_CONNECT:
+        return [
+          { name: 'dbType', label: 'DB Type', dataType: PropertyDataType.STRING, required: true, defaultValue: 'postgres' },
+          { name: 'connectionKey', label: 'Connection Key', dataType: PropertyDataType.STRING, required: false, defaultValue: 'dbConnection' },
+          { name: 'configKey', label: 'Config Key', dataType: PropertyDataType.STRING, required: false },
+          { name: 'host', label: 'Host', dataType: PropertyDataType.STRING, required: false },
+          { name: 'port', label: 'Port', dataType: PropertyDataType.INT, required: false },
+          { name: 'user', label: 'User', dataType: PropertyDataType.STRING, required: false },
+          { name: 'password', label: 'Password', dataType: PropertyDataType.STRING, required: false },
+          { name: 'database', label: 'Database', dataType: PropertyDataType.STRING, required: false },
+          { name: 'connectionString', label: 'Connection String', dataType: PropertyDataType.STRING, required: false },
+          { name: 'filePath', label: 'File Path', dataType: PropertyDataType.STRING, required: false },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+      
+      case NodeType.DB_DISCONNECT:
+        return [
+          { name: 'connectionKey', label: 'Connection Key', dataType: PropertyDataType.STRING, required: false, defaultValue: 'dbConnection' },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+      
+      case NodeType.DB_QUERY:
+        return [
+          { name: 'connectionKey', label: 'Connection Key', dataType: PropertyDataType.STRING, required: false, defaultValue: 'dbConnection' },
+          { name: 'queryType', label: 'Query Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'sql' },
+          { name: 'query', label: 'Query', dataType: PropertyDataType.STRING, required: false },
+          { name: 'queryKey', label: 'Query Key', dataType: PropertyDataType.STRING, required: false },
+          { name: 'contextKey', label: 'Context Key', dataType: PropertyDataType.STRING, required: false, defaultValue: 'dbResult' },
+          { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+      
       case NodeType.START:
         return [
           { name: 'recordSession', label: 'Record Session', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },

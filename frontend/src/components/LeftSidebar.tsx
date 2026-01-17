@@ -22,6 +22,7 @@ import TerminalIcon from '@mui/icons-material/Terminal';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import FolderIcon from '@mui/icons-material/Folder';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import StorageIcon from '@mui/icons-material/Storage';
 
 interface IconConfig {
   icon: React.ComponentType<{ sx?: any }>;
@@ -55,6 +56,9 @@ const nodeIconMap: Record<NodeType, IconConfig> = {
   [NodeType.API_CURL]: { icon: TerminalIcon, color: '#9C27B0' },
   [NodeType.LOAD_CONFIG_FILE]: { icon: FolderIcon, color: '#FF9800' },
   [NodeType.SELECT_CONFIG_FILE]: { icon: FolderOpenIcon, color: '#FF9800' },
+  [NodeType.DB_CONNECT]: { icon: StorageIcon, color: '#4CAF50' },
+  [NodeType.DB_DISCONNECT]: { icon: StorageIcon, color: '#F44336' },
+  [NodeType.DB_QUERY]: { icon: StorageIcon, color: '#2196F3' },
 };
 
 function getNodeIconConfig(nodeType: NodeType | string): IconConfig | null {
@@ -118,6 +122,14 @@ const NODE_CATEGORIES = [
     ],
   },
   {
+    label: 'Database',
+    nodes: [
+      { type: NodeType.DB_CONNECT, label: 'DB Connect' },
+      { type: NodeType.DB_DISCONNECT, label: 'DB Disconnect' },
+      { type: NodeType.DB_QUERY, label: 'DB Query' },
+    ],
+  },
+  {
     label: 'Control',
     nodes: [
       { type: NodeType.WAIT, label: 'Wait' },
@@ -151,10 +163,10 @@ const NODE_CATEGORIES = [
 const STORAGE_KEY = 'leftSidebarCollapsed';
 const STORAGE_KEY_TAB = 'leftSidebarActiveTab';
 
-type TabType = 'all' | 'browser' | 'api' | 'utils';
+type TabType = 'all' | 'browser' | 'api' | 'db' | 'utils';
 
 // Helper function to determine node's primary category
-function getNodeCategory(nodeType: NodeType | string, nodeLabel?: string): 'browser' | 'api' | 'utils' {
+function getNodeCategory(nodeType: NodeType | string, nodeLabel?: string): 'browser' | 'api' | 'db' | 'utils' {
   // Check if it's a plugin node
   const pluginNode = frontendPluginRegistry.getNodeDefinition(nodeType);
   if (pluginNode) {
@@ -183,6 +195,10 @@ function getNodeCategory(nodeType: NodeType | string, nodeLabel?: string): 'brow
     case NodeType.API_REQUEST:
     case NodeType.API_CURL:
       return 'api';
+    case NodeType.DB_CONNECT:
+    case NodeType.DB_DISCONNECT:
+    case NodeType.DB_QUERY:
+      return 'db';
     case NodeType.JAVASCRIPT_CODE:
     case NodeType.WAIT:
     case NodeType.LOOP:
@@ -510,6 +526,16 @@ export default function LeftSidebar() {
                 }`}
               >
                 API
+              </button>
+              <button
+                onClick={() => setActiveTab('db')}
+                className={`px-3 py-2 text-xs font-medium transition-colors ${
+                  activeTab === 'db'
+                    ? 'text-blue-400 border-b-2 border-blue-400'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                DB
               </button>
               <button
                 onClick={() => setActiveTab('utils')}

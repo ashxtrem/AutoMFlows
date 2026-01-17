@@ -26,6 +26,9 @@ import ApiRequestConfig from './nodeConfigs/ApiRequestConfig';
 import ApiCurlConfig from './nodeConfigs/ApiCurlConfig';
 import LoadConfigFileConfig from './nodeConfigs/LoadConfigFileConfig';
 import SelectConfigFileConfig from './nodeConfigs/SelectConfigFileConfig';
+import DbConnectConfig from './nodeConfigs/DbConnectConfig';
+import DbDisconnectConfig from './nodeConfigs/DbDisconnectConfig';
+import DbQueryConfig from './nodeConfigs/DbQueryConfig';
 import { frontendPluginRegistry } from '../plugins/registry';
 import { useCallback } from 'react';
 // Import switch node config component directly (until plugin loader supports dynamic loading)
@@ -103,6 +106,12 @@ export default function NodeConfigForm({ node }: NodeConfigFormProps) {
           return <LoadConfigFileConfig node={node} onChange={handleChange} />;
         case NodeType.SELECT_CONFIG_FILE:
           return <SelectConfigFileConfig node={node} onChange={handleChange} />;
+        case NodeType.DB_CONNECT:
+          return <DbConnectConfig node={node} onChange={handleChange} />;
+        case NodeType.DB_DISCONNECT:
+          return <DbDisconnectConfig node={node} onChange={handleChange} />;
+        case NodeType.DB_QUERY:
+          return <DbQueryConfig node={node} onChange={handleChange} />;
         default:
           return <div className="text-gray-400 text-sm">No configuration available.</div>;
       }

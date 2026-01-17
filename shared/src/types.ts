@@ -25,6 +25,9 @@ export enum NodeType {
   API_CURL = 'apiCurl',
   LOAD_CONFIG_FILE = 'loadConfigFile',
   SELECT_CONFIG_FILE = 'selectConfigFile',
+  DB_CONNECT = 'dbConnect',
+  DB_DISCONNECT = 'dbDisconnect',
+  DB_QUERY = 'dbQuery',
   ACTION = 'action',
   ELEMENT_QUERY = 'elementQuery',
   FORM_INPUT = 'formInput',
@@ -810,10 +813,60 @@ export interface SelectConfigFileNodeData {
   contextKey?: string; // Optional key to store under (default: merge into root)
 }
 
+export interface DbConnectNodeData {
+  dbType: 'postgres' | 'mysql' | 'mongodb' | 'sqlite'; // Supports ${data.config.dbType}
+  host?: string; // Supports variable interpolation
+  port?: number | string; // Supports variable interpolation (parsed after interpolation)
+  user?: string; // Supports variable interpolation
+  password?: string; // Supports variable interpolation
+  database?: string; // Supports variable interpolation
+  connectionString?: string; // Optional alternative to individual fields (supports interpolation)
+  configKey?: string; // Optional - load entire config object from context (e.g., 'env.db' loads from data.env.db)
+  connectionKey?: string; // Context key to store connection (default: 'dbConnection', supports ${data.key})
+  options?: Record<string, any>; // Database-specific options (pool size, SSL, etc.) - supports interpolation for string values
+  failSilently?: boolean;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface DbDisconnectNodeData {
+  connectionKey?: string; // Which connection to disconnect (default: 'dbConnection', supports ${data.key})
+  failSilently?: boolean;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface DbQueryNodeData {
+  connectionKey?: string; // Which connection to use (supports ${data.connectionKey})
+  query?: string | Record<string, any>; // SQL query string (for SQL databases) or query object (for NoSQL) - supports variable interpolation
+  queryKey?: string; // Optional - load query string/object from context (e.g., 'queries.selectUser' loads from data.queries.selectUser)
+  queryType?: 'sql' | 'mongodb' | 'raw'; // Supports ${data.queryType}
+  params?: any[]; // Parameterized query parameters (each param supports interpolation)
+  contextKey?: string; // Where to store results (default: 'dbResult', supports ${data.resultKey})
+  timeout?: number; // Query timeout (supports ${data.timeout})
+  failSilently?: boolean;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
 // Verification Domain and Types
 export type VerificationDomain = 'browser' | 'api' | 'database';
 
 export type BrowserVerificationType = 'url' | 'text' | 'element' | 'attribute' | 'formField' | 'cookie' | 'storage' | 'css';
+
+export type DatabaseVerificationType = 'rowCount' | 'columnValue' | 'rowExists' | 'queryResult';
 
 export type MatchType = 'contains' | 'equals' | 'regex' | 'startsWith' | 'endsWith';
 
@@ -838,8 +891,11 @@ export interface VerifyNodeData {
   jsonPath?: string;
   headerName?: string;
   apiContextKey?: string; // Context key for API response to verify
-  // Database-specific fields (future)
-  query?: string;
+  // Database-specific fields
+  dbContextKey?: string; // Context key for query result to verify (default: 'dbResult', supports ${data.resultKey})
+  dbVerificationType?: DatabaseVerificationType; // 'rowCount' | 'columnValue' | 'rowExists' | 'queryResult' (supports ${data.type})
+  columnName?: string; // For column value verification (supports ${data.column})
+  rowIndex?: number; // For row-based verification (default: 0, supports ${data.index})
   // Common fields
   matchType?: MatchType;
   comparisonOperator?: ComparisonOperator;
@@ -894,6 +950,9 @@ export type NodeData =
   | ApiCurlNodeData
   | LoadConfigFileNodeData
   | SelectConfigFileNodeData
+  | DbConnectNodeData
+  | DbDisconnectNodeData
+  | DbQueryNodeData
   | Record<string, any>; // Support custom plugin node data
 
 // Edge/Connection Interface
