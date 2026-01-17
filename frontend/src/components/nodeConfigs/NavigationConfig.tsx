@@ -28,7 +28,8 @@ export default function NavigationConfig({ node, onChange }: NavigationConfigPro
     }
   };
 
-  const isUrlPatternValid = validateRegex(data.waitForUrl || '');
+  const waitForUrlValue = getPropertyValue('waitForUrl', '');
+  const isUrlPatternValid = validateRegex(waitForUrlValue);
   const action = data.action || 'navigate';
 
   return (
@@ -309,32 +310,50 @@ export default function NavigationConfig({ node, onChange }: NavigationConfigPro
               <label className="block text-sm font-medium text-gray-300 mb-1">Wait for Selector</label>
               <input
                 type="text"
-                value={data.waitForSelector || ''}
+                value={getPropertyValue('waitForSelector', '')}
                 onChange={(e) => onChange('waitForSelector', e.target.value)}
                 placeholder="#element or //div[@id='element']"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+                disabled={isPropertyDisabled('waitForSelector')}
+                className={getInputClassName('waitForSelector', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
               />
+              {isPropertyDisabled('waitForSelector') && (
+                <div className="mt-1 text-xs text-gray-500 italic">
+                  This property is converted to input. Connect a node to provide the value.
+                </div>
+              )}
               <div className="mt-2 space-y-2">
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
                   <select
-                    value={data.waitForSelectorType || 'css'}
+                    value={getPropertyValue('waitForSelectorType', 'css')}
                     onChange={(e) => onChange('waitForSelectorType', e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+                    disabled={isPropertyDisabled('waitForSelectorType')}
+                    className={getInputClassName('waitForSelectorType', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
                   >
                     <option value="css">CSS Selector</option>
                     <option value="xpath">XPath</option>
                   </select>
+                  {isPropertyDisabled('waitForSelectorType') && (
+                    <div className="mt-1 text-xs text-gray-500 italic">
+                      This property is converted to input. Connect a node to provide the value.
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
                   <input
                     type="number"
-                    value={data.waitForSelectorTimeout || ''}
+                    value={getPropertyValue('waitForSelectorTimeout', '')}
                     onChange={(e) => onChange('waitForSelectorTimeout', e.target.value ? parseInt(e.target.value, 10) : undefined)}
                     placeholder="Defaults to main timeout"
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+                    disabled={isPropertyDisabled('waitForSelectorTimeout')}
+                    className={getInputClassName('waitForSelectorTimeout', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
                   />
+                  {isPropertyDisabled('waitForSelectorTimeout') && (
+                    <div className="mt-1 text-xs text-gray-500 italic">
+                      This property is converted to input. Connect a node to provide the value.
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -343,13 +362,19 @@ export default function NavigationConfig({ node, onChange }: NavigationConfigPro
               <label className="block text-sm font-medium text-gray-300 mb-1">Wait for URL Pattern</label>
               <input
                 type="text"
-                value={data.waitForUrl || ''}
+                value={getPropertyValue('waitForUrl', '')}
                 onChange={(e) => onChange('waitForUrl', e.target.value)}
                 placeholder="/example\.com/ or example.com"
-                className={`w-full px-3 py-2 bg-gray-700 border rounded text-sm ${
+                disabled={isPropertyDisabled('waitForUrl')}
+                className={getInputClassName('waitForUrl', `w-full px-3 py-2 bg-gray-700 border rounded text-sm ${
                   isUrlPatternValid ? 'border-gray-600' : 'border-red-500'
-                }`}
+                }`)}
               />
+              {isPropertyDisabled('waitForUrl') && (
+                <div className="mt-1 text-xs text-gray-500 italic">
+                  This property is converted to input. Connect a node to provide the value.
+                </div>
+              )}
               {!isUrlPatternValid && (
                 <div className="mt-1 text-xs text-red-400">
                   Invalid regex pattern. Use /pattern/ syntax for regex or plain text for exact match.
@@ -359,51 +384,75 @@ export default function NavigationConfig({ node, onChange }: NavigationConfigPro
                 <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
                 <input
                   type="number"
-                  value={data.waitForUrlTimeout || ''}
+                  value={getPropertyValue('waitForUrlTimeout', '')}
                   onChange={(e) => onChange('waitForUrlTimeout', e.target.value ? parseInt(e.target.value, 10) : undefined)}
                   placeholder="Defaults to main timeout"
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+                  disabled={isPropertyDisabled('waitForUrlTimeout')}
+                  className={getInputClassName('waitForUrlTimeout', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
                 />
+                {isPropertyDisabled('waitForUrlTimeout') && (
+                  <div className="mt-1 text-xs text-gray-500 italic">
+                    This property is converted to input. Connect a node to provide the value.
+                  </div>
+                )}
               </div>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Wait for JavaScript Condition</label>
               <textarea
-                value={data.waitForCondition || ''}
+                value={getPropertyValue('waitForCondition', '')}
                 onChange={(e) => onChange('waitForCondition', e.target.value)}
                 placeholder="document.readyState === 'complete'"
                 rows={3}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm font-mono"
+                disabled={isPropertyDisabled('waitForCondition')}
+                className={getInputClassName('waitForCondition', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm font-mono')}
               />
+              {isPropertyDisabled('waitForCondition') && (
+                <div className="mt-1 text-xs text-gray-500 italic">
+                  This property is converted to input. Connect a node to provide the value.
+                </div>
+              )}
               <div className="mt-2">
                 <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
                 <input
                   type="number"
-                  value={data.waitForConditionTimeout || ''}
+                  value={getPropertyValue('waitForConditionTimeout', '')}
                   onChange={(e) => onChange('waitForConditionTimeout', e.target.value ? parseInt(e.target.value, 10) : undefined)}
                   placeholder="Defaults to main timeout"
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+                  disabled={isPropertyDisabled('waitForConditionTimeout')}
+                  className={getInputClassName('waitForConditionTimeout', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
                 />
+                {isPropertyDisabled('waitForConditionTimeout') && (
+                  <div className="mt-1 text-xs text-gray-500 italic">
+                    This property is converted to input. Connect a node to provide the value.
+                  </div>
+                )}
               </div>
             </div>
 
             {/* Wait Strategy */}
-            {(data.waitForSelector || data.waitForUrl || data.waitForCondition) && (
+            {(getPropertyValue('waitForSelector', '') || getPropertyValue('waitForUrl', '') || getPropertyValue('waitForCondition', '')) && (
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
                   Wait Strategy
                 </label>
                 <select
-                  value={data.waitStrategy || 'parallel'}
+                  value={getPropertyValue('waitStrategy', 'parallel')}
                   onChange={(e) => onChange('waitStrategy', e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                  disabled={isPropertyDisabled('waitStrategy')}
+                  className={getInputClassName('waitStrategy', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm')}
                 >
                   <option value="parallel">Parallel - Wait for all conditions simultaneously</option>
                   <option value="sequential">Sequential - Wait for each condition in order</option>
                 </select>
+                {isPropertyDisabled('waitStrategy') && (
+                  <div className="mt-1 text-xs text-gray-500 italic">
+                    This property is converted to input. Connect a node to provide the value.
+                  </div>
+                )}
                 <div className="mt-1 text-xs text-gray-400">
-                  {data.waitStrategy === 'sequential'
+                  {getPropertyValue('waitStrategy', 'parallel') === 'sequential'
                     ? 'Conditions are checked one after another. Useful when conditions depend on each other.'
                     : 'All conditions are checked at the same time. Faster but conditions must be independent.'}
                 </div>

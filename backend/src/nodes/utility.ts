@@ -77,7 +77,7 @@ export class ElementQueryHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'before',
-          });
+          }, context);
         }
 
         // Execute action based on action type
@@ -160,7 +160,7 @@ export class ElementQueryHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'after',
-          });
+          }, context);
         }
 
         return queryResult;
@@ -227,7 +227,7 @@ export class ScreenshotHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: 30000,
             waitTiming: 'before',
-          });
+          }, context);
         }
 
         // Execute screenshot operation based on action
@@ -256,7 +256,8 @@ export class ScreenshotHandler implements NodeHandler {
               return data.selectorType === 'xpath' ? page.locator(`xpath=${maskSelector}`) : page.locator(maskSelector);
             });
             
-            const screenshotOptions: any = { path: data.path, timeout };
+            const screenshotTimeout = data.waitForSelectorTimeout || 30000;
+            const screenshotOptions: any = { path: data.path, timeout: screenshotTimeout };
             if (maskLocators && maskLocators.length > 0) {
               screenshotOptions.mask = maskLocators;
             }
@@ -368,14 +369,16 @@ export class WaitHandler implements NodeHandler {
           if (!page) {
             throw new Error('Page is required for URL wait');
           }
-          const urlPattern = String(data.value);
+          // Interpolate template variables in URL pattern
+          const urlPattern = VariableInterpolator.interpolateString(String(data.value), context);
           const timeout = data.timeout || 30000;
           await WaitHelper.waitForUrl(page, urlPattern, timeout, data.failSilently || false, 'before');
         } else if (data.waitType === 'condition') {
           if (!page) {
             throw new Error('Page is required for condition wait');
           }
-          const condition = String(data.value);
+          // Interpolate template variables in condition
+          const condition = VariableInterpolator.interpolateString(String(data.value), context);
           const timeout = data.timeout || 30000;
           await WaitHelper.waitForCondition(page, condition, timeout, data.failSilently || false, 'before');
         } else if (data.waitType === 'api-response') {
@@ -757,7 +760,7 @@ export class StorageHandler implements NodeHandler {
       throw new Error('Action is required for Storage node');
     }
 
-    const timeout = data.timeout || 30000;
+    const timeout = data.waitForSelectorTimeout || 30000;
     const contextKey = data.contextKey || 'storageResult';
 
     // Execute storage operation with retry logic (includes wait conditions)
@@ -779,7 +782,7 @@ export class StorageHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'before',
-          });
+          }, context);
         }
 
         let storageResult: any;
@@ -790,7 +793,7 @@ export class StorageHandler implements NodeHandler {
             if (data.name) {
               const name = VariableInterpolator.interpolateString(data.name, context);
               const cookies = await page.context().cookies(data.url ? VariableInterpolator.interpolateString(data.url, context) : undefined);
-              const cookie = cookies.find(c => c.name === name);
+              const cookie = cookies.find((c: any) => c.name === name);
               storageResult = cookie ? cookie.value : null;
             } else {
               const url = data.url ? VariableInterpolator.interpolateString(data.url, context) : undefined;
@@ -822,10 +825,10 @@ export class StorageHandler implements NodeHandler {
             if (data.domain) {
               const domain = VariableInterpolator.interpolateString(data.domain, context);
               const cookies = await page.context().cookies();
-              const cookiesToDelete = cookies.filter(c => c.domain === domain || c.domain?.endsWith(`.${domain}`));
+              const cookiesToDelete = cookies.filter((c: any) => c.domain === domain || c.domain?.endsWith(`.${domain}`));
               await page.context().clearCookies();
               // Re-add cookies not matching domain
-              const cookiesToKeep = cookies.filter(c => !cookiesToDelete.includes(c));
+              const cookiesToKeep = cookies.filter((c: any) => !cookiesToDelete.includes(c));
               if (cookiesToKeep.length > 0) {
                 await page.context().addCookies(cookiesToKeep);
               }
@@ -839,7 +842,7 @@ export class StorageHandler implements NodeHandler {
           case 'getLocalStorage':
             if (data.key) {
               const key = VariableInterpolator.interpolateString(data.key, context);
-              storageResult = await page.evaluate((k) => localStorage.getItem(k), key);
+              storageResult = await page.evaluate((k: string) => localStorage.getItem(k), key);
             } else {
               storageResult = await page.evaluate(() => {
                 const items: Record<string, string> = {};
@@ -860,7 +863,7 @@ export class StorageHandler implements NodeHandler {
             }
             const setKey = VariableInterpolator.interpolateString(data.key, context);
             const setValue = VariableInterpolator.interpolateString(String(data.value), context);
-            await page.evaluate((k, v) => localStorage.setItem(k, v), setKey, setValue);
+            await page.evaluate((k: string, v: string) => localStorage.setItem(k, v), setKey, setValue);
             storageResult = { key: setKey, value: setValue };
             break;
 
@@ -872,7 +875,7 @@ export class StorageHandler implements NodeHandler {
           case 'getSessionStorage':
             if (data.key) {
               const key = VariableInterpolator.interpolateString(data.key, context);
-              storageResult = await page.evaluate((k) => sessionStorage.getItem(k), key);
+              storageResult = await page.evaluate((k: string) => sessionStorage.getItem(k), key);
             } else {
               storageResult = await page.evaluate(() => {
                 const items: Record<string, string> = {};
@@ -893,7 +896,7 @@ export class StorageHandler implements NodeHandler {
             }
             const sessionKey = VariableInterpolator.interpolateString(data.key, context);
             const sessionValue = VariableInterpolator.interpolateString(String(data.value), context);
-            await page.evaluate((k, v) => sessionStorage.setItem(k, v), sessionKey, sessionValue);
+            await page.evaluate((k: string, v: string) => sessionStorage.setItem(k, v), sessionKey, sessionValue);
             storageResult = { key: sessionKey, value: sessionValue };
             break;
 
@@ -923,7 +926,7 @@ export class StorageHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'after',
-          });
+          }, context);
         }
       },
       {
@@ -980,12 +983,12 @@ export class DialogHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'before',
-          });
+          }, context);
         }
 
         // Set up dialog listener
         const dialogPromise = new Promise<any>((resolve) => {
-          page.once('dialog', (dialog) => {
+          page.once('dialog', (dialog: any) => {
             resolve(dialog);
           });
         });
@@ -1076,7 +1079,7 @@ export class DialogHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'after',
-          });
+          }, context);
         }
       },
       {
@@ -1133,7 +1136,7 @@ export class DownloadHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'before',
-          });
+          }, context);
         }
 
         // Execute action based on action type
@@ -1209,7 +1212,7 @@ export class DownloadHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'after',
-          });
+          }, context);
         }
       },
       {
@@ -1266,7 +1269,7 @@ export class IframeHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'before',
-          });
+          }, context);
         }
 
         // Execute action based on action type
@@ -1276,7 +1279,8 @@ export class IframeHandler implements NodeHandler {
             
             if (data.selector) {
               const selector = VariableInterpolator.interpolateString(data.selector, context);
-              const locator = data.selectorType === 'xpath' ? page.locator(`xpath=${selector}`) : page.locator(selector);
+              // IframeNodeData doesn't have selectorType, default to CSS
+              const locator = page.locator(selector);
               frame = await locator.contentFrame();
             } else if (data.name) {
               const name = VariableInterpolator.interpolateString(data.name, context);
@@ -1286,7 +1290,7 @@ export class IframeHandler implements NodeHandler {
               const regex = urlPattern.startsWith('/') && urlPattern.endsWith('/')
                 ? new RegExp(urlPattern.slice(1, -1))
                 : new RegExp(urlPattern);
-              frame = page.frames().find(f => regex.test(f.url()));
+              frame = page.frames().find((f: any) => regex.test(f.url()));
             } else {
               // Default: get first iframe
               const frames = page.frames();
@@ -1314,14 +1318,15 @@ export class IframeHandler implements NodeHandler {
             }
             const iframeSelector = VariableInterpolator.interpolateString(data.iframeSelector, context);
             const contentSelector = VariableInterpolator.interpolateString(data.contentSelector, context);
-            const iframeLocator = data.selectorType === 'xpath' ? page.locator(`xpath=${iframeSelector}`) : page.locator(iframeSelector);
+            // IframeNodeData doesn't have selectorType, default to CSS
+            const iframeLocator = page.locator(iframeSelector);
             const iframeFrame = await iframeLocator.contentFrame();
             
             if (!iframeFrame) {
               throw new Error('Iframe not found');
             }
             
-            const contentLocator = data.selectorType === 'xpath' ? iframeFrame.locator(`xpath=${contentSelector}`) : iframeFrame.locator(contentSelector);
+            const contentLocator = iframeFrame.locator(contentSelector);
             const content = await contentLocator.textContent({ timeout });
             const outputVar = data.outputVariable || 'iframeContent';
             context.setData(outputVar, content);
@@ -1345,7 +1350,7 @@ export class IframeHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'after',
-          });
+          }, context);
         }
       },
       {

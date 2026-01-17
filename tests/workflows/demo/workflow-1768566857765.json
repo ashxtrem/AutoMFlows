@@ -1,0 +1,153 @@
+{
+  "nodes": [
+    {
+      "id": "start-1768565887286-0",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 200
+      },
+      "data": {
+        "type": "start",
+        "label": "Start",
+        "isTest": true,
+        "recordSession": false,
+        "screenshotAllNodes": false,
+        "screenshotTiming": "post",
+        "backgroundColor": "#06b6d4",
+        "isPinned": false
+      }
+    },
+    {
+      "id": "openBrowser-1768565887286-1",
+      "type": "openBrowser",
+      "position": {
+        "x": 350,
+        "y": 200
+      },
+      "data": {
+        "type": "openBrowser",
+        "label": "Open Browser",
+        "headless": false,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "maxWindow": true,
+        "browser": "chromium",
+        "stealthMode": false,
+        "capabilities": {},
+        "launchOptions": {},
+        "isTest": true,
+        "backgroundColor": "#ec4899",
+        "isPinned": false
+      }
+    },
+    {
+      "id": "navigate-1768565887286-2",
+      "type": "navigate",
+      "position": {
+        "x": 600,
+        "y": 200
+      },
+      "data": {
+        "type": "navigate",
+        "label": "Navigate",
+        "url": "https://example.com",
+        "isTest": true,
+        "timeout": 30000,
+        "waitUntil": "networkidle",
+        "isPinned": false
+      }
+    },
+    {
+      "id": "wait-1768565887286-3",
+      "type": "wait",
+      "position": {
+        "x": 850,
+        "y": 200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": true,
+        "isPinned": false,
+        "backgroundColor": "#22c55e"
+      }
+    },
+    {
+      "id": "screenshot-1768565887286-4",
+      "type": "screenshot",
+      "position": {
+        "x": 1100,
+        "y": 200
+      },
+      "data": {
+        "type": "screenshot",
+        "label": "Screenshot",
+        "fullPage": false,
+        "isTest": true,
+        "isPinned": false
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-1768565887286-0-output-openBrowser-1768565887286-1-input",
+      "source": "start-1768565887286-0",
+      "target": "openBrowser-1768565887286-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-start-1768565887286-0-output-openBrowser-1768565887286-1-driver",
+      "source": "start-1768565887286-0",
+      "target": "openBrowser-1768565887286-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-openBrowser-1768565887286-1-output-navigate-1768565887286-2-input",
+      "source": "openBrowser-1768565887286-1",
+      "target": "navigate-1768565887286-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-openBrowser-1768565887286-1-output-navigate-1768565887286-2-driver",
+      "source": "openBrowser-1768565887286-1",
+      "target": "navigate-1768565887286-2",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-navigate-1768565887286-2-output-wait-1768565887286-3-input",
+      "source": "navigate-1768565887286-2",
+      "target": "wait-1768565887286-3",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-navigate-1768565887286-2-output-wait-1768565887286-3-driver",
+      "source": "navigate-1768565887286-2",
+      "target": "wait-1768565887286-3",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-1768565887286-3-output-screenshot-1768565887286-4-input",
+      "source": "wait-1768565887286-3",
+      "target": "screenshot-1768565887286-4",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-1768565887286-3-output-screenshot-1768565887286-4-driver",
+      "source": "wait-1768565887286-3",
+      "target": "screenshot-1768565887286-4",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    }
+  ]
+}

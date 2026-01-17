@@ -37,6 +37,11 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import FolderIcon from '@mui/icons-material/Folder';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import StorageIcon from '@mui/icons-material/Storage';
+import VerticalAlignCenterIcon from '@mui/icons-material/VerticalAlignCenter';
+import CookieIcon from '@mui/icons-material/Cookie';
+import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
+import DownloadIcon from '@mui/icons-material/Download';
+import PictureInPictureIcon from '@mui/icons-material/PictureInPicture';
 
 interface IconConfig {
   icon: React.ComponentType<{ sx?: any }>;
@@ -47,6 +52,12 @@ const nodeIcons: Record<NodeType, IconConfig> = {
   [NodeType.START]: { icon: PlayCircleFilledWhiteTwoToneIcon, color: '#4CAF50' },
   [NodeType.OPEN_BROWSER]: { icon: LanguageIcon, color: '#2196F3' },
   [NodeType.NAVIGATION]: { icon: LinkIcon, color: '#2196F3' },
+  [NodeType.KEYBOARD]: { icon: KeyboardIcon, color: '#FF9800' },
+  [NodeType.SCROLL]: { icon: VerticalAlignCenterIcon, color: '#9C27B0' },
+  [NodeType.STORAGE]: { icon: CookieIcon, color: '#FF9800' },
+  [NodeType.DIALOG]: { icon: ChatBubbleIcon, color: '#2196F3' },
+  [NodeType.DOWNLOAD]: { icon: DownloadIcon, color: '#4CAF50' },
+  [NodeType.IFRAME]: { icon: PictureInPictureIcon, color: '#9C27B0' },
   [NodeType.ACTION]: { icon: TouchAppIcon, color: '#9C27B0' },
   [NodeType.ELEMENT_QUERY]: { icon: TextFieldsIcon, color: '#4CAF50' },
   [NodeType.FORM_INPUT]: { icon: CheckBoxIcon, color: '#FF9800' },
@@ -138,6 +149,9 @@ function getNodeLabel(type: NodeType | string): string {
       [NodeType.API_CURL]: 'API cURL',
       [NodeType.LOAD_CONFIG_FILE]: 'Load Config File',
       [NodeType.SELECT_CONFIG_FILE]: 'Select Config File',
+      [NodeType.DB_CONNECT]: 'DB Connect',
+      [NodeType.DB_DISCONNECT]: 'DB Disconnect',
+      [NodeType.DB_QUERY]: 'DB Query',
     };
     return labels[type as NodeType] || type;
   }
@@ -1045,7 +1059,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   value={Array.isArray(renderData.values) ? renderData.values.join(', ') : (renderData.values || '')}
                   onChange={(value) => {
                     // Handle comma-separated or single value
-                    const values = value.includes(',') ? value.split(',').map(v => v.trim()) : value;
+                    const values = value.includes(',') ? value.split(',').map((v: string) => v.trim()) : value;
                     handlePropertyChange('values', values);
                   }}
                   placeholder="option1, option2"
@@ -1058,7 +1072,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   value={Array.isArray(renderData.filePaths) ? renderData.filePaths.join(', ') : (renderData.filePaths || '')}
                   onChange={(value) => {
                     // Handle comma-separated or single value
-                    const paths = value.includes(',') ? value.split(',').map(p => p.trim()) : value;
+                    const paths = value.includes(',') ? value.split(',').map((p: string) => p.trim()) : value;
                     handlePropertyChange('filePaths', paths);
                   }}
                   placeholder="/path/to/file.txt"

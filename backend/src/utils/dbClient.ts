@@ -240,7 +240,7 @@ export class DbClient {
     const result = await this.pgPool.query(query, params);
     return {
       rows: result.rows,
-      rowCount: result.rowCount,
+      rowCount: result.rowCount ?? undefined,
       columns: result.fields?.map(f => f.name) || [],
       duration: 0, // Will be set by caller
       timestamp: 0, // Will be set by caller

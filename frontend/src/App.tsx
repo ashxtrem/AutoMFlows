@@ -5,6 +5,7 @@ import LeftSidebar from './components/LeftSidebar';
 import Canvas from './components/Canvas';
 import RightSidebar from './components/RightSidebar';
 import ReportHistory from './components/ReportHistory';
+import FloatingRunButton from './components/FloatingRunButton';
 import { useWorkflowStore } from './store/workflowStore';
 import NodeErrorPopup from './components/NodeErrorPopup';
 import BrowserInstallErrorPopup from './components/BrowserInstallErrorPopup';
@@ -140,6 +141,7 @@ function App() {
           />
         )}
         <TopBar />
+        <FloatingRunButton />
         <div className="flex flex-1 overflow-hidden">
           <LeftSidebar />
           <Canvas />

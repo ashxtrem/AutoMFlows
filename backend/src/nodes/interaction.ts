@@ -1,4 +1,4 @@
-import { BaseNode, TypeNodeData, ActionNodeData, FormInputNodeData, KeyboardNodeData } from '@automflows/shared';
+import { BaseNode, TypeNodeData, ActionNodeData, FormInputNodeData, KeyboardNodeData, ScrollNodeData } from '@automflows/shared';
 import { NodeHandler } from './base';
 import { ContextManager } from '../engine/context';
 import { WaitHelper } from '../utils/waitHelper';
@@ -46,7 +46,7 @@ export class TypeHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'before',
-          });
+          }, context);
         }
 
         // Execute type operation
@@ -70,7 +70,7 @@ export class TypeHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'after',
-          });
+          }, context);
         }
       },
       {
@@ -133,7 +133,7 @@ export class ActionHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'before',
-          });
+          }, context);
         }
 
         // Execute action based on action type
@@ -208,7 +208,7 @@ export class ActionHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'after',
-          });
+          }, context);
         }
       },
       {
@@ -271,7 +271,7 @@ export class FormInputHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'before',
-          });
+          }, context);
         }
 
         // Execute action based on action type
@@ -290,16 +290,26 @@ export class FormInputHandler implements NodeHandler {
             const interpolatedValues = selectValues.map(v => VariableInterpolator.interpolateString(String(v), context));
             
             // Determine select options based on selectBy
-            const selectOptions: any = { timeout };
+            // Playwright expects values and timeout to be separate parameters
+            let selectOptionValue: string | string[] | { value?: string | string[]; label?: string | string[]; index?: number | number[] };
+            
             if (data.selectBy === 'label') {
-              selectOptions.label = interpolatedValues;
+              selectOptionValue = interpolatedValues.length === 1 
+                ? { label: interpolatedValues[0] }
+                : { label: interpolatedValues };
             } else if (data.selectBy === 'index') {
-              selectOptions.index = interpolatedValues.map(v => parseInt(v, 10));
+              const indices = interpolatedValues.map(v => parseInt(v, 10));
+              selectOptionValue = indices.length === 1 
+                ? { index: indices[0] }
+                : { index: indices };
             } else {
-              selectOptions.value = interpolatedValues;
+              // For value, pass string or array directly (Playwright accepts both)
+              selectOptionValue = interpolatedValues.length === 1 
+                ? interpolatedValues[0] 
+                : interpolatedValues;
             }
 
-            await locator.selectOption(selectOptions);
+            await locator.selectOption(selectOptionValue, { timeout });
             break;
 
           case 'check':
@@ -348,7 +358,7 @@ export class FormInputHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'after',
-          });
+          }, context);
         }
       },
       {
@@ -405,7 +415,7 @@ export class KeyboardHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'before',
-          });
+          }, context);
         }
 
         // Focus element first if selector is provided
@@ -472,8 +482,7 @@ export class KeyboardHandler implements NodeHandler {
               throw new Error('Shortcut is required for shortcut action');
             }
             const shortcut = VariableInterpolator.interpolateString(data.shortcut, context);
-            // Parse shortcut (e.g., "Control+C" -> ["Control", "c"])
-            const keys = shortcut.split('+').map(k => k.trim());
+            // Note: shortcut is used directly; parsing to keys array is not currently used
             if (data.selector) {
               const selector = VariableInterpolator.interpolateString(data.selector, context);
               const locator = data.selectorType === 'xpath' ? page.locator(`xpath=${selector}`) : page.locator(selector);
@@ -517,7 +526,7 @@ export class KeyboardHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'after',
-          });
+          }, context);
         }
       },
       {
@@ -574,7 +583,7 @@ export class ScrollHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'before',
-          });
+          }, context);
         }
 
         // Execute action based on action type
@@ -592,7 +601,7 @@ export class ScrollHandler implements NodeHandler {
             if (data.x === undefined || data.y === undefined) {
               throw new Error('x and y coordinates are required for scrollToPosition action');
             }
-            await page.evaluate((x, y) => {
+            await page.evaluate((x: number, y: number) => {
               window.scrollTo(x, y);
             }, data.x, data.y);
             break;
@@ -601,7 +610,7 @@ export class ScrollHandler implements NodeHandler {
             if (data.deltaX === undefined || data.deltaY === undefined) {
               throw new Error('deltaX and deltaY are required for scrollBy action');
             }
-            await page.evaluate((dx, dy) => {
+            await page.evaluate((dx: number, dy: number) => {
               window.scrollBy(dx, dy);
             }, data.deltaX, data.deltaY);
             break;
@@ -636,7 +645,7 @@ export class ScrollHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'after',
-          });
+          }, context);
         }
       },
       {

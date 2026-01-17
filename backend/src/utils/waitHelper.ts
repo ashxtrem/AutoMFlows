@@ -3,6 +3,9 @@
  * Provides reusable wait logic for selector, URL pattern, and JavaScript conditions
  */
 
+import { ContextManager } from '../engine/context';
+import { VariableInterpolator } from './variableInterpolator';
+
 export interface WaitOptions {
   waitForSelector?: string;
   waitForSelectorType?: 'css' | 'xpath';
@@ -20,8 +23,11 @@ export interface WaitOptions {
 export class WaitHelper {
   /**
    * Execute all wait conditions based on the provided options
+   * @param page - Playwright page object
+   * @param options - Wait options configuration
+   * @param context - Optional ContextManager for variable interpolation
    */
-  static async executeWaits(page: any, options: WaitOptions): Promise<void> {
+  static async executeWaits(page: any, options: WaitOptions, context?: ContextManager): Promise<void> {
     const {
       waitForSelector,
       waitForSelectorType,
@@ -39,12 +45,15 @@ export class WaitHelper {
 
     const waitTiming = options.waitTiming || 'before';
 
-    // Wait for selector
+    // Wait for selector - interpolate variables if context is provided
     if (waitForSelector) {
       const selectorTimeout = waitForSelectorTimeout || defaultTimeout;
+      const interpolatedSelector = context 
+        ? VariableInterpolator.interpolateString(waitForSelector, context)
+        : waitForSelector;
       const waitForSelectorPromise = this.waitForSelector(
         page,
-        waitForSelector,
+        interpolatedSelector,
         waitForSelectorType || 'css',
         selectorTimeout,
         failSilently,
@@ -53,12 +62,15 @@ export class WaitHelper {
       waitPromises.push(waitForSelectorPromise);
     }
 
-    // Wait for URL pattern
+    // Wait for URL pattern - interpolate variables if context is provided
     if (waitForUrl) {
       const urlTimeout = waitForUrlTimeout || defaultTimeout;
+      const interpolatedUrl = context 
+        ? VariableInterpolator.interpolateString(waitForUrl, context)
+        : waitForUrl;
       const waitForUrlPromise = this.waitForUrl(
         page,
-        waitForUrl,
+        interpolatedUrl,
         urlTimeout,
         failSilently,
         waitTiming
@@ -66,12 +78,15 @@ export class WaitHelper {
       waitPromises.push(waitForUrlPromise);
     }
 
-    // Wait for custom JavaScript condition
+    // Wait for custom JavaScript condition - interpolate variables if context is provided
     if (waitForCondition) {
       const conditionTimeout = waitForConditionTimeout || defaultTimeout;
+      const interpolatedCondition = context 
+        ? VariableInterpolator.interpolateString(waitForCondition, context)
+        : waitForCondition;
       const waitForConditionPromise = this.waitForCondition(
         page,
-        waitForCondition,
+        interpolatedCondition,
         conditionTimeout,
         failSilently,
         waitTiming

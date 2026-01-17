@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { X, AlertCircle, FileText, ChevronDown, ChevronUp, Copy, Code, Globe, Search } from 'lucide-react';
+import { X, AlertCircle, FileText, ChevronDown, ChevronUp, Copy, Code, Globe, Search, Camera } from 'lucide-react';
 import { useWorkflowStore } from '../store/workflowStore';
 import { PageDebugInfo, SelectorSuggestion } from '@automflows/shared';
+import { getBackendPort } from '../utils/getBackendPort';
 
 interface NodeErrorPopupProps {
   nodeId: string;
@@ -18,11 +19,14 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
   const [expandedSections, setExpandedSections] = useState<{
     pageSource: boolean;
     similarSelectors: boolean;
+    screenshots: boolean;
   }>({
     pageSource: false,
     similarSelectors: false,
+    screenshots: false,
   });
   const [pageSourceSearch, setPageSourceSearch] = useState('');
+  const [backendPort, setBackendPort] = useState<number | null>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -36,6 +40,14 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [onClose]);
+
+  useEffect(() => {
+    const loadPort = async () => {
+      const p = await getBackendPort();
+      setBackendPort(p);
+    };
+    loadPort();
+  }, []);
 
   const node = nodes.find(n => n.id === nodeId);
   const nodeLabel = node?.data?.label || node?.data?.type || nodeId;
@@ -61,11 +73,20 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
     });
   };
 
-  const toggleSection = (section: 'pageSource' | 'similarSelectors') => {
+  const toggleSection = (section: 'pageSource' | 'similarSelectors' | 'screenshots') => {
     setExpandedSections(prev => ({
       ...prev,
       [section]: !prev[section],
     }));
+  };
+
+  const getScreenshotUrl = (screenshotPath: string): string | null => {
+    if (!backendPort || !error.debugInfo?.executionFolderName || !screenshotPath) {
+      return null;
+    }
+    // Extract filename from full path
+    const filename = screenshotPath.split(/[/\\]/).pop() || screenshotPath;
+    return `http://localhost:${backendPort}/api/reports/${error.debugInfo.executionFolderName}/screenshots/${filename}`;
   };
 
   const highlightSearchText = (text: string, search: string): React.ReactNode => {
@@ -152,6 +173,102 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
                   <div className="text-sm text-gray-300 break-all font-mono bg-gray-900 rounded p-2">
                     {error.debugInfo.pageUrl}
                   </div>
+                </div>
+              )}
+
+              {/* Screenshots */}
+              {error.debugInfo.screenshotPaths && 
+               (error.debugInfo.screenshotPaths.pre || error.debugInfo.screenshotPaths.post) && (
+                <div className="bg-gray-700 rounded p-3 border border-gray-600">
+                  <button
+                    onClick={() => toggleSection('screenshots')}
+                    className="flex items-center justify-between w-full mb-2 text-left"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Camera className="text-yellow-400" size={16} />
+                      <div className="text-sm font-medium text-white">
+                        Screenshots
+                        {error.debugInfo.screenshotPaths.pre && error.debugInfo.screenshotPaths.post 
+                          ? ' (Pre & Post)' 
+                          : error.debugInfo.screenshotPaths.pre 
+                          ? ' (Pre)' 
+                          : ' (Post)'}
+                      </div>
+                    </div>
+                    {expandedSections.screenshots ? (
+                      <ChevronUp className="text-gray-400" size={16} />
+                    ) : (
+                      <ChevronDown className="text-gray-400" size={16} />
+                    )}
+                  </button>
+                  {expandedSections.screenshots && (
+                    <div className="space-y-3 mt-2">
+                      {error.debugInfo.screenshotPaths.pre && (
+                        <div className="bg-gray-900 rounded p-3 border border-gray-600">
+                          <div className="text-xs font-medium text-gray-400 mb-2 uppercase">Pre-execution Screenshot</div>
+                          {getScreenshotUrl(error.debugInfo.screenshotPaths.pre) ? (
+                            <div className="space-y-2">
+                              <img 
+                                src={getScreenshotUrl(error.debugInfo.screenshotPaths.pre)!} 
+                                alt="Pre-execution screenshot"
+                                className="max-w-full h-auto rounded border border-gray-700"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  const parent = target.parentElement;
+                                  if (parent) {
+                                    parent.innerHTML = '<div class="text-xs text-red-400">Failed to load screenshot</div>';
+                                  }
+                                }}
+                              />
+                              <a
+                                href={getScreenshotUrl(error.debugInfo.screenshotPaths.pre)!}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-400 hover:text-blue-300 underline"
+                              >
+                                Open in new tab
+                              </a>
+                            </div>
+                          ) : (
+                            <div className="text-xs text-gray-500">Screenshot path: {error.debugInfo.screenshotPaths.pre}</div>
+                          )}
+                        </div>
+                      )}
+                      {error.debugInfo.screenshotPaths.post && (
+                        <div className="bg-gray-900 rounded p-3 border border-gray-600">
+                          <div className="text-xs font-medium text-gray-400 mb-2 uppercase">Post-execution Screenshot</div>
+                          {getScreenshotUrl(error.debugInfo.screenshotPaths.post) ? (
+                            <div className="space-y-2">
+                              <img 
+                                src={getScreenshotUrl(error.debugInfo.screenshotPaths.post)!} 
+                                alt="Post-execution screenshot"
+                                className="max-w-full h-auto rounded border border-gray-700"
+                                onError={(e) => {
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  const parent = target.parentElement;
+                                  if (parent) {
+                                    parent.innerHTML = '<div class="text-xs text-red-400">Failed to load screenshot</div>';
+                                  }
+                                }}
+                              />
+                              <a
+                                href={getScreenshotUrl(error.debugInfo.screenshotPaths.post)!}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-blue-400 hover:text-blue-300 underline"
+                              >
+                                Open in new tab
+                              </a>
+                            </div>
+                          ) : (
+                            <div className="text-xs text-gray-500">Screenshot path: {error.debugInfo.screenshotPaths.post}</div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 

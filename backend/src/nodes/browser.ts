@@ -83,7 +83,7 @@ export class NavigationHandler implements NodeHandler {
             failSilently: data.failSilently || false,
             defaultTimeout: timeout,
             waitTiming: 'before',
-          });
+          }, contextManager);
         }
 
         // Execute action based on action type
@@ -177,7 +177,7 @@ export class NavigationHandler implements NodeHandler {
             } else {
               // Default: switch to first available tab (other than current)
               if (pages.length > 1) {
-                targetPage = pages.find(p => p !== page) || pages[0];
+                targetPage = pages.find((p: any) => p !== page) || pages[0];
               } else {
                 throw new Error('No other tabs available to switch to');
               }
@@ -238,7 +238,7 @@ export class NavigationHandler implements NodeHandler {
               failSilently: data.failSilently || false,
               defaultTimeout: timeout,
               waitTiming: 'after',
-            });
+            }, contextManager);
           }
         }
       },

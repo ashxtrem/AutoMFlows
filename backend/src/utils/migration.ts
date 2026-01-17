@@ -16,7 +16,7 @@ export interface MigrationResult {
  */
 export function convertOldNodeToConsolidated(oldNode: BaseNode): MigrationResult {
   switch (oldNode.type) {
-    case NodeType.CLICK:
+    case 'click': // Old NodeType.CLICK
       return {
         migrated: true,
         newNode: {
@@ -30,7 +30,7 @@ export function convertOldNodeToConsolidated(oldNode: BaseNode): MigrationResult
         warning: 'Click node has been migrated to Action node with action="click"',
       };
 
-    case NodeType.GET_TEXT:
+    case 'getText': // Old NodeType.GET_TEXT
       return {
         migrated: true,
         newNode: {
@@ -39,13 +39,13 @@ export function convertOldNodeToConsolidated(oldNode: BaseNode): MigrationResult
           data: {
             ...oldNode.data,
             action: 'getText',
-            outputVariable: oldNode.data.outputVariable || 'text',
+            outputVariable: (oldNode.data as any)?.outputVariable || 'text',
           },
         },
         warning: 'Get Text node has been migrated to Element Query node with action="getText"',
       };
 
-    case NodeType.NAVIGATE:
+    case 'navigate': // Old NodeType.NAVIGATE
       return {
         migrated: true,
         newNode: {
@@ -105,11 +105,11 @@ export function migrateWorkflow(workflow: { nodes: BaseNode[]; edges?: any[] }):
 /**
  * Check if a node type is deprecated
  */
-export function isDeprecatedNodeType(nodeType: NodeType): boolean {
-  const deprecatedTypes: NodeType[] = [
-    NodeType.CLICK, // Migrated to ACTION
-    NodeType.GET_TEXT, // Migrated to ELEMENT_QUERY
-    NodeType.NAVIGATE, // Migrated to NAVIGATION
+export function isDeprecatedNodeType(nodeType: NodeType | string): boolean {
+  const deprecatedTypes: string[] = [
+    'click', // Old NodeType.CLICK - Migrated to ACTION
+    'getText', // Old NodeType.GET_TEXT - Migrated to ELEMENT_QUERY
+    'navigate', // Old NodeType.NAVIGATE - Migrated to NAVIGATION
     // Add more as they get migrated
   ];
   return deprecatedTypes.includes(nodeType);
@@ -118,13 +118,13 @@ export function isDeprecatedNodeType(nodeType: NodeType): boolean {
 /**
  * Get migration suggestion for a deprecated node type
  */
-export function getMigrationSuggestion(oldType: NodeType): { newType: NodeType; action?: string } | null {
+export function getMigrationSuggestion(oldType: NodeType | string): { newType: NodeType; action?: string } | null {
   switch (oldType) {
-    case NodeType.CLICK:
+    case 'click': // Old NodeType.CLICK
       return { newType: NodeType.ACTION, action: 'click' };
-    case NodeType.GET_TEXT:
+    case 'getText': // Old NodeType.GET_TEXT
       return { newType: NodeType.ELEMENT_QUERY, action: 'getText' };
-    case NodeType.NAVIGATE:
+    case 'navigate': // Old NodeType.NAVIGATE
       return { newType: NodeType.NAVIGATION, action: 'navigate' };
     default:
       return null;

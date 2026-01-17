@@ -28,7 +28,7 @@ const PRESET_COLORS = [
   { name: 'Default', value: '#1f2937' },
 ];
 
-export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition, onClose, onAddNode }: ContextMenuProps) {
+export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition: _screenPosition, onClose, onAddNode }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const colorSubmenuRef = useRef<HTMLDivElement>(null);
   const convertInputSubmenuRef = useRef<HTMLDivElement>(null);

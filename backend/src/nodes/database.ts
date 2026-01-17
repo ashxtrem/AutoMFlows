@@ -72,11 +72,8 @@ export class DbConnectHandler implements NodeHandler {
         config.connectionString = VariableInterpolator.interpolateString(String(config.connectionString), context);
       }
 
-      if (data.filePath !== undefined) {
-        config.filePath = VariableInterpolator.interpolateString(String(data.filePath), context);
-      } else if (config.filePath) {
-        config.filePath = VariableInterpolator.interpolateString(String(config.filePath), context);
-      }
+      // Note: filePath is handled via connectionString for SQLite databases
+      // If filePath is needed, it should be added to DbConnectNodeData interface
 
       // Interpolate options if provided
       if (data.options) {
@@ -155,7 +152,6 @@ export class DbQueryHandler implements NodeHandler {
 
     const connectionKey = data.connectionKey || 'dbConnection';
     const contextKey = data.contextKey || 'dbResult';
-    const timeout = data.timeout || 30000;
     const failSilently = data.failSilently || false;
 
     try {

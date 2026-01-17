@@ -166,7 +166,7 @@ const STORAGE_KEY_TAB = 'leftSidebarActiveTab';
 type TabType = 'all' | 'browser' | 'api' | 'db' | 'utils';
 
 // Helper function to determine node's primary category
-function getNodeCategory(nodeType: NodeType | string, nodeLabel?: string): 'browser' | 'api' | 'db' | 'utils' {
+function getNodeCategory(nodeType: NodeType | string, _nodeLabel?: string): 'browser' | 'api' | 'db' | 'utils' {
   // Check if it's a plugin node
   const pluginNode = frontendPluginRegistry.getNodeDefinition(nodeType);
   if (pluginNode) {

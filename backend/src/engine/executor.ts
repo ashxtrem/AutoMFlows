@@ -395,6 +395,19 @@ export class Executor {
             }
           }
           
+          // Add screenshot paths to debug info if available (for all node types)
+          if (this.executionTracker) {
+            if (!debugInfo) {
+              debugInfo = {};
+            }
+            const metadata = this.executionTracker.getMetadata();
+            const nodeEvent = metadata.nodes.find(n => n.nodeId === nodeId);
+            if (nodeEvent && nodeEvent.screenshotPaths) {
+              debugInfo.screenshotPaths = nodeEvent.screenshotPaths;
+              debugInfo.executionFolderName = this.executionTracker.getFolderName();
+            }
+          }
+          
           // Check if node has failSilently enabled
           const nodeData = node.data as any;
           const failSilently = nodeData?.failSilently === true;
@@ -671,15 +684,15 @@ export class Executor {
     const nodeData = node.data as any;
 
     // Built-in UI nodes
-    if (nodeType === NodeType.CLICK || 
+    if (nodeType === NodeType.ACTION || 
         nodeType === NodeType.TYPE || 
-        nodeType === NodeType.GET_TEXT || 
+        nodeType === NodeType.ELEMENT_QUERY || 
         nodeType === NodeType.SCREENSHOT) {
       return true;
     }
 
-    // Navigate node with waitForSelector
-    if (nodeType === NodeType.NAVIGATE && nodeData?.waitForSelector) {
+    // Navigation node with waitForSelector
+    if (nodeType === NodeType.NAVIGATION && nodeData?.waitForSelector) {
       return true;
     }
 
@@ -704,17 +717,17 @@ export class Executor {
     const nodeType = node.type;
 
     // Built-in nodes with selector property
-    if (nodeType === NodeType.CLICK || 
+    if (nodeType === NodeType.ACTION || 
         nodeType === NodeType.TYPE || 
-        nodeType === NodeType.GET_TEXT) {
+        nodeType === NodeType.ELEMENT_QUERY) {
       return {
         selector: nodeData?.selector,
         selectorType: nodeData?.selectorType || 'css',
       };
     }
 
-    // Navigate node with waitForSelector
-    if (nodeType === NodeType.NAVIGATE && nodeData?.waitForSelector) {
+    // Navigation node with waitForSelector
+    if (nodeType === NodeType.NAVIGATION && nodeData?.waitForSelector) {
       return {
         selector: nodeData.waitForSelector,
         selectorType: nodeData.waitForSelectorType || 'css',

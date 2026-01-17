@@ -1,11 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import StopIcon from '@mui/icons-material/Stop';
 import SaveIcon from '@mui/icons-material/Save';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import AssessmentIcon from '@mui/icons-material/Assessment';
-import ErrorIcon from '@mui/icons-material/Error';
 import MenuIcon from '@mui/icons-material/Menu';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { Eye, EyeOff, ChevronDown } from 'lucide-react';
@@ -23,8 +20,8 @@ import { useNotificationStore } from '../store/notificationStore';
 const STORAGE_KEY_TRACE_LOGS = 'automflows_trace_logs';
 
 export default function TopBar() {
-  const { nodes, edges, setNodes, setEdges, executionStatus, resetExecution, failedNodes, navigateToFailedNode, edgesHidden, setEdgesHidden, selectedNode } = useWorkflowStore();
-  const { executeWorkflow, stopExecution, validationErrors, setValidationErrors } = useExecution();
+  const { nodes, edges, setNodes, setEdges, resetExecution, edgesHidden, setEdgesHidden, selectedNode } = useWorkflowStore();
+  const { validationErrors, setValidationErrors } = useExecution();
   const addNotification = useNotificationStore((state) => state.addNotification);
   
   const [showResetWarning, setShowResetWarning] = useState(false);
@@ -134,16 +131,6 @@ export default function TopBar() {
       };
     }
   }, [isMenuOpen, saveDropdownOpen, isSettingsSubmenuOpen]);
-
-  const handleRun = async () => {
-    resetExecution();
-    await executeWorkflow(traceLogs);
-  };
-
-  const handleStop = () => {
-    stopExecution();
-    resetExecution();
-  };
 
   // Handle click outside dropdown
   useEffect(() => {
@@ -613,46 +600,6 @@ export default function TopBar() {
             <span className="text-xs text-gray-400">Workspace</span>
           </div>
 
-          {/* Actions Section */}
-          <div className="space-y-1">
-            <button
-              onClick={() => {
-                setIsMenuOpen(false);
-                handleRun();
-              }}
-              disabled={executionStatus === 'running'}
-              className="w-full px-4 py-2.5 bg-green-600 hover:bg-green-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded flex items-center gap-3 text-sm font-medium transition-colors"
-            >
-              <PlayArrowIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
-              Run
-            </button>
-            <button
-              onClick={() => {
-                setIsMenuOpen(false);
-                handleStop();
-              }}
-              disabled={executionStatus !== 'running'}
-              className="w-full px-4 py-2.5 bg-red-600 hover:bg-red-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded flex items-center gap-3 text-sm font-medium transition-colors"
-            >
-              <StopIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
-              Stop
-            </button>
-            <button
-              onClick={() => {
-                setIsMenuOpen(false);
-                navigateToFailedNode?.();
-              }}
-              disabled={failedNodes.size === 0 || !navigateToFailedNode}
-              className="w-full px-4 py-2.5 bg-orange-600 hover:bg-orange-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded flex items-center gap-3 text-sm font-medium transition-colors"
-              title={failedNodes.size > 0 ? `Go to failed node (${failedNodes.size} failed) - Ctrl/Cmd+Shift+F` : 'No failed nodes'}
-            >
-              <ErrorIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
-              Go to Failed Node
-            </button>
-          </div>
-
-          {/* Divider */}
-          <div className="h-px bg-gray-700 my-2" />
 
           {/* File Operations Section */}
           <div className="space-y-1">

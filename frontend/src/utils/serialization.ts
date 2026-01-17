@@ -67,6 +67,16 @@ function getNodeLabel(type: NodeType): string {
   const labels: Record<NodeType, string> = {
     [NodeType.START]: 'Start',
     [NodeType.OPEN_BROWSER]: 'Open Browser',
+    [NodeType.NAVIGATION]: 'Navigation',
+    [NodeType.KEYBOARD]: 'Keyboard',
+    [NodeType.SCROLL]: 'Scroll',
+    [NodeType.STORAGE]: 'Storage',
+    [NodeType.DIALOG]: 'Dialog',
+    [NodeType.DOWNLOAD]: 'Download',
+    [NodeType.IFRAME]: 'Iframe',
+    [NodeType.ACTION]: 'Action',
+    [NodeType.ELEMENT_QUERY]: 'Element Query',
+    [NodeType.FORM_INPUT]: 'Form Input',
     [NodeType.TYPE]: 'Type',
     [NodeType.SCREENSHOT]: 'Screenshot',
     [NodeType.WAIT]: 'Wait',
@@ -81,6 +91,9 @@ function getNodeLabel(type: NodeType): string {
     [NodeType.API_CURL]: 'API cURL',
     [NodeType.LOAD_CONFIG_FILE]: 'Load Config File',
     [NodeType.SELECT_CONFIG_FILE]: 'Select Config File',
+    [NodeType.DB_CONNECT]: 'DB Connect',
+    [NodeType.DB_DISCONNECT]: 'DB Disconnect',
+    [NodeType.DB_QUERY]: 'DB Query',
   };
   return labels[type] || type;
 }

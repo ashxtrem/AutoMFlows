@@ -1,4 +1,4 @@
-import { VerifyNodeData, DatabaseVerificationType } from '@automflows/shared';
+import { VerifyNodeData } from '@automflows/shared';
 import { ContextManager } from '../../../engine/context';
 import { BaseVerificationStrategy, VerificationResult } from './base';
 
@@ -227,7 +227,7 @@ export class DbRowExistsStrategy extends BaseVerificationStrategy {
     };
   }
 
-  validateConfig(config: VerifyNodeData): { valid: boolean; error?: string } {
+  validateConfig(_config: VerifyNodeData): { valid: boolean; error?: string } {
     return { valid: true };
   }
 
