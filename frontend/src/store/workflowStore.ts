@@ -124,11 +124,16 @@ interface WorkflowState {
   breakpointFor: 'all' | 'marked';
   pausedNodeId: string | null;
   pauseReason: 'wait-pause' | 'breakpoint' | null;
+  pauseBreakpointAt: 'pre' | 'post' | 'both' | null;
   navigateToPausedNode: (() => void) | null;
   toggleBreakpoint: (nodeId: string) => void;
   setBreakpointSettings: (settings: { enabled?: boolean; breakpointAt?: 'pre' | 'post' | 'both'; breakpointFor?: 'all' | 'marked' }) => void;
-  setPausedNode: (nodeId: string | null, reason: 'wait-pause' | 'breakpoint' | null) => void;
+  setPausedNode: (nodeId: string | null, reason: 'wait-pause' | 'breakpoint' | null, breakpointAt?: 'pre' | 'post' | 'both' | null) => void;
   setNavigateToPausedNode: (fn: (() => void) | null) => void;
+  
+  // Follow mode state
+  followModeEnabled: boolean;
+  setFollowModeEnabled: (enabled: boolean) => void;
 }
 
 // Helper function to reconnect edges when a node is deleted
@@ -172,7 +177,7 @@ function reconnectEdgesOnNodeDeletion(nodeId: string, edges: Edge[]): Edge[] {
       // Prevent self-connections
       if (incoming.source !== outgoing.target) {
         // Check if edge already exists to prevent duplicates
-        if (!edgeExists(incoming.source, outgoing.target, incoming.sourceHandle, outgoing.targetHandle)) {
+        if (!edgeExists(incoming.source, outgoing.target, incoming.sourceHandle || undefined, outgoing.targetHandle || undefined)) {
           newEdges.push({
             id: `${incoming.source}-${outgoing.target}-${Date.now()}-${edgeCounter++}-${Math.random().toString(36).substr(2, 9)}`,
             source: incoming.source,
@@ -243,6 +248,16 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     pauseReason: null,
     pauseBreakpointAt: null,
     navigateToPausedNode: null,
+    
+    // Follow mode state
+    followModeEnabled: (() => {
+      try {
+        const saved = localStorage.getItem('automflows_follow_mode');
+        return saved === 'true';
+      } catch (error) {
+        return false;
+      }
+    })(),
 
   setNodes: (nodes) => {
     const state = get();
@@ -1097,7 +1112,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     set(updates);
   },
   
-  setPausedNode: (nodeId, reason, breakpointAt) => {
+  setPausedNode: (nodeId: string | null, reason: 'wait-pause' | 'breakpoint' | null, breakpointAt?: 'pre' | 'post' | 'both' | null) => {
     set({ 
       pausedNodeId: nodeId, 
       pauseReason: reason,
@@ -1106,6 +1121,15 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
   },
   
   setNavigateToPausedNode: (fn) => set({ navigateToPausedNode: fn }),
+  
+  setFollowModeEnabled: (enabled) => {
+    set({ followModeEnabled: enabled });
+    try {
+      localStorage.setItem('automflows_follow_mode', String(enabled));
+    } catch (error) {
+      console.warn('Failed to save follow mode to localStorage:', error);
+    }
+  },
   };
 });
 

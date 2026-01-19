@@ -21,7 +21,7 @@ import { useNotificationStore } from '../store/notificationStore';
 const STORAGE_KEY_TRACE_LOGS = 'automflows_trace_logs';
 
 export default function TopBar() {
-  const { nodes, edges, setNodes, setEdges, resetExecution, edgesHidden, setEdgesHidden, selectedNode } = useWorkflowStore();
+  const { nodes, edges, setNodes, setEdges, resetExecution, edgesHidden, setEdgesHidden, selectedNode, followModeEnabled, setFollowModeEnabled } = useWorkflowStore();
   const { validationErrors, setValidationErrors } = useExecution();
   const addNotification = useNotificationStore((state) => state.addNotification);
   
@@ -67,6 +67,21 @@ export default function TopBar() {
       prevTraceLogsRef.current = traceLogs;
     }
   }, [traceLogs, addNotification]);
+
+  // Track previous follow mode state to detect changes
+  const prevFollowModeRef = useRef(followModeEnabled);
+
+  // Show notification when follow mode setting changes
+  useEffect(() => {
+    if (prevFollowModeRef.current !== followModeEnabled) {
+      addNotification({
+        type: 'settings',
+        title: 'Settings Applied',
+        details: [followModeEnabled ? 'Follow mode enabled' : 'Follow mode disabled'],
+      });
+      prevFollowModeRef.current = followModeEnabled;
+    }
+  }, [followModeEnabled, addNotification]);
 
   // Handle click outside menu to close it
   useEffect(() => {
@@ -749,6 +764,36 @@ export default function TopBar() {
                   <div
                     className={`w-5 h-5 rounded-md bg-white transition-transform duration-200 ${
                       traceLogs ? 'translate-x-7' : 'translate-x-0'
+                    }`}
+                  />
+                </div>
+              </label>
+            </div>
+
+            {/* Follow Mode Toggle */}
+            <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+              <span className="text-sm text-white font-medium">Follow Mode</span>
+              <label 
+                className="relative inline-flex items-center cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={followModeEnabled}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    const newValue = e.target.checked;
+                    setFollowModeEnabled(newValue);
+                  }}
+                  className="sr-only"
+                />
+                <div
+                  className={`w-14 h-7 rounded-lg transition-colors flex items-center px-1 cursor-pointer ${
+                    followModeEnabled ? 'bg-green-600' : 'bg-gray-700'
+                  }`}
+                >
+                  <div
+                    className={`w-5 h-5 rounded-md bg-white transition-transform duration-200 ${
+                      followModeEnabled ? 'translate-x-7' : 'translate-x-0'
                     }`}
                   />
                 </div>

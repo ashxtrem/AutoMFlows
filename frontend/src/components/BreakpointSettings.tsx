@@ -3,7 +3,6 @@ import { useNotificationStore } from '../store/notificationStore';
 
 export default function BreakpointSettings() {
   const {
-    breakpointEnabled,
     breakpointAt,
     breakpointFor,
     setBreakpointSettings,
@@ -39,7 +38,7 @@ export default function BreakpointSettings() {
               name="breakpointAt"
               value="pre"
               checked={breakpointAt === 'pre'}
-              onChange={(e) => handleBreakpointAtChange('pre')}
+              onChange={() => handleBreakpointAtChange('pre')}
               className="rounded"
             />
             <span className="text-sm text-gray-300">Pre (before node execution)</span>
@@ -50,7 +49,7 @@ export default function BreakpointSettings() {
               name="breakpointAt"
               value="post"
               checked={breakpointAt === 'post'}
-              onChange={(e) => handleBreakpointAtChange('post')}
+              onChange={() => handleBreakpointAtChange('post')}
               className="rounded"
             />
             <span className="text-sm text-gray-300">Post (after node execution)</span>
@@ -61,7 +60,7 @@ export default function BreakpointSettings() {
               name="breakpointAt"
               value="both"
               checked={breakpointAt === 'both'}
-              onChange={(e) => handleBreakpointAtChange('both')}
+              onChange={() => handleBreakpointAtChange('both')}
               className="rounded"
             />
             <span className="text-sm text-gray-300">Both (before and after)</span>
@@ -77,7 +76,7 @@ export default function BreakpointSettings() {
               name="breakpointFor"
               value="all"
               checked={breakpointFor === 'all'}
-              onChange={(e) => handleBreakpointForChange('all')}
+              onChange={() => handleBreakpointForChange('all')}
               className="rounded"
             />
             <span className="text-sm text-gray-300">All Nodes</span>
@@ -88,7 +87,7 @@ export default function BreakpointSettings() {
               name="breakpointFor"
               value="marked"
               checked={breakpointFor === 'marked'}
-              onChange={(e) => handleBreakpointForChange('marked')}
+              onChange={() => handleBreakpointForChange('marked')}
               className="rounded"
             />
             <span className="text-sm text-gray-300">Marked Nodes Only</span>

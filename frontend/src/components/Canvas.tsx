@@ -8,6 +8,7 @@ import ReactFlow, {
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useWorkflowStore } from '../store/workflowStore';
+import { useNotificationStore } from '../store/notificationStore';
 import CustomNode from '../nodes/CustomNode';
 import CustomEdge from './CustomEdge';
 import ContextMenu from './ContextMenu';
@@ -67,7 +68,8 @@ interface CanvasInnerProps {
 }
 
 function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, hasRunInitialFitViewRef }: CanvasInnerProps) {
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setSelectedNode, onConnectStart, onConnectEnd, onEdgeUpdate, failedNodes, showErrorPopupForNode, canvasReloading } = useWorkflowStore();
+  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setSelectedNode, onConnectStart, onConnectEnd, onEdgeUpdate, failedNodes, showErrorPopupForNode, canvasReloading, executingNodeId, executionStatus, followModeEnabled, setFollowModeEnabled, pausedNodeId, pauseReason } = useWorkflowStore();
+  const addNotification = useNotificationStore((state) => state.addNotification);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useReactFlow();
   const { screenToFlowPosition, getViewport, setViewport: originalSetViewport, fitView } = reactFlowInstance;
@@ -391,7 +393,50 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
   useEffect(() => {
     useWorkflowStore.getState().setNavigateToPausedNode(navigateToPausedNode);
   }, [navigateToPausedNode]);
-  
+
+  // Navigate to executing node function (for follow mode)
+  const navigateToExecutingNode = useCallback(() => {
+    if (!executingNodeId) {
+      return;
+    }
+    
+    const executingNode = nodes.find(n => n.id === executingNodeId);
+    
+    if (executingNode) {
+      // Use fitView to focus on the executing node
+      fitView({
+        nodes: [{ id: executingNodeId }],
+        padding: 0.2,
+        duration: 300,
+      });
+    }
+  }, [executingNodeId, nodes, fitView]);
+
+  // Follow mode: automatically navigate to executing node when it changes
+  // Also navigate when breakpoint is triggered (paused node)
+  useEffect(() => {
+    if (!followModeEnabled) {
+      return;
+    }
+    
+    // Navigate to executing node during normal execution
+    if (executionStatus === 'running' && executingNodeId) {
+      navigateToExecutingNode();
+    }
+    
+    // Navigate to paused node when breakpoint is triggered
+    if (pausedNodeId && pauseReason === 'breakpoint') {
+      const pausedNode = nodes.find(n => n.id === pausedNodeId);
+      if (pausedNode) {
+        fitView({
+          nodes: [{ id: pausedNodeId }],
+          padding: 0.2,
+          duration: 300,
+        });
+      }
+    }
+  }, [followModeEnabled, executionStatus, executingNodeId, pausedNodeId, pauseReason, nodes, fitView, navigateToExecutingNode]);
+
   // Keyboard shortcut for failed node navigation (Ctrl/Cmd + Shift + F)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -407,6 +452,28 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [navigateToFailedNode]);
+
+  // Keyboard shortcut for follow mode toggle (Ctrl/Cmd + Shift + L)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isModifierPressed = e.metaKey || e.ctrlKey;
+      if (isModifierPressed && e.shiftKey && e.key === 'L') {
+        e.preventDefault();
+        const newValue = !followModeEnabled;
+        setFollowModeEnabled(newValue);
+        addNotification({
+          type: 'info',
+          title: 'Follow Mode',
+          message: newValue ? 'Follow mode enabled' : 'Follow mode disabled',
+        });
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [followModeEnabled, setFollowModeEnabled, addNotification]);
   
   // Use a ref to track the last nodes array to prevent unnecessary re-renders
   const lastNodesRef = useRef<Node[]>(nodes);
