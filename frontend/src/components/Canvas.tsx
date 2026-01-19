@@ -559,6 +559,21 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
         onConnectStart={onConnectStart}
         onConnectEnd={onConnectEnd}
         onEdgeUpdate={onEdgeUpdate}
+        onEdgeUpdateStart={(_event, edge, handleType) => {
+          // Track edge update start - ReactFlow v11+ might support this
+          // If not supported, onConnectStart will handle it
+          if (handleType === 'target') {
+            const { updatingEdgeId } = useWorkflowStore.getState();
+            if (!updatingEdgeId) {
+              useWorkflowStore.setState({ updatingEdgeId: edge.id });
+            }
+          }
+        }}
+        onEdgeUpdateEnd={(_event, _edge, _handleType) => {
+          // Edge update ended - ReactFlow v11+ might support this
+          // Clear tracking if update didn't complete (handled by onEdgeUpdate or onConnectEnd)
+          // This handler is optional and may not be called in all cases
+        }}
         isValidConnection={isValidConnection}
         edgesUpdatable={true}
         edgesFocusable={true}

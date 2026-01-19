@@ -114,6 +114,9 @@ interface WorkflowState {
   // Edge visibility
   edgesHidden: boolean;
   setEdgesHidden: (hidden: boolean) => void;
+  
+  // Edge update tracking
+  updatingEdgeId: string | null;
 }
 
 // Helper function to reconnect edges when a node is deleted
@@ -198,6 +201,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
         return false;
       }
     })(),
+    updatingEdgeId: null,
 
   setNodes: (nodes) => {
     const state = get();
@@ -437,12 +441,52 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     setTimeout(() => get().saveToHistory(), 100);
   },
 
-  onConnectStart: (_event, _params) => {
-    // No special handling needed - ReactFlow handles connection start
+  onConnectStart: (_event, params) => {
+    const state = get();
+    
+    // Detect edge update start: when dragging from a target handle that has an existing edge
+    if (params.handleType === 'target' && params.nodeId && params.handleId) {
+      // Find edge connected to this target handle
+      const connectedEdge = state.edges.find(
+        e => e.target === params.nodeId && e.targetHandle === params.handleId
+      );
+      
+      if (connectedEdge && !state.updatingEdgeId) {
+        // Track this edge as being updated
+        set({ updatingEdgeId: connectedEdge.id });
+      }
+    }
   },
 
   onConnectEnd: (_event) => {
-    // No special handling needed - ReactFlow handles connection end
+    const state = get();
+    
+    // If an edge update was in progress but didn't complete (onEdgeUpdate wasn't called)
+    // This means the user dragged the edge handle but released without connecting
+    // Remove the edge
+    if (state.updatingEdgeId) {
+      const updatingEdgeId = state.updatingEdgeId;
+      // Use a small delay to allow onEdgeUpdate to complete if it was called
+      // This handles race conditions where onConnectEnd fires before onEdgeUpdate
+      setTimeout(() => {
+        const currentState = get();
+        // Check if edge still exists and we're still tracking it
+        if (currentState.updatingEdgeId === updatingEdgeId) {
+          const edge = currentState.edges.find(e => e.id === updatingEdgeId);
+          if (edge) {
+            // Edge update was cancelled - remove the edge
+            set({
+              edges: currentState.edges.filter(e => e.id !== updatingEdgeId),
+              updatingEdgeId: null,
+            });
+            setTimeout(() => get().saveToHistory(), 100);
+          } else {
+            // Edge was already removed or updated, just clear tracking
+            set({ updatingEdgeId: null });
+          }
+        }
+      }, 50); // Small delay to allow onEdgeUpdate to complete
+    }
   },
 
   onEdgeUpdate: (oldEdge, newConnection) => {
@@ -450,15 +494,33 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     
     // Validate new connection
     if (!newConnection.source || !newConnection.target) {
+      // Clear tracking if update failed
+      if (state.updatingEdgeId === oldEdge.id) {
+        set({ updatingEdgeId: null });
+      }
       return;
     }
     
     // Prevent self-connections
     if (newConnection.source === newConnection.target) {
+      // Clear tracking if self-connection attempted
+      if (state.updatingEdgeId === oldEdge.id) {
+        set({ updatingEdgeId: null });
+      }
       return;
     }
     
-    // Remove old edge and create new one with updated target
+    // Check if reconnecting to the same node and handle (no-op, keep connection)
+    if (oldEdge.target === newConnection.target && 
+        oldEdge.targetHandle === newConnection.targetHandle) {
+      // Connection unchanged, keep it and clear tracking
+      if (state.updatingEdgeId === oldEdge.id) {
+        set({ updatingEdgeId: null });
+      }
+      return;
+    }
+    
+    // Update connection to new target
     const updatedEdges = state.edges.map((edge) => {
       if (edge.id === oldEdge.id) {
         return {
@@ -478,7 +540,11 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
       return true;
     });
     
-    set({ edges: finalEdges });
+    // Clear tracking since update succeeded
+    set({ 
+      edges: finalEdges,
+      updatingEdgeId: null,
+    });
     setTimeout(() => get().saveToHistory(), 100);
   },
 
