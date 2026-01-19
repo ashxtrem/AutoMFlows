@@ -683,6 +683,7 @@ export interface WaitNodeData {
   selectorType?: 'css' | 'xpath';
   timeout?: number;
   failSilently?: boolean;
+  pause?: boolean; // When true, execution pauses at this wait node with 2-hour timeout override
   // API response wait configuration
   apiWaitConfig?: {
     contextKey: string; // Which API response to check
@@ -995,6 +996,8 @@ export enum ExecutionEventType {
   EXECUTION_START = 'execution_start',
   EXECUTION_COMPLETE = 'execution_complete',
   EXECUTION_ERROR = 'execution_error',
+  EXECUTION_PAUSED = 'execution_paused',
+  BREAKPOINT_TRIGGERED = 'breakpoint_triggered',
   LOG = 'log',
 }
 
@@ -1043,6 +1046,12 @@ export interface ScreenshotConfig {
   timing: 'pre' | 'post' | 'both'; // When to take screenshots
 }
 
+export interface BreakpointConfig {
+  enabled: boolean;
+  breakpointAt: 'pre' | 'post' | 'both'; // When to pause
+  breakpointFor: 'all' | 'marked'; // Which nodes to pause on
+}
+
 // API Request/Response Types
 export interface ExecuteWorkflowRequest {
   workflow: Workflow;
@@ -1050,6 +1059,7 @@ export interface ExecuteWorkflowRequest {
   screenshotConfig?: ScreenshotConfig;
   reportConfig?: ReportConfig;
   recordSession?: boolean; // Flag to enable video recording
+  breakpointConfig?: BreakpointConfig;
 }
 
 export interface ExecuteWorkflowResponse {
@@ -1062,6 +1072,8 @@ export interface ExecutionStatusResponse {
   status: ExecutionStatus;
   currentNodeId?: string;
   error?: string;
+  pausedNodeId?: string | null;
+  pauseReason?: 'wait-pause' | 'breakpoint' | null;
 }
 
 export interface StopExecutionResponse {

@@ -302,6 +302,20 @@ export default function WaitConfig({ node, onChange }: WaitConfigProps) {
         </>
       )}
       <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Pause</label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={data.pause || false}
+            onChange={(e) => onChange('pause', e.target.checked)}
+            className="rounded"
+          />
+          <span className="text-sm text-gray-400">
+            Pause execution at this wait node
+          </span>
+        </label>
+      </div>
+      <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Fail Silently</label>
         <label className="flex items-center gap-2 cursor-pointer">
           <input

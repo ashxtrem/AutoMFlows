@@ -117,6 +117,18 @@ interface WorkflowState {
   
   // Edge update tracking
   updatingEdgeId: string | null;
+  
+  // Breakpoint state
+  breakpointEnabled: boolean;
+  breakpointAt: 'pre' | 'post' | 'both';
+  breakpointFor: 'all' | 'marked';
+  pausedNodeId: string | null;
+  pauseReason: 'wait-pause' | 'breakpoint' | null;
+  navigateToPausedNode: (() => void) | null;
+  toggleBreakpoint: (nodeId: string) => void;
+  setBreakpointSettings: (settings: { enabled?: boolean; breakpointAt?: 'pre' | 'post' | 'both'; breakpointFor?: 'all' | 'marked' }) => void;
+  setPausedNode: (nodeId: string | null, reason: 'wait-pause' | 'breakpoint' | null) => void;
+  setNavigateToPausedNode: (fn: (() => void) | null) => void;
 }
 
 // Helper function to reconnect edges when a node is deleted
@@ -202,6 +214,35 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
       }
     })(),
     updatingEdgeId: null,
+    // Breakpoint state
+    breakpointEnabled: (() => {
+      try {
+        const saved = localStorage.getItem('automflows_breakpoint_enabled');
+        return saved === 'true';
+      } catch (error) {
+        return false;
+      }
+    })(),
+    breakpointAt: (() => {
+      try {
+        const saved = localStorage.getItem('automflows_breakpoint_at');
+        return (saved || 'pre') as 'pre' | 'post' | 'both';
+      } catch (error) {
+        return 'pre';
+      }
+    })(),
+    breakpointFor: (() => {
+      try {
+        const saved = localStorage.getItem('automflows_breakpoint_for');
+        return (saved || 'marked') as 'all' | 'marked';
+      } catch (error) {
+        return 'marked';
+      }
+    })(),
+    pausedNodeId: null,
+    pauseReason: null,
+    pauseBreakpointAt: null,
+    navigateToPausedNode: null,
 
   setNodes: (nodes) => {
     const state = get();
@@ -1016,6 +1057,55 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
       console.warn('Failed to save edge visibility to localStorage:', error);
     }
   },
+  
+  // Breakpoint methods
+  toggleBreakpoint: (nodeId) => {
+    const node = get().nodes.find((n) => n.id === nodeId);
+    if (node) {
+      const currentBreakpoint = node.data.breakpoint || false;
+      get().updateNodeData(nodeId, { breakpoint: !currentBreakpoint });
+      setTimeout(() => get().saveToHistory(), 100);
+    }
+  },
+  
+  setBreakpointSettings: (settings) => {
+    const updates: any = {};
+    if (settings.enabled !== undefined) {
+      updates.breakpointEnabled = settings.enabled;
+      try {
+        localStorage.setItem('automflows_breakpoint_enabled', String(settings.enabled));
+      } catch (error) {
+        console.warn('Failed to save breakpoint enabled to localStorage:', error);
+      }
+    }
+    if (settings.breakpointAt !== undefined) {
+      updates.breakpointAt = settings.breakpointAt;
+      try {
+        localStorage.setItem('automflows_breakpoint_at', settings.breakpointAt);
+      } catch (error) {
+        console.warn('Failed to save breakpoint at to localStorage:', error);
+      }
+    }
+    if (settings.breakpointFor !== undefined) {
+      updates.breakpointFor = settings.breakpointFor;
+      try {
+        localStorage.setItem('automflows_breakpoint_for', settings.breakpointFor);
+      } catch (error) {
+        console.warn('Failed to save breakpoint for to localStorage:', error);
+      }
+    }
+    set(updates);
+  },
+  
+  setPausedNode: (nodeId, reason, breakpointAt) => {
+    set({ 
+      pausedNodeId: nodeId, 
+      pauseReason: reason,
+      pauseBreakpointAt: breakpointAt || null,
+    });
+  },
+  
+  setNavigateToPausedNode: (fn) => set({ navigateToPausedNode: fn }),
   };
 });
 

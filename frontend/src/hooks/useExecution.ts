@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useWorkflowStore } from '../store/workflowStore';
 import { serializeWorkflow } from '../utils/serialization';
-import { ExecutionEventType, ScreenshotConfig, ReportConfig } from '@automflows/shared';
+import { ExecutionEventType, ScreenshotConfig, ReportConfig, BreakpointConfig } from '@automflows/shared';
 import { validateInputConnections, ValidationError } from '../utils/validation';
 import { useNotificationStore } from '../store/notificationStore';
 import { Node } from 'reactflow';
@@ -88,7 +88,21 @@ async function getBackendPortSync(): Promise<number> {
 }
 
 export function useExecution() {
-  const { nodes, edges, setExecutionStatus, setExecutingNodeId, resetExecution, setNodeError, clearAllNodeErrors, setValidationErrors: setStoreValidationErrors, clearValidationErrors } = useWorkflowStore();
+  const { 
+    nodes, 
+    edges, 
+    setExecutionStatus, 
+    setExecutingNodeId, 
+    resetExecution, 
+    setNodeError, 
+    clearAllNodeErrors, 
+    setValidationErrors: setStoreValidationErrors, 
+    clearValidationErrors,
+    setPausedNode,
+    breakpointEnabled,
+    breakpointAt,
+    breakpointFor,
+  } = useWorkflowStore();
   const [port, setPort] = useState<number | null>(null);
   const [validationErrors, setValidationErrors] = useState<any[]>([]);
   const addNotification = useNotificationStore((state) => state.addNotification);
@@ -106,6 +120,11 @@ export function useExecution() {
       socket = io(`http://localhost:${p}`, {
         transports: ['websocket'],
       });
+
+      // Remove any existing listeners to prevent duplicates
+      socket.off('connect');
+      socket.off('execution-event');
+      socket.off('disconnect');
 
     socket.on('connect', () => {
       console.log('Connected to server');
@@ -147,9 +166,34 @@ export function useExecution() {
           }
           // If failSilently is enabled, execution continues, so don't change status
           break;
+        case ExecutionEventType.EXECUTION_PAUSED:
+          if (event.nodeId) {
+            const reason = event.data?.reason || 'wait-pause';
+            setPausedNode(event.nodeId, reason);
+            // Only show notification for wait-pause, breakpoint notifications are handled by BREAKPOINT_TRIGGERED
+            if (reason === 'wait-pause') {
+              addNotification({
+                type: 'info',
+                title: 'Execution Paused',
+                message: `Execution paused at node: ${event.nodeId}`,
+              });
+            }
+          }
+          break;
+        case ExecutionEventType.BREAKPOINT_TRIGGERED:
+          if (event.nodeId) {
+            setPausedNode(event.nodeId, 'breakpoint', event.data?.breakpointAt);
+            addNotification({
+              type: 'info',
+              title: 'Breakpoint Triggered',
+              message: `Breakpoint triggered at node: ${event.nodeId}`,
+            });
+          }
+          break;
         case ExecutionEventType.EXECUTION_COMPLETE:
           setExecutionStatus('completed');
           setExecutingNodeId(null);
+          setPausedNode(null, null, null); // Clear pause state
           // Check if there were any failures - get current state from store
           setTimeout(() => {
             const currentFailedNodes = useWorkflowStore.getState().failedNodes;
@@ -182,6 +226,7 @@ export function useExecution() {
         case ExecutionEventType.EXECUTION_ERROR:
           setExecutionStatus('error');
           setExecutingNodeId(null);
+          setPausedNode(null, null, null); // Clear pause state
           
           // Check if this is a backend validation error and parse it
           if (event.message && event.message.includes('Workflow validation failed')) {
@@ -214,6 +259,10 @@ export function useExecution() {
 
       return () => {
         if (socket) {
+          // Remove listeners before disconnecting
+          socket.off('connect');
+          socket.off('execution-event');
+          socket.off('disconnect');
           socket.disconnect();
           socket = null;
         }
@@ -269,6 +318,11 @@ export function useExecution() {
         ? { enabled: true, outputPath: reportPath, reportTypes }
         : undefined;
 
+      // Read breakpoint config from store
+      const breakpointConfig: BreakpointConfig | undefined = breakpointEnabled
+        ? { enabled: true, breakpointAt, breakpointFor }
+        : undefined;
+
       const currentPort = port || await getBackendPortSync();
       const fetchController = new AbortController();
       const fetchTimeoutId = setTimeout(() => fetchController.abort(), 10000); // 10 second timeout for API call
@@ -284,6 +338,7 @@ export function useExecution() {
           screenshotConfig,
           reportConfig,
           recordSession,
+          breakpointConfig,
         }),
         signal: fetchController.signal,
       });
@@ -346,15 +401,60 @@ export function useExecution() {
       if (!response.ok) {
         throw new Error('Failed to stop execution');
       }
+      setPausedNode(null, null); // Clear pause state
     } catch (error: any) {
       console.error('Stop execution error:', error);
       alert('Failed to stop execution: ' + error.message);
     }
   };
 
+  const continueExecution = async () => {
+    try {
+      const currentPort = port || await getBackendPortSync();
+      const response = await fetch(`http://localhost:${currentPort}/api/workflows/execution/continue`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to continue execution');
+      }
+      setPausedNode(null, null); // Clear pause state
+    } catch (error: any) {
+      console.error('Continue execution error:', error);
+      alert('Failed to continue execution: ' + error.message);
+    }
+  };
+
+  const pauseControl = async (action: 'continue' | 'stop' | 'skip' | 'continueWithoutBreakpoint') => {
+    try {
+      const currentPort = port || await getBackendPortSync();
+      const response = await fetch(`http://localhost:${currentPort}/api/workflows/execution/pause-control`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to execute pause control');
+      }
+      
+      // Clear pause state for continue actions
+      if (action === 'continue' || action === 'skip' || action === 'continueWithoutBreakpoint') {
+        setPausedNode(null, null);
+      }
+    } catch (error: any) {
+      console.error('Pause control error:', error);
+      alert('Failed to execute pause control: ' + error.message);
+    }
+  };
+
   return {
     executeWorkflow,
     stopExecution,
+    continueExecution,
+    pauseControl,
     validationErrors,
     setValidationErrors,
   };

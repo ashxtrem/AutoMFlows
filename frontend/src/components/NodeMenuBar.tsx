@@ -1,4 +1,4 @@
-import { Copy, Trash2, SkipForward, AlertCircle, Minimize2, Maximize2, Files, CheckSquare, Wrench, Pin } from 'lucide-react';
+import { Copy, Trash2, SkipForward, AlertCircle, Minimize2, Maximize2, Files, CheckSquare, Wrench, Pin, CircleDot } from 'lucide-react';
 import { useWorkflowStore } from '../store/workflowStore';
 import Tooltip from './Tooltip';
 
@@ -9,11 +9,13 @@ interface NodeMenuBarProps {
   isMinimized?: boolean;
   isTest?: boolean;
   isPinned?: boolean;
+  breakpoint?: boolean;
 }
 
-export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized, isTest, isPinned }: NodeMenuBarProps) {
+export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized, isTest, isPinned, breakpoint }: NodeMenuBarProps) {
   // Ensure isPinned is always a boolean
   const pinned = isPinned ?? false;
+  const hasBreakpoint = breakpoint ?? false;
   const {
     copyNode,
     duplicateNode,
@@ -21,6 +23,7 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized,
     toggleBypass,
     toggleMinimize,
     togglePin,
+    toggleBreakpoint,
     updateNodeData,
   } = useWorkflowStore();
 
@@ -72,6 +75,12 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized,
     togglePin(nodeId);
   };
 
+  const handleBreakpoint = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    toggleBreakpoint(nodeId);
+  };
+
   return (
     <div
       className="absolute -top-8 left-1/2 transform -translate-x-1/2 flex items-center gap-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 shadow-lg z-10"
@@ -117,6 +126,16 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized,
           }`}
         >
           <Pin size={14} />
+        </button>
+      </Tooltip>
+      <Tooltip content={hasBreakpoint ? 'Remove Breakpoint' : 'Add Breakpoint'}>
+        <button
+          onClick={handleBreakpoint}
+          className={`p-1.5 rounded hover:bg-gray-700 transition-colors ${
+            hasBreakpoint ? 'text-orange-500' : 'text-gray-400'
+          }`}
+        >
+          <CircleDot size={14} />
         </button>
       </Tooltip>
       <div className="w-px h-4 bg-gray-700 mx-0.5" />

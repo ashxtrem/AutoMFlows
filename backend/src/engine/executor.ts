@@ -1,4 +1,4 @@
-import { Workflow, ExecutionStatus, ExecutionEventType, ExecutionEvent, BaseNode, Edge, NodeType, PropertyDataType, ScreenshotConfig, ReportConfig, StartNodeData } from '@automflows/shared';
+import { Workflow, ExecutionStatus, ExecutionEventType, ExecutionEvent, BaseNode, Edge, NodeType, PropertyDataType, ScreenshotConfig, ReportConfig, StartNodeData, BreakpointConfig } from '@automflows/shared';
 import { Server } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
 import { WorkflowParser } from './parser';
@@ -32,6 +32,15 @@ export class Executor {
   private reportConfig?: ReportConfig;
   private executionTracker?: ExecutionTracker;
   private recordSession: boolean;
+  private breakpointConfig?: BreakpointConfig;
+  // Pause state
+  private isPaused: boolean = false;
+  private pausedNodeId: string | null = null;
+  private pauseReason: 'wait-pause' | 'breakpoint' | null = null;
+  private pauseResolve: (() => void) | null = null;
+  private pauseReject: ((error: Error) => void) | null = null;
+  private pausePromise: Promise<void> | null = null;
+  private skipNextNode: boolean = false;
 
   constructor(
     workflow: Workflow, 
@@ -39,7 +48,8 @@ export class Executor {
     traceLogs: boolean = false,
     screenshotConfig?: ScreenshotConfig,
     reportConfig?: ReportConfig,
-    recordSession: boolean = false
+    recordSession: boolean = false,
+    breakpointConfig?: BreakpointConfig
   ) {
     this.executionId = uuidv4();
     
@@ -58,6 +68,7 @@ export class Executor {
     this.traceLogs = traceLogs;
     this.recordSession = recordSession;
     this.reportConfig = reportConfig;
+    this.breakpointConfig = breakpointConfig;
     this.parser = new WorkflowParser(this.workflow);
     this.context = new ContextManager();
     
@@ -135,6 +146,122 @@ export class Executor {
     return this.error;
   }
 
+  getPausedNodeId(): string | null {
+    return this.pausedNodeId;
+  }
+
+  getPauseReason(): 'wait-pause' | 'breakpoint' | null {
+    return this.pauseReason;
+  }
+
+  isExecutionPaused(): boolean {
+    return this.isPaused;
+  }
+
+  async pauseExecution(nodeId: string, reason: 'wait-pause' | 'breakpoint'): Promise<void> {
+    if (this.isPaused) {
+      return; // Already paused
+    }
+
+    this.isPaused = true;
+    this.pausedNodeId = nodeId;
+    this.pauseReason = reason;
+
+    // Emit pause event
+    this.emitEvent({
+      type: ExecutionEventType.EXECUTION_PAUSED,
+      nodeId,
+      message: `Execution paused: ${reason}`,
+      data: { reason },
+      timestamp: Date.now(),
+    });
+
+    // Create promise that resolves when continue is called
+    this.pausePromise = new Promise<void>((resolve, reject) => {
+      this.pauseResolve = resolve;
+      this.pauseReject = reject;
+    });
+
+    // Wait for continue signal
+    await this.pausePromise;
+  }
+
+  continueExecution(): void {
+    if (!this.isPaused || !this.pauseResolve) {
+      return;
+    }
+
+    this.isPaused = false;
+    const resolve = this.pauseResolve;
+    this.pauseResolve = null;
+    this.pauseReject = null;
+    this.pausePromise = null;
+    this.pausedNodeId = null;
+    this.pauseReason = null;
+
+    resolve();
+  }
+
+  stopExecutionFromPause(): void {
+    if (!this.isPaused || !this.pauseReject) {
+      return;
+    }
+
+    this.isPaused = false;
+    const reject = this.pauseReject;
+    this.pauseResolve = null;
+    this.pauseReject = null;
+    this.pausePromise = null;
+    this.pausedNodeId = null;
+    this.pauseReason = null;
+    this.stopRequested = true;
+
+    reject(new Error('Execution stopped by user'));
+  }
+
+  skipNextNodeExecution(): void {
+    this.skipNextNode = true;
+    this.continueExecution();
+  }
+
+  disableBreakpointAndContinue(): void {
+    if (this.breakpointConfig) {
+      this.breakpointConfig.enabled = false;
+    }
+    this.continueExecution();
+  }
+
+  /**
+   * Check if breakpoint should trigger for a node
+   */
+  private shouldTriggerBreakpoint(node: BaseNode, timing: 'pre' | 'post'): boolean {
+    if (!this.breakpointConfig || !this.breakpointConfig.enabled) {
+      return false;
+    }
+
+    const breakpointAt = this.breakpointConfig.breakpointAt;
+    
+    // Check if timing matches
+    if (breakpointAt !== timing && breakpointAt !== 'both') {
+      return false;
+    }
+
+    const breakpointFor = this.breakpointConfig.breakpointFor;
+    
+    // If breakpointFor is 'all', always trigger
+    if (breakpointFor === 'all') {
+      return true;
+    }
+
+    // If breakpointFor is 'marked', check if node has breakpoint property
+    if (breakpointFor === 'marked') {
+      const nodeData = node.data as any;
+      return nodeData?.breakpoint === true;
+    }
+
+    return false;
+  }
+
   async execute(): Promise<void> {
     try {
       // Validate workflow
@@ -160,6 +287,7 @@ export class Executor {
       this.context.setData('setCurrentNodeId', (nodeId: string | null) => { this.currentNodeId = nodeId; });
       this.context.setData('getCurrentNodeId', () => this.currentNodeId);
       this.context.setData('traceLogs', this.traceLogs);
+      this.context.setData('pauseExecution', (nodeId: string, reason: 'wait-pause' | 'breakpoint') => this.pauseExecution(nodeId, reason));
 
       this.status = ExecutionStatus.RUNNING;
       this.traceLog(`[TRACE] Execution started - ID: ${this.executionId}`);
@@ -279,6 +407,26 @@ export class Executor {
           continue;
         }
 
+        // Check for pre-execution breakpoint
+        if (this.shouldTriggerBreakpoint(node, 'pre')) {
+          this.traceLog(`[TRACE] Pre-execution breakpoint triggered for node: ${nodeId}`);
+          await this.pauseExecution(nodeId, 'breakpoint');
+          this.emitEvent({
+            type: ExecutionEventType.BREAKPOINT_TRIGGERED,
+            nodeId,
+            message: 'Breakpoint triggered (pre-execution)',
+            data: { breakpointAt: 'pre' },
+            timestamp: Date.now(),
+          });
+          
+          // If skip was requested, skip this node
+          if (this.skipNextNode) {
+            this.skipNextNode = false;
+            this.traceLog(`[TRACE] Skipping node due to breakpoint skip: ${nodeId}`);
+            continue;
+          }
+        }
+
         this.currentNodeId = nodeId;
         // Clear trace logs for this node at start
         this.nodeTraceLogs.set(nodeId, []);
@@ -369,6 +517,19 @@ export class Executor {
             nodeId,
             timestamp: Date.now(),
           });
+
+          // Check for post-execution breakpoint
+          if (this.shouldTriggerBreakpoint(node, 'post')) {
+            this.traceLog(`[TRACE] Post-execution breakpoint triggered for node: ${nodeId}`);
+            await this.pauseExecution(nodeId, 'breakpoint');
+            this.emitEvent({
+              type: ExecutionEventType.BREAKPOINT_TRIGGERED,
+              nodeId,
+              message: 'Breakpoint triggered (post-execution)',
+              data: { breakpointAt: 'post' },
+              timestamp: Date.now(),
+            });
+          }
         } catch (error: any) {
           this.error = error.message;
           this.traceLog(`[TRACE] Node ${nodeId} failed: ${error.message}`);

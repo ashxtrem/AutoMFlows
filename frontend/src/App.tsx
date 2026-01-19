@@ -11,6 +11,7 @@ import NodeErrorPopup from './components/NodeErrorPopup';
 import BrowserInstallErrorPopup from './components/BrowserInstallErrorPopup';
 import { useWorkflowAutoSave, useWorkflowLoad } from './hooks/useWorkflow';
 import { useUndoRedo } from './hooks/useUndoRedo';
+import { useBreakpointShortcut } from './hooks/useBreakpointShortcut';
 import { loadPlugins } from './plugins/loader';
 import { getBackendPort } from './utils/getBackendPort';
 
@@ -30,6 +31,9 @@ function App() {
   
   // Undo/Redo keyboard shortcuts
   useUndoRedo();
+  
+  // Breakpoint keyboard shortcut (Ctrl+B / Cmd+B)
+  useBreakpointShortcut();
 
   // Load plugins on mount
   useEffect(() => {

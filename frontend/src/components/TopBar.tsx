@@ -14,6 +14,7 @@ import ResetWarning from './ResetWarning';
 import LoadWarning from './LoadWarning';
 import ReportSettingsPopup from './ReportSettingsPopup';
 import NotificationContainer from './NotificationContainer';
+import BreakpointSettings from './BreakpointSettings';
 import { NodeType } from '@automflows/shared';
 import { useNotificationStore } from '../store/notificationStore';
 
@@ -29,12 +30,14 @@ export default function TopBar() {
   const [showReportSettings, setShowReportSettings] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSettingsSubmenuOpen, setIsSettingsSubmenuOpen] = useState(false);
+  const [isBreakpointSubmenuOpen, setIsBreakpointSubmenuOpen] = useState(false);
   const [pendingLoadAction, setPendingLoadAction] = useState<(() => void) | null>(null);
   const [currentFileHandle, setCurrentFileHandle] = useState<FileSystemFileHandle | null>(null);
   const [saveDropdownOpen, setSaveDropdownOpen] = useState(false);
   const saveDropdownRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const settingsSubmenuRef = useRef<HTMLDivElement>(null);
+  const breakpointSubmenuRef = useRef<HTMLDivElement>(null);
   
   // Check for File System Access API support
   const supportsFileSystemAccess = typeof window !== 'undefined' && 
@@ -98,11 +101,17 @@ export default function TopBar() {
         setIsSettingsSubmenuOpen(false);
       }
       
+      // Handle breakpoint submenu click outside
+      if (isBreakpointSubmenuOpen && breakpointSubmenuRef.current && !breakpointSubmenuRef.current.contains(targetNode)) {
+        setIsBreakpointSubmenuOpen(false);
+      }
+      
       // Handle menu click outside
       if (menuRef.current && !menuRef.current.contains(targetNode)) {
         // If clicking outside main menu, close both menu and submenu
         setIsMenuOpen(false);
         setIsSettingsSubmenuOpen(false);
+        setIsBreakpointSubmenuOpen(false);
       }
     };
 
@@ -746,6 +755,19 @@ export default function TopBar() {
               </label>
             </div>
 
+            {/* Breakpoint Settings Button */}
+            <div className="border-t border-gray-700 pt-3 mt-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsBreakpointSubmenuOpen(!isBreakpointSubmenuOpen);
+                }}
+                className="w-full px-3 py-2 text-sm bg-orange-600 hover:bg-orange-700 text-white rounded-md transition-colors flex items-center justify-between"
+              >
+                <span>Breakpoint</span>
+                <ChevronDown size={16} className={`transition-transform ${isBreakpointSubmenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+            </div>
             {/* Report Settings Button */}
             <div className="border-t border-gray-700 pt-3 mt-2">
               <button
@@ -760,6 +782,34 @@ export default function TopBar() {
                 Report Settings
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Breakpoint Settings Submenu */}
+      {isBreakpointSubmenuOpen && (
+        <div
+          ref={breakpointSubmenuRef}
+          className={`fixed bottom-24 right-[22rem] w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl transition-all duration-300 ${
+            selectedNode ? 'z-20' : 'z-50'
+          }`}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <div className="p-3">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-sm font-medium text-white">Breakpoint Settings</h3>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsBreakpointSubmenuOpen(false);
+                }}
+                className="text-gray-400 hover:text-white"
+              >
+                ×
+              </button>
+            </div>
+            <BreakpointSettings />
           </div>
         </div>
       )}

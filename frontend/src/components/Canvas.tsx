@@ -368,6 +368,30 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     useWorkflowStore.getState().setNavigateToFailedNode(navigateToFailedNode);
   }, [navigateToFailedNode]);
   
+  // Navigate to paused node function
+  const navigateToPausedNode = useCallback(() => {
+    const pausedNodeId = useWorkflowStore.getState().pausedNodeId;
+    if (!pausedNodeId) {
+      return;
+    }
+    
+    const pausedNode = nodes.find(n => n.id === pausedNodeId);
+    
+    if (pausedNode) {
+      // Use fitView to focus on the paused node
+      fitView({
+        nodes: [{ id: pausedNodeId }],
+        padding: 0.2,
+        duration: 300,
+      });
+    }
+  }, [nodes, fitView]);
+  
+  // Expose navigation function to store for FloatingRunButton access
+  useEffect(() => {
+    useWorkflowStore.getState().setNavigateToPausedNode(navigateToPausedNode);
+  }, [navigateToPausedNode]);
+  
   // Keyboard shortcut for failed node navigation (Ctrl/Cmd + Shift + F)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

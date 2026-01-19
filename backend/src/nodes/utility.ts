@@ -340,6 +340,22 @@ export class WaitHandler implements NodeHandler {
       throw new Error('No page available. Ensure Open Browser node is executed first.');
     }
 
+    // If pause is enabled, pause execution indefinitely until user clicks continue or stop
+    if (data.pause === true) {
+      // Get pauseExecution function from context
+      const pauseExecution = context.getData('pauseExecution') as ((nodeId: string, reason: 'wait-pause' | 'breakpoint') => Promise<void>) | undefined;
+      const getCurrentNodeId = context.getData('getCurrentNodeId') as (() => string | null) | undefined;
+      
+      if (pauseExecution && getCurrentNodeId) {
+        const nodeId = getCurrentNodeId();
+        if (nodeId) {
+          // Pause execution indefinitely - wait for user to click continue or stop
+          await pauseExecution(nodeId, 'wait-pause');
+          // If we reach here, user clicked continue - proceed with actual wait timeout
+        }
+      }
+    }
+
     // Execute wait operation with retry logic
     const result = await RetryHelper.executeWithRetry(
       async () => {
@@ -347,6 +363,7 @@ export class WaitHandler implements NodeHandler {
           if (!page) {
             throw new Error('Page is required for timeout wait');
           }
+          // Use the user-specified timeout
           const timeout = typeof data.value === 'number' ? data.value : parseInt(String(data.value), 10);
           if (isNaN(timeout)) {
             throw new Error('Invalid timeout value for Wait node');
@@ -358,6 +375,7 @@ export class WaitHandler implements NodeHandler {
           }
           // Interpolate template variables in selector (e.g., ${data.productIndex})
           const selector = VariableInterpolator.interpolateString(String(data.value), context);
+          // Use the user-specified timeout (pause already handled above)
           const timeout = data.timeout || 30000;
 
           if (data.selectorType === 'xpath') {
@@ -371,6 +389,7 @@ export class WaitHandler implements NodeHandler {
           }
           // Interpolate template variables in URL pattern
           const urlPattern = VariableInterpolator.interpolateString(String(data.value), context);
+          // Use the user-specified timeout (pause already handled above)
           const timeout = data.timeout || 30000;
           await WaitHelper.waitForUrl(page, urlPattern, timeout, data.failSilently || false, 'before');
         } else if (data.waitType === 'condition') {
@@ -379,6 +398,7 @@ export class WaitHandler implements NodeHandler {
           }
           // Interpolate template variables in condition
           const condition = VariableInterpolator.interpolateString(String(data.value), context);
+          // Use the user-specified timeout (pause already handled above)
           const timeout = data.timeout || 30000;
           await WaitHelper.waitForCondition(page, condition, timeout, data.failSilently || false, 'before');
         } else if (data.waitType === 'api-response') {

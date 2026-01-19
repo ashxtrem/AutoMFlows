@@ -258,6 +258,9 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   // Get latest node data from store to avoid stale prop issues
   const storeNodes = useWorkflowStore((state) => state.nodes);
   const latestNodeData = storeNodes.find(n => n.id === id)?.data || data;
+  // Check if this node is currently paused
+  const pausedNodeId = useWorkflowStore((state) => state.pausedNodeId);
+  const isPaused = pausedNodeId === id;
   
   // Stabilize data prop by comparing content, not reference
   // This prevents infinite loops when ReactFlow recreates data objects with same content
@@ -364,6 +367,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
       return {
         bypass: node?.data?.bypass || false,
         failSilently: node?.data?.failSilently || false,
+        breakpoint: node?.data?.breakpoint || false,
         isMinimized: node?.data?.isMinimized || false,
         isTest: node?.data?.isTest !== undefined ? node?.data?.isTest : true,
         isPinned: node?.data?.isPinned || false,
@@ -2564,21 +2568,27 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     height: currentHeight,
     minWidth: 150,
     minHeight: hasProperties && !isMinimized ? undefined : 50,
-    backgroundColor: hasValidationError || isFailed || isExecuting 
-      ? backgroundColor 
-      : glassmorphismBg, // Glassmorphism effect using user color
-    backdropFilter: hasValidationError || isFailed || isExecuting 
+    backgroundColor: isPaused 
+      ? 'rgba(234, 179, 8, 0.3)' // Yellow background for paused nodes
+      : (hasValidationError || isFailed || isExecuting 
+        ? backgroundColor 
+        : glassmorphismBg), // Glassmorphism effect using user color
+    backdropFilter: isPaused || hasValidationError || isFailed || isExecuting 
       ? 'none' 
       : 'blur(10px)', // Glassmorphism blur
-    WebkitBackdropFilter: hasValidationError || isFailed || isExecuting 
+    WebkitBackdropFilter: isPaused || hasValidationError || isFailed || isExecuting 
       ? 'none' 
       : 'blur(10px)', // Safari support
-    borderColor: hasValidationError ? '#ef4444' : (isFailed ? '#ef4444' : (isExecuting ? '#22c55e' : borderColor)),
+    borderColor: isPaused 
+      ? '#eab308' // Yellow border for paused nodes
+      : (hasValidationError ? '#ef4444' : (isFailed ? '#ef4444' : (isExecuting ? '#22c55e' : borderColor))),
     borderWidth: '2px',
     borderStyle: 'solid',
-    boxShadow: hasValidationError || isFailed || isExecuting
-      ? undefined
-      : `0 0 20px ${glowColor}, 0 4px 6px rgba(0, 0, 0, 0.3)`, // Color-coded glow using user color
+    boxShadow: isPaused
+      ? '0 0 20px rgba(234, 179, 8, 0.6), 0 4px 6px rgba(0, 0, 0, 0.3)' // Yellow glow for paused nodes
+      : (hasValidationError || isFailed || isExecuting
+        ? undefined
+        : `0 0 20px ${glowColor}, 0 4px 6px rgba(0, 0, 0, 0.3)`), // Color-coded glow using user color
   };
 
   return (
@@ -2591,13 +2601,14 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     >
       {selected && (
         <NodeMenuBar
-          key={`${id}-${bypass}-${nodeDataFromStore.failSilently}-${isMinimized}-${nodeDataFromStore.isTest}-${isPinned}`}
+          key={`${id}-${bypass}-${nodeDataFromStore.failSilently}-${isMinimized}-${nodeDataFromStore.isTest}-${isPinned}-${nodeDataFromStore.breakpoint}`}
           nodeId={id}
           bypass={bypass}
           failSilently={nodeDataFromStore.failSilently}
           isMinimized={isMinimized}
           isTest={nodeDataFromStore.isTest}
           isPinned={isPinned}
+          breakpoint={nodeDataFromStore.breakpoint}
         />
       )}
       {/* Default control flow handle (driver) - skip for utility nodes */}
