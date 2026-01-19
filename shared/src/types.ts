@@ -1020,6 +1020,22 @@ export interface PageDebugInfo {
   executionFolderName?: string; // Folder name for constructing screenshot URLs
 }
 
+// Selector Finder Types
+export interface SelectorOption {
+  selector: string;
+  type: 'css' | 'xpath';
+  quality: 'high' | 'medium' | 'low';
+  reason: string;
+}
+
+export interface SelectorFinderEvent {
+  event: 'selectors-generated' | 'session-started' | 'session-closed';
+  selectors?: SelectorOption[];
+  nodeId?: string;
+  fieldName?: string;
+  sessionId?: string;
+}
+
 // Execution Event
 export interface ExecutionEvent {
   type: ExecutionEventType;

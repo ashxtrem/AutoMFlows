@@ -1,6 +1,7 @@
 import { Node } from 'reactflow';
 import { useState } from 'react';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
+import SelectorFinderButton from '../SelectorFinderButton';
 import RetryConfigSection from '../RetryConfigSection';
 
 interface FormInputConfigProps {
@@ -87,14 +88,19 @@ export default function FormInputConfig({ node, onChange }: FormInputConfigProps
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Selector</label>
-        <input
-          type="text"
-          value={getPropertyValue('selector', '')}
-          onChange={(e) => onChange('selector', e.target.value)}
-          placeholder="#select or //select[@id='select']"
-          disabled={isPropertyDisabled('selector')}
-          className={getInputClassName('selector', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
-        />
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={getPropertyValue('selector', '')}
+            onChange={(e) => onChange('selector', e.target.value)}
+            placeholder="#select or //select[@id='select']"
+            disabled={isPropertyDisabled('selector')}
+            className={getInputClassName('selector', 'flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+          />
+          {!isPropertyDisabled('selector') && (
+            <SelectorFinderButton nodeId={node.id} fieldName="selector" />
+          )}
+        </div>
         {isPropertyDisabled('selector') && (
           <div className="mt-1 text-xs text-gray-500 italic">
             This property is converted to input. Connect a node to provide the value.

@@ -97,14 +97,19 @@ export default function ScreenshotConfig({ node, onChange }: ScreenshotConfigPro
         <>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Selector</label>
-            <input
-              type="text"
-              value={getPropertyValue('selector', '')}
-              onChange={(e) => onChange('selector', e.target.value)}
-              placeholder="#element or //div[@id='element']"
-              disabled={isPropertyDisabled('selector')}
-              className={getInputClassName('selector', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={getPropertyValue('selector', '')}
+                onChange={(e) => onChange('selector', e.target.value)}
+                placeholder="#element or //div[@id='element']"
+                disabled={isPropertyDisabled('selector')}
+                className={getInputClassName('selector', 'flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+              />
+              {!isPropertyDisabled('selector') && (
+                <SelectorFinderButton nodeId={node.id} fieldName="selector" />
+              )}
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>

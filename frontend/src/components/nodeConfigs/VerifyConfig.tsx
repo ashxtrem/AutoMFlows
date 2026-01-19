@@ -2,6 +2,7 @@ import { Node } from 'reactflow';
 import RetryConfigSection from '../RetryConfigSection';
 import { VerificationDomain, BrowserVerificationType, MatchType, ComparisonOperator } from '@automflows/shared';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
+import SelectorFinderButton from '../SelectorFinderButton';
 
 interface VerifyConfigProps {
   node: Node;
@@ -140,13 +141,16 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Selector (Optional)</label>
-              <input
-                type="text"
-                value={data.selector || ''}
-                onChange={(e) => onChange('selector', e.target.value)}
-                placeholder="Leave empty to check entire page"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={data.selector || ''}
+                  onChange={(e) => onChange('selector', e.target.value)}
+                  placeholder="Leave empty to check entire page"
+                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                />
+                <SelectorFinderButton nodeId={node.id} fieldName="selector" />
+              </div>
               <div className="mt-1 text-xs text-gray-400">
                 If provided, checks text from this element only
               </div>
@@ -183,13 +187,16 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
           <>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Selector</label>
-              <input
-                type="text"
-                value={data.selector || ''}
-                onChange={(e) => onChange('selector', e.target.value)}
-                placeholder="button:has-text('Log out')"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={data.selector || ''}
+                  onChange={(e) => onChange('selector', e.target.value)}
+                  placeholder="button:has-text('Log out')"
+                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                />
+                <SelectorFinderButton nodeId={node.id} fieldName="selector" />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
@@ -254,13 +261,16 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
           <>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Selector</label>
-              <input
-                type="text"
-                value={data.selector || ''}
-                onChange={(e) => onChange('selector', e.target.value)}
-                placeholder="#submit-btn"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={data.selector || ''}
+                  onChange={(e) => onChange('selector', e.target.value)}
+                  placeholder="#submit-btn"
+                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                />
+                <SelectorFinderButton nodeId={node.id} fieldName="selector" />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
@@ -320,13 +330,16 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
           <>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Selector</label>
-              <input
-                type="text"
-                value={data.selector || ''}
-                onChange={(e) => onChange('selector', e.target.value)}
-                placeholder="#username"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={data.selector || ''}
+                  onChange={(e) => onChange('selector', e.target.value)}
+                  placeholder="#username"
+                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                />
+                <SelectorFinderButton nodeId={node.id} fieldName="selector" />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
@@ -474,13 +487,16 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
           <>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Selector</label>
-              <input
-                type="text"
-                value={data.selector || ''}
-                onChange={(e) => onChange('selector', e.target.value)}
-                placeholder=".button"
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={data.selector || ''}
+                  onChange={(e) => onChange('selector', e.target.value)}
+                  placeholder=".button"
+                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                />
+                <SelectorFinderButton nodeId={node.id} fieldName="selector" />
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>

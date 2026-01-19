@@ -45,6 +45,8 @@ interface WorkflowState {
   validationErrors: Map<string, ValidationError[]>; // Track validation errors by node ID
   errorPopupNodeId: string | null; // Which failed node's error popup is currently shown
   canvasReloading: boolean; // Global loader state for canvas reload
+  selectorFinderSessionId: string | null; // Selector finder session ID
+  selectorFinderActive: boolean; // Whether selector finder is active
   
   // Undo/Redo
   history: WorkflowSnapshot[];
@@ -134,6 +136,10 @@ interface WorkflowState {
   // Follow mode state
   followModeEnabled: boolean;
   setFollowModeEnabled: (enabled: boolean) => void;
+  
+  // Selector finder state
+  setSelectorFinderSession: (sessionId: string | null) => void;
+  setSelectorFinderActive: (active: boolean) => void;
 }
 
 // Helper function to reconnect edges when a node is deleted
@@ -205,6 +211,8 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     validationErrors: new Map(),
     errorPopupNodeId: null,
     canvasReloading: false,
+    selectorFinderSessionId: null,
+    selectorFinderActive: false,
     history: [initialState],
     historyIndex: 0,
     maxHistorySize: 10,
@@ -1130,7 +1138,15 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
       console.warn('Failed to save follow mode to localStorage:', error);
     }
   },
-  };
+  
+  setSelectorFinderSession: (sessionId) => {
+    set({ selectorFinderSessionId: sessionId });
+  },
+  
+  setSelectorFinderActive: (active) => {
+    set({ selectorFinderActive: active });
+  },
+};
 });
 
 function getNodeLabel(type: NodeType | string): string {

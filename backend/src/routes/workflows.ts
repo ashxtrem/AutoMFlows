@@ -1,7 +1,9 @@
 import { Router, Request, Response } from 'express';
 import { Server } from 'socket.io';
-import { ExecuteWorkflowRequest, ExecutionStatusResponse, StopExecutionResponse } from '@automflows/shared';
+import { ExecuteWorkflowRequest, ExecutionStatusResponse, StopExecutionResponse, SelectorFinderEvent, SelectorOption } from '@automflows/shared';
 import { Executor } from '../engine/executor';
+import { SelectorSessionManager } from '../utils/selectorSessionManager';
+import { FinderInjector } from '../utils/finderInjector';
 
 let currentExecutor: Executor | null = null;
 
@@ -172,6 +174,188 @@ export default function workflowRoutes(io: Server) {
       }
     } catch (error: any) {
       console.error('Pause control error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  });
+
+  // Selector Finder Routes
+  router.post('/selector-finder/start', async (req: Request, res: Response) => {
+    try {
+      const { nodeId, fieldName } = req.body as { nodeId: string; fieldName: string };
+
+      if (!nodeId || !fieldName) {
+        return res.status(400).json({ error: 'nodeId and fieldName are required' });
+      }
+
+      const sessionManager = SelectorSessionManager.getInstance();
+      sessionManager.setIO(io);
+      sessionManager.setCurrentTarget(nodeId, fieldName); // Store nodeId and fieldName in session manager
+
+      const { page, sessionId } = await sessionManager.getOrCreateSession();
+      const context = page.context();
+
+      // Bring browser window to front BEFORE injection
+      await sessionManager.bringToForeground();
+      
+      // Inject finder if not already injected
+      try {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'workflows.ts:190',message:'About to call injectFinder',data:{nodeId,fieldName,pageUrl:page.url()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        await FinderInjector.injectFinder(page, io, nodeId, fieldName, context);
+        
+        // Bring browser window to front AGAIN after injection to ensure it's visible
+        await sessionManager.bringToForeground();
+        
+        // Wait a bit and bring to front one more time
+        setTimeout(async () => {
+          await sessionManager.bringToForeground();
+        }, 500);
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'workflows.ts:193',message:'injectFinder completed successfully',data:{nodeId,fieldName},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+      } catch (error: any) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'workflows.ts:196',message:'Error in injectFinder',data:{error:error.message,stack:error.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+        // #endregion
+        console.warn('Finder already injected or injection failed:', error.message);
+      }
+
+      // Bring browser to foreground
+      await sessionManager.bringToForeground();
+
+      const pageUrl = page.url();
+
+      res.json({
+        sessionId,
+        pageUrl,
+      });
+    } catch (error: any) {
+      console.error('Start selector finder error:', error);
+      res.status(500).json({
+        error: 'Failed to start selector finder',
+        message: error.message,
+      });
+    }
+  });
+
+  router.post('/selector-finder/stop', async (req: Request, res: Response) => {
+    try {
+      const sessionManager = SelectorSessionManager.getInstance();
+      await sessionManager.closeSession();
+
+      res.json({
+        success: true,
+        message: 'Selector finder session closed',
+      });
+    } catch (error: any) {
+      console.error('Stop selector finder error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  });
+
+  router.get('/selector-finder/status', async (req: Request, res: Response) => {
+    try {
+      const sessionManager = SelectorSessionManager.getInstance();
+      const session = sessionManager.getSession();
+
+      if (session) {
+        const pageUrl = session.page.url();
+        res.json({
+          active: true,
+          sessionId: session.sessionId,
+          pageUrl,
+        });
+      } else {
+        res.json({
+          active: false,
+          sessionId: null,
+          pageUrl: null,
+        });
+      }
+    } catch (error: any) {
+      console.error('Get selector finder status error:', error);
+      res.status(500).json({
+        error: 'Failed to get selector finder status',
+        message: error.message,
+      });
+    }
+  });
+
+  router.post('/selector-finder/selectors', async (req: Request, res: Response) => {
+    try {
+      const { selectors, selectedIndex, nodeId, fieldName } = req.body as {
+        selectors: SelectorOption[];
+        selectedIndex: number;
+        nodeId: string;
+        fieldName: string;
+      };
+
+      if (!selectors || selectedIndex === undefined || !nodeId || !fieldName) {
+        return res.status(400).json({ error: 'selectors, selectedIndex, nodeId, and fieldName are required' });
+      }
+
+      if (selectedIndex < 0 || selectedIndex >= selectors.length) {
+        return res.status(400).json({ error: 'Invalid selectedIndex' });
+      }
+
+      const selectedSelector = selectors[selectedIndex];
+
+      // Emit Socket.IO event to frontend
+      io.emit('selector-finder-event', {
+        event: 'selectors-generated',
+        selectors,
+        nodeId,
+        fieldName,
+        selectedSelector,
+      } as SelectorFinderEvent);
+
+      res.json({
+        success: true,
+        message: 'Selector selected',
+        selector: selectedSelector,
+      });
+    } catch (error: any) {
+      console.error('Select selector error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  });
+
+  // Handle element click and selector generation
+  // This will be called from the browser context via exposeFunction
+  router.post('/selector-finder/generate', async (req: Request, res: Response) => {
+    try {
+      const { nodeId, fieldName, elementInfo } = req.body as {
+        nodeId: string;
+        fieldName: string;
+        elementInfo: any;
+      };
+
+      const sessionManager = SelectorSessionManager.getInstance();
+      const session = sessionManager.getSession();
+
+      if (!session) {
+        return res.status(400).json({ error: 'No active selector finder session' });
+      }
+
+      // Generate selectors will be handled by the exposed function in finderInjector
+      // The selectors will be sent back via the exposeFunction callback
+      res.json({
+        success: true,
+        message: 'Selector generation initiated',
+      });
+    } catch (error: any) {
+      console.error('Generate selectors error:', error);
       res.status(500).json({
         success: false,
         message: error.message,
