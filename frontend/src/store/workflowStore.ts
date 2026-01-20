@@ -40,6 +40,7 @@ interface WorkflowState {
   nodes: Node[];
   edges: Edge[];
   selectedNode: Node | null;
+  selectedNodeIds: Set<string>; // Track multiple selected nodes
   executionStatus: 'idle' | 'running' | 'completed' | 'error';
   executingNodeId: string | null;
   failedNodes: Map<string, NodeError>; // Track failed nodes with error details
@@ -65,6 +66,9 @@ interface WorkflowState {
   onConnectStart: (event: React.MouseEvent | React.TouchEvent, params: { nodeId: string | null; handleId: string | null; handleType: 'source' | 'target' | null }) => void;
   onConnectEnd: (event: MouseEvent | TouchEvent) => void;
   setSelectedNode: (node: Node | null) => void;
+  setSelectedNodeIds: (ids: string[]) => void;
+  clearSelection: () => void;
+  selectAllNodes: () => void;
   addNode: (type: NodeType | string, position: { x: number; y: number }) => void;
   updateNodeData: (nodeId: string, data: any) => void;
   updateNodeDimensions: (nodeId: string, width: number, height?: number) => void;
@@ -90,17 +94,17 @@ interface WorkflowState {
   arrangeNodes: (mode: 'vertical' | 'horizontal', nodesPerRowColumn?: number) => void;
   
   // Copy/Paste/Duplicate
-  copyNode: (nodeId: string) => void;
+  copyNode: (nodeId: string | string[]) => void;
   pasteNode: (position: { x: number; y: number }) => void;
-  duplicateNode: (nodeId: string) => void;
+  duplicateNode: (nodeId: string | string[]) => void;
   
   // Node operations
   renameNode: (nodeId: string, label: string) => void;
-  deleteNode: (nodeId: string) => void;
-  toggleBypass: (nodeId: string) => void;
-  toggleMinimize: (nodeId: string) => void;
-  togglePin: (nodeId: string) => void;
-  setNodeColor: (nodeId: string, borderColor?: string, backgroundColor?: string) => void;
+  deleteNode: (nodeId: string | string[]) => void;
+  toggleBypass: (nodeId: string | string[]) => void;
+  toggleMinimize: (nodeId: string | string[]) => void;
+  togglePin: (nodeId: string | string[]) => void;
+  setNodeColor: (nodeId: string | string[], borderColor?: string, backgroundColor?: string) => void;
   autoResizeNode: (nodeId: string) => void;
   
   // Connection operations
@@ -133,7 +137,7 @@ interface WorkflowState {
   pauseReason: 'wait-pause' | 'breakpoint' | null;
   pauseBreakpointAt: 'pre' | 'post' | 'both' | null;
   navigateToPausedNode: (() => void) | null;
-  toggleBreakpoint: (nodeId: string) => void;
+  toggleBreakpoint: (nodeId: string | string[]) => void;
   setBreakpointSettings: (settings: { enabled?: boolean; breakpointAt?: 'pre' | 'post' | 'both'; breakpointFor?: 'all' | 'marked' }) => void;
   setPausedNode: (nodeId: string | null, reason: 'wait-pause' | 'breakpoint' | null, breakpointAt?: 'pre' | 'post' | 'both' | null) => void;
   setNavigateToPausedNode: (fn: (() => void) | null) => void;
@@ -210,6 +214,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     nodes: [],
     edges: [],
     selectedNode: null,
+    selectedNodeIds: new Set<string>(),
     executionStatus: 'idle',
     executingNodeId: null,
     failedNodes: new Map(),
@@ -619,12 +624,31 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
 
   setSelectedNode: (node) => {
     if (!node) {
-      set({ selectedNode: null });
+      set({ selectedNode: null, selectedNodeIds: new Set<string>() });
       return;
     }
     // Find the node from the nodes array to ensure we have the latest version
     const latestNode = get().nodes.find((n) => n.id === node.id) || node;
-    set({ selectedNode: latestNode });
+    set({ selectedNode: latestNode, selectedNodeIds: new Set([latestNode.id]) });
+  },
+
+  setSelectedNodeIds: (ids) => {
+    const state = get();
+    const nodeIdsSet = new Set(ids);
+    // Don't automatically set selectedNode - it should only be set via context menu "Properties" option
+    // This prevents RightSidebar from opening on regular node clicks
+    set({ selectedNodeIds: nodeIdsSet, selectedNode: null });
+  },
+
+  clearSelection: () => {
+    set({ selectedNodeIds: new Set<string>(), selectedNode: null });
+  },
+
+  selectAllNodes: () => {
+    const state = get();
+    const allNodeIds = new Set(state.nodes.map((n) => n.id));
+    // Don't set selectedNode - only set it via context menu
+    set({ selectedNodeIds: allNodeIds, selectedNode: null });
   },
 
   addNode: (type, position) => {
@@ -869,9 +893,20 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
 
   // Copy/Paste/Duplicate
   copyNode: (nodeId) => {
-    const node = get().nodes.find((n) => n.id === nodeId);
-    if (node) {
-      set({ clipboard: JSON.parse(JSON.stringify(node)) });
+    const state = get();
+    const nodeIds = Array.isArray(nodeId) ? nodeId : [nodeId];
+    // For multi-copy, store all nodes in clipboard (we'll handle paste separately)
+    if (nodeIds.length === 1) {
+      const node = state.nodes.find((n) => n.id === nodeIds[0]);
+      if (node) {
+        set({ clipboard: JSON.parse(JSON.stringify(node)) });
+      }
+    } else if (nodeIds.length > 1) {
+      // Store first node for now (multi-copy/paste can be enhanced later)
+      const node = state.nodes.find((n) => n.id === nodeIds[0]);
+      if (node) {
+        set({ clipboard: JSON.parse(JSON.stringify(node)) });
+      }
     }
   },
 
@@ -892,20 +927,23 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
   },
 
   duplicateNode: (nodeId) => {
-    const node = get().nodes.find((n) => n.id === nodeId);
-    if (!node) return;
+    const state = get();
+    const nodeIds = Array.isArray(nodeId) ? nodeId : [nodeId];
+    const nodesToDuplicate = state.nodes.filter((n) => nodeIds.includes(n.id));
     
-    const newNode: Node = {
+    if (nodesToDuplicate.length === 0) return;
+    
+    const newNodes: Node[] = nodesToDuplicate.map((node, index) => ({
       ...JSON.parse(JSON.stringify(node)),
-      id: `${node.data.type}-${Date.now()}`,
+      id: `${node.data.type}-${Date.now()}-${index}`,
       position: {
         x: node.position.x + 50,
         y: node.position.y + 50,
       },
-    };
+    }));
     
     set({
-      nodes: [...get().nodes, newNode],
+      nodes: [...state.nodes, ...newNodes],
     });
     setTimeout(() => get().saveToHistory(), 100);
   },
@@ -918,48 +956,91 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
 
   deleteNode: (nodeId) => {
     const state = get();
-    // Reconnect edges before removing the node
-    const reconnectedEdges = reconnectEdgesOnNodeDeletion(nodeId, state.edges);
+    const nodeIds = Array.isArray(nodeId) ? nodeId : [nodeId];
+    
+    // Reconnect edges for each node being deleted
+    let reconnectedEdges = state.edges;
+    for (const id of nodeIds) {
+      reconnectedEdges = reconnectEdgesOnNodeDeletion(id, reconnectedEdges);
+    }
+    
+    // Remove all selected nodes
+    const remainingNodes = state.nodes.filter((n) => !nodeIds.includes(n.id));
+    const updatedSelectedNode = state.selectedNode && !nodeIds.includes(state.selectedNode.id) 
+      ? state.selectedNode 
+      : null;
+    const updatedSelectedNodeIds = new Set(
+      Array.from(state.selectedNodeIds).filter((id) => !nodeIds.includes(id))
+    );
+    
     set({
-      nodes: state.nodes.filter((n) => n.id !== nodeId),
+      nodes: remainingNodes,
       edges: reconnectedEdges,
-      selectedNode: state.selectedNode?.id === nodeId ? null : state.selectedNode,
+      selectedNode: updatedSelectedNode,
+      selectedNodeIds: updatedSelectedNodeIds,
     });
     setTimeout(() => get().saveToHistory(), 100);
   },
 
   toggleBypass: (nodeId) => {
-    const node = get().nodes.find((n) => n.id === nodeId);
-    if (node) {
-      const currentBypass = node.data.bypass || false;
-      get().updateNodeData(nodeId, { bypass: !currentBypass });
-      setTimeout(() => get().saveToHistory(), 100);
-    }
+    const state = get();
+    const nodeIds = Array.isArray(nodeId) ? nodeId : [nodeId];
+    const nodes = state.nodes.filter((n) => nodeIds.includes(n.id));
+    
+    // Determine toggle state: if all are bypassed, unbypass all; otherwise bypass all
+    const allBypassed = nodes.length > 0 && nodes.every((n) => n.data.bypass === true);
+    const newBypassState = !allBypassed;
+    
+    nodes.forEach((node) => {
+      get().updateNodeData(node.id, { bypass: newBypassState });
+    });
+    
+    setTimeout(() => get().saveToHistory(), 100);
   },
 
   toggleMinimize: (nodeId) => {
-    const node = get().nodes.find((n) => n.id === nodeId);
-    if (node) {
-      const currentMinimized = node.data.isMinimized || false;
-      get().updateNodeData(nodeId, { isMinimized: !currentMinimized });
-      setTimeout(() => get().saveToHistory(), 100);
-    }
+    const state = get();
+    const nodeIds = Array.isArray(nodeId) ? nodeId : [nodeId];
+    const nodes = state.nodes.filter((n) => nodeIds.includes(n.id));
+    
+    // Determine toggle state: if all are minimized, unminimize all; otherwise minimize all
+    const allMinimized = nodes.length > 0 && nodes.every((n) => n.data.isMinimized === true);
+    const newMinimizedState = !allMinimized;
+    
+    nodes.forEach((node) => {
+      get().updateNodeData(node.id, { isMinimized: newMinimizedState });
+    });
+    
+    setTimeout(() => get().saveToHistory(), 100);
   },
 
   togglePin: (nodeId) => {
-    const node = get().nodes.find((n) => n.id === nodeId);
-    if (node) {
-      const currentPinned = node.data.isPinned || false;
-      get().updateNodeData(nodeId, { isPinned: !currentPinned });
-      setTimeout(() => get().saveToHistory(), 100);
-    }
+    const state = get();
+    const nodeIds = Array.isArray(nodeId) ? nodeId : [nodeId];
+    const nodes = state.nodes.filter((n) => nodeIds.includes(n.id));
+    
+    // Determine toggle state: if all are pinned, unpin all; otherwise pin all
+    const allPinned = nodes.length > 0 && nodes.every((n) => n.data.isPinned === true);
+    const newPinnedState = !allPinned;
+    
+    nodes.forEach((node) => {
+      get().updateNodeData(node.id, { isPinned: newPinnedState });
+    });
+    
+    setTimeout(() => get().saveToHistory(), 100);
   },
 
   setNodeColor: (nodeId, _borderColor, backgroundColor) => {
+    const state = get();
+    const nodeIds = Array.isArray(nodeId) ? nodeId : [nodeId];
     const updates: any = {};
     // Only set backgroundColor (borderColor is no longer customizable)
     if (backgroundColor !== undefined) updates.backgroundColor = backgroundColor;
-    get().updateNodeData(nodeId, updates);
+    
+    nodeIds.forEach((id) => {
+      get().updateNodeData(id, updates);
+    });
+    
     setTimeout(() => get().saveToHistory(), 100);
   },
 
@@ -1141,12 +1222,19 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
   
   // Breakpoint methods
   toggleBreakpoint: (nodeId) => {
-    const node = get().nodes.find((n) => n.id === nodeId);
-    if (node) {
-      const currentBreakpoint = node.data.breakpoint || false;
-      get().updateNodeData(nodeId, { breakpoint: !currentBreakpoint });
-      setTimeout(() => get().saveToHistory(), 100);
-    }
+    const state = get();
+    const nodeIds = Array.isArray(nodeId) ? nodeId : [nodeId];
+    const nodes = state.nodes.filter((n) => nodeIds.includes(n.id));
+    
+    // Determine toggle state: if all have breakpoints, remove all; otherwise add to all
+    const allHaveBreakpoints = nodes.length > 0 && nodes.every((n) => n.data.breakpoint === true);
+    const newBreakpointState = !allHaveBreakpoints;
+    
+    nodes.forEach((node) => {
+      get().updateNodeData(node.id, { breakpoint: newBreakpointState });
+    });
+    
+    setTimeout(() => get().saveToHistory(), 100);
   },
   
   setBreakpointSettings: (settings) => {

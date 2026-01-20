@@ -133,8 +133,62 @@ export const KEY_BINDINGS: KeyBinding[] = [
   {
     id: 'escape',
     keys: ['Escape'],
-    description: 'Close modals, popups, and dialogs',
+    description: 'Close modals, popups, and dialogs, or clear node selection',
     category: 'general',
+  },
+  
+  // Selection shortcuts
+  {
+    id: 'select-all',
+    keys: ['Ctrl', 'A'],
+    description: 'Select all nodes in the canvas',
+    category: 'workflow',
+    platformSpecific: {
+      mac: ['Cmd', 'A'],
+      windows: ['Ctrl', 'A'],
+    },
+  },
+  {
+    id: 'duplicate-selected',
+    keys: ['Ctrl', 'D'],
+    description: 'Duplicate all selected nodes',
+    category: 'workflow',
+    platformSpecific: {
+      mac: ['Cmd', 'D'],
+      windows: ['Ctrl', 'D'],
+    },
+  },
+  {
+    id: 'delete-selected',
+    keys: ['Delete'],
+    description: 'Delete all selected nodes',
+    category: 'workflow',
+  },
+  {
+    id: 'delete-selected-alt',
+    keys: ['Backspace'],
+    description: 'Delete all selected nodes (alternative)',
+    category: 'workflow',
+  },
+  {
+    id: 'copy-selected',
+    keys: ['Ctrl', 'C'],
+    description: 'Copy all selected nodes',
+    category: 'workflow',
+    platformSpecific: {
+      mac: ['Cmd', 'C'],
+      windows: ['Ctrl', 'C'],
+    },
+  },
+  {
+    id: 'paste-selected',
+    keys: ['Ctrl', 'V'],
+    description: 'Paste copied nodes',
+    category: 'workflow',
+    platformSpecific: {
+      mac: ['Cmd', 'V'],
+      windows: ['Ctrl', 'V'],
+    },
   },
 ];
 

@@ -71,7 +71,7 @@ interface CanvasInnerProps {
 }
 
 function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, hasRunInitialFitViewRef }: CanvasInnerProps) {
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setSelectedNode, onConnectStart, onConnectEnd, onEdgeUpdate, failedNodes, showErrorPopupForNode, canvasReloading, executingNodeId, executionStatus, followModeEnabled, setFollowModeEnabled, pausedNodeId, pauseReason } = useWorkflowStore();
+  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setSelectedNodeIds, clearSelection, selectAllNodes, deleteNode, duplicateNode, copyNode, pasteNode, onConnectStart, onConnectEnd, onEdgeUpdate, failedNodes, showErrorPopupForNode, canvasReloading, executingNodeId, executionStatus, followModeEnabled, setFollowModeEnabled, pausedNodeId, pauseReason, selectedNodeIds } = useWorkflowStore();
   const addNotification = useNotificationStore((state) => state.addNotification);
   const { showGrid, gridSize, snapToGrid } = useSettingsStore((state) => ({
     showGrid: state.canvas.showGrid,
@@ -89,7 +89,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
   };
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useReactFlow();
-  const { screenToFlowPosition, getViewport, setViewport: originalSetViewport, fitView } = reactFlowInstance;
+  const { screenToFlowPosition, getViewport, setViewport: originalSetViewport, fitView, setNodes } = reactFlowInstance;
   
   // Enable shortcut navigation
   useShortcutNavigation();
@@ -222,13 +222,47 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     [screenToFlowPosition]
   );
 
-  const onNodeClick = useCallback((_e: React.MouseEvent, node: any) => {
+  const onNodeClick = useCallback((e: React.MouseEvent, node: any) => {
     // If node has failed, show error popup
     if (failedNodes.has(node.id)) {
       showErrorPopupForNode(node.id);
     }
+    
+    // Handle Ctrl/Cmd+Click for toggle selection
+    const isModifierPressed = e.metaKey || e.ctrlKey;
+    if (isModifierPressed) {
+      e.preventDefault();
+      e.stopPropagation();
+      
+      const currentState = useWorkflowStore.getState();
+      const currentSelectedIds = Array.from(currentState.selectedNodeIds);
+      
+      if (currentSelectedIds.includes(node.id)) {
+        // Deselect this node
+        const newSelectedIds = currentSelectedIds.filter((id) => id !== node.id);
+        setSelectedNodeIds(newSelectedIds);
+        // Update ReactFlow selection
+        setNodes((nds) =>
+          nds.map((n) => ({
+            ...n,
+            selected: newSelectedIds.includes(n.id),
+          }))
+        );
+      } else {
+        // Add this node to selection
+        const newSelectedIds = [...currentSelectedIds, node.id];
+        setSelectedNodeIds(newSelectedIds);
+        // Update ReactFlow selection
+        setNodes((nds) =>
+          nds.map((n) => ({
+            ...n,
+            selected: newSelectedIds.includes(n.id),
+          }))
+        );
+      }
+    }
     // Node click no longer opens property panel - use context menu instead
-  }, [failedNodes, showErrorPopupForNode]);
+  }, [failedNodes, showErrorPopupForNode, setSelectedNodeIds, setNodes]);
 
   const onPaneClick = useCallback((e: React.MouseEvent) => {
     const now = Date.now();
@@ -292,11 +326,11 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     // Store this click for potential double-click detection
     lastClickRef.current = { time: now, x: clickX, y: clickY };
     
-    // Normal single-click behavior
-    setSelectedNode(null);
+    // Normal single-click behavior - clear selection
+    clearSelection();
     setContextMenu(null);
     setSearchOverlay(null);
-  }, [setSelectedNode, screenToFlowPosition]);
+  }, [clearSelection, screenToFlowPosition]);
 
 
   const handleNodeSelect = useCallback((nodeType: string, flowPosition: { x: number; y: number }) => {
@@ -353,6 +387,29 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
   
   // Track if we're currently processing a nodes change to prevent loops
   const isProcessingNodesChangeRef = useRef(false);
+
+  // Track if Shift key is held during drag
+  const shiftKeyHeldRef = useRef(false);
+  
+  // Track drag state for multi-node movement
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') {
+        shiftKeyHeldRef.current = true;
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') {
+        shiftKeyHeldRef.current = false;
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
   
   // Save viewport BEFORE remount happens (when canvasReloading becomes true)
   // CRITICAL: Only save if we don't already have a saved viewport (prevents new instance from overwriting)
@@ -598,6 +655,110 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [nodeSearchOverlayOpen]);
+
+  // Keyboard shortcuts for multi-selection
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isModifierPressed = e.metaKey || e.ctrlKey;
+      const activeElement = document.activeElement;
+      const isInputFocused = activeElement && (
+        activeElement.tagName === 'INPUT' ||
+        activeElement.tagName === 'TEXTAREA' ||
+        activeElement.tagName === 'SELECT' ||
+        (activeElement as HTMLElement).isContentEditable
+      );
+
+      // Don't handle shortcuts if user is typing in an input
+      if (isInputFocused) {
+        return;
+      }
+
+      // Don't handle if canvas is reloading or properties panel is open
+      const selectedNode = useWorkflowStore.getState().selectedNode;
+      if (canvasReloading || selectedNode) {
+        return;
+      }
+
+      // Ctrl/Cmd + A: Select all nodes
+      if (isModifierPressed && e.key === 'a' && !e.shiftKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        selectAllNodes();
+        // Also update ReactFlow's node selection state
+        const allNodeIds = nodes.map((n) => n.id);
+        setNodes((nds) =>
+          nds.map((node) => ({
+            ...node,
+            selected: allNodeIds.includes(node.id),
+          }))
+        );
+        return;
+      }
+
+      // Delete or Backspace: Delete selected nodes
+      if ((e.key === 'Delete' || e.key === 'Backspace') && selectedNodeIds.size > 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        deleteNode(Array.from(selectedNodeIds));
+        return;
+      }
+
+      // Ctrl/Cmd + D: Duplicate selected nodes
+      if (isModifierPressed && e.key === 'd' && !e.shiftKey && selectedNodeIds.size > 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        duplicateNode(Array.from(selectedNodeIds));
+        return;
+      }
+
+      // Ctrl/Cmd + C: Copy selected nodes
+      if (isModifierPressed && e.key === 'c' && !e.shiftKey && selectedNodeIds.size > 0) {
+        e.preventDefault();
+        e.stopPropagation();
+        copyNode(Array.from(selectedNodeIds));
+        return;
+      }
+
+      // Ctrl/Cmd + V: Paste nodes (at mouse position or center)
+      if (isModifierPressed && e.key === 'v' && !e.shiftKey) {
+        const clipboard = useWorkflowStore.getState().clipboard;
+        if (clipboard && reactFlowWrapper.current) {
+          e.preventDefault();
+          e.stopPropagation();
+          const rect = reactFlowWrapper.current.getBoundingClientRect();
+          const centerX = rect.width / 2;
+          const centerY = rect.height / 2;
+          const flowPosition = screenToFlowPosition({ x: centerX, y: centerY });
+          pasteNode(flowPosition);
+        }
+        return;
+      }
+
+      // Escape: Clear selection
+      if (e.key === 'Escape') {
+        const currentState = useWorkflowStore.getState();
+        const hasSelection = currentState.selectedNodeIds.size > 0;
+        if (hasSelection) {
+          e.preventDefault();
+          e.stopPropagation();
+          clearSelection();
+          // Also clear ReactFlow selection
+          setNodes((nds) =>
+            nds.map((node) => ({
+              ...node,
+              selected: false,
+            }))
+          );
+          return;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [selectedNodeIds, canvasReloading, selectAllNodes, deleteNode, duplicateNode, copyNode, pasteNode, clearSelection, screenToFlowPosition, nodes, setNodes]);
   
   // Use a ref to track the last nodes array to prevent unnecessary re-renders
   const lastNodesRef = useRef<Node[]>(nodes);
@@ -784,16 +945,20 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
           }
         }}
         onSelectionChange={(params) => {
-          const newSelectedId = params.nodes.length > 0 ? params.nodes[0].id : null;
+          const selectedIds = params.nodes.map((n) => n.id);
+          const newSelectedId = selectedIds.length > 0 ? selectedIds[0] : null;
           const lastReactFlowSelection = reactFlowSelectionRef.current;
           
           // Update ReactFlow's selection ref
           reactFlowSelectionRef.current = newSelectedId;
           
           // Ignore if ReactFlow's selection hasn't actually changed (prevents duplicate events)
-          if (newSelectedId === lastReactFlowSelection) {
+          if (newSelectedId === lastReactFlowSelection && selectedIds.length === selectedNodeIds.size) {
             return;
           }
+          
+          // Sync ReactFlow selection with store
+          setSelectedNodeIds(selectedIds);
           
           // Don't automatically open properties panel on node click
           // Properties panel should only open via context menu "Properties" option
@@ -823,6 +988,17 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
         edgesUpdatable={true}
         edgesFocusable={true}
         deleteKeyCode="Delete"
+        multiSelectionKeyCode={(() => {
+          const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPod|iPad/i.test(navigator.platform);
+          // ReactFlow: 'Meta' for Mac, 'Control' for Windows/Linux
+          return isMac ? 'Meta' : 'Control';
+        })()}
+        selectionKeyCode={(() => {
+          const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPod|iPad/i.test(navigator.platform);
+          // ReactFlow: Use same key for drag selection (Ctrl/Cmd + Drag)
+          return isMac ? 'Meta' : 'Control';
+        })()}
+        selectionOnDrag={false}
         onDrop={onDrop}
         onDragOver={onDragOver}
         onNodeClick={onNodeClick}
