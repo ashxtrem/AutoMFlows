@@ -6,6 +6,7 @@ import { ExecutionEventType, ScreenshotConfig, ReportConfig, BreakpointConfig } 
 import { validateInputConnections, ValidationError } from '../utils/validation';
 import { useNotificationStore } from '../store/notificationStore';
 import { Node } from 'reactflow';
+import { hasHeadlessBrowser } from '../utils/workflowChecks';
 
 let socket: Socket | null = null;
 let backendPort: number | null = null;
@@ -108,6 +109,8 @@ export function useExecution() {
   const [validationErrors, setValidationErrors] = useState<any[]>([]);
   const addNotification = useNotificationStore((state) => state.addNotification);
   const executionStartTimeRef = useRef<number | null>(null);
+  const [showBreakpointWarning, setShowBreakpointWarning] = useState(false);
+  const [pendingExecution, setPendingExecution] = useState<{ traceLogs: boolean; disableBreakpoints: boolean } | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -373,7 +376,7 @@ export function useExecution() {
     };
   }, [setExecutionStatus, setExecutingNodeId, resetExecution, setNodeError, clearAllNodeErrors, addNotification]);
 
-  const executeWorkflow = async (traceLogs: boolean = false) => {
+  const executeWorkflowInternal = async (traceLogs: boolean = false, disableBreakpoints: boolean = false) => {
     try {
       // Validate input connections before execution
       const errors = validateInputConnections(nodes, edges);
@@ -413,8 +416,8 @@ export function useExecution() {
         ? { enabled: true, outputPath: reportPath, reportTypes }
         : undefined;
 
-      // Read breakpoint config from store
-      const breakpointConfig: BreakpointConfig | undefined = breakpointEnabled
+      // Read breakpoint config from store (or disable if requested)
+      const breakpointConfig: BreakpointConfig | undefined = (breakpointEnabled && !disableBreakpoints)
         ? { enabled: true, breakpointAt, breakpointFor }
         : undefined;
 
@@ -486,6 +489,59 @@ export function useExecution() {
     }
   };
 
+  const executeWorkflow = async (traceLogs: boolean = false) => {
+    // Check if breakpoints are enabled and browser is headless
+    if (breakpointEnabled && hasHeadlessBrowser(nodes)) {
+      // Check localStorage for global preference (not workflow-specific)
+      const preferenceKey = 'automflows_breakpoint_headless_warning_preference';
+      const preference = localStorage.getItem(preferenceKey);
+      
+      // If preference exists, use it
+      if (preference === 'continue') {
+        await executeWorkflowInternal(traceLogs, false);
+        return;
+      } else if (preference === 'disable') {
+        await executeWorkflowInternal(traceLogs, true);
+        return;
+      }
+      
+      // No preference found - show warning dialog
+      setPendingExecution({ traceLogs, disableBreakpoints: false });
+      setShowBreakpointWarning(true);
+      return;
+    }
+    
+    // No warning needed, proceed with execution
+    await executeWorkflowInternal(traceLogs, false);
+  };
+
+  const handleBreakpointWarningContinue = () => {
+    setShowBreakpointWarning(false);
+    if (pendingExecution) {
+      executeWorkflowInternal(pendingExecution.traceLogs, false);
+      setPendingExecution(null);
+    }
+  };
+
+  const handleBreakpointWarningDisable = () => {
+    setShowBreakpointWarning(false);
+    if (pendingExecution) {
+      executeWorkflowInternal(pendingExecution.traceLogs, true);
+      setPendingExecution(null);
+    }
+  };
+
+  const handleBreakpointWarningCancel = () => {
+    setShowBreakpointWarning(false);
+    setPendingExecution(null);
+  };
+
+  const handleBreakpointWarningDontAskAgain = (choice: 'continue' | 'disable') => {
+    // Store global preference (not workflow-specific)
+    const preferenceKey = 'automflows_breakpoint_headless_warning_preference';
+    localStorage.setItem(preferenceKey, choice);
+  };
+
   const stopExecution = async () => {
     try {
       const currentPort = port || await getBackendPortSync();
@@ -552,6 +608,11 @@ export function useExecution() {
     pauseControl,
     validationErrors,
     setValidationErrors,
+    showBreakpointWarning,
+    handleBreakpointWarningContinue,
+    handleBreakpointWarningDisable,
+    handleBreakpointWarningCancel,
+    handleBreakpointWarningDontAskAgain,
   };
 }
 

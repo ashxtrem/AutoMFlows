@@ -258,7 +258,10 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   
   // Get latest node data from store to avoid stale prop issues
   const storeNodes = useWorkflowStore((state) => state.nodes);
-  const latestNodeData = storeNodes.find(n => n.id === id)?.data || data;
+  const storeNodeData = storeNodes.find(n => n.id === id)?.data;
+  // Use data prop for searchHighlighted (set in mappedNodes) but fall back to store for other properties
+  // This ensures searchHighlighted updates correctly when search results change
+  const latestNodeData = { ...storeNodeData, ...data };
   // Check if this node is currently paused
   const pausedNodeId = useWorkflowStore((state) => state.pausedNodeId);
   const isPaused = pausedNodeId === id;
@@ -472,8 +475,10 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const textColor = theme === 'light' 
     ? '#1F2937' // Use dark grey for light theme
     : getContrastTextColor(backgroundColor);
-  // Border color: red if failed, blue if selected, default gray otherwise
-  const borderColor = isFailed ? '#ef4444' : (selected ? '#3b82f6' : '#4b5563');
+  // Check if node is search highlighted
+  const isSearchHighlighted = latestNodeData.searchHighlighted === true;
+  // Border color: red if failed, blue if selected, orange/yellow if search highlighted, default gray otherwise
+  const borderColor = isFailed ? '#ef4444' : (selected ? '#3b82f6' : (isSearchHighlighted ? '#f59e0b' : '#4b5563'));
 
   // Calculate minimum dimensions based on content
   const calculateMinDimensions = useCallback(() => {
@@ -2568,7 +2573,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     : 'rgba(30, 30, 30, 0.7)';
   
   // Build style object with colors
-  // Priority: validation error > execution error > executing > default
+  // Priority: validation error > execution error > executing > paused > search highlighted > default
   const nodeStyle: React.CSSProperties = {
     width: currentWidth,
     height: currentHeight,
@@ -2594,6 +2599,8 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
       ? '0 0 20px rgba(234, 179, 8, 0.6), 0 4px 6px rgba(0, 0, 0, 0.3)' // Yellow glow for paused nodes
       : (hasValidationError || isFailed || isExecuting
         ? undefined
+        : isSearchHighlighted
+        ? '0 0 20px rgba(245, 158, 11, 0.6), 0 4px 6px rgba(0, 0, 0, 0.3)' // Orange glow for search highlighted nodes
         : `0 0 20px ${glowColor}, 0 4px 6px rgba(0, 0, 0, 0.3)`), // Color-coded glow using user color
   };
 

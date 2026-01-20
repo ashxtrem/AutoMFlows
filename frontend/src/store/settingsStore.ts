@@ -39,6 +39,7 @@ function saveToStorage<T>(key: string, value: T): void {
 
 interface CanvasSettings {
   autoArrangeNodes: 'none' | 'vertical' | 'horizontal';
+  nodesPerRowColumn: number;
   gridSize: number;
   showGrid: boolean;
   snapToGrid: boolean;
@@ -98,6 +99,7 @@ interface SettingsState {
 
 const defaultCanvasSettings: CanvasSettings = {
   autoArrangeNodes: 'none',
+  nodesPerRowColumn: 10,
   gridSize: 16,
   showGrid: true,
   snapToGrid: false,
@@ -130,6 +132,10 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
     autoArrangeNodes: loadFromStorage(
       'automflows_settings_canvas_autoArrangeNodes',
       defaultCanvasSettings.autoArrangeNodes
+    ),
+    nodesPerRowColumn: loadFromStorage(
+      'automflows_settings_canvas_nodesPerRowColumn',
+      defaultCanvasSettings.nodesPerRowColumn
     ),
     gridSize: loadFromStorage(
       'automflows_settings_canvas_gridSize',
@@ -223,6 +229,7 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
     setCanvasSetting: (key, value) => {
       const keyMap: Record<keyof CanvasSettings, string> = {
         autoArrangeNodes: 'automflows_settings_canvas_autoArrangeNodes',
+        nodesPerRowColumn: 'automflows_settings_canvas_nodesPerRowColumn',
         gridSize: 'automflows_settings_canvas_gridSize',
         showGrid: 'automflows_settings_canvas_showGrid',
         snapToGrid: 'automflows_settings_canvas_snapToGrid',

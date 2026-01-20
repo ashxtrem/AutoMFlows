@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { ChevronLeft } from 'lucide-react';
 import { useSettingsStore } from '../store/settingsStore';
 import { useWorkflowStore } from '../store/workflowStore';
@@ -12,17 +13,60 @@ export default function CanvasSettingsSubmenu({ onBack }: CanvasSettingsSubmenuP
   const setCanvasSetting = useSettingsStore((state) => state.setCanvasSetting);
   const arrangeNodes = useWorkflowStore((state) => state.arrangeNodes);
   const addNotification = useNotificationStore((state) => state.addNotification);
+  const { nodes } = useWorkflowStore();
+  
+  const [localNodesPerRowColumn, setLocalNodesPerRowColumn] = useState(canvas.nodesPerRowColumn);
+
+  // Sync local state with canvas setting when it changes externally
+  useEffect(() => {
+    setLocalNodesPerRowColumn(canvas.nodesPerRowColumn);
+  }, [canvas.nodesPerRowColumn]);
 
   const handleAutoArrangeChange = (mode: 'none' | 'vertical' | 'horizontal') => {
     setCanvasSetting('autoArrangeNodes', mode);
-    if (mode !== 'none') {
-      arrangeNodes(mode);
-      addNotification({
-        type: 'settings',
-        title: 'Nodes Arranged',
-        details: [`Arranged nodes in ${mode} stack`],
-      });
+    // Don't trigger arrangement automatically - user must click button
+  };
+
+  const handleNodesPerRowColumnChange = (value: number) => {
+    const numValue = Number(value);
+    if (!isNaN(numValue) && numValue >= 3) {
+      setLocalNodesPerRowColumn(numValue);
+      setCanvasSetting('nodesPerRowColumn', numValue);
+    } else {
+      // Allow typing but don't save invalid values
+      setLocalNodesPerRowColumn(numValue);
     }
+  };
+
+  const handleNodesPerRowColumnBlur = () => {
+    // Clamp to valid range on blur
+    const clampedValue = Math.max(3, localNodesPerRowColumn);
+    if (clampedValue !== localNodesPerRowColumn) {
+      setLocalNodesPerRowColumn(clampedValue);
+      setCanvasSetting('nodesPerRowColumn', clampedValue);
+    }
+  };
+
+  const handleArrangeNodes = () => {
+    if (canvas.autoArrangeNodes === 'none') return;
+    if (nodes.length === 0) {
+      addNotification({
+        type: 'warning',
+        title: 'No Nodes to Arrange',
+        details: ['Please add nodes to the canvas first'],
+      });
+      return;
+    }
+    
+    arrangeNodes(canvas.autoArrangeNodes, localNodesPerRowColumn);
+    addNotification({
+      type: 'settings',
+      title: 'Nodes Arranged',
+      details: [
+        `Arranged nodes in ${canvas.autoArrangeNodes} stack`,
+        `${canvas.autoArrangeNodes === 'vertical' ? 'Nodes per column' : 'Nodes per row'}: ${localNodesPerRowColumn}`,
+      ],
+    });
   };
 
   const handleGridSizeChange = (value: number) => {
@@ -74,7 +118,7 @@ export default function CanvasSettingsSubmenu({ onBack }: CanvasSettingsSubmenuP
 
       {/* Auto Arrange Nodes */}
       <div>
-        <label className="block text-xs text-gray-400 mb-1">Auto Arrange Nodes</label>
+        <label className="block text-xs text-gray-400 mb-1">Arrange Nodes</label>
         <select
           value={canvas.autoArrangeNodes}
           onChange={(e) => handleAutoArrangeChange(e.target.value as 'none' | 'vertical' | 'horizontal')}
@@ -85,6 +129,35 @@ export default function CanvasSettingsSubmenu({ onBack }: CanvasSettingsSubmenuP
           <option value="horizontal">Horizontal Stack</option>
         </select>
       </div>
+
+      {/* Nodes Per Row/Column Input - shown when vertical or horizontal is selected */}
+      {canvas.autoArrangeNodes !== 'none' && (
+        <div>
+          <label className="block text-xs text-gray-400 mb-1">
+            {canvas.autoArrangeNodes === 'vertical' ? 'Nodes Per Column' : 'Nodes Per Row'}
+          </label>
+          <input
+            type="number"
+            min="3"
+            value={localNodesPerRowColumn}
+            onChange={(e) => handleNodesPerRowColumnChange(Number(e.target.value))}
+            onBlur={handleNodesPerRowColumnBlur}
+            className="w-full px-3 py-1.5 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+      )}
+
+      {/* Arrange Nodes Button - shown when vertical or horizontal is selected */}
+      {canvas.autoArrangeNodes !== 'none' && (
+        <div>
+          <button
+            onClick={handleArrangeNodes}
+            className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            Arrange Nodes
+          </button>
+        </div>
+      )}
 
       {/* Grid Size */}
       <div>

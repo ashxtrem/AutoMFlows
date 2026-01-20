@@ -13,7 +13,8 @@
         "isPinned": false,
         "isTest": true,
         "screenshotAllNodes": false,
-        "screenshotTiming": "both"
+        "screenshotTiming": "both",
+        "searchHighlighted": false
       }
     },
     {
@@ -30,7 +31,8 @@
         "viewportWidth": 1280,
         "viewportHeight": 720,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -53,7 +55,8 @@
         "retryDelay": 2000,
         "retryDelayStrategy": "fixed",
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -74,7 +77,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -93,7 +97,8 @@
         "matchType": "contains",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -110,7 +115,8 @@
         "retryEnabled": true,
         "retryCount": 2,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -125,7 +131,8 @@
         "label": "Set Form Field Variables",
         "code": "context.setData('fieldSelector', '#name');\ncontext.setData('fieldValue', 'John Doe');",
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -140,7 +147,8 @@
         "label": "Fill Name Field",
         "contextName": "fill_form_field",
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -161,7 +169,8 @@
         "matchType": "equals",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -176,7 +185,8 @@
         "label": "Set Email Variables",
         "code": "context.setData('fieldSelector', '#email');\ncontext.setData('fieldValue', 'john.doe@example.com');",
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -191,7 +201,8 @@
         "label": "Fill Email Field",
         "contextName": "fill_form_field",
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -212,7 +223,8 @@
         "matchType": "equals",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -227,7 +239,8 @@
         "label": "Set Phone Variables",
         "code": "context.setData('fieldSelector', '#phone');\ncontext.setData('fieldValue', '1234567890');",
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -242,7 +255,8 @@
         "label": "Fill Phone Field",
         "contextName": "fill_form_field",
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -262,7 +276,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -282,7 +297,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -302,7 +318,8 @@
         "elementCheck": "checked",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -322,7 +339,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -342,7 +360,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -362,7 +381,8 @@
         "elementCheck": "checked",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -381,7 +401,8 @@
         "type": "formInput",
         "label": "Form Input",
         "values": "india",
-        "isPinned": false
+        "isPinned": false,
+        "searchHighlighted": false
       }
     },
     {
@@ -403,7 +424,8 @@
         "matchType": "equals",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -424,7 +446,8 @@
         "values": "red",
         "isPinned": false,
         "width": 212,
-        "height": 226
+        "height": 226,
+        "searchHighlighted": false
       }
     },
     {
@@ -446,7 +469,8 @@
         "isPinned": false,
         "isTest": true,
         "expectedValue": "Red",
-        "attributeName": "value"
+        "attributeName": "value",
+        "searchHighlighted": false
       }
     },
     {
@@ -466,7 +490,8 @@
         "elementCheck": "exists",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -487,7 +512,8 @@
         "matchType": "contains",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -512,7 +538,8 @@
         "isTest": true,
         "isMinimized": true,
         "width": 276,
-        "height": 63.375
+        "height": 63.375,
+        "searchHighlighted": false
       }
     },
     {
@@ -533,7 +560,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -554,7 +582,8 @@
         "matchType": "contains",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -574,7 +603,8 @@
         "elementCheck": "enabled",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -594,7 +624,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -612,7 +643,8 @@
         "text": "",
         "timeout": 30000,
         "isTest": true,
-        "isPinned": false
+        "isPinned": false,
+        "searchHighlighted": false
       }
     },
     {
@@ -632,7 +664,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -654,7 +687,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -675,7 +709,8 @@
         "matchType": "contains",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -697,7 +732,8 @@
         "waitForSelector": "#HTML5 button",
         "waitForSelectorTimeout": 10000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -721,7 +757,8 @@
         "retryCount": 5,
         "retryDelay": 1000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -741,7 +778,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -761,7 +799,8 @@
         "isPinned": false,
         "isTest": true,
         "failSilently": true,
-        "breakpoint": false
+        "breakpoint": false,
+        "searchHighlighted": false
       }
     },
     {
@@ -782,7 +821,8 @@
         "timeout": 30000,
         "isPinned": false,
         "isTest": true,
-        "failSilently": true
+        "failSilently": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -802,7 +842,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -822,7 +863,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -842,7 +884,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -863,7 +906,8 @@
         "retryCount": 5,
         "retryDelay": 500,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -887,7 +931,8 @@
         "retryCount": 5,
         "retryDelay": 1000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -907,7 +952,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -927,7 +973,8 @@
         "elementCheck": "visible",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -947,7 +994,8 @@
         "elementCheck": "visible",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -969,7 +1017,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -992,7 +1041,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -1012,7 +1062,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -1032,7 +1083,8 @@
         "elementCheck": "exists",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -1052,7 +1104,8 @@
         "elementCheck": "enabled",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -1073,7 +1126,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -1095,7 +1149,8 @@
         "matchType": "equals",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -1115,7 +1170,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -1134,7 +1190,8 @@
         "matchType": "contains",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -1153,7 +1210,8 @@
         "matchType": "contains",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -1172,7 +1230,8 @@
         "matchType": "contains",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -1192,7 +1251,8 @@
         "elementCheck": "exists",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -1212,7 +1272,8 @@
         "elementCheck": "exists",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -1232,7 +1293,8 @@
         "elementCheck": "exists",
         "timeout": 30000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -1249,7 +1311,8 @@
         "retryEnabled": true,
         "retryCount": 2,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -1264,7 +1327,8 @@
         "label": "Reusable: fill_form_field",
         "contextName": "fill_form_field",
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -1284,7 +1348,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -1305,7 +1370,8 @@
         "retryCount": 3,
         "retryDelay": 1000,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -1319,7 +1385,8 @@
         "type": "reusable.end",
         "label": "End",
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -1334,7 +1401,8 @@
         "label": "Reusable: verify_element",
         "contextName": "verify_element",
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -1356,7 +1424,8 @@
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
@@ -1370,15 +1439,16 @@
         "type": "reusable.end",
         "label": "End",
         "isPinned": false,
-        "isTest": true
+        "isTest": true,
+        "searchHighlighted": false
       }
     },
     {
       "id": "shortcut.shortcut-1768651980624",
       "type": "shortcut.shortcut",
       "position": {
-        "x": 15600,
-        "y": 200
+        "x": 88.99439959010897,
+        "y": 432.0871815233167
       },
       "data": {
         "type": "shortcut.shortcut",
@@ -1386,7 +1456,8 @@
         "shortcut": "s",
         "targetNodeId": "",
         "isTest": true,
-        "isPinned": false
+        "isPinned": false,
+        "searchHighlighted": false
       }
     }
   ],

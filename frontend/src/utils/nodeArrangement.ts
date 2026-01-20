@@ -4,6 +4,8 @@ interface ArrangementOptions {
   nodeSpacing?: number;
   startX?: number;
   startY?: number;
+  nodesPerRow?: number;
+  nodesPerColumn?: number;
 }
 
 const DEFAULT_NODE_SPACING = 250;
@@ -47,152 +49,78 @@ function buildGraph(nodes: Node[], edges: Edge[]): Map<string, { node: Node; chi
 }
 
 /**
- * Arrange nodes in a vertical stack (top to bottom)
+ * Arrange nodes in a vertical stack (top to bottom) in a grid pattern
+ * Nodes are arranged sequentially, filling columns top-to-bottom, then moving to the next column
  */
 export function arrangeNodesVertical(
   nodes: Node[],
   edges: Edge[],
   options: ArrangementOptions = {}
 ): Node[] {
-  const { nodeSpacing = DEFAULT_NODE_SPACING, startX = DEFAULT_START_X, startY = DEFAULT_START_Y } = options;
+  const { 
+    nodeSpacing = DEFAULT_NODE_SPACING, 
+    startX = DEFAULT_START_X, 
+    startY = DEFAULT_START_Y,
+    nodesPerColumn = 10
+  } = options;
   
   if (nodes.length === 0) return nodes;
   
-  const graph = buildGraph(nodes, edges);
-  const arrangedNodes: Node[] = [];
-  const visited = new Set<string>();
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+  const arrangedNodes: Node[] = [];
   
-  // Find start node or use first node
-  const startNode = findStartNode(nodes, edges) || nodes[0];
-  
-  // BFS traversal to assign positions
-  const queue: Array<{ nodeId: string; level: number; x: number }> = [
-    { nodeId: startNode.id, level: 0, x: startX },
-  ];
-  
-  const levelPositions = new Map<number, number[]>();
-  
-  while (queue.length > 0) {
-    const { nodeId, level, x } = queue.shift()!;
+  // Arrange nodes sequentially in a grid pattern
+  // For vertical: fill column top-to-bottom, then move to next column
+  nodes.forEach((node, index) => {
+    const columnIndex = Math.floor(index / nodesPerColumn);
+    const rowIndex = index % nodesPerColumn;
     
-    if (visited.has(nodeId)) continue;
-    visited.add(nodeId);
-    
-    const node = nodeMap.get(nodeId);
-    if (!node) continue;
-    
-    // Track x positions per level for alignment
-    if (!levelPositions.has(level)) {
-      levelPositions.set(level, []);
-    }
-    levelPositions.get(level)!.push(x);
-    
-    // Calculate y position based on level
-    const y = startY + level * nodeSpacing;
+    const x = startX + columnIndex * nodeSpacing;
+    const y = startY + rowIndex * nodeSpacing;
     
     arrangedNodes.push({
       ...node,
       position: { x, y },
     });
-    
-    // Process children
-    const graphNode = graph.get(nodeId);
-    if (graphNode) {
-      graphNode.children.forEach((childId, index) => {
-        if (!visited.has(childId)) {
-          // Use same x position for children (vertical stack)
-          queue.push({ nodeId: childId, level: level + 1, x });
-        }
-      });
-    }
-  }
-  
-  // Handle any unvisited nodes (disconnected components)
-  nodes.forEach((node) => {
-    if (!visited.has(node.id)) {
-      const maxLevel = Math.max(...Array.from(levelPositions.keys()), -1);
-      arrangedNodes.push({
-        ...node,
-        position: { x: startX, y: startY + (maxLevel + 1) * nodeSpacing },
-      });
-    }
   });
   
   return arrangedNodes;
 }
 
 /**
- * Arrange nodes in a horizontal stack (left to right)
+ * Arrange nodes in a horizontal stack (left to right) in a grid pattern
+ * Nodes are arranged sequentially, filling rows left-to-right, then moving to the next row
  */
 export function arrangeNodesHorizontal(
   nodes: Node[],
   edges: Edge[],
   options: ArrangementOptions = {}
 ): Node[] {
-  const { nodeSpacing = DEFAULT_NODE_SPACING, startX = DEFAULT_START_X, startY = DEFAULT_START_Y } = options;
+  const { 
+    nodeSpacing = DEFAULT_NODE_SPACING, 
+    startX = DEFAULT_START_X, 
+    startY = DEFAULT_START_Y,
+    nodesPerRow = 10
+  } = options;
   
   if (nodes.length === 0) return nodes;
   
-  const graph = buildGraph(nodes, edges);
-  const arrangedNodes: Node[] = [];
-  const visited = new Set<string>();
   const nodeMap = new Map(nodes.map((n) => [n.id, n]));
+  const arrangedNodes: Node[] = [];
   
-  // Find start node or use first node
-  const startNode = findStartNode(nodes, edges) || nodes[0];
-  
-  // BFS traversal to assign positions
-  const queue: Array<{ nodeId: string; level: number; y: number }> = [
-    { nodeId: startNode.id, level: 0, y: startY },
-  ];
-  
-  const levelPositions = new Map<number, number[]>();
-  
-  while (queue.length > 0) {
-    const { nodeId, level, y } = queue.shift()!;
+  // Arrange nodes sequentially in a grid pattern
+  // For horizontal: fill row left-to-right, then move to next row
+  nodes.forEach((node, index) => {
+    const rowIndex = Math.floor(index / nodesPerRow);
+    const columnIndex = index % nodesPerRow;
     
-    if (visited.has(nodeId)) continue;
-    visited.add(nodeId);
-    
-    const node = nodeMap.get(nodeId);
-    if (!node) continue;
-    
-    // Track y positions per level for alignment
-    if (!levelPositions.has(level)) {
-      levelPositions.set(level, []);
-    }
-    levelPositions.get(level)!.push(y);
-    
-    // Calculate x position based on level
-    const x = startX + level * nodeSpacing;
+    const x = startX + columnIndex * nodeSpacing;
+    const y = startY + rowIndex * nodeSpacing;
     
     arrangedNodes.push({
       ...node,
       position: { x, y },
     });
-    
-    // Process children
-    const graphNode = graph.get(nodeId);
-    if (graphNode) {
-      graphNode.children.forEach((childId) => {
-        if (!visited.has(childId)) {
-          // Use same y position for children (horizontal stack)
-          queue.push({ nodeId: childId, level: level + 1, y });
-        }
-      });
-    }
-  }
-  
-  // Handle any unvisited nodes (disconnected components)
-  nodes.forEach((node) => {
-    if (!visited.has(node.id)) {
-      const maxLevel = Math.max(...Array.from(levelPositions.keys()), -1);
-      arrangedNodes.push({
-        ...node,
-        position: { x: startX + (maxLevel + 1) * nodeSpacing, y: startY },
-      });
-    }
   });
   
   return arrangedNodes;

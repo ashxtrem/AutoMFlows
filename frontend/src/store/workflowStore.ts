@@ -87,7 +87,7 @@ interface WorkflowState {
   clearHistory: () => void;
   
   // Node arrangement
-  arrangeNodes: (mode: 'vertical' | 'horizontal') => void;
+  arrangeNodes: (mode: 'vertical' | 'horizontal', nodesPerRowColumn?: number) => void;
   
   // Copy/Paste/Duplicate
   copyNode: (nodeId: string) => void;
@@ -858,11 +858,11 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     });
   },
 
-  arrangeNodes: (mode) => {
+  arrangeNodes: (mode, nodesPerRowColumn = 10) => {
     const state = get();
     const arrangedNodes = mode === 'vertical'
-      ? arrangeNodesVertical(state.nodes, state.edges)
-      : arrangeNodesHorizontal(state.nodes, state.edges);
+      ? arrangeNodesVertical(state.nodes, state.edges, { nodesPerColumn: nodesPerRowColumn })
+      : arrangeNodesHorizontal(state.nodes, state.edges, { nodesPerRow: nodesPerRowColumn });
     set({ nodes: arrangedNodes });
     setTimeout(() => get().saveToHistory(), 100);
   },

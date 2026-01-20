@@ -6,6 +6,7 @@ import ErrorIcon from '@mui/icons-material/Error';
 import { SkipForward } from 'lucide-react';
 import { useWorkflowStore } from '../store/workflowStore';
 import { useExecution } from '../hooks/useExecution';
+import BreakpointHeadlessWarning from './BreakpointHeadlessWarning';
 
 const BUTTON_SIZE = 48; // Size of the circular button
 const BUTTON_GAP = 12; // Gap between buttons
@@ -22,7 +23,17 @@ export default function FloatingRunButton() {
     pauseBreakpointAt,
     navigateToPausedNode,
   } = useWorkflowStore();
-  const { executeWorkflow, stopExecution, continueExecution, pauseControl } = useExecution();
+  const { 
+    executeWorkflow, 
+    stopExecution, 
+    continueExecution, 
+    pauseControl,
+    showBreakpointWarning,
+    handleBreakpointWarningContinue,
+    handleBreakpointWarningDisable,
+    handleBreakpointWarningCancel,
+    handleBreakpointWarningDontAskAgain,
+  } = useExecution();
   
   // Load trace logs from localStorage (same as TopBar)
   const traceLogs = typeof window !== 'undefined' 
@@ -264,6 +275,16 @@ export default function FloatingRunButton() {
           />
           <ErrorIcon sx={{ fontSize: '24px', color: '#ffffff', pointerEvents: 'none', filter: 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.8))' }} />
         </button>
+      )}
+
+      {/* Breakpoint Headless Warning Dialog */}
+      {showBreakpointWarning && (
+        <BreakpointHeadlessWarning
+          onContinue={handleBreakpointWarningContinue}
+          onDisableAndRun={handleBreakpointWarningDisable}
+          onCancel={handleBreakpointWarningCancel}
+          onDontAskAgain={handleBreakpointWarningDontAskAgain}
+        />
       )}
     </div>
   );

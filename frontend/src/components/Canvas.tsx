@@ -14,7 +14,9 @@ import CustomNode from '../nodes/CustomNode';
 import CustomEdge from './CustomEdge';
 import ContextMenu from './ContextMenu';
 import CanvasSearchOverlay from './CanvasSearchOverlay';
+import NodeSearchOverlay from './NodeSearchOverlay';
 import { useShortcutNavigation } from '../hooks/useShortcutNavigation';
+import { searchNodes } from '../utils/nodeSearch';
 
 const nodeTypes = {
   custom: CustomNode,
@@ -110,6 +112,13 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
   }, [reactFlowInstance, reactFlowInstanceRef]);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId?: string; flowPosition?: { x: number; y: number }; screenPosition?: { x: number; y: number } } | null>(null);
   const [searchOverlay, setSearchOverlay] = useState<{ screen: { x: number; y: number }; flow: { x: number; y: number } } | null>(null);
+  
+  // Node search overlay state
+  const [nodeSearchOverlayOpen, setNodeSearchOverlayOpen] = useState<boolean>(false);
+  const [nodeSearchQuery, setNodeSearchQuery] = useState<string>('');
+  const [matchingNodeIds, setMatchingNodeIds] = useState<string[]>([]);
+  const [currentMatchIndex, setCurrentMatchIndex] = useState<number>(0);
+  const [searchExecuted, setSearchExecuted] = useState<boolean>(false);
   
   // Double-click detection using timing
   const lastClickRef = useRef<{ time: number; x: number; y: number } | null>(null);
@@ -409,6 +418,67 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     useWorkflowStore.getState().setNavigateToPausedNode(navigateToPausedNode);
   }, [navigateToPausedNode]);
 
+  // Track last searched query to detect when query changes
+  const lastSearchedQueryRef = useRef<string>('');
+  
+  // Node search handlers
+  const handleNodeSearch = useCallback(() => {
+    if (nodeSearchQuery.trim().length < 3) {
+      setMatchingNodeIds([]);
+      setSearchExecuted(false);
+      return;
+    }
+    const matches = searchNodes(nodeSearchQuery, nodes);
+    setMatchingNodeIds(matches);
+    setCurrentMatchIndex(0);
+    setSearchExecuted(true);
+    lastSearchedQueryRef.current = nodeSearchQuery.trim();
+  }, [nodeSearchQuery, nodes]);
+
+  const handleNodeSearchNavigate = useCallback(() => {
+    if (matchingNodeIds.length === 0) {
+      return;
+    }
+    
+    const nodeId = matchingNodeIds[currentMatchIndex];
+    const node = nodes.find(n => n.id === nodeId);
+    
+    if (node) {
+      fitView({
+        nodes: [{ id: nodeId }],
+        padding: 0.2,
+        duration: 300,
+      });
+      
+      // Cycle to next match
+      setCurrentMatchIndex((prev) => (prev + 1) % matchingNodeIds.length);
+    }
+  }, [matchingNodeIds, currentMatchIndex, nodes, fitView]);
+
+  const handleNodeSearchClose = useCallback(() => {
+    setNodeSearchOverlayOpen(false);
+    setNodeSearchQuery('');
+    setMatchingNodeIds([]);
+    setCurrentMatchIndex(0);
+    setSearchExecuted(false);
+    lastSearchedQueryRef.current = '';
+  }, []);
+  
+  // Reset search executed state when query changes (user is typing a new search)
+  // Clear highlights only when query is too short (< 3 chars)
+  useEffect(() => {
+    const trimmedQuery = nodeSearchQuery.trim();
+    if (trimmedQuery !== lastSearchedQueryRef.current) {
+      setSearchExecuted(false);
+      // Clear highlights only when query is cleared or too short
+      if (trimmedQuery.length < 3) {
+        setMatchingNodeIds([]);
+      }
+      // If query is >= 3 chars but different from last searched, keep old highlights
+      // until user executes new search (they'll update when handleNodeSearch is called)
+    }
+  }, [nodeSearchQuery]);
+
   // Navigate to executing node function (for follow mode)
   const navigateToExecutingNode = useCallback(() => {
     if (!executingNodeId) {
@@ -489,6 +559,45 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [followModeEnabled, setFollowModeEnabled, addNotification]);
+
+  // Keyboard shortcut for node search (Ctrl/Cmd + F)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const isModifierPressed = e.metaKey || e.ctrlKey;
+      // Only trigger if Ctrl+F (Cmd+F on Mac) and not Shift+F (which is for failed node navigation)
+      if (isModifierPressed && !e.shiftKey && e.key === 'f') {
+        // Check if user is typing in an input/textarea (don't override browser find)
+        const activeElement = document.activeElement;
+        const isInputFocused = activeElement && (
+          activeElement.tagName === 'INPUT' ||
+          activeElement.tagName === 'TEXTAREA' ||
+          activeElement.tagName === 'SELECT'
+        );
+        
+        // If search overlay is already open, just focus the input
+        if (nodeSearchOverlayOpen) {
+          // Don't prevent default if user is typing in the search input itself
+          if (!isInputFocused || !(activeElement as HTMLElement).closest('[data-search-overlay]')) {
+            e.preventDefault();
+            // Focus will be handled by the overlay component
+          }
+          return;
+        }
+        
+        // Only open if not typing in an input (allow browser find in other contexts)
+        // But allow opening even when other UI elements are open (sidebars, popups, etc.)
+        if (!isInputFocused) {
+          e.preventDefault();
+          setNodeSearchOverlayOpen(true);
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [nodeSearchOverlayOpen]);
   
   // Use a ref to track the last nodes array to prevent unnecessary re-renders
   const lastNodesRef = useRef<Node[]>(nodes);
@@ -552,23 +661,36 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     }
   }
   
+  // Track last matchingNodeIds to detect changes
+  const lastMatchingNodeIdsRef = useRef<string[]>([]);
+  const matchingNodeIdsChanged = JSON.stringify(lastMatchingNodeIdsRef.current.sort()) !== JSON.stringify(matchingNodeIds.slice().sort());
+  if (matchingNodeIdsChanged) {
+    lastMatchingNodeIdsRef.current = matchingNodeIds.slice();
+  }
+  
   const mappedNodes = useMemo(() => {
-    // If content hasn't changed AND node references are stable, return the previous array reference
-    // This prevents ReactFlow from detecting false changes
-    if (!nodesContentChanged && !nodesRefsChanged && lastNodesRef.current.length === nodes.length) {
+    const matchingIdsSet = new Set(matchingNodeIds);
+    
+    // If content hasn't changed AND node references are stable AND matchingNodeIds haven't changed,
+    // return the previous array reference to prevent ReactFlow from detecting false changes
+    if (!nodesContentChanged && !nodesRefsChanged && !matchingNodeIdsChanged && lastNodesRef.current.length === nodes.length) {
       return lastNodesRef.current;
     }
     
-    // Content or references changed, update refs and return new nodes with draggable property
+    // Content, references, or matchingNodeIds changed - update nodes
     const nodesWithDraggable = nodes.map(node => ({
       ...node,
       draggable: !node.data.isPinned,
+      data: {
+        ...node.data,
+        searchHighlighted: matchingIdsSet.has(node.id),
+      },
     }));
     lastNodesRef.current = nodesWithDraggable;
     nodesContentKeyRef.current = currentNodesContentKey;
     nodesMapRef.current = new Map(nodes.map(n => [n.id, n]));
     return nodesWithDraggable;
-  }, [nodes, nodesContentChanged, nodesRefsChanged, currentNodesContentKey]);
+  }, [nodes, nodesContentChanged, nodesRefsChanged, currentNodesContentKey, matchingNodeIds, matchingNodeIdsChanged]);
 
   // Map edges with hidden property and animated prop based on edgesHidden state
   const mappedEdges = useMemo(() => {
@@ -758,6 +880,18 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
           flowPosition={searchOverlay.flow}
           onClose={() => setSearchOverlay(null)}
           onNodeSelect={handleNodeSelect}
+        />
+      )}
+      {nodeSearchOverlayOpen && (
+        <NodeSearchOverlay
+          searchQuery={nodeSearchQuery}
+          matchingNodeIds={matchingNodeIds}
+          currentMatchIndex={currentMatchIndex}
+          searchExecuted={searchExecuted}
+          onSearchQueryChange={setNodeSearchQuery}
+          onSearch={handleNodeSearch}
+          onNavigate={handleNodeSearchNavigate}
+          onClose={handleNodeSearchClose}
         />
       )}
     </div>
