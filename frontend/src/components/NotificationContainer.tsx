@@ -1,11 +1,18 @@
 import { useNotificationStore } from '../store/notificationStore';
+import { useSettingsStore } from '../store/settingsStore';
 import NotificationNudge from './NotificationNudge';
 
 export default function NotificationContainer() {
   const notifications = useNotificationStore((state) => state.notifications);
+  const disabledNotifications = useSettingsStore((state) => state.notifications.disabledNotifications);
+
+  // Filter out disabled notification types
+  const filteredNotifications = notifications.filter((notification) => {
+    return !disabledNotifications.has(notification.type);
+  });
 
   // Show max 5 notifications, most recent first
-  const visibleNotifications = notifications.slice(-5).reverse();
+  const visibleNotifications = filteredNotifications.slice(-5).reverse();
 
   if (visibleNotifications.length === 0) {
     return null;

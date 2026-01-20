@@ -6,19 +6,280 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+  
+  /* Dark theme (default) */
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2a2a2a;
+  --bg-tertiary: #3a3a3a;
+  --text-primary: #e5e5e5;
+  --text-secondary: #b0b0b0;
+  --border-color: #4a4a4a;
+  --accent-color: #4a9eff;
+}
+
+.theme-light {
+  --bg-primary: #F9FAFB;
+  --bg-secondary: #F3F4F6;
+  --bg-tertiary: #E5E7EB;
+  --text-primary: #1F2937;
+  --text-secondary: #6B7280;
+  --border-color: #E5E7EB;
+  --accent-color: #2563EB;
+  --node-bg: #FFFFFF;
+  --node-border: #E5E7EB;
+  --node-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --header-bg: #374151;
+  --grid-color: rgba(229, 231, 235, 0.4);
+}
+
+.theme-dark {
+  --bg-primary: #1a1a1a;
+  --bg-secondary: #2a2a2a;
+  --bg-tertiary: #3a3a3a;
+  --text-primary: #e5e5e5;
+  --text-secondary: #b0b0b0;
+  --border-color: #4a4a4a;
+  --accent-color: #4a9eff;
+  --node-bg: #2a2a2a;
+  --node-border: #4a4a4a;
+  --node-shadow: none;
+  --header-bg: #374151;
+  --grid-color: #4a4a4a;
+}
+
+.high-contrast {
+  --bg-primary: #000000;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #333333;
+  --text-primary: #ffffff;
+  --text-secondary: #ffffff;
+  --border-color: #ffffff;
+  --accent-color: #00ffff;
 }
 
 body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  background-color: #1a1a1a;
-  color: #e5e5e5;
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Override Tailwind classes with theme variables */
+/* Apply theme to root elements */
+.theme-light,
+.theme-dark {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.theme-light *,
+.theme-dark * {
+  border-color: var(--border-color);
+}
+
+/* Ensure main container uses theme */
+.theme-light > div,
+.theme-dark > div {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+}
+
+.theme-light .bg-gray-900,
+.theme-light .bg-gray-800,
+.theme-light .bg-gray-700,
+.theme-light .bg-gray-600 {
+  background-color: var(--bg-secondary) !important;
+}
+
+.theme-dark .bg-gray-900,
+.theme-dark .bg-gray-800,
+.theme-dark .bg-gray-700,
+.theme-dark .bg-gray-600 {
+  background-color: var(--bg-secondary) !important;
+}
+
+.theme-light .text-white,
+.theme-light .text-gray-100,
+.theme-light .text-gray-200 {
+  color: var(--text-primary) !important;
+}
+
+.theme-dark .text-white,
+.theme-dark .text-gray-100,
+.theme-dark .text-gray-200 {
+  color: var(--text-primary) !important;
+}
+
+.theme-light .text-gray-400,
+.theme-light .text-gray-500 {
+  color: var(--text-secondary) !important;
+}
+
+.theme-dark .text-gray-400,
+.theme-dark .text-gray-500 {
+  color: var(--text-secondary) !important;
+}
+
+.theme-light .border-gray-700,
+.theme-light .border-gray-600 {
+  border-color: var(--border-color) !important;
+}
+
+.theme-dark .border-gray-700,
+.theme-dark .border-gray-600 {
+  border-color: var(--border-color) !important;
+}
+
+/* High contrast mode should override theme colors */
+.high-contrast {
+  --bg-primary: #000000 !important;
+  --bg-secondary: #1a1a1a !important;
+  --bg-tertiary: #333333 !important;
+  --text-primary: #ffffff !important;
+  --text-secondary: #ffffff !important;
+  --border-color: #ffffff !important;
+  --accent-color: #00ffff !important;
+}
+
+.high-contrast.theme-light,
+.high-contrast.theme-dark {
+  --bg-primary: #000000 !important;
+  --bg-secondary: #1a1a1a !important;
+  --bg-tertiary: #333333 !important;
+  --text-primary: #ffffff !important;
+  --text-secondary: #ffffff !important;
+  --border-color: #ffffff !important;
+  --accent-color: #00ffff !important;
+}
+
+.high-contrast .bg-gray-900,
+.high-contrast .bg-gray-800,
+.high-contrast .bg-gray-700,
+.high-contrast .bg-gray-600 {
+  background-color: var(--bg-secondary) !important;
+}
+
+.high-contrast .text-white,
+.high-contrast .text-gray-100,
+.high-contrast .text-gray-200,
+.high-contrast .text-gray-400,
+.high-contrast .text-gray-500 {
+  color: var(--text-primary) !important;
+}
+
+.high-contrast .border-gray-700,
+.high-contrast .border-gray-600 {
+  border-color: var(--border-color) !important;
+}
+
+/* Node styling for light theme */
+.theme-light .react-flow__node-custom {
+  background-color: var(--node-bg) !important;
+  border-color: var(--node-border) !important;
+  box-shadow: var(--node-shadow) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Node header styling */
+.theme-light .react-flow__node-custom [class*="header"],
+.theme-light .react-flow__node-custom [class*="title"] {
+  background-color: var(--header-bg) !important;
+  color: #ffffff !important;
+}
+
+/* Property text visibility in light theme - override inline styles */
+.theme-light .react-flow__node-custom span[style*="opacity"],
+.theme-light .react-flow__node-custom div[style*="opacity"] {
+  color: var(--text-primary) !important;
+  opacity: 1 !important;
+}
+
+/* Property keys (labels) - ensure they're visible */
+.theme-light .react-flow__node-custom .text-xs[style*="color"] {
+  color: var(--text-primary) !important;
+  opacity: 1 !important;
+}
+
+/* Property values - ensure they're visible */
+.theme-light .react-flow__node-custom .flex-1.text-xs {
+  color: var(--text-primary) !important;
+  opacity: 1 !important;
+}
+
+/* All text-xs elements in nodes should use theme color */
+.theme-light .react-flow__node-custom .text-xs {
+  color: var(--text-primary) !important;
+}
+
+/* Override gray text colors */
+.theme-light .react-flow__node-custom .text-gray-400,
+.theme-light .react-flow__node-custom .text-gray-500 {
+  color: var(--text-secondary) !important;
+}
+
+/* Labels */
+.theme-light .react-flow__node-custom label {
+  color: var(--text-primary) !important;
+}
+
+/* Input fields in light theme */
+.theme-light .react-flow__node-custom input,
+.theme-light .react-flow__node-custom textarea,
+.theme-light .react-flow__node-custom select {
+  color: var(--text-primary) !important;
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-color) !important;
+}
+
+.theme-light .react-flow__node-custom input::placeholder,
+.theme-light .react-flow__node-custom textarea::placeholder {
+  color: var(--text-secondary) !important;
+  opacity: 0.7;
+}
+
+/* Buttons in nodes */
+.theme-light .react-flow__node-custom button {
+  color: var(--text-primary) !important;
+}
+
+.theme-light .react-flow__node-custom .bg-gray-700,
+.theme-light .react-flow__node-custom .bg-gray-600 {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Text color overrides for any element with inline color style */
+.theme-light .react-flow__node-custom [style*="color"] {
+  color: var(--text-primary) !important;
+}
+
+/* Canvas background for light theme */
+.theme-light .react-flow-canvas {
+  background-color: var(--bg-primary) !important;
+}
+
+/* Grid opacity for light theme */
+.theme-light .react-flow__background {
+  opacity: 0.4;
+}
+
+.theme-light .react-flow__background path {
+  stroke: #E5E7EB !important;
+  opacity: 0.4;
+}
+
+/* Canvas background for dark theme */
+.theme-dark .react-flow-canvas {
+  background-color: var(--bg-primary) !important;
 }
 
 #root {
   width: 100%;
   height: 100vh;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 /* ReactFlow styles */
@@ -125,16 +386,16 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #2a2a2a;
+  background: var(--bg-secondary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #4a4a4a;
+  background: var(--border-color);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #5a5a5a;
+  background: var(--bg-tertiary);
 }
 
 /* Hide React Flow attribution */

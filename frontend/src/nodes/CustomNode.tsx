@@ -5,6 +5,7 @@ import { Handle, Position, NodeProps } from 'reactflow';
 import { NodeType, PropertyDataType, OpenBrowserNodeData } from '@automflows/shared';
 import { frontendPluginRegistry } from '../plugins/registry';
 import { useWorkflowStore } from '../store/workflowStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { InlineTextInput, InlineNumberInput, InlineSelect, InlineTextarea, InlineCheckbox } from '../components/InlinePropertyEditor';
 import NodeMenuBar from '../components/NodeMenuBar';
 import CapabilitiesPopup from '../components/CapabilitiesPopup';
@@ -261,6 +262,8 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   // Check if this node is currently paused
   const pausedNodeId = useWorkflowStore((state) => state.pausedNodeId);
   const isPaused = pausedNodeId === id;
+  // Get theme for text color adjustments
+  const theme = useSettingsStore((state) => state.appearance.theme);
   
   // Stabilize data prop by comparing content, not reference
   // This prevents infinite loops when ReactFlow recreates data objects with same content
@@ -465,7 +468,10 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const backgroundColor = latestNodeData.backgroundColor || data.backgroundColor || '#1f2937';
   
   // Calculate optimal text color based on background color for contrast
-  const textColor = getContrastTextColor(backgroundColor);
+  // In light theme, use theme text color for better visibility
+  const textColor = theme === 'light' 
+    ? '#1F2937' // Use dark grey for light theme
+    : getContrastTextColor(backgroundColor);
   // Border color: red if failed, blue if selected, default gray otherwise
   const borderColor = isFailed ? '#ef4444' : (selected ? '#3b82f6' : '#4b5563');
 
@@ -707,7 +713,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
           </div>
         )}
         {isInput && (
-          <div className={`flex-1 text-xs min-w-0 ${!hasConnection ? 'italic' : ''}`} style={{ color: textColor, opacity: hasConnection ? 0.9 : 0.6 }}>
+          <div className={`flex-1 text-xs min-w-0 ${!hasConnection ? 'italic' : ''}`} style={{ color: textColor, opacity: theme === 'light' ? 1 : (hasConnection ? 0.9 : 0.6) }}>
             {hasConnection ? (
               <span className="flex items-center gap-1 min-w-0">
                 <span className="text-green-400 flex-shrink-0">●</span>
@@ -720,7 +726,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
         )}
       </div>
     );
-  }, [id, edgesForThisNode, sourceNodes, isPropertyInput, connectingHandleId, nodeType, setConnectingHandleId, textColor]);
+  }, [id, edgesForThisNode, sourceNodes, isPropertyInput, connectingHandleId, nodeType, setConnectingHandleId, textColor, theme]);
 
   const renderProperties = () => {
     if (Object.values(NodeType).includes(nodeType as NodeType)) {

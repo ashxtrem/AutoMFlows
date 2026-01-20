@@ -2,6 +2,7 @@ import { Node } from 'reactflow';
 import { useState } from 'react';
 import RetryConfigSection from '../RetryConfigSection';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
+import SelectorFinderButton from '../SelectorFinderButton';
 
 interface KeyboardConfigProps {
   node: Node;

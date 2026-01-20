@@ -7,13 +7,16 @@ import RightSidebar from './components/RightSidebar';
 import ReportHistory from './components/ReportHistory';
 import FloatingRunButton from './components/FloatingRunButton';
 import { useWorkflowStore } from './store/workflowStore';
+import { useSettingsStore } from './store/settingsStore';
 import NodeErrorPopup from './components/NodeErrorPopup';
 import BrowserInstallErrorPopup from './components/BrowserInstallErrorPopup';
 import { useWorkflowAutoSave, useWorkflowLoad } from './hooks/useWorkflow';
 import { useUndoRedo } from './hooks/useUndoRedo';
 import { useBreakpointShortcut } from './hooks/useBreakpointShortcut';
+import { useReportHistoryShortcut } from './hooks/useReportHistoryShortcut';
 import { loadPlugins } from './plugins/loader';
 import { getBackendPort } from './utils/getBackendPort';
+import { initTheme, applyTheme } from './utils/theme';
 
 function App() {
   const selectedNode = useWorkflowStore((state) => state.selectedNode);
@@ -21,9 +24,49 @@ function App() {
   const errorPopupNodeId = useWorkflowStore((state) => state.errorPopupNodeId);
   const showErrorPopupForNode = useWorkflowStore((state) => state.showErrorPopupForNode);
   const canvasReloading = useWorkflowStore((state) => state.canvasReloading);
+  const theme = useSettingsStore((state) => state.appearance.theme);
+  const fontSize = useSettingsStore((state) => state.appearance.fontSize);
+  const fontFamily = useSettingsStore((state) => state.appearance.fontFamily);
+  const highContrast = useSettingsStore((state) => state.appearance.highContrast);
   
   // State for browser installation error popup
   const [browserInstallError, setBrowserInstallError] = useState<{ nodeId: string; browserName: string } | null>(null);
+  
+  // Initialize theme system on mount and when theme changes
+  useEffect(() => {
+    applyTheme(theme);
+    const cleanup = initTheme(theme);
+    return cleanup;
+  }, [theme]);
+  
+  // Apply high contrast mode (must be separate to override theme)
+  useEffect(() => {
+    const root = document.documentElement;
+    if (highContrast) {
+      root.classList.add('high-contrast');
+    } else {
+      root.classList.remove('high-contrast');
+    }
+    // Re-apply theme after high contrast change to ensure variables are updated
+    applyTheme(theme);
+  }, [highContrast, theme]);
+  
+  // Initial theme application on mount
+  useEffect(() => {
+    applyTheme(theme);
+    if (highContrast) {
+      document.documentElement.classList.add('high-contrast');
+    }
+  }, []); // Run once on mount
+  
+  // Apply font size and family
+  useEffect(() => {
+    document.documentElement.style.fontSize = `${fontSize}px`;
+  }, [fontSize]);
+  
+  useEffect(() => {
+    document.documentElement.style.fontFamily = fontFamily;
+  }, [fontFamily]);
   
   // Auto-save and load workflow
   useWorkflowAutoSave();
@@ -34,6 +77,9 @@ function App() {
   
   // Breakpoint keyboard shortcut (Ctrl+B / Cmd+B)
   useBreakpointShortcut();
+  
+  // Report history keyboard shortcut (Ctrl+H / Cmd+H)
+  useReportHistoryShortcut();
 
   // Load plugins on mount
   useEffect(() => {

@@ -18,34 +18,62 @@ function isAnyPopupOpen(): boolean {
     return true;
   }
 
-  // Check if any element with z-50 or higher is visible (popups typically use z-50)
-  // This catches most popups/modals
-  const highZIndexElements = document.querySelectorAll('[style*="z-index"]');
-  for (const el of highZIndexElements) {
-    const zIndex = window.getComputedStyle(el).zIndex;
-    if (zIndex && parseInt(zIndex) >= 50 && el instanceof HTMLElement) {
-      // Check if element is actually visible
-      const rect = el.getBoundingClientRect();
-      if (rect.width > 0 && rect.height > 0) {
-        return true;
+  // Check for actual modal/dialog/popup elements more specifically
+  // Look for elements with role="dialog", role="alertdialog", or common modal classes
+  const modalSelectors = [
+    '[role="dialog"]',
+    '[role="alertdialog"]',
+    '[data-modal="true"]',
+    '[data-popup="true"]',
+    // Common modal overlay patterns (but exclude ReactFlow)
+    '[class*="modal"][class*="overlay"]',
+    '[class*="popup"][class*="overlay"]',
+    '[class*="dialog"][class*="overlay"]',
+  ];
+
+  for (const selector of modalSelectors) {
+    const elements = document.querySelectorAll(selector);
+    for (const el of elements) {
+      if (el instanceof HTMLElement) {
+        // Skip ReactFlow elements and canvas containers
+        const classList = Array.from(el.classList);
+        const id = el.id || '';
+        // Skip ReactFlow canvas and controls
+        if (classList.some(c => c.includes('react-flow') || c.includes('reactflow')) ||
+            id.includes('react-flow') || id.includes('reactflow') ||
+            el.closest('.react-flow') || el.closest('[class*="react-flow"]')) {
+          continue;
+        }
+        
+        const rect = el.getBoundingClientRect();
+        // Check if element is visible and has significant size
+        if (rect.width > 100 && rect.height > 100) {
+          return true;
+        }
       }
     }
   }
 
-  // Check for common popup classes/attributes
-  const popupSelectors = [
-    '[class*="fixed"][class*="inset-0"]', // Full-screen overlays
-    '[class*="z-50"]', // Tailwind z-50 class
-    '[class*="z-[50]"]', // Tailwind z-[50] class
-  ];
-
-  for (const selector of popupSelectors) {
-    const elements = document.querySelectorAll(selector);
-    for (const el of elements) {
-      if (el instanceof HTMLElement) {
+  // Also check for elements with very high z-index (>= 100) that aren't ReactFlow
+  // Higher threshold to avoid false positives from UI elements
+  const highZIndexElements = document.querySelectorAll('[style*="z-index"]');
+  for (const el of highZIndexElements) {
+    if (el instanceof HTMLElement) {
+      const classList = Array.from(el.classList);
+      const id = el.id || '';
+      // Skip ReactFlow elements
+      if (classList.some(c => c.includes('react-flow') || c.includes('reactflow')) ||
+          id.includes('react-flow') || id.includes('reactflow') ||
+          el.closest('.react-flow') || el.closest('[class*="react-flow"]')) {
+        continue;
+      }
+      
+      const zIndex = window.getComputedStyle(el).zIndex;
+      // Use higher threshold (100) to avoid matching regular UI elements
+      if (zIndex && parseInt(zIndex) >= 100) {
         const rect = el.getBoundingClientRect();
-        // Check if element is visible and has significant size
-        if (rect.width > 100 && rect.height > 100) {
+        // Check if element is actually visible and covers significant area
+        if (rect.width > 200 && rect.height > 200) {
           return true;
         }
       }

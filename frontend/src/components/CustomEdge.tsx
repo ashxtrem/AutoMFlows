@@ -1,5 +1,6 @@
-import { EdgeProps, getBezierPath } from 'reactflow';
+import { EdgeProps, getBezierPath, getStraightPath, getSmoothStepPath } from 'reactflow';
 import { useWorkflowStore } from '../store/workflowStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { NodeType } from '@automflows/shared';
 
 // Node icon colors mapping (matching CustomNode.tsx)
@@ -41,14 +42,31 @@ export default function CustomEdge({
   animated = false,
 }: EdgeProps) {
   const { onEdgesChange, nodes } = useWorkflowStore();
-  const [edgePath] = getBezierPath({
+  const connectionStyle = useSettingsStore((state) => state.canvas.connectionStyle);
+  
+  // Get edge path based on connection style
+  let edgePath: string;
+  const pathParams = {
     sourceX,
     sourceY,
     sourcePosition,
     targetX,
     targetY,
     targetPosition,
-  });
+  };
+  
+  switch (connectionStyle) {
+    case 'straight':
+      [edgePath] = getStraightPath(pathParams);
+      break;
+    case 'stepped':
+      [edgePath] = getSmoothStepPath(pathParams);
+      break;
+    case 'curved':
+    default:
+      [edgePath] = getBezierPath(pathParams);
+      break;
+  }
 
   // Get source and target node types
   const sourceNode = nodes.find(n => n.id === source);

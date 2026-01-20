@@ -4,6 +4,7 @@ import { NodeType, PropertyDataType, PageDebugInfo } from '@automflows/shared';
 import { frontendPluginRegistry } from '../plugins/registry';
 import { getNodeProperties, getPropertyInputHandleId } from '../utils/nodeProperties';
 import { ValidationError } from '../utils/validation';
+import { arrangeNodesVertical, arrangeNodesHorizontal } from '../utils/nodeArrangement';
 
 // Type conversion helper (frontend version)
 function canConvertType(sourceType: PropertyDataType, targetType: PropertyDataType): boolean {
@@ -83,6 +84,10 @@ interface WorkflowState {
   redo: () => void;
   canUndo: () => boolean;
   canRedo: () => boolean;
+  clearHistory: () => void;
+  
+  // Node arrangement
+  arrangeNodes: (mode: 'vertical' | 'horizontal') => void;
   
   // Copy/Paste/Duplicate
   copyNode: (nodeId: string) => void;
@@ -623,6 +628,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
   },
 
   addNode: (type, position) => {
+    const state = get();
     const id = `${type}-${Date.now()}`;
     const newNode: Node = {
       id,
@@ -634,8 +640,39 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
         ...getDefaultNodeData(type),
       },
     };
+    
+    let newEdges = state.edges;
+    
+    // Auto-connect: find last node with no output connections
+    // Check localStorage directly to avoid circular dependency
+    try {
+      const autoConnect = localStorage.getItem('automflows_settings_canvas_autoConnect') === 'true';
+      if (autoConnect && state.nodes.length > 0) {
+        // Find nodes with no output connections (no edges where they are the source)
+        const nodesWithOutputs = new Set(state.edges.map((e) => e.source));
+        const lastNodeWithoutOutput = state.nodes
+          .filter((node) => !nodesWithOutputs.has(node.id))
+          .slice(-1)[0];
+        
+        if (lastNodeWithoutOutput) {
+          // Create edge from last node to new node
+          const newEdge: Edge = {
+            id: `edge-${lastNodeWithoutOutput.id}-output-${id}-input`,
+            source: lastNodeWithoutOutput.id,
+            target: id,
+            sourceHandle: 'output',
+            targetHandle: 'input',
+          };
+          newEdges = [...state.edges, newEdge];
+        }
+      }
+    } catch (error) {
+      // localStorage not available, skip auto-connect
+    }
+    
     set({
-      nodes: [...get().nodes, newNode],
+      nodes: [...state.nodes, newNode],
+      edges: newEdges,
     });
     setTimeout(() => get().saveToHistory(), 100);
   },
@@ -807,6 +844,27 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
   canRedo: () => {
     const state = get();
     return state.historyIndex < state.history.length - 1;
+  },
+
+  clearHistory: () => {
+    const state = get();
+    const currentSnapshot: WorkflowSnapshot = {
+      nodes: JSON.parse(JSON.stringify(state.nodes)),
+      edges: JSON.parse(JSON.stringify(state.edges)),
+    };
+    set({
+      history: [currentSnapshot],
+      historyIndex: 0,
+    });
+  },
+
+  arrangeNodes: (mode) => {
+    const state = get();
+    const arrangedNodes = mode === 'vertical'
+      ? arrangeNodesVertical(state.nodes, state.edges)
+      : arrangeNodesHorizontal(state.nodes, state.edges);
+    set({ nodes: arrangedNodes });
+    setTimeout(() => get().saveToHistory(), 100);
   },
 
   // Copy/Paste/Duplicate

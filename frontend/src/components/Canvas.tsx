@@ -9,6 +9,7 @@ import ReactFlow, {
 import 'reactflow/dist/style.css';
 import { useWorkflowStore } from '../store/workflowStore';
 import { useNotificationStore } from '../store/notificationStore';
+import { useSettingsStore } from '../store/settingsStore';
 import CustomNode from '../nodes/CustomNode';
 import CustomEdge from './CustomEdge';
 import ContextMenu from './ContextMenu';
@@ -70,6 +71,20 @@ interface CanvasInnerProps {
 function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, hasRunInitialFitViewRef }: CanvasInnerProps) {
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setSelectedNode, onConnectStart, onConnectEnd, onEdgeUpdate, failedNodes, showErrorPopupForNode, canvasReloading, executingNodeId, executionStatus, followModeEnabled, setFollowModeEnabled, pausedNodeId, pauseReason } = useWorkflowStore();
   const addNotification = useNotificationStore((state) => state.addNotification);
+  const { showGrid, gridSize, snapToGrid } = useSettingsStore((state) => ({
+    showGrid: state.canvas.showGrid,
+    gridSize: state.canvas.gridSize,
+    snapToGrid: state.canvas.snapToGrid,
+  }));
+  const theme = useSettingsStore((state) => state.appearance.theme);
+  
+  // Get grid color based on theme
+  const getGridColor = () => {
+    if (theme === 'light') {
+      return '#E5E7EB'; // Light theme grid color with opacity handled by CSS
+    }
+    return '#4a4a4a'; // Dark theme default
+  };
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useReactFlow();
   const { screenToFlowPosition, getViewport, setViewport: originalSetViewport, fitView } = reactFlowInstance;
@@ -621,7 +636,24 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
           isProcessingNodesChangeRef.current = true;
           
           try {
-            onNodesChange(changes);
+            // Apply snap-to-grid if enabled
+            if (snapToGrid && gridSize > 0) {
+              const processedChanges = changes.map((change) => {
+                if (change.type === 'position' && change.position) {
+                  return {
+                    ...change,
+                    position: {
+                      x: Math.round(change.position.x / gridSize) * gridSize,
+                      y: Math.round(change.position.y / gridSize) * gridSize,
+                    },
+                  };
+                }
+                return change;
+              });
+              onNodesChange(processedChanges);
+            } else {
+              onNodesChange(changes);
+            }
           } finally {
             // Clear flag after a short delay to allow ReactFlow to finish processing
             setTimeout(() => {
@@ -689,10 +721,16 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
         minZoom={0.1}
         maxZoom={2}
         zoomOnDoubleClick={false}
-        className="bg-gray-900"
+        className="bg-gray-900 react-flow-canvas"
         proOptions={{ hideAttribution: true }}
       >
-        <Background color="#4a4a4a" gap={16} variant={BackgroundVariant.Lines} />
+        {showGrid && (
+          <Background 
+            color={getGridColor()} 
+            gap={gridSize} 
+            variant={BackgroundVariant.Lines}
+          />
+        )}
         <Controls className="bg-gray-800 border border-gray-700" />
       </ReactFlow>
       {contextMenu && (

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { X } from 'lucide-react';
 import { ReportType } from '@automflows/shared';
 import { useNotificationStore } from '../store/notificationStore';
+import { useSettingsStore } from '../store/settingsStore';
 
 const STORAGE_KEY_REPORTING_ENABLED = 'automflows_reporting_enabled';
 const STORAGE_KEY_REPORT_PATH = 'automflows_report_path';
@@ -13,6 +14,9 @@ interface ReportSettingsPopupProps {
 
 export default function ReportSettingsPopup({ onClose }: ReportSettingsPopupProps) {
   const addNotification = useNotificationStore((state) => state.addNotification);
+  const reports = useSettingsStore((state) => state.reports);
+  const setReportSetting = useSettingsStore((state) => state.setReportSetting);
+  
   const [reportingEnabled, setReportingEnabled] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY_REPORTING_ENABLED);
     return saved === 'true';
@@ -70,8 +74,8 @@ export default function ReportSettingsPopup({ onClose }: ReportSettingsPopupProp
     }
   };
 
-  const handleSave = () => {
-    // Check for changes and show notification
+  // Track changes for notification
+  useEffect(() => {
     const changes: string[] = [];
     
     if (prevValuesRef.current.reportingEnabled !== reportingEnabled) {
@@ -96,16 +100,31 @@ export default function ReportSettingsPopup({ onClose }: ReportSettingsPopupProp
         title: 'Report Settings Applied',
         details: changes,
       });
+      
+      // Update previous values
+      prevValuesRef.current = {
+        reportingEnabled,
+        reportPath,
+        reportTypes: [...reportTypes],
+      };
     }
-    
-    // Update previous values
-    prevValuesRef.current = {
-      reportingEnabled,
-      reportPath,
-      reportTypes: [...reportTypes],
-    };
-    
+  }, [reportingEnabled, reportPath, reportTypes, addNotification]);
+
+  const handleClose = () => {
     onClose();
+  };
+
+  const handleDefaultFormatChange = (format: ReportType) => {
+    setReportSetting('defaultReportFormat', format);
+  };
+
+  const handleRetentionChange = (value: number) => {
+    const clampedValue = Math.max(1, Math.min(100, value));
+    setReportSetting('reportRetention', clampedValue);
+  };
+
+  const handleToggle = (key: 'autoOpenReports', value: boolean) => {
+    setReportSetting(key, value);
   };
 
   return (
@@ -193,23 +212,97 @@ export default function ReportSettingsPopup({ onClose }: ReportSettingsPopupProp
                     ))}
                   </div>
                 </div>
+
+                {/* Divider */}
+                <div className="border-t border-gray-700 pt-4 mt-4">
+                  <h3 className="text-sm font-semibold text-white mb-3">Additional Settings</h3>
+                </div>
+
+                {/* Default Report Format */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Default Report Format
+                  </label>
+                  <select
+                    value={reports.defaultReportFormat}
+                    onChange={(e) => handleDefaultFormatChange(e.target.value as ReportType)}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="html">HTML</option>
+                    <option value="allure">Allure</option>
+                    <option value="json">JSON</option>
+                    <option value="junit">JUnit</option>
+                    <option value="csv">CSV</option>
+                    <option value="markdown">Markdown</option>
+                  </select>
+                </div>
+
+                {/* Report Retention */}
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">
+                    Report Retention: {reports.reportRetention}
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={reports.reportRetention}
+                    onChange={(e) => handleRetentionChange(Number(e.target.value))}
+                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <p className="mt-1 text-xs text-gray-400">
+                    Keep last N reports (1-100)
+                  </p>
+                </div>
+
+                {/* Auto-open Reports Toggle */}
+                <div className="flex items-center justify-between">
+                  <div>
+                    <label className="text-sm font-medium text-white">Auto-open Reports</label>
+                    <p className="text-xs text-gray-400 mt-0.5">Automatically open report after execution</p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={reports.autoOpenReports}
+                      onChange={(e) => handleToggle('autoOpenReports', e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div
+                      className={`w-14 h-7 rounded-lg transition-colors flex items-center px-1 cursor-pointer ${
+                        reports.autoOpenReports ? 'bg-green-600' : 'bg-gray-600'
+                      }`}
+                    >
+                      <div
+                        className={`w-5 h-5 rounded-md bg-white transition-transform duration-200 ${
+                          reports.autoOpenReports ? 'translate-x-7' : 'translate-x-0'
+                        }`}
+                      />
+                    </div>
+                  </label>
+                </div>
+
+                {/* Report Templates Button (Future Feature) */}
+                <div className="pt-2">
+                  <button
+                    disabled
+                    className="w-full px-3 py-2 text-sm bg-gray-600 text-gray-400 rounded-md cursor-not-allowed"
+                    title="Coming soon"
+                  >
+                    Report Templates (Coming Soon)
+                  </button>
+                </div>
               </>
             )}
           </div>
         </div>
 
-        <div className="p-4 border-t border-gray-700 flex gap-2">
+        <div className="p-4 border-t border-gray-700">
           <button
-            onClick={handleSave}
-            className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+            onClick={handleClose}
+            className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
           >
-            Save
-          </button>
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
-          >
-            Cancel
+            Close
           </button>
         </div>
       </div>

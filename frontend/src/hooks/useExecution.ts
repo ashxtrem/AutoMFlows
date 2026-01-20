@@ -246,6 +246,64 @@ export function useExecution() {
             }
           }, 100); // Small delay to ensure all node errors are recorded
           executionStartTimeRef.current = null;
+          
+          // Auto-open report if enabled - show notification with button instead of auto-opening
+          const autoOpenReports = localStorage.getItem('automflows_settings_reports_autoOpen') === 'true';
+          const reportingEnabled = localStorage.getItem('automflows_reporting_enabled') === 'true';
+          if (autoOpenReports && reportingEnabled) {
+            setTimeout(async () => {
+              try {
+                const currentPort = port || await getBackendPortSync();
+                if (!currentPort) return;
+                
+                // Fetch latest reports
+                const response = await fetch(`http://localhost:${currentPort}/api/reports/list`);
+                if (!response.ok) return;
+                
+                const reports = await response.json();
+                if (reports.length === 0) return;
+                
+                // Get the latest report (first in sorted list)
+                const latestReport = reports[0];
+                const defaultFormat = localStorage.getItem('automflows_settings_reports_defaultFormat') || 'html';
+                
+                // Find the report file for the default format
+                let reportFile = latestReport.files.find((f: any) => f.type === defaultFormat);
+                
+                // If default format not found, try HTML
+                if (!reportFile) {
+                  reportFile = latestReport.files.find((f: any) => f.type === 'html');
+                }
+                
+                if (reportFile) {
+                  // Build report URL
+                  let reportUrl: string;
+                  if (defaultFormat === 'allure') {
+                    reportUrl = `http://localhost:${currentPort}/reports/${latestReport.folderName}/allure/index.html`;
+                  } else {
+                    reportUrl = `http://localhost:${currentPort}/reports/${latestReport.folderName}/${reportFile.type}/${reportFile.name}`;
+                  }
+                  
+                  // Show notification with button to open report
+                  addNotification({
+                    type: 'success',
+                    title: 'Report Generated',
+                    message: 'Click the button below to open the report in a new tab.',
+                    action: {
+                      label: 'Open Report',
+                      onClick: () => {
+                        window.open(reportUrl, '_blank');
+                      },
+                    },
+                    duration: 10000, // Show for 10 seconds
+                  });
+                }
+              } catch (error) {
+                console.warn('Failed to fetch report for auto-open:', error);
+              }
+            }, 500); // Small delay to ensure report is generated
+          }
+          
           // Don't clear failedNodes here - let user see errors until they dismiss or start new execution
           setTimeout(() => {
             // Only reset execution status, keep failed nodes visible

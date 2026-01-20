@@ -15,6 +15,11 @@ import LoadWarning from './LoadWarning';
 import ReportSettingsPopup from './ReportSettingsPopup';
 import NotificationContainer from './NotificationContainer';
 import BreakpointSettings from './BreakpointSettings';
+import CanvasSettingsSubmenu from './CanvasSettingsSubmenu';
+import AppearanceSettingsSubmenu from './AppearanceSettingsSubmenu';
+import NotificationSettingsSubmenu from './NotificationSettingsSubmenu';
+import MemoryManagementSubmenu from './MemoryManagementSubmenu';
+import KeyBindingsModal from './KeyBindingsModal';
 import { NodeType } from '@automflows/shared';
 import { useNotificationStore } from '../store/notificationStore';
 
@@ -28,9 +33,11 @@ export default function TopBar() {
   const [showResetWarning, setShowResetWarning] = useState(false);
   const [showLoadWarning, setShowLoadWarning] = useState(false);
   const [showReportSettings, setShowReportSettings] = useState(false);
+  const [showKeyBindingsModal, setShowKeyBindingsModal] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSettingsSubmenuOpen, setIsSettingsSubmenuOpen] = useState(false);
   const [isBreakpointSubmenuOpen, setIsBreakpointSubmenuOpen] = useState(false);
+  const [currentSettingsSubmenu, setCurrentSettingsSubmenu] = useState<'main' | 'canvas' | 'appearance' | 'notifications' | 'memory'>('main');
   const [pendingLoadAction, setPendingLoadAction] = useState<(() => void) | null>(null);
   const [currentFileHandle, setCurrentFileHandle] = useState<FileSystemFileHandle | null>(null);
   const [saveDropdownOpen, setSaveDropdownOpen] = useState(false);
@@ -114,6 +121,7 @@ export default function TopBar() {
       // Handle settings submenu click outside
       if (isSettingsSubmenuOpen && settingsSubmenuRef.current && !settingsSubmenuRef.current.contains(targetNode)) {
         setIsSettingsSubmenuOpen(false);
+        setCurrentSettingsSubmenu('main');
       }
       
       // Handle breakpoint submenu click outside
@@ -588,6 +596,7 @@ export default function TopBar() {
           setIsMenuOpen(!isMenuOpen);
           if (isMenuOpen) {
             setIsSettingsSubmenuOpen(false);
+            setCurrentSettingsSubmenu('main');
           }
         }}
         className={`fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110 ${
@@ -739,95 +748,167 @@ export default function TopBar() {
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <div className="p-3 space-y-3">
-            {/* Trace Logs Toggle */}
-            <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-              <span className="text-sm text-white font-medium">Trace Logs</span>
-              <label 
-                className="relative inline-flex items-center cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  checked={traceLogs}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    const newValue = e.target.checked;
-                    setTraceLogs(newValue);
-                  }}
-                  className="sr-only"
-                />
-                <div
-                  className={`w-14 h-7 rounded-lg transition-colors flex items-center px-1 cursor-pointer ${
-                    traceLogs ? 'bg-green-600' : 'bg-gray-700'
-                  }`}
+          {currentSettingsSubmenu === 'main' && (
+            <div className="p-3 space-y-3">
+              {/* Trace Logs Toggle */}
+              <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+                <span className="text-sm text-white font-medium">Trace Logs</span>
+                <label 
+                  className="relative inline-flex items-center cursor-pointer"
                 >
-                  <div
-                    className={`w-5 h-5 rounded-md bg-white transition-transform duration-200 ${
-                      traceLogs ? 'translate-x-7' : 'translate-x-0'
-                    }`}
+                  <input
+                    type="checkbox"
+                    checked={traceLogs}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      const newValue = e.target.checked;
+                      setTraceLogs(newValue);
+                    }}
+                    className="sr-only"
                   />
-                </div>
-              </label>
-            </div>
+                  <div
+                    className={`w-14 h-7 rounded-lg transition-colors flex items-center px-1 cursor-pointer ${
+                      traceLogs ? 'bg-green-600' : 'bg-gray-700'
+                    }`}
+                  >
+                    <div
+                      className={`w-5 h-5 rounded-md bg-white transition-transform duration-200 ${
+                        traceLogs ? 'translate-x-7' : 'translate-x-0'
+                      }`}
+                    />
+                  </div>
+                </label>
+              </div>
 
-            {/* Follow Mode Toggle */}
-            <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-              <span className="text-sm text-white font-medium">Follow Mode</span>
-              <label 
-                className="relative inline-flex items-center cursor-pointer"
-              >
-                <input
-                  type="checkbox"
-                  checked={followModeEnabled}
-                  onChange={(e) => {
-                    e.stopPropagation();
-                    const newValue = e.target.checked;
-                    setFollowModeEnabled(newValue);
-                  }}
-                  className="sr-only"
-                />
-                <div
-                  className={`w-14 h-7 rounded-lg transition-colors flex items-center px-1 cursor-pointer ${
-                    followModeEnabled ? 'bg-green-600' : 'bg-gray-700'
-                  }`}
+              {/* Follow Mode Toggle */}
+              <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+                <span className="text-sm text-white font-medium">Follow Mode</span>
+                <label 
+                  className="relative inline-flex items-center cursor-pointer"
                 >
-                  <div
-                    className={`w-5 h-5 rounded-md bg-white transition-transform duration-200 ${
-                      followModeEnabled ? 'translate-x-7' : 'translate-x-0'
-                    }`}
+                  <input
+                    type="checkbox"
+                    checked={followModeEnabled}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      const newValue = e.target.checked;
+                      setFollowModeEnabled(newValue);
+                    }}
+                    className="sr-only"
                   />
-                </div>
-              </label>
-            </div>
+                  <div
+                    className={`w-14 h-7 rounded-lg transition-colors flex items-center px-1 cursor-pointer ${
+                      followModeEnabled ? 'bg-green-600' : 'bg-gray-700'
+                    }`}
+                  >
+                    <div
+                      className={`w-5 h-5 rounded-md bg-white transition-transform duration-200 ${
+                        followModeEnabled ? 'translate-x-7' : 'translate-x-0'
+                      }`}
+                    />
+                  </div>
+                </label>
+              </div>
 
-            {/* Breakpoint Settings Button */}
-            <div className="border-t border-gray-700 pt-3 mt-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsBreakpointSubmenuOpen(!isBreakpointSubmenuOpen);
-                }}
-                className="w-full px-3 py-2 text-sm bg-orange-600 hover:bg-orange-700 text-white rounded-md transition-colors flex items-center justify-between"
-              >
-                <span>Breakpoint</span>
-                <ChevronDown size={16} className={`transition-transform ${isBreakpointSubmenuOpen ? 'rotate-180' : ''}`} />
-              </button>
+              {/* Settings Categories */}
+              <div className="border-t border-gray-700 pt-3 mt-2 space-y-1">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentSettingsSubmenu('canvas');
+                  }}
+                  className="w-full px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors text-left"
+                >
+                  Canvas
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentSettingsSubmenu('appearance');
+                  }}
+                  className="w-full px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors text-left"
+                >
+                  Appearance
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentSettingsSubmenu('notifications');
+                  }}
+                  className="w-full px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors text-left"
+                >
+                  Notifications
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentSettingsSubmenu('memory');
+                  }}
+                  className="w-full px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors text-left"
+                >
+                  Memory Management
+                </button>
+              </div>
+
+              {/* Breakpoint Settings Button */}
+              <div className="border-t border-gray-700 pt-3 mt-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsBreakpointSubmenuOpen(!isBreakpointSubmenuOpen);
+                  }}
+                  className="w-full px-3 py-2 text-sm bg-orange-600 hover:bg-orange-700 text-white rounded-md transition-colors flex items-center justify-between"
+                >
+                  <span>Breakpoint</span>
+                  <ChevronDown size={16} className={`transition-transform ${isBreakpointSubmenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+              {/* Report Settings Button */}
+              <div className="border-t border-gray-700 pt-3 mt-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsSettingsSubmenuOpen(false);
+                    setIsMenuOpen(false);
+                    setShowReportSettings(true);
+                  }}
+                  className="w-full px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+                >
+                  Report Settings
+                </button>
+              </div>
+              {/* Key Bindings Button */}
+              <div className="border-t border-gray-700 pt-3 mt-2">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsSettingsSubmenuOpen(false);
+                    setIsMenuOpen(false);
+                    setShowKeyBindingsModal(true);
+                  }}
+                  className="w-full px-3 py-2 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors"
+                >
+                  Key Bindings
+                </button>
+              </div>
             </div>
-            {/* Report Settings Button */}
-            <div className="border-t border-gray-700 pt-3 mt-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsSettingsSubmenuOpen(false);
-                  setIsMenuOpen(false);
-                  setShowReportSettings(true);
-                }}
-                className="w-full px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
-              >
-                Report Settings
-              </button>
-            </div>
-          </div>
+          )}
+          
+          {currentSettingsSubmenu === 'canvas' && (
+            <CanvasSettingsSubmenu onBack={() => setCurrentSettingsSubmenu('main')} />
+          )}
+          
+          {currentSettingsSubmenu === 'appearance' && (
+            <AppearanceSettingsSubmenu onBack={() => setCurrentSettingsSubmenu('main')} />
+          )}
+          
+          {currentSettingsSubmenu === 'notifications' && (
+            <NotificationSettingsSubmenu onBack={() => setCurrentSettingsSubmenu('main')} />
+          )}
+          
+          {currentSettingsSubmenu === 'memory' && (
+            <MemoryManagementSubmenu onBack={() => setCurrentSettingsSubmenu('main')} />
+          )}
         </div>
       )}
 
@@ -883,6 +964,9 @@ export default function TopBar() {
       )}
       {showReportSettings && (
         <ReportSettingsPopup onClose={() => setShowReportSettings(false)} />
+      )}
+      {showKeyBindingsModal && (
+        <KeyBindingsModal onClose={() => setShowKeyBindingsModal(false)} />
       )}
       <NotificationContainer />
     </>
