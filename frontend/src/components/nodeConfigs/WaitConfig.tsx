@@ -1,6 +1,7 @@
 import { Node } from 'reactflow';
 import RetryConfigSection from '../RetryConfigSection';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
+import SelectorFinderButton from '../SelectorFinderButton';
 
 interface WaitConfigProps {
   node: Node;
@@ -88,14 +89,19 @@ export default function WaitConfig({ node, onChange }: WaitConfigProps) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Selector</label>
-            <input
-              type="text"
-              value={typeof getPropertyValue('value', '') === 'string' ? getPropertyValue('value', '') : ''}
-              onChange={(e) => onChange('value', e.target.value)}
-              placeholder="#element or //div[@class='element']"
-              disabled={isPropertyDisabled('value')}
-              className={getInputClassName('value', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={typeof getPropertyValue('value', '') === 'string' ? getPropertyValue('value', '') : ''}
+                onChange={(e) => onChange('value', e.target.value)}
+                placeholder="#element or //div[@class='element']"
+                disabled={isPropertyDisabled('value')}
+                className={getInputClassName('value', 'flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+              />
+              {!isPropertyDisabled('value') && (
+                <SelectorFinderButton nodeId={node.id} fieldName="value" />
+              )}
+            </div>
             {isPropertyDisabled('value') && (
               <div className="mt-1 text-xs text-gray-500 italic">
                 This property is converted to input. Connect a node to provide the value.

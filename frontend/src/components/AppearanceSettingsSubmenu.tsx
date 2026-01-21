@@ -15,7 +15,7 @@ export default function AppearanceSettingsSubmenu({ onBack }: AppearanceSettings
 
   // Initialize theme system
   useEffect(() => {
-    const cleanup = initTheme(appearance.theme, (effectiveTheme) => {
+    const cleanup = initTheme(appearance.theme, () => {
       // Theme changed
     });
     return cleanup;

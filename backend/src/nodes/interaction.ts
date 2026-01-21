@@ -49,11 +49,57 @@ export class TypeHandler implements NodeHandler {
           }, context);
         }
 
-        // Execute type operation
-        if (data.selectorType === 'xpath') {
-          await page.locator(`xpath=${selector}`).fill(text, { timeout });
-        } else {
-          await page.fill(selector, text, { timeout });
+        // Execute type operation based on inputMethod
+        const inputMethod = data.inputMethod || 'fill'; // Default to 'fill' for backward compatibility
+        const locator = data.selectorType === 'xpath' 
+          ? page.locator(`xpath=${selector}`)
+          : page.locator(selector);
+
+        switch (inputMethod) {
+          case 'fill':
+            // Default behavior: clear and fill instantly
+            await locator.fill(text, { timeout });
+            break;
+
+          case 'type':
+            // Type character by character with delays (triggers keyboard events)
+            const typeDelay = data.delay || 0;
+            await locator.type(text, { delay: typeDelay, timeout });
+            break;
+
+          case 'pressSequentially':
+            // Type with configurable delays (same as type but more explicit)
+            const sequentialDelay = data.delay || 0;
+            await locator.pressSequentially(text, { delay: sequentialDelay, timeout });
+            break;
+
+          case 'append':
+            // Append text to existing value
+            const currentValue = await locator.inputValue({ timeout }).catch(() => '');
+            const appendedText = currentValue + text;
+            await locator.fill(appendedText, { timeout });
+            break;
+
+          case 'prepend':
+            // Prepend text to existing value
+            const existingValue = await locator.inputValue({ timeout }).catch(() => '');
+            const prependedText = text + existingValue;
+            await locator.fill(prependedText, { timeout });
+            break;
+
+          case 'direct':
+            // Set value directly via DOM without triggering events
+            await locator.evaluate((element: HTMLInputElement | HTMLTextAreaElement, value: string) => {
+              element.value = value;
+              // Trigger input event manually for some frameworks that listen to it
+              element.dispatchEvent(new Event('input', { bubbles: true }));
+            }, text);
+            break;
+
+          default:
+            // Fallback to fill for unknown methods
+            await locator.fill(text, { timeout });
+            break;
         }
 
         // Execute waits after operation if waitAfterOperation is true
@@ -187,6 +233,46 @@ export class ActionHandler implements NodeHandler {
             // Apply delay if specified
             if (data.delay) {
               await page.waitForTimeout(data.delay);
+            }
+            break;
+
+          case 'dragAndDrop':
+            if (!data.targetSelector && (data.targetX === undefined || data.targetY === undefined)) {
+              throw new Error('Target selector or target coordinates (targetX, targetY) are required for dragAndDrop action');
+            }
+            
+            const sourceLocator = data.selectorType === 'xpath' 
+              ? page.locator(`xpath=${selector}`)
+              : page.locator(selector);
+            
+            if (data.targetSelector) {
+              // Drag to target element
+              const targetSelector = VariableInterpolator.interpolateString(data.targetSelector, context);
+              const targetLocator = (data.targetSelectorType || 'css') === 'xpath'
+                ? page.locator(`xpath=${targetSelector}`)
+                : page.locator(targetSelector);
+              
+              await sourceLocator.dragTo(targetLocator, { timeout });
+            } else {
+              // Drag to coordinates using mouse API
+              const targetX = data.targetX || 0;
+              const targetY = data.targetY || 0;
+              
+              // Get source element bounding box
+              const sourceBox = await sourceLocator.boundingBox({ timeout });
+              if (!sourceBox) {
+                throw new Error('Source element not found or not visible');
+              }
+              
+              // Calculate source center
+              const sourceX = sourceBox.x + sourceBox.width / 2;
+              const sourceY = sourceBox.y + sourceBox.height / 2;
+              
+              // Perform drag and drop using mouse API
+              await page.mouse.move(sourceX, sourceY);
+              await page.mouse.down();
+              await page.mouse.move(targetX, targetY);
+              await page.mouse.up();
             }
             break;
 

@@ -79,6 +79,7 @@ const NODE_CATEGORIES = [
     label: 'Browser',
     nodes: [
       { type: NodeType.OPEN_BROWSER, label: 'Open Browser' },
+      { type: NodeType.CONTEXT_MANIPULATE, label: 'Context Manipulate' },
       { type: NodeType.NAVIGATION, label: 'Navigation' },
       { type: NodeType.KEYBOARD, label: 'Keyboard' },
       { type: NodeType.SCROLL, label: 'Scroll' },

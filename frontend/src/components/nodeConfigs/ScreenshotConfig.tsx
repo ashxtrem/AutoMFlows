@@ -2,6 +2,7 @@ import { Node } from 'reactflow';
 import { useState } from 'react';
 import RetryConfigSection from '../RetryConfigSection';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
+import SelectorFinderButton from '../SelectorFinderButton';
 
 interface ScreenshotConfigProps {
   node: Node;
@@ -317,6 +318,7 @@ export default function ScreenshotConfig({ node, onChange }: ScreenshotConfigPro
                   <option value="css">CSS</option>
                   <option value="xpath">XPath</option>
                 </select>
+                <SelectorFinderButton nodeId={node.id} fieldName="waitForSelector" />
               </div>
               <div className="mt-1 flex items-center gap-2">
                 <input

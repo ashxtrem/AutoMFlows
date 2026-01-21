@@ -785,12 +785,19 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                     if (value !== 'hover' && value !== 'doubleClick') {
                       handlePropertyChange('delay', undefined);
                     }
+                    if (value !== 'dragAndDrop') {
+                      handlePropertyChange('targetSelector', undefined);
+                      handlePropertyChange('targetSelectorType', undefined);
+                      handlePropertyChange('targetX', undefined);
+                      handlePropertyChange('targetY', undefined);
+                    }
                   }}
                   options={[
                     { label: 'Click', value: 'click' },
                     { label: 'Double Click', value: 'doubleClick' },
                     { label: 'Right Click', value: 'rightClick' },
                     { label: 'Hover', value: 'hover' },
+                    { label: 'Drag and Drop', value: 'dragAndDrop' },
                   ]}
                 />
               ), 0)}
@@ -835,6 +842,52 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   onOpenPopup={handleOpenPopup}
                 />
               ), 3)}
+              {action === 'dragAndDrop' && (
+                <>
+                  {renderPropertyRow('targetSelectorType', (
+                    <InlineSelect
+                      label="Target Selector Type"
+                      value={renderData.targetSelectorType || 'css'}
+                      onChange={(value) => handlePropertyChange('targetSelectorType', value)}
+                      options={[
+                        { label: 'CSS', value: 'css' },
+                        { label: 'XPath', value: 'xpath' },
+                      ]}
+                    />
+                  ), 4)}
+                  {renderPropertyRow('targetSelector', (
+                    <InlineTextInput
+                      label="Target Selector"
+                      value={renderData.targetSelector || ''}
+                      onChange={(value) => handlePropertyChange('targetSelector', value)}
+                      placeholder="#target or //div[@id='target']"
+                      onOpenPopup={handleOpenPopup}
+                    />
+                  ), 5)}
+                  {(renderData.targetX !== undefined || renderData.targetY !== undefined) && (
+                    <>
+                      {renderPropertyRow('targetX', (
+                        <InlineNumberInput
+                          label="Target X"
+                          value={renderData.targetX || 0}
+                          onChange={(value) => handlePropertyChange('targetX', value)}
+                          placeholder="X coordinate"
+                          onOpenPopup={handleOpenPopup}
+                        />
+                      ), 6)}
+                      {renderPropertyRow('targetY', (
+                        <InlineNumberInput
+                          label="Target Y"
+                          value={renderData.targetY || 0}
+                          onChange={(value) => handlePropertyChange('targetY', value)}
+                          placeholder="Y coordinate"
+                          onOpenPopup={handleOpenPopup}
+                        />
+                      ), 7)}
+                    </>
+                  )}
+                </>
+              )}
               {renderPropertyRow('timeout', (
                 <InlineNumberInput
                   label="Timeout"
@@ -843,7 +896,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   placeholder="30000"
                   onOpenPopup={handleOpenPopup}
                 />
-              ), 4)}
+              ), action === 'dragAndDrop' ? (renderData.targetX !== undefined || renderData.targetY !== undefined ? 8 : 6) : (action === 'click' || action === 'rightClick' ? 4 : (action === 'hover' || action === 'doubleClick' ? 4 : 3)))}
               {renderData.waitForSelector && renderPropertyRow('waitForSelector', (
                 <InlineTextInput
                   label="Wait Selector"
@@ -1403,6 +1456,21 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   onOpenPopup={handleOpenPopup}
                 />
               ), 1)}
+              {renderPropertyRow('inputMethod', (
+                <InlineSelect
+                  label="Input Method"
+                  value={renderData.inputMethod || 'fill'}
+                  onChange={(value) => handlePropertyChange('inputMethod', value)}
+                  options={[
+                    { label: 'Fill', value: 'fill' },
+                    { label: 'Type', value: 'type' },
+                    { label: 'Press Sequentially', value: 'pressSequentially' },
+                    { label: 'Append', value: 'append' },
+                    { label: 'Prepend', value: 'prepend' },
+                    { label: 'Direct', value: 'direct' },
+                  ]}
+                />
+              ), 2)}
               {renderPropertyRow('text', (
                 <InlineTextarea
                   label="Text"
@@ -1411,7 +1479,16 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   placeholder="Text to type"
                   onOpenPopup={handleOpenPopup}
                 />
-              ), 2)}
+              ), 3)}
+              {(renderData.inputMethod === 'type' || renderData.inputMethod === 'pressSequentially') && renderPropertyRow('delay', (
+                <InlineNumberInput
+                  label="Delay (ms)"
+                  value={renderData.delay || 0}
+                  onChange={(value) => handlePropertyChange('delay', value)}
+                  placeholder="0"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 4)}
               {renderPropertyRow('timeout', (
                 <InlineNumberInput
                   label="Timeout"
@@ -1420,7 +1497,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   placeholder="30000"
                   onOpenPopup={handleOpenPopup}
                 />
-              ), 3)}
+              ), (renderData.inputMethod === 'type' || renderData.inputMethod === 'pressSequentially') ? 5 : 4)}
               {renderData.waitForSelector && renderPropertyRow('waitForSelector', (
                 <InlineTextInput
                   label="Wait Selector"

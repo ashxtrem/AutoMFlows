@@ -202,9 +202,6 @@ export default function workflowRoutes(io: Server) {
       
       // Inject finder if not already injected
       try {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'workflows.ts:190',message:'About to call injectFinder',data:{nodeId,fieldName,pageUrl:page.url()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         await FinderInjector.injectFinder(page, io, nodeId, fieldName, context);
         
         // Bring browser window to front AGAIN after injection to ensure it's visible
@@ -214,14 +211,7 @@ export default function workflowRoutes(io: Server) {
         setTimeout(async () => {
           await sessionManager.bringToForeground();
         }, 500);
-        
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'workflows.ts:193',message:'injectFinder completed successfully',data:{nodeId,fieldName},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
       } catch (error: any) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'workflows.ts:196',message:'Error in injectFinder',data:{error:error.message,stack:error.stack},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         console.warn('Finder already injected or injection failed:', error.message);
       }
 

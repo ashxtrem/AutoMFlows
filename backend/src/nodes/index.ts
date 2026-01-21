@@ -1,7 +1,7 @@
 import { NodeType, BaseNode } from '@automflows/shared';
 import { NodeHandler, NodeHandlerMap } from './base';
 import { ContextManager } from '../engine/context';
-import { OpenBrowserHandler, NavigationHandler } from './browser';
+import { OpenBrowserHandler, NavigationHandler, ContextManipulateHandler } from './browser';
 import { TypeHandler, ActionHandler, FormInputHandler, KeyboardHandler, ScrollHandler } from './interaction';
 import { ElementQueryHandler, ScreenshotHandler, WaitHandler, IntValueHandler, StringValueHandler, BooleanValueHandler, InputValueHandler, VerifyHandler, StorageHandler, DialogHandler, DownloadHandler, IframeHandler } from './utility';
 import { JavaScriptCodeHandler, LoopHandler } from './logic';
@@ -21,6 +21,7 @@ const handlers: NodeHandlerMap = {
   [NodeType.START]: new StartHandler(),
   [NodeType.OPEN_BROWSER]: new OpenBrowserHandler(),
   [NodeType.NAVIGATION]: new NavigationHandler(),
+  [NodeType.CONTEXT_MANIPULATE]: new ContextManipulateHandler(),
   [NodeType.TYPE]: new TypeHandler(),
   [NodeType.ACTION]: new ActionHandler(),
   [NodeType.ELEMENT_QUERY]: new ElementQueryHandler(),

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { Search, X } from 'lucide-react';
 
 interface NodeSearchOverlayProps {

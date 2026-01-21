@@ -51,7 +51,7 @@ export default function CanvasSettingsSubmenu({ onBack }: CanvasSettingsSubmenuP
     if (canvas.autoArrangeNodes === 'none') return;
     if (nodes.length === 0) {
       addNotification({
-        type: 'warning',
+        type: 'info',
         title: 'No Nodes to Arrange',
         details: ['Please add nodes to the canvas first'],
       });

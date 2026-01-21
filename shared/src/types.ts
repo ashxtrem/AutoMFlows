@@ -38,6 +38,7 @@ export enum NodeType {
   DIALOG = 'dialog',
   DOWNLOAD = 'download',
   IFRAME = 'iframe',
+  CONTEXT_MANIPULATE = 'contextManipulate',
 }
 
 // Base Node Interface
@@ -273,6 +274,8 @@ export interface TypeNodeData {
   selector: string;
   selectorType?: 'css' | 'xpath';
   text: string;
+  inputMethod?: 'fill' | 'type' | 'pressSequentially' | 'append' | 'prepend' | 'direct';
+  delay?: number; // Delay between keystrokes for type/pressSequentially methods (in ms)
   timeout?: number;
   failSilently?: boolean;
   waitForSelector?: string;
@@ -305,7 +308,7 @@ export interface TypeNodeData {
 }
 
 export interface ActionNodeData {
-  action: 'click' | 'doubleClick' | 'rightClick' | 'hover';
+  action: 'click' | 'doubleClick' | 'rightClick' | 'hover' | 'dragAndDrop';
   selector: string;
   selectorType?: 'css' | 'xpath';
   timeout?: number;
@@ -313,6 +316,10 @@ export interface ActionNodeData {
   // Action-specific properties
   button?: 'left' | 'right' | 'middle'; // For click/rightClick actions
   delay?: number; // For hover/doubleClick actions
+  targetSelector?: string; // For dragAndDrop action - target element selector
+  targetSelectorType?: 'css' | 'xpath'; // For dragAndDrop action - target selector type
+  targetX?: number; // For dragAndDrop action - optional target X coordinate
+  targetY?: number; // For dragAndDrop action - optional target Y coordinate
   // Advanced Waiting Options
   waitForSelector?: string;
   waitForSelectorType?: 'css' | 'xpath';
@@ -924,6 +931,39 @@ export interface VerifyNodeData {
   };
 }
 
+export interface ContextManipulateNodeData {
+  action: 'setGeolocation' | 'setPermissions' | 'setViewportSize' | 'setUserAgent' | 
+          'setLocale' | 'setTimezone' | 'setColorScheme' | 'setExtraHTTPHeaders' |
+          'createContext' | 'switchContext' | 'saveState' | 'loadState' | 
+          'emulateDevice' | 'addInitScript' | 'clearPermissions';
+  
+  // Action-specific properties
+  geolocation?: { latitude: number; longitude: number; accuracy?: number };
+  permissions?: string[]; // For setPermissions
+  revokePermissions?: string[]; // For revoking permissions
+  viewportWidth?: number;
+  viewportHeight?: number;
+  userAgent?: string;
+  locale?: string;
+  timezoneId?: string;
+  colorScheme?: 'light' | 'dark' | 'no-preference';
+  extraHTTPHeaders?: Record<string, string>;
+  contextKey?: string; // For createContext/switchContext
+  contextOptions?: Record<string, any>; // For createContext
+  stateFilePath?: string; // For saveState/loadState
+  device?: string; // Device name for emulateDevice (e.g., 'iPhone 12', 'Pixel 5')
+  initScript?: string; // JavaScript code for addInitScript
+  
+  // Standard node properties
+  failSilently?: boolean;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
 export type NodeData =
   | StartNodeData
   | OpenBrowserNodeData
@@ -947,6 +987,7 @@ export type NodeData =
   | BooleanValueNodeData
   | InputValueNodeData
   | VerifyNodeData
+  | ContextManipulateNodeData
   | ApiRequestNodeData
   | ApiCurlNodeData
   | LoadConfigFileNodeData
@@ -1055,6 +1096,7 @@ export interface ReportConfig {
   enabled: boolean;
   outputPath?: string; // Default: './output'
   reportTypes: ReportType[]; // ['html', 'allure', 'json', etc.]
+  reportRetention?: number; // Number of reports to keep (default: 10)
 }
 
 export interface ScreenshotConfig {

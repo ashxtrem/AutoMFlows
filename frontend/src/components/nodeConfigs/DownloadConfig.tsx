@@ -2,6 +2,7 @@ import { Node } from 'reactflow';
 import { useState } from 'react';
 import RetryConfigSection from '../RetryConfigSection';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
+import SelectorFinderButton from '../SelectorFinderButton';
 
 interface DownloadConfigProps {
   node: Node;
@@ -193,12 +194,15 @@ export default function DownloadConfig({ node, onChange }: DownloadConfigProps) 
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Wait for Selector</label>
-              <input
-                type="text"
-                value={data.waitForSelector || ''}
-                onChange={(e) => onChange('waitForSelector', e.target.value)}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={data.waitForSelector || ''}
+                  onChange={(e) => onChange('waitForSelector', e.target.value)}
+                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+                />
+                <SelectorFinderButton nodeId={node.id} fieldName="waitForSelector" />
+              </div>
             </div>
 
             <div>

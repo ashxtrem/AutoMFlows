@@ -2,6 +2,7 @@ import { Node } from 'reactflow';
 import { useState } from 'react';
 import RetryConfigSection from '../RetryConfigSection';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
+import SelectorFinderButton from '../SelectorFinderButton';
 
 interface IframeConfigProps {
   node: Node;
@@ -66,14 +67,19 @@ export default function IframeConfig({ node, onChange }: IframeConfigProps) {
         <>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Selector (optional)</label>
-            <input
-              type="text"
-              value={getPropertyValue('selector', '')}
-              onChange={(e) => onChange('selector', e.target.value)}
-              placeholder="#iframe or //iframe[@id='iframe']"
-              disabled={isPropertyDisabled('selector')}
-              className={getInputClassName('selector', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={getPropertyValue('selector', '')}
+                onChange={(e) => onChange('selector', e.target.value)}
+                placeholder="#iframe or //iframe[@id='iframe']"
+                disabled={isPropertyDisabled('selector')}
+                className={getInputClassName('selector', 'flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+              />
+              {!isPropertyDisabled('selector') && (
+                <SelectorFinderButton nodeId={node.id} fieldName="selector" />
+              )}
+            </div>
             <div className="mt-1 text-xs text-gray-400">
               Leave empty to use name or URL instead
             </div>
@@ -132,25 +138,35 @@ export default function IframeConfig({ node, onChange }: IframeConfigProps) {
         <>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Iframe Selector</label>
-            <input
-              type="text"
-              value={getPropertyValue('iframeSelector', '')}
-              onChange={(e) => onChange('iframeSelector', e.target.value)}
-              placeholder="#iframe or //iframe[@id='iframe']"
-              disabled={isPropertyDisabled('iframeSelector')}
-              className={getInputClassName('iframeSelector', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={getPropertyValue('iframeSelector', '')}
+                onChange={(e) => onChange('iframeSelector', e.target.value)}
+                placeholder="#iframe or //iframe[@id='iframe']"
+                disabled={isPropertyDisabled('iframeSelector')}
+                className={getInputClassName('iframeSelector', 'flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+              />
+              {!isPropertyDisabled('iframeSelector') && (
+                <SelectorFinderButton nodeId={node.id} fieldName="iframeSelector" />
+              )}
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Content Selector</label>
-            <input
-              type="text"
-              value={getPropertyValue('contentSelector', '')}
-              onChange={(e) => onChange('contentSelector', e.target.value)}
-              placeholder="#content or //div[@id='content']"
-              disabled={isPropertyDisabled('contentSelector')}
-              className={getInputClassName('contentSelector', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={getPropertyValue('contentSelector', '')}
+                onChange={(e) => onChange('contentSelector', e.target.value)}
+                placeholder="#content or //div[@id='content']"
+                disabled={isPropertyDisabled('contentSelector')}
+                className={getInputClassName('contentSelector', 'flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+              />
+              {!isPropertyDisabled('contentSelector') && (
+                <SelectorFinderButton nodeId={node.id} fieldName="contentSelector" />
+              )}
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Output Variable</label>
@@ -216,12 +232,15 @@ export default function IframeConfig({ node, onChange }: IframeConfigProps) {
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Wait for Selector</label>
-              <input
-                type="text"
-                value={data.waitForSelector || ''}
-                onChange={(e) => onChange('waitForSelector', e.target.value)}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={data.waitForSelector || ''}
+                  onChange={(e) => onChange('waitForSelector', e.target.value)}
+                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+                />
+                <SelectorFinderButton nodeId={node.id} fieldName="waitForSelector" />
+              </div>
             </div>
 
             <div>

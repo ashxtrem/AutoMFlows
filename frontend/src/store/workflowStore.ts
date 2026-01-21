@@ -126,8 +126,8 @@ interface WorkflowState {
   edgesHidden: boolean;
   setEdgesHidden: (hidden: boolean) => void;
   
-  // Edge update tracking
-  updatingEdgeId: string | null;
+  // Edge update tracking - can be a single edge ID or array of edge IDs (for source handles with multiple connections)
+  updatingEdgeId: string | string[] | null;
   
   // Breakpoint state
   breakpointEnabled: boolean;
@@ -509,14 +509,21 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
       !edgesToRemove.some((edgeToRemove) => edgeToRemove.id === e.id)
     );
     
+    // Clear edge update tracking since connection was successfully made
     set({
       edges: addEdge(connection, finalEdges),
+      updatingEdgeId: null,
     });
     setTimeout(() => get().saveToHistory(), 100);
   },
 
   onConnectStart: (_event, params) => {
     const state = get();
+    
+    // Skip if already tracking an edge update
+    if (state.updatingEdgeId) {
+      return;
+    }
     
     // Detect edge update start: when dragging from a target handle that has an existing edge
     if (params.handleType === 'target' && params.nodeId && params.handleId) {
@@ -525,9 +532,22 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
         e => e.target === params.nodeId && e.targetHandle === params.handleId
       );
       
-      if (connectedEdge && !state.updatingEdgeId) {
+      if (connectedEdge) {
         // Track this edge as being updated
         set({ updatingEdgeId: connectedEdge.id });
+      }
+    }
+    // Detect edge update start: when dragging from a source handle that has existing edges
+    else if (params.handleType === 'source' && params.nodeId && params.handleId) {
+      // Find all edges connected to this source handle
+      const connectedEdges = state.edges.filter(
+        e => e.source === params.nodeId && e.sourceHandle === params.handleId
+      );
+      
+      if (connectedEdges.length > 0) {
+        // Track all edges connected to this source handle
+        const edgeIds = connectedEdges.map(e => e.id);
+        set({ updatingEdgeId: edgeIds.length === 1 ? edgeIds[0] : edgeIds });
       }
     }
   },
@@ -535,41 +555,58 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
   onConnectEnd: (_event) => {
     const state = get();
     
-    // If an edge update was in progress but didn't complete (onEdgeUpdate wasn't called)
+    // If an edge update was in progress but didn't complete (onConnect/onEdgeUpdate wasn't called)
     // This means the user dragged the edge handle but released without connecting
-    // Remove the edge
+    // Remove the edge(s)
     if (state.updatingEdgeId) {
-      const updatingEdgeId = state.updatingEdgeId;
-      // Use a small delay to allow onEdgeUpdate to complete if it was called
-      // This handles race conditions where onConnectEnd fires before onEdgeUpdate
+      const updatingEdgeIds = Array.isArray(state.updatingEdgeId) 
+        ? state.updatingEdgeId 
+        : [state.updatingEdgeId];
+      const updatingEdgeIdValue = state.updatingEdgeId;
+      
+      // Use a small delay to allow onConnect/onEdgeUpdate to complete if they were called
+      // This handles race conditions where onConnectEnd fires before onConnect/onEdgeUpdate
       setTimeout(() => {
         const currentState = get();
-        // Check if edge still exists and we're still tracking it
-        if (currentState.updatingEdgeId === updatingEdgeId) {
-          const edge = currentState.edges.find(e => e.id === updatingEdgeId);
-          if (edge) {
-            // Edge update was cancelled - remove the edge
+        // Check if we're still tracking the same edge(s)
+        if (currentState.updatingEdgeId === updatingEdgeIdValue) {
+          // Find edges that still exist
+          const edgesToRemove = currentState.edges.filter(e => 
+            updatingEdgeIds.includes(e.id)
+          );
+          
+          if (edgesToRemove.length > 0) {
+            // Edge update was cancelled - remove the edge(s)
             set({
-              edges: currentState.edges.filter(e => e.id !== updatingEdgeId),
+              edges: currentState.edges.filter(e => !updatingEdgeIds.includes(e.id)),
               updatingEdgeId: null,
             });
             setTimeout(() => get().saveToHistory(), 100);
           } else {
-            // Edge was already removed or updated, just clear tracking
+            // Edge(s) were already removed or updated, just clear tracking
             set({ updatingEdgeId: null });
           }
         }
-      }, 50); // Small delay to allow onEdgeUpdate to complete
+      }, 50); // Small delay to allow onConnect/onEdgeUpdate to complete
     }
   },
 
   onEdgeUpdate: (oldEdge, newConnection) => {
     const state = get();
     
+    // Helper to check if oldEdge.id is being tracked
+    const isTrackingEdge = () => {
+      if (!state.updatingEdgeId) return false;
+      if (typeof state.updatingEdgeId === 'string') {
+        return state.updatingEdgeId === oldEdge.id;
+      }
+      return Array.isArray(state.updatingEdgeId) && state.updatingEdgeId.includes(oldEdge.id);
+    };
+    
     // Validate new connection
     if (!newConnection.source || !newConnection.target) {
       // Clear tracking if update failed
-      if (state.updatingEdgeId === oldEdge.id) {
+      if (isTrackingEdge()) {
         set({ updatingEdgeId: null });
       }
       return;
@@ -578,7 +615,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     // Prevent self-connections
     if (newConnection.source === newConnection.target) {
       // Clear tracking if self-connection attempted
-      if (state.updatingEdgeId === oldEdge.id) {
+      if (isTrackingEdge()) {
         set({ updatingEdgeId: null });
       }
       return;
@@ -588,7 +625,7 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
     if (oldEdge.target === newConnection.target && 
         oldEdge.targetHandle === newConnection.targetHandle) {
       // Connection unchanged, keep it and clear tracking
-      if (state.updatingEdgeId === oldEdge.id) {
+      if (isTrackingEdge()) {
         set({ updatingEdgeId: null });
       }
       return;
@@ -633,11 +670,16 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
   },
 
   setSelectedNodeIds: (ids) => {
-    const state = get();
     const nodeIdsSet = new Set(ids);
+    const currentState = get();
     // Don't automatically set selectedNode - it should only be set via context menu "Properties" option
     // This prevents RightSidebar from opening on regular node clicks
-    set({ selectedNodeIds: nodeIdsSet, selectedNode: null });
+    // IMPORTANT: Never clear selectedNode here - it should only be cleared via setSelectedNode(null)
+    // This preserves the Properties panel when ReactFlow's selection changes (e.g., when context menu closes)
+    set({ 
+      selectedNodeIds: nodeIdsSet, 
+      selectedNode: currentState.selectedNode // Always preserve selectedNode - only setSelectedNode(null) clears it
+    });
   },
 
   clearSelection: () => {
@@ -1031,7 +1073,6 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
   },
 
   setNodeColor: (nodeId, _borderColor, backgroundColor) => {
-    const state = get();
     const nodeIds = Array.isArray(nodeId) ? nodeId : [nodeId];
     const updates: any = {};
     // Only set backgroundColor (borderColor is no longer customizable)
@@ -1372,7 +1413,7 @@ export function getDefaultNodeData(type: NodeType | string): any {
       [NodeType.DIALOG]: { action: 'accept', timeout: 30000, isTest: true },
       [NodeType.DOWNLOAD]: { action: 'waitForDownload', timeout: 30000, isTest: true },
       [NodeType.IFRAME]: { action: 'switchToIframe', timeout: 30000, isTest: true },
-      [NodeType.TYPE]: { selector: '', selectorType: 'css', text: '', timeout: 30000, isTest: true },
+      [NodeType.TYPE]: { selector: '', selectorType: 'css', inputMethod: 'fill', text: '', delay: 0, timeout: 30000, isTest: true },
       [NodeType.SCREENSHOT]: { fullPage: false, isTest: true },
       [NodeType.WAIT]: { waitType: 'timeout', value: 1000, timeout: 30000, isTest: true },
       [NodeType.JAVASCRIPT_CODE]: { code: '// Your code here\nreturn context.data;', isTest: true },

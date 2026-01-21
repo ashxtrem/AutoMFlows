@@ -12,8 +12,8 @@ interface SelectorListModalProps {
 
 export default function SelectorListModal({
   selectors,
-  nodeId,
-  fieldName,
+  nodeId: _nodeId,
+  fieldName: _fieldName,
   onAccept,
   onCancel,
 }: SelectorListModalProps) {

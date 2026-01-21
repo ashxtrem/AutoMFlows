@@ -1,10 +1,14 @@
-import { BaseNode, OpenBrowserNodeData, NavigationNodeData } from '@automflows/shared';
+import { BaseNode, OpenBrowserNodeData, NavigationNodeData, ContextManipulateNodeData } from '@automflows/shared';
 import { NodeHandler } from './base';
 import { ContextManager } from '../engine/context';
 import { PlaywrightManager } from '../utils/playwright';
 import { WaitHelper } from '../utils/waitHelper';
 import { RetryHelper } from '../utils/retryHelper';
 import { VariableInterpolator } from '../utils/variableInterpolator';
+import { devices } from 'playwright';
+import * as fs from 'fs';
+import * as path from 'path';
+import { resolveFromProjectRoot } from '../utils/pathUtils';
 
 export class OpenBrowserHandler implements NodeHandler {
   async execute(node: BaseNode, context: ContextManager): Promise<void> {
@@ -38,6 +42,10 @@ export class OpenBrowserHandler implements NodeHandler {
         jsScript
       );
 
+      // Register default context
+      const browserContext = page.context();
+      context.setContext('default', browserContext);
+      context.setCurrentContextKey('default');
       context.setPage(page);
     } catch (error: any) {
       // Re-throw with browser installation info if it's a browser installation error
@@ -258,6 +266,316 @@ export class NavigationHandler implements NodeHandler {
     // If RetryHelper returned undefined (failSilently), throw error so executor can track it
     if (result === undefined && data.failSilently) {
       throw new Error(`Navigation operation failed silently with action: ${data.action}`);
+    }
+  }
+}
+
+export class ContextManipulateHandler implements NodeHandler {
+  async execute(node: BaseNode, contextManager: ContextManager): Promise<void> {
+    const data = node.data as ContextManipulateNodeData;
+    const playwright = (contextManager as any).playwright as PlaywrightManager;
+
+    if (!playwright) {
+      throw new Error('Playwright manager not found in context');
+    }
+
+    if (!data.action) {
+      throw new Error('Action is required for Context Manipulate node');
+    }
+
+    try {
+      switch (data.action) {
+        case 'setGeolocation': {
+          const page = contextManager.getPage();
+          if (!page) {
+            throw new Error('No page available. Ensure Open Browser node is executed first.');
+          }
+          const browserContext = page.context();
+          if (!data.geolocation || data.geolocation.latitude === undefined || data.geolocation.longitude === undefined) {
+            throw new Error('Geolocation latitude and longitude are required');
+          }
+          await browserContext.setGeolocation({
+            latitude: data.geolocation.latitude,
+            longitude: data.geolocation.longitude,
+            accuracy: data.geolocation.accuracy,
+          });
+          break;
+        }
+
+        case 'setPermissions': {
+          const page = contextManager.getPage();
+          if (!page) {
+            throw new Error('No page available. Ensure Open Browser node is executed first.');
+          }
+          const browserContext = page.context();
+          if (!data.permissions || data.permissions.length === 0) {
+            throw new Error('Permissions array is required');
+          }
+          await browserContext.grantPermissions(data.permissions);
+          break;
+        }
+
+        case 'clearPermissions': {
+          const page = contextManager.getPage();
+          if (!page) {
+            throw new Error('No page available. Ensure Open Browser node is executed first.');
+          }
+          const browserContext = page.context();
+          await browserContext.clearPermissions();
+          break;
+        }
+
+        case 'setViewportSize': {
+          const page = contextManager.getPage();
+          if (!page) {
+            throw new Error('No page available. Ensure Open Browser node is executed first.');
+          }
+          if (data.viewportWidth === undefined || data.viewportHeight === undefined) {
+            throw new Error('Viewport width and height are required');
+          }
+          await page.setViewportSize({ width: data.viewportWidth, height: data.viewportHeight });
+          break;
+        }
+
+        case 'setUserAgent': {
+          const page = contextManager.getPage();
+          if (!page) {
+            throw new Error('No page available. Ensure Open Browser node is executed first.');
+          }
+          const browserContext = page.context();
+          if (!data.userAgent) {
+            throw new Error('User agent string is required');
+          }
+          await browserContext.setExtraHTTPHeaders({ 'User-Agent': data.userAgent });
+          break;
+        }
+
+        case 'setLocale': {
+          const page = contextManager.getPage();
+          if (!page) {
+            throw new Error('No page available. Ensure Open Browser node is executed first.');
+          }
+          const browserContext = page.context();
+          if (!data.locale) {
+            throw new Error('Locale is required');
+          }
+          // Locale can only be set when creating context, so we need to create a new context
+          const currentContext = browserContext;
+          const browser = playwright.getBrowser();
+          if (!browser) {
+            throw new Error('Browser instance not found');
+          }
+          const contextOptions: any = {};
+          // Copy current context options
+          const currentPages = currentContext.pages();
+          const newContext = await browser.newContext({ ...contextOptions, locale: data.locale });
+          // Create a new page in the new context
+          const newPage = await newContext.newPage();
+          // Copy cookies from old context if needed
+          const cookies = await currentContext.cookies();
+          if (cookies.length > 0) {
+            await newContext.addCookies(cookies);
+          }
+          // Store new context
+          const contextKey = data.contextKey || 'default';
+          contextManager.setContext(contextKey, newContext);
+          contextManager.setCurrentContextKey(contextKey);
+          contextManager.setPage(newPage);
+          break;
+        }
+
+        case 'setTimezone': {
+          const page = contextManager.getPage();
+          if (!page) {
+            throw new Error('No page available. Ensure Open Browser node is executed first.');
+          }
+          const browserContext = page.context();
+          if (!data.timezoneId) {
+            throw new Error('Timezone ID is required');
+          }
+          // Timezone can only be set when creating context
+          const browser = playwright.getBrowser();
+          if (!browser) {
+            throw new Error('Browser instance not found');
+          }
+          const currentContext = browserContext;
+          const contextOptions: any = {};
+          const newContext = await browser.newContext({ ...contextOptions, timezoneId: data.timezoneId });
+          const newPage = await newContext.newPage();
+          const cookies = await currentContext.cookies();
+          if (cookies.length > 0) {
+            await newContext.addCookies(cookies);
+          }
+          const contextKey = data.contextKey || 'default';
+          contextManager.setContext(contextKey, newContext);
+          contextManager.setCurrentContextKey(contextKey);
+          contextManager.setPage(newPage);
+          break;
+        }
+
+        case 'setColorScheme': {
+          const page = contextManager.getPage();
+          if (!page) {
+            throw new Error('No page available. Ensure Open Browser node is executed first.');
+          }
+          const browserContext = page.context();
+          if (!data.colorScheme) {
+            throw new Error('Color scheme is required');
+          }
+          // Color scheme can only be set when creating context
+          const browser = playwright.getBrowser();
+          if (!browser) {
+            throw new Error('Browser instance not found');
+          }
+          const currentContext = browserContext;
+          const contextOptions: any = {};
+          const newContext = await browser.newContext({ ...contextOptions, colorScheme: data.colorScheme });
+          const newPage = await newContext.newPage();
+          const cookies = await currentContext.cookies();
+          if (cookies.length > 0) {
+            await newContext.addCookies(cookies);
+          }
+          const contextKey = data.contextKey || 'default';
+          contextManager.setContext(contextKey, newContext);
+          contextManager.setCurrentContextKey(contextKey);
+          contextManager.setPage(newPage);
+          break;
+        }
+
+        case 'setExtraHTTPHeaders': {
+          const page = contextManager.getPage();
+          if (!page) {
+            throw new Error('No page available. Ensure Open Browser node is executed first.');
+          }
+          const browserContext = page.context();
+          if (!data.extraHTTPHeaders || Object.keys(data.extraHTTPHeaders).length === 0) {
+            throw new Error('Extra HTTP headers object is required');
+          }
+          await browserContext.setExtraHTTPHeaders(data.extraHTTPHeaders);
+          break;
+        }
+
+        case 'createContext': {
+          const browser = playwright.getBrowser();
+          if (!browser) {
+            throw new Error('Browser must be launched before creating a context');
+          }
+          const contextKey = data.contextKey || `context-${Date.now()}`;
+          if (contextManager.getContext(contextKey)) {
+            throw new Error(`Context with key "${contextKey}" already exists`);
+          }
+          const contextOptions = data.contextOptions || {};
+          const browserContext = await playwright.createContext(contextOptions);
+          const newPage = await browserContext.newPage();
+          contextManager.setContext(contextKey, browserContext);
+          contextManager.setCurrentContextKey(contextKey);
+          contextManager.setPage(newPage);
+          break;
+        }
+
+        case 'switchContext': {
+          if (!data.contextKey) {
+            throw new Error('Context key is required for switchContext action');
+          }
+          const browserContext = contextManager.getContext(data.contextKey);
+          if (!browserContext) {
+            throw new Error(`Context with key "${data.contextKey}" not found`);
+          }
+          contextManager.setCurrentContextKey(data.contextKey);
+          // Get or create a page in the switched context
+          const pages = browserContext.pages();
+          if (pages.length > 0) {
+            contextManager.setPage(pages[0]);
+          } else {
+            const newPage = await browserContext.newPage();
+            contextManager.setPage(newPage);
+          }
+          break;
+        }
+
+        case 'saveState': {
+          const page = contextManager.getPage();
+          if (!page) {
+            throw new Error('No page available. Ensure Open Browser node is executed first.');
+          }
+          const browserContext = page.context();
+          if (!data.stateFilePath) {
+            throw new Error('State file path is required');
+          }
+          const resolvedPath = resolveFromProjectRoot(data.stateFilePath);
+          const dir = path.dirname(resolvedPath);
+          if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+          }
+          await browserContext.storageState({ path: resolvedPath });
+          break;
+        }
+
+        case 'loadState': {
+          const browser = playwright.getBrowser();
+          if (!browser) {
+            throw new Error('Browser must be launched before loading state');
+          }
+          if (!data.stateFilePath) {
+            throw new Error('State file path is required');
+          }
+          const resolvedPath = resolveFromProjectRoot(data.stateFilePath);
+          if (!fs.existsSync(resolvedPath)) {
+            throw new Error(`State file not found: ${resolvedPath}`);
+          }
+          const contextKey = data.contextKey || `context-${Date.now()}`;
+          const browserContext = await browser.newContext({ storageState: resolvedPath });
+          const newPage = await browserContext.newPage();
+          contextManager.setContext(contextKey, browserContext);
+          contextManager.setCurrentContextKey(contextKey);
+          contextManager.setPage(newPage);
+          break;
+        }
+
+        case 'emulateDevice': {
+          const browser = playwright.getBrowser();
+          if (!browser) {
+            throw new Error('Browser must be launched before emulating device');
+          }
+          if (!data.device) {
+            throw new Error('Device name is required');
+          }
+          // Get device configuration from Playwright devices
+          const deviceConfig = (devices as any)[data.device];
+          if (!deviceConfig) {
+            throw new Error(`Device "${data.device}" not found. Available devices: ${Object.keys(devices).join(', ')}`);
+          }
+          const contextKey = data.contextKey || `context-${Date.now()}`;
+          const browserContext = await browser.newContext(deviceConfig);
+          const newPage = await browserContext.newPage();
+          contextManager.setContext(contextKey, browserContext);
+          contextManager.setCurrentContextKey(contextKey);
+          contextManager.setPage(newPage);
+          break;
+        }
+
+        case 'addInitScript': {
+          const page = contextManager.getPage();
+          if (!page) {
+            throw new Error('No page available. Ensure Open Browser node is executed first.');
+          }
+          const browserContext = page.context();
+          if (!data.initScript) {
+            throw new Error('Init script is required');
+          }
+          await browserContext.addInitScript(data.initScript);
+          break;
+        }
+
+        default:
+          throw new Error(`Unknown action type: ${data.action}`);
+      }
+    } catch (error: any) {
+      if (data.failSilently) {
+        console.warn(`[ContextManipulateHandler] Action "${data.action}" failed silently: ${error.message}`);
+        return;
+      }
+      throw error;
     }
   }
 }

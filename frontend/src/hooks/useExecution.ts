@@ -5,6 +5,7 @@ import { serializeWorkflow } from '../utils/serialization';
 import { ExecutionEventType, ScreenshotConfig, ReportConfig, BreakpointConfig } from '@automflows/shared';
 import { validateInputConnections, ValidationError } from '../utils/validation';
 import { useNotificationStore } from '../store/notificationStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { Node } from 'reactflow';
 import { hasHeadlessBrowser } from '../utils/workflowChecks';
 
@@ -105,6 +106,7 @@ export function useExecution() {
     breakpointAt,
     breakpointFor,
   } = useWorkflowStore();
+  const reportRetention = useSettingsStore((state) => state.reports.reportRetention);
   const [port, setPort] = useState<number | null>(null);
   const [validationErrors, setValidationErrors] = useState<any[]>([]);
   const addNotification = useNotificationStore((state) => state.addNotification);
@@ -115,18 +117,10 @@ export function useExecution() {
   useEffect(() => {
     let mounted = true;
     
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useExecution.ts:111',message:'useEffect hook started',data:{socketExists:!!socket,socketId:socket?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-    // #endregion
-    
     // Get backend port
     getBackendPortSync().then((p) => {
       if (!mounted) return;
       setPort(p);
-      
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useExecution.ts:119',message:'Creating socket connection',data:{port:p,existingSocket:!!socket},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
       
       // Initialize socket connection (only if not already exists)
       if (!socket) {
@@ -142,35 +136,18 @@ export function useExecution() {
         socket.off('execution-event');
         socket.off('disconnect');
 
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useExecution.ts:127',message:'Registering socket listeners',data:{socketId:socket.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-        // #endregion
-
         socket.on('connect', () => {
       console.log('Connected to server');
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useExecution.ts:130',message:'Socket connected',data:{socketId:socket?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
     });
 
     socket.on('execution-event', (event: any) => {
       console.log('Execution event:', event);
       
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useExecution.ts:134',message:'Execution event received',data:{eventType:event.type,nodeId:event.nodeId,socketId:socket?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
-
       switch (event.type) {
         case ExecutionEventType.EXECUTION_START:
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useExecution.ts:137',message:'EXECUTION_START handler called',data:{socketId:socket?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-          // #endregion
           setExecutionStatus('running');
           clearAllNodeErrors(); // Clear previous errors when starting new execution
           executionStartTimeRef.current = Date.now();
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useExecution.ts:141',message:'Adding EXECUTION_START notification',data:{socketId:socket?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
-          // #endregion
           addNotification({
             type: 'info',
             title: 'Execution Started',
@@ -349,25 +326,15 @@ export function useExecution() {
         });
 
         listenersRegistered = true;
-      } else {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useExecution.ts:285',message:'Listeners already registered, skipping',data:{socketId:socket.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
-        // #endregion
       }
 
       return () => {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useExecution.ts:290',message:'Inner cleanup function called',data:{socketExists:!!socket,socketId:socket?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-        // #endregion
         // Don't disconnect socket here - it's shared across hook instances
         // Only disconnect in outer cleanup when component unmounts
       };
     });
 
     return () => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'useExecution.ts:300',message:'Outer cleanup function called',data:{socketExists:!!socket,socketId:socket?.id},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
-      // #endregion
       mounted = false;
       if (socket) {
         socket.disconnect();
@@ -413,7 +380,7 @@ export function useExecution() {
         : undefined;
 
       const reportConfig: ReportConfig | undefined = reportingEnabled
-        ? { enabled: true, outputPath: reportPath, reportTypes }
+        ? { enabled: true, outputPath: reportPath, reportTypes, reportRetention }
         : undefined;
 
       // Read breakpoint config from store (or disable if requested)

@@ -29,6 +29,7 @@ import SelectConfigFileConfig from './nodeConfigs/SelectConfigFileConfig';
 import DbConnectConfig from './nodeConfigs/DbConnectConfig';
 import DbDisconnectConfig from './nodeConfigs/DbDisconnectConfig';
 import DbQueryConfig from './nodeConfigs/DbQueryConfig';
+import ContextManipulateConfig from './nodeConfigs/ContextManipulateConfig';
 import { frontendPluginRegistry } from '../plugins/registry';
 import { useCallback } from 'react';
 // Import switch node config component directly (until plugin loader supports dynamic loading)
@@ -58,6 +59,8 @@ export default function NodeConfigForm({ node }: NodeConfigFormProps) {
           return <div className="text-gray-400 text-sm">Start node has no configuration.</div>;
         case NodeType.OPEN_BROWSER:
           return <OpenBrowserConfig node={node} onChange={handleChange} />;
+        case NodeType.CONTEXT_MANIPULATE:
+          return <ContextManipulateConfig node={node} onChange={handleChange} />;
         case NodeType.TYPE:
           return <TypeConfig node={node} onChange={handleChange} />;
         case NodeType.ACTION:

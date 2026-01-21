@@ -16,9 +16,13 @@ export interface PropertySchema {
  * Returns array of property schemas with their metadata
  */
 export function getNodeProperties(nodeType: NodeType | string): PropertySchema[] {
+  // Normalize nodeType to handle both enum and string values
+  const normalizedType = typeof nodeType === 'string' 
+    ? (Object.values(NodeType).find(v => v === nodeType) || nodeType)
+    : nodeType;
 
-  if (Object.values(NodeType).includes(nodeType as NodeType)) {
-    switch (nodeType as NodeType) {
+  if (Object.values(NodeType).includes(normalizedType as NodeType)) {
+    switch (normalizedType as NodeType) {
       case NodeType.NAVIGATION:
         return [
           { name: 'action', label: 'Action', dataType: PropertyDataType.STRING, required: true, defaultValue: 'navigate' },
@@ -91,6 +95,10 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
           { name: 'action', label: 'Action', dataType: PropertyDataType.STRING, required: true, defaultValue: 'click' },
           { name: 'selector', label: 'Selector', dataType: PropertyDataType.STRING, required: true },
           { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'css' },
+          { name: 'targetSelector', label: 'Target Selector', dataType: PropertyDataType.STRING, required: false },
+          { name: 'targetSelectorType', label: 'Target Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'css' },
+          { name: 'targetX', label: 'Target X', dataType: PropertyDataType.INT, required: false },
+          { name: 'targetY', label: 'Target Y', dataType: PropertyDataType.INT, required: false },
           { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
           { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
         ];
@@ -118,7 +126,9 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
         return [
           { name: 'selector', label: 'Selector', dataType: PropertyDataType.STRING, required: true },
           { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'css' },
+          { name: 'inputMethod', label: 'Input Method', dataType: PropertyDataType.STRING, required: false, defaultValue: 'fill' },
           { name: 'text', label: 'Text', dataType: PropertyDataType.STRING, required: true },
+          { name: 'delay', label: 'Delay', dataType: PropertyDataType.INT, required: false, defaultValue: 0 },
           { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
           { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
         ];
@@ -230,6 +240,23 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
           { name: 'screenshotTiming', label: 'Screenshot Timing', dataType: PropertyDataType.STRING, required: false, defaultValue: 'post' },
         ];
       
+      case NodeType.CONTEXT_MANIPULATE:
+        return [
+          { name: 'action', label: 'Action', dataType: PropertyDataType.STRING, required: true, defaultValue: 'setGeolocation' },
+          { name: 'contextKey', label: 'Context Key', dataType: PropertyDataType.STRING, required: false },
+          { name: 'stateFilePath', label: 'State File Path', dataType: PropertyDataType.STRING, required: false },
+          { name: 'device', label: 'Device', dataType: PropertyDataType.STRING, required: false },
+          { name: 'viewportWidth', label: 'Viewport Width', dataType: PropertyDataType.INT, required: false },
+          { name: 'viewportHeight', label: 'Viewport Height', dataType: PropertyDataType.INT, required: false },
+          { name: 'userAgent', label: 'User Agent', dataType: PropertyDataType.STRING, required: false },
+          { name: 'locale', label: 'Locale', dataType: PropertyDataType.STRING, required: false },
+          { name: 'timezoneId', label: 'Timezone ID', dataType: PropertyDataType.STRING, required: false },
+          { name: 'colorScheme', label: 'Color Scheme', dataType: PropertyDataType.STRING, required: false },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+          // Note: Complex properties like geolocation, permissions, extraHTTPHeaders, contextOptions, initScript
+          // are NOT included here as they're JSON objects/arrays managed via textarea editors
+        ];
+      
       case NodeType.INT_VALUE:
       case NodeType.STRING_VALUE:
       case NodeType.BOOLEAN_VALUE:
@@ -239,6 +266,24 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
       default:
         return [];
     }
+  }
+  
+  // Fallback: Check if it's a string match for CONTEXT_MANIPULATE
+  // This handles cases where the node type might be stored as a string
+  if (nodeType === 'contextManipulate' || nodeType === NodeType.CONTEXT_MANIPULATE) {
+    return [
+      { name: 'action', label: 'Action', dataType: PropertyDataType.STRING, required: true, defaultValue: 'setGeolocation' },
+      { name: 'contextKey', label: 'Context Key', dataType: PropertyDataType.STRING, required: false },
+      { name: 'stateFilePath', label: 'State File Path', dataType: PropertyDataType.STRING, required: false },
+      { name: 'device', label: 'Device', dataType: PropertyDataType.STRING, required: false },
+      { name: 'viewportWidth', label: 'Viewport Width', dataType: PropertyDataType.INT, required: false },
+      { name: 'viewportHeight', label: 'Viewport Height', dataType: PropertyDataType.INT, required: false },
+      { name: 'userAgent', label: 'User Agent', dataType: PropertyDataType.STRING, required: false },
+      { name: 'locale', label: 'Locale', dataType: PropertyDataType.STRING, required: false },
+      { name: 'timezoneId', label: 'Timezone ID', dataType: PropertyDataType.STRING, required: false },
+      { name: 'colorScheme', label: 'Color Scheme', dataType: PropertyDataType.STRING, required: false },
+      { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+    ];
   }
   
   // For plugin nodes, we'd need to check plugin registry

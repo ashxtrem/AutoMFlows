@@ -163,9 +163,12 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        onClose();
-      }
+      // Use a small delay to allow button clicks to process first
+      setTimeout(() => {
+        if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+          onClose();
+        }
+      }, 0);
     };
 
     const handleEscape = (e: KeyboardEvent) => {
@@ -174,11 +177,12 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    // Use 'click' instead of 'mousedown' to allow button clicks to process first
+    document.addEventListener('click', handleClickOutside, true);
     document.addEventListener('keydown', handleEscape);
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside, true);
       document.removeEventListener('keydown', handleEscape);
     };
   }, [onClose]);
@@ -229,14 +233,24 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
     onClose();
   };
 
-  const handleProperties = () => {
+  const handleProperties = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (nodeId) {
       const node = nodes.find(n => n.id === nodeId);
       if (node) {
+        console.log('[ContextMenu] Opening properties for node:', node.id, node.data.type);
         setSelectedNode(node);
+      } else {
+        console.warn('[ContextMenu] Node not found:', nodeId);
       }
     }
-    onClose();
+    // Delay closing to ensure state update completes
+    setTimeout(() => {
+      onClose();
+    }, 10);
   };
 
   const handlePropertyConversion = (propertyName: string) => {

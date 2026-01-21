@@ -13,48 +13,12 @@ const DEFAULT_START_X = 100;
 const DEFAULT_START_Y = 200;
 
 /**
- * Find the start node (node with no incoming edges)
- */
-function findStartNode(nodes: Node[], edges: Edge[]): Node | null {
-  const nodesWithIncomingEdges = new Set(edges.map((e) => e.target));
-  return nodes.find((node) => !nodesWithIncomingEdges.has(node.id)) || null;
-}
-
-/**
- * Build a graph structure from nodes and edges
- */
-function buildGraph(nodes: Node[], edges: Edge[]): Map<string, { node: Node; children: string[]; parents: string[] }> {
-  const graph = new Map<string, { node: Node; children: string[]; parents: string[] }>();
-  
-  // Initialize graph
-  nodes.forEach((node) => {
-    graph.set(node.id, {
-      node,
-      children: [],
-      parents: [],
-    });
-  });
-  
-  // Build connections
-  edges.forEach((edge) => {
-    const source = graph.get(edge.source);
-    const target = graph.get(edge.target);
-    if (source && target) {
-      source.children.push(edge.target);
-      target.parents.push(edge.source);
-    }
-  });
-  
-  return graph;
-}
-
-/**
  * Arrange nodes in a vertical stack (top to bottom) in a grid pattern
  * Nodes are arranged sequentially, filling columns top-to-bottom, then moving to the next column
  */
 export function arrangeNodesVertical(
   nodes: Node[],
-  edges: Edge[],
+  _edges: Edge[],
   options: ArrangementOptions = {}
 ): Node[] {
   const { 
@@ -66,7 +30,6 @@ export function arrangeNodesVertical(
   
   if (nodes.length === 0) return nodes;
   
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
   const arrangedNodes: Node[] = [];
   
   // Arrange nodes sequentially in a grid pattern
@@ -93,7 +56,7 @@ export function arrangeNodesVertical(
  */
 export function arrangeNodesHorizontal(
   nodes: Node[],
-  edges: Edge[],
+  _edges: Edge[],
   options: ArrangementOptions = {}
 ): Node[] {
   const { 
@@ -105,7 +68,6 @@ export function arrangeNodesHorizontal(
   
   if (nodes.length === 0) return nodes;
   
-  const nodeMap = new Map(nodes.map((n) => [n.id, n]));
   const arrangedNodes: Node[] = [];
   
   // Arrange nodes sequentially in a grid pattern

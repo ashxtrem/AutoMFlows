@@ -1,19 +1,19 @@
 ---
 name: Missing Playwright and API Features Analysis
-overview: Comprehensive analysis of missing Playwright browser automation features and API testing capabilities that can be added as new nodes or extensions to existing nodes in the AutoMFlows system.
+overview: Comprehensive analysis of missing Playwright browser automation features and API testing capabilities that can be added as new nodes or extensions to existing nodes in the AutoMFlows system. Updated to reflect currently implemented features.
 todos:
   - id: analyze-current-nodes
     content: Document current node implementation and Playwright API usage
-    status: pending
+    status: completed
   - id: identify-missing-features
     content: Identify missing Playwright browser automation features
-    status: pending
+    status: completed
   - id: identify-missing-api-features
     content: Identify missing API testing features and enhancements
-    status: pending
+    status: completed
   - id: prioritize-features
     content: Prioritize features by value and common use cases
-    status: pending
+    status: completed
 ---
 
 # Missing Playwright and API Features Analysis
@@ -44,291 +44,261 @@ todos:
 
 ---
 
-## Missing Playwright Features - High Priority
+## ✅ IMPLEMENTED FEATURES
 
-### 1. **Element Interaction Nodes**
+The following features have been implemented and are available in the current codebase:
 
-#### Enhanced Type Node / Text Input Methods
+### 1. **Element Interaction Nodes** ✅
 
-**Current Implementation**: The Type node only uses `page.fill()` which clears the field and types text instantly.
+#### Enhanced Type Node ✅
 
-**Missing Text Input Methods**:
-
-1. **Type with Keystrokes Node** (or extend Type node)
-
-- **Playwright API**: `locator.type(text, options)` or `page.type(selector, text, options)`
-- **Features**:
-- Types character by character with delays (simulates real typing)
-- Configurable delay between keystrokes
-- Triggers keyboard events (keydown, keypress, keyup, input)
-- Better for testing autocomplete, validation, or apps that listen to keyboard events
-- **Use Case**: Testing autocomplete, real-time validation, apps that detect typing vs pasting
-
-2. **Press Sequentially Node** (or extend Type node)
-
-- **Playwright API**: `locator.pressSequentially(text, options)`
-- **Features**:
-- Same as `type()` but more explicit name
-- Types with delays between keystrokes
-- Configurable delay (default: 0ms, can be set to simulate human typing)
-- **Use Case**: Human-like typing simulation, testing typing speed detection
-
-3. **Insert Text Node** (or extend Type node)
-
-- **Playwright API**: `page.keyboard.insertText(text)`
-- **Features**:
-- Inserts text without triggering keyboard events
-- Faster than type() - doesn't fire keydown/keypress/keyup
-- Only fires input event
-- Useful for performance or when keyboard events cause issues
-- **Use Case**: Fast text input, avoiding keyboard event handlers, performance testing
-
-4. **Clear Field Node** (or extend Type node)
-
-- **Playwright API**: `locator.clear()` or `locator.fill('')`
-- **Features**:
-- Clear input field before typing
-- Separate clear operation (useful for append/prepend scenarios)
-- **Use Case**: Clearing fields before new input, reset operations
-
-5. **Append Text Node** (or extend Type node)
-
-- **Playwright API**: `locator.fill(existingValue + newText)` or `locator.type(newText)` after focus
-- **Features**:
-- Append text to existing value
-- Get current value, append, set new value
-- **Use Case**: Adding to existing text, incremental input
-
-6. **Prepend Text Node** (or extend Type node)
-
-- **Playwright API**: `locator.fill(newText + existingValue)`
-- **Features**:
-- Prepend text to existing value
-- Get current value, prepend, set new value
-- **Use Case**: Adding prefix to existing text
-
-7. **Direct Value Set Node** (or extend Type node)
-
-- **Playwright API**: `page.evaluate((selector, value) => { element.value = value; }, selector, text)`
-- **Features**:
-- Sets value directly via DOM without events
-- Bypasses all input events
-- Fastest method but may not trigger validation
-- **Use Case**: Setting values programmatically, bypassing event handlers, performance
-
-8. **Type with Focus Node** (or extend Type node)
-
-- **Playwright API**: `locator.focus()` then `page.keyboard.type(text)`
-- **Features**:
-- Focus element first, then type
-- Ensures element is focused before typing
-- Better for some frameworks that require focus
-- **Use Case**: Ensuring focus before input, framework-specific requirements
-
-**Recommended Implementation**:
-
-- **Option 1**: Extend existing Type node with `inputMethod` option:
-- `fill` (default, current behavior) - Clear and fill instantly
+- **Status**: IMPLEMENTED
+- **Implementation**: Extended Type node with `inputMethod` option
+- **Available Methods**:
+- `fill` (default) - Clear and fill instantly
 - `type` - Type character by character with delays
 - `pressSequentially` - Type with configurable delays
-- `insertText` - Insert without keyboard events
-- `direct` - Set value directly via DOM
 - `append` - Append to existing value
 - `prepend` - Prepend to existing value
-- **Option 2**: Create separate nodes for each method
-- **Option 3**: Create a unified "Text Input" node with all methods
+- `direct` - Set value directly via DOM
+- **Location**: `backend/src/nodes/interaction.ts` (TypeHandler)
+- **Note**: `insertText` is available via Keyboard node, not Type node
 
-**Additional Options for Type Methods**:
+#### Select/Dropdown Node ✅
 
-- `delay`: Delay between keystrokes (for type/pressSequentially)
-- `clearFirst`: Whether to clear field before typing (for fill/type)
-- `noWaitAfter`: Skip waiting for navigation after input
-- `timeout`: Timeout for the operation
+- **Status**: IMPLEMENTED
+- **Implementation**: Form Input node with `select` action
+- **Features**: Single/multiple selection, select by value/label/index
+- **Location**: `backend/src/nodes/interaction.ts` (FormInputHandler)
 
-#### Select/Dropdown Node
+#### Checkbox/Radio Node ✅
 
-- **Purpose**: Select options from dropdowns/select elements
-- **Playwright API**: `page.selectOption(selector, values)`
-- **Features**:
-- Single/multiple selection
-- Select by value, label, or index
-- Support for CSS/XPath selectors
-- **Use Case**: Form filling, filter selection
+- **Status**: IMPLEMENTED
+- **Implementation**: Form Input node with `check`/`uncheck` actions
+- **Location**: `backend/src/nodes/interaction.ts` (FormInputHandler)
 
-#### Checkbox/Radio Node
+#### Hover Node ✅
 
-- **Purpose**: Check/uncheck checkboxes and radio buttons
-- **Playwright API**: `page.setChecked(selector, checked)`
-- **Features**:
-- Check/uncheck operations
-- Verify checked state
-- **Use Case**: Form interactions, settings configuration
+- **Status**: IMPLEMENTED
+- **Implementation**: Action node with `hover` action
+- **Location**: `backend/src/nodes/interaction.ts` (ActionHandler)
 
-#### Hover Node
+#### Double Click Node ✅
 
-- **Purpose**: Hover over elements to trigger hover states
-- **Playwright API**: `page.hover(selector)` or `locator.hover()`
-- **Features**:
-- Hover with optional wait
-- Trigger dropdown menus, tooltips
-- **Use Case**: Navigation menus, hover-triggered UI elements
+- **Status**: IMPLEMENTED
+- **Implementation**: Action node with `doubleClick` action
+- **Location**: `backend/src/nodes/interaction.ts` (ActionHandler)
 
-#### Double Click Node
+#### Right Click Node ✅
 
-- **Purpose**: Double-click elements
-- **Playwright API**: `page.dblclick(selector)` or `locator.dblclick()`
-- **Features**:
-- Double-click with timeout
-- Support for CSS/XPath
-- **Use Case**: File selection, special interactions
+- **Status**: IMPLEMENTED
+- **Implementation**: Action node with `rightClick` action (button: 'right')
+- **Location**: `backend/src/nodes/interaction.ts` (ActionHandler)
 
-#### Right Click / Context Menu Node
+#### Keyboard Actions Node ✅
 
-- **Purpose**: Right-click to open context menus
-- **Playwright API**: `page.click(selector, { button: 'right' })`
-- **Features**:
-- Right-click operation
-- Context menu interaction
-- **Use Case**: Context menus, right-click actions
+- **Status**: IMPLEMENTED
+- **Implementation**: Dedicated Keyboard node
+- **Available Actions**: press, type, insertText, shortcut, down, up
+- **Location**: `backend/src/nodes/interaction.ts` (KeyboardHandler)
 
-#### Keyboard Actions Node
+#### Drag and Drop Node ✅
 
-- **Purpose**: Send keyboard keys, shortcuts, special keys
-- **Playwright API**: `page.keyboard.press()`, `page.keyboard.type()`, `page.keyboard.down()`
-- **Features**:
-- Key presses (Enter, Tab, Escape, etc.)
-- Keyboard shortcuts (Ctrl+C, Cmd+V)
-- Key combinations
-- Type text with keyboard events
-- **Use Case**: Keyboard navigation, shortcuts, special key handling
+- **Status**: IMPLEMENTED
+- **Implementation**: Action node with `dragAndDrop` action
+- **Features**: Drag to target element or coordinates
+- **Location**: `backend/src/nodes/interaction.ts` (ActionHandler)
 
-#### Drag and Drop Node
+#### Upload File Node ✅
 
-- **Purpose**: Drag elements and drop them
-- **Playwright API**: `locator.dragTo(target)` or `page.dragAndDrop(source, target)`
-- **Features**:
-- Drag source to target
-- Drag with coordinates
-- Support for CSS/XPath selectors
-- **Use Case**: File uploads, reordering lists, drag-drop interfaces
+- **Status**: IMPLEMENTED
+- **Implementation**: Form Input node with `upload` action
+- **Features**: Single/multiple file upload via `setInputFiles`
+- **Location**: `backend/src/nodes/interaction.ts` (FormInputHandler)
 
-#### Upload File Node
+#### Scroll Node ✅
 
-- **Purpose**: Upload files via file input
-- **Playwright API**: `page.setInputFiles(selector, files)`
-- **Features**:
-- Single/multiple file upload
-- File path or buffer support
-- **Use Case**: File upload forms, document submission
+- **Status**: IMPLEMENTED
+- **Implementation**: Dedicated Scroll node
+- **Available Actions**: scrollToElement, scrollToPosition, scrollBy, scrollToTop, scrollToBottom
+- **Location**: `backend/src/nodes/interaction.ts` (ScrollHandler)
 
-#### Scroll Node
+### 2. **Element Query & Data Extraction Nodes** ✅
 
-- **Purpose**: Scroll page or elements
-- **Playwright API**: `page.evaluate(() => window.scrollTo())`, `locator.scrollIntoViewIfNeeded()`
-- **Features**:
-- Scroll to element
-- Scroll to position (x, y)
-- Scroll by amount
-- Smooth scrolling
-- **Use Case**: Infinite scroll, lazy-loaded content, element visibility
+#### Get Attribute Node ✅
 
-### 2. **Element Query & Data Extraction Nodes**
+- **Status**: IMPLEMENTED
+- **Implementation**: Element Query node with `getAttribute` action
+- **Location**: `backend/src/nodes/utility.ts` (ElementQueryHandler)
 
-#### Get Attribute Node
+#### Get All Text Node ✅
 
-- **Purpose**: Extract element attributes
-- **Playwright API**: `locator.getAttribute(name)`
-- **Features**:
-- Get any attribute value
-- Support for CSS/XPath
-- Store in context variable
-- **Use Case**: Extract href, data attributes, IDs
+- **Status**: IMPLEMENTED
+- **Implementation**: Element Query node with `getAllText` action
+- **Location**: `backend/src/nodes/utility.ts` (ElementQueryHandler)
 
-#### Get All Text Node
+#### Get Count Node ✅
 
-- **Purpose**: Get text from multiple elements
-- **Playwright API**: `locator.allTextContents()` or `page.locator(selector).allTextContents()`
-- **Features**:
-- Extract text from all matching elements
-- Return as array
-- **Use Case**: Extract list items, table rows, multiple elements
+- **Status**: IMPLEMENTED
+- **Implementation**: Element Query node with `getCount` action
+- **Location**: `backend/src/nodes/utility.ts` (ElementQueryHandler)
 
-#### Get Count Node
+#### Get Element State Node ✅
 
-- **Purpose**: Count matching elements
-- **Playwright API**: `locator.count()`
-- **Features**:
-- Count elements matching selector
-- Store count in variable
-- **Use Case**: Verify number of items, pagination checks
+- **Status**: IMPLEMENTED
+- **Implementation**: Element Query node with `isVisible`, `isEnabled`, `isChecked` actions
+- **Location**: `backend/src/nodes/utility.ts` (ElementQueryHandler)
 
-#### Get Element State Node
+#### Get Element Bounding Box Node ✅
 
-- **Purpose**: Check element states (visible, enabled, checked, etc.)
-- **Playwright API**: `locator.isVisible()`, `locator.isEnabled()`, `locator.isChecked()`
-- **Features**:
-- Check visibility, enabled state, checked state
-- Return boolean
-- **Use Case**: Conditional logic based on element state
+- **Status**: IMPLEMENTED
+- **Implementation**: Element Query node with `getBoundingBox` action
+- **Location**: `backend/src/nodes/utility.ts` (ElementQueryHandler)
 
-#### Get Element Bounding Box Node
+### 3. **Page & Navigation Nodes** ✅
 
-- **Purpose**: Get element position and size
-- **Playwright API**: `locator.boundingBox()`
-- **Features**:
-- Get x, y, width, height
-- Store coordinates
-- **Use Case**: Visual verification, element positioning
+#### Go Back/Forward Node ✅
 
-### 3. **Page & Navigation Nodes**
+- **Status**: IMPLEMENTED
+- **Implementation**: Navigation node with `goBack`/`goForward` actions
+- **Location**: `backend/src/nodes/browser.ts` (NavigationHandler)
 
-#### Go Back/Forward Node
+#### Reload Page Node ✅
 
-- **Purpose**: Browser navigation (back/forward)
-- **Playwright API**: `page.goBack()`, `page.goForward()`
-- **Features**:
-- Navigate browser history
-- Wait for navigation
-- **Use Case**: Multi-page workflows, history navigation
+- **Status**: IMPLEMENTED
+- **Implementation**: Navigation node with `reload` action
+- **Location**: `backend/src/nodes/browser.ts` (NavigationHandler)
 
-#### Reload Page Node
+#### New Tab/Window Node ✅
 
-- **Purpose**: Reload current page
-- **Playwright API**: `page.reload()`
-- **Features**:
-- Reload with wait options
-- Wait until conditions
-- **Use Case**: Refresh data, retry page load
+- **Status**: IMPLEMENTED
+- **Implementation**: Navigation node with `newTab` action
+- **Location**: `backend/src/nodes/browser.ts` (NavigationHandler)
 
-#### New Tab/Window Node
+#### Switch Tab/Window Node ✅
 
-- **Purpose**: Open new tabs/windows
-- **Playwright API**: `context.newPage()`, `page.evaluate(() => window.open())`
-- **Features**:
-- Open new tab
-- Switch between tabs
-- Close tabs
-- **Use Case**: Multi-tab workflows, popup handling
+- **Status**: IMPLEMENTED
+- **Implementation**: Navigation node with `switchTab` action
+- **Features**: Switch by index or URL pattern
+- **Location**: `backend/src/nodes/browser.ts` (NavigationHandler)
 
-#### Switch Tab/Window Node
+#### Close Tab Node ✅
 
-- **Purpose**: Switch between open tabs/windows
-- **Playwright API**: `context.pages()`, page switching
-- **Features**:
-- Switch by index or URL pattern
-- Get all open tabs
-- **Use Case**: Multi-tab automation
+- **Status**: IMPLEMENTED
+- **Implementation**: Navigation node with `closeTab` action
+- **Location**: `backend/src/nodes/browser.ts` (NavigationHandler)
 
-#### Close Tab Node
+### 4. **Cookies & Storage Nodes** ✅
 
-- **Purpose**: Close current or specific tab
-- **Playwright API**: `page.close()`
-- **Features**:
-- Close current tab
-- Close tab by index
-- **Use Case**: Cleanup, tab management
+#### Get Cookies Node ✅
 
-### 4. **Network & Request Interception Nodes**
+- **Status**: IMPLEMENTED
+- **Implementation**: Storage node with `getCookie` action
+- **Features**: Get all cookies or cookie by name
+- **Location**: `backend/src/nodes/utility.ts` (StorageHandler)
+
+#### Set Cookie Node ✅
+
+- **Status**: IMPLEMENTED
+- **Implementation**: Storage node with `setCookie` action
+- **Features**: Set single/multiple cookies with domain, path, expiry
+- **Location**: `backend/src/nodes/utility.ts` (StorageHandler)
+
+#### Clear Cookies Node ✅
+
+- **Status**: IMPLEMENTED
+- **Implementation**: Storage node with `clearCookies` action
+- **Features**: Clear all cookies or cookies for specific domain
+- **Location**: `backend/src/nodes/utility.ts` (StorageHandler)
+
+#### Local Storage Node ✅
+
+- **Status**: IMPLEMENTED
+- **Implementation**: Storage node with `getLocalStorage`/`setLocalStorage`/`clearLocalStorage` actions
+- **Location**: `backend/src/nodes/utility.ts` (StorageHandler)
+
+#### Session Storage Node ✅
+
+- **Status**: IMPLEMENTED
+- **Implementation**: Storage node with `getSessionStorage`/`setSessionStorage`/`clearSessionStorage` actions
+- **Location**: `backend/src/nodes/utility.ts` (StorageHandler)
+
+### 5. **Iframe & Shadow DOM Nodes** ✅
+
+#### Switch to Iframe Node ✅
+
+- **Status**: IMPLEMENTED
+- **Implementation**: Iframe node with `switchToIframe` action
+- **Features**: Switch by selector, name, or URL pattern
+- **Location**: `backend/src/nodes/utility.ts` (IframeHandler)
+
+#### Get Iframe Content Node ✅
+
+- **Status**: IMPLEMENTED
+- **Implementation**: Iframe node with `getIframeContent` action
+- **Location**: `backend/src/nodes/utility.ts` (IframeHandler)
+
+#### Switch to Main Frame Node ✅
+
+- **Status**: IMPLEMENTED
+- **Implementation**: Iframe node with `switchToMainFrame` action
+- **Location**: `backend/src/nodes/utility.ts` (IframeHandler)
+
+### 6. **Advanced Browser Features** ✅
+
+#### Download File Node ✅
+
+- **Status**: IMPLEMENTED
+- **Implementation**: Dedicated Download node
+- **Available Actions**: waitForDownload, saveDownload, getDownloadPath
+- **Location**: `backend/src/nodes/utility.ts` (DownloadHandler)
+
+#### Handle Dialog Node ✅
+
+- **Status**: IMPLEMENTED
+- **Implementation**: Dedicated Dialog node
+- **Available Actions**: accept, dismiss, prompt, waitForDialog
+- **Location**: `backend/src/nodes/utility.ts` (DialogHandler)
+
+#### Element Screenshot Node ✅
+
+- **Status**: IMPLEMENTED
+- **Implementation**: Screenshot node with `element` action
+- **Features**: Screenshot element with mask support
+- **Location**: `backend/src/nodes/utility.ts` (ScreenshotHandler)
+
+#### PDF Generation Node ✅
+
+- **Status**: IMPLEMENTED
+- **Implementation**: Screenshot node with `pdf` action
+- **Features**: Generate PDF with format, margins, landscape options
+- **Location**: `backend/src/nodes/utility.ts` (ScreenshotHandler)
+
+---
+
+## Missing Playwright Features - High Priority
+
+### 1. **Enhanced Type Node - Additional Methods**
+
+**Note**: The Type node has been extended with multiple input methods (fill, type, pressSequentially, append, prepend, direct). However, the following method is still missing:
+
+#### Insert Text Method (via Type Node)
+
+- **Status**: PARTIALLY IMPLEMENTED
+- **Current**: Available via Keyboard node (`insertText` action)
+- **Missing**: Not available as a Type node input method option
+- **Recommendation**: Add `insertText` as an option to Type node's `inputMethod` for consistency
+- **Use Case**: Fast text input without keyboard events, performance testing
+
+#### Clear Field Method
+
+- **Status**: NOT IMPLEMENTED
+- **Playwright API**: `locator.clear()` or `locator.fill('')`
+- **Features**: Clear input field before typing (separate operation)
+- **Use Case**: Clearing fields before new input, reset operations
+- **Recommendation**: Add `clear` as a Type node action or extend with `clearFirst` option
+
+### 2. **Network & Request Interception Nodes**
 
 #### Intercept Request Node
 
@@ -372,78 +342,7 @@ todos:
 - Store in context as array
 - **Use Case**: API monitoring, performance analysis, debugging
 
-### 5. **Cookies & Storage Nodes**
-
-#### Get Cookies Node
-
-- **Purpose**: Read cookies
-- **Playwright API**: `context.cookies()`, `page.context().cookies()`
-- **Features**:
-- Get all cookies
-- Get cookie by name
-- Get cookies for specific URL
-- Store in context
-- **Use Case**: Cookie verification, session management
-
-#### Set Cookie Node
-
-- **Purpose**: Set cookies
-- **Playwright API**: `context.addCookies(cookies)`
-- **Features**:
-- Set single/multiple cookies
-- Set domain, path, expiry
-- **Use Case**: Authentication, session management
-
-#### Clear Cookies Node
-
-- **Purpose**: Clear cookies
-- **Playwright API**: `context.clearCookies()`
-- **Features**:
-- Clear all cookies
-- Clear cookies for specific domain
-- **Use Case**: Logout, session cleanup
-
-#### Local Storage Node
-
-- **Purpose**: Read/write localStorage
-- **Playwright API**: `page.evaluate(() => localStorage.getItem(key))`
-- **Features**:
-- Get localStorage value
-- Set localStorage value
-- Clear localStorage
-- Get all keys
-- **Use Case**: State management, authentication tokens
-
-#### Session Storage Node
-
-- **Purpose**: Read/write sessionStorage
-- **Playwright API**: `page.evaluate(() => sessionStorage.getItem(key))`
-- **Features**:
-- Get sessionStorage value
-- Set sessionStorage value
-- Clear sessionStorage
-- **Use Case**: Session data management
-
-### 6. **Iframe & Shadow DOM Nodes**
-
-#### Switch to Iframe Node
-
-- **Purpose**: Switch context to iframe
-- **Playwright API**: `page.frameLocator()`, `page.frames()`
-- **Features**:
-- Switch to iframe by selector or name
-- Switch back to main frame
-- Nested iframe support
-- **Use Case**: Payment gateways, embedded content, nested frames
-
-#### Get Iframe Content Node
-
-- **Purpose**: Extract content from iframe
-- **Playwright API**: `frame.locator()`, `frame.textContent()`
-- **Features**:
-- Access iframe elements
-- Extract iframe content
-- **Use Case**: Embedded widget interaction
+### 3. **Shadow DOM Nodes**
 
 #### Shadow DOM Selector Node
 
@@ -454,85 +353,87 @@ todos:
 - Chain selectors through shadow roots
 - **Use Case**: Web components, modern frameworks
 
-### 7. **Advanced Browser Features**
+### 4. **Advanced Browser Features** ✅
 
-#### Download File Node
+#### Set Geolocation Node ✅
 
-- **Purpose**: Handle file downloads
-- **Playwright API**: `page.waitForEvent('download')`
-- **Features**:
-- Wait for download
-- Get download path
-- Save download
-- Verify download
-- **Use Case**: File downloads, export functionality
-
-#### Handle Dialog Node
-
-- **Purpose**: Handle alerts, confirms, prompts
-- **Playwright API**: `page.on('dialog', handler)`
-- **Features**:
-- Accept/dismiss dialogs
-- Get dialog message
-- Input text for prompts
-- **Use Case**: Alert handling, confirmation dialogs
-
-#### Set Geolocation Node
-
-- **Purpose**: Set browser geolocation
+- **Status**: IMPLEMENTED
+- **Implementation**: Context Manipulate node with `setGeolocation` action
 - **Playwright API**: `context.setGeolocation()`
 - **Features**:
 - Set latitude/longitude
 - Set accuracy
 - **Use Case**: Location-based testing, geolocation features
+- **Location**: `backend/src/nodes/browser.ts` (ContextManipulateHandler)
 
-#### Set Permissions Node
+#### Set Permissions Node ✅
 
-- **Purpose**: Grant/deny browser permissions
-- **Playwright API**: `context.grantPermissions()`
+- **Status**: IMPLEMENTED
+- **Implementation**: Context Manipulate node with `setPermissions` and `clearPermissions` actions
+- **Playwright API**: `context.grantPermissions()`, `context.clearPermissions()`
 - **Features**:
 - Grant permissions (camera, microphone, notifications, etc.)
 - Revoke permissions
 - **Use Case**: Permission testing, media features
+- **Location**: `backend/src/nodes/browser.ts` (ContextManipulateHandler)
 
-#### Set Viewport Size Node
+#### Set Viewport Size Node ✅
 
-- **Purpose**: Change viewport size dynamically
+- **Status**: IMPLEMENTED
+- **Implementation**: Context Manipulate node with `setViewportSize` action
 - **Playwright API**: `page.setViewportSize()`
 - **Features**:
 - Set width/height
 - Responsive testing
 - **Use Case**: Responsive design testing, viewport changes
+- **Location**: `backend/src/nodes/browser.ts` (ContextManipulateHandler)
 
-#### Emulate Device Node
+#### Emulate Device Node ✅
 
-- **Purpose**: Emulate mobile devices
-- **Playwright API**: `context = await browser.newContext({ ...devices['iPhone 12'] })`
+- **Status**: IMPLEMENTED
+- **Implementation**: Context Manipulate node with `emulateDevice` action
+- **Playwright API**: `browser.newContext({ ...devices['iPhone 12'] })`
 - **Features**:
 - Emulate device (iPhone, iPad, Android)
 - Set user agent, viewport, device scale factor
 - **Use Case**: Mobile testing, device-specific features
+- **Location**: `backend/src/nodes/browser.ts` (ContextManipulateHandler)
 
-#### Set User Agent Node
+#### Set User Agent Node ✅
 
-- **Purpose**: Change user agent
-- **Playwright API**: `context.setExtraHTTPHeaders()` or context options
+- **Status**: IMPLEMENTED
+- **Implementation**: Context Manipulate node with `setUserAgent` action
+- **Playwright API**: `context.setExtraHTTPHeaders()`
 - **Features**:
 - Set custom user agent
 - Mobile/desktop user agents
 - **Use Case**: User agent testing, bot detection bypass
+- **Location**: `backend/src/nodes/browser.ts` (ContextManipulateHandler)
 
-### 8. **Visual & Screenshot Features**
+#### Context Manipulate Node ✅
 
-#### Element Screenshot Node
+- **Status**: IMPLEMENTED
+- **Implementation**: Unified node consolidating all browser context operations
+- **Available Actions**:
+  - `setGeolocation` - Set latitude/longitude/accuracy
+  - `setPermissions` - Grant permissions
+  - `clearPermissions` - Clear all permissions
+  - `setViewportSize` - Change viewport dynamically
+  - `setUserAgent` - Set custom user agent
+  - `setLocale` - Set locale (e.g., "en-US")
+  - `setTimezone` - Set timezone (IANA timezone ID)
+  - `setColorScheme` - Set color scheme (light/dark/no-preference)
+  - `setExtraHTTPHeaders` - Set custom HTTP headers
+  - `createContext` - Create new browser context
+  - `switchContext` - Switch to existing context
+  - `saveState` - Save context state (cookies, storage) to file
+  - `loadState` - Load context state from file
+  - `emulateDevice` - Emulate device using Playwright devices API
+  - `addInitScript` - Add JavaScript to run before page loads
+- **Location**: `backend/src/nodes/browser.ts` (ContextManipulateHandler)
+- **Frontend**: `frontend/src/components/nodeConfigs/ContextManipulateConfig.tsx`
 
-- **Purpose**: Screenshot specific element
-- **Playwright API**: `locator.screenshot()`
-- **Features**:
-- Screenshot element only
-- Full page screenshot (existing)
-- Screenshot with mask
-- **Use Case**: Component screenshots, element-level visual testing
+### 5. **Visual & Screenshot Features**
 
 #### Visual Comparison Node
 
@@ -545,17 +446,7 @@ todos:
 - Generate diff images
 - **Use Case**: Visual regression testing, UI consistency
 
-#### PDF Generation Node
-
-- **Purpose**: Generate PDF from page
-- **Playwright API**: `page.pdf()`
-- **Features**:
-- Generate PDF
-- Configure format, margins
-- Save PDF file
-- **Use Case**: Report generation, document export
-
-### 9. **Performance & Monitoring Nodes**
+### 6. **Performance & Monitoring Nodes**
 
 #### Performance Metrics Node
 
@@ -738,58 +629,64 @@ todos:
 
 ## Features from TODO.md (Already Planned)
 
-1. **Switch Context Node** - Multiple browser contexts
-2. **Authentication State Reuse** - Save/load browser state
+1. **Switch Context Node** ✅ - Multiple browser contexts (IMPLEMENTED via Context Manipulate node)
+2. **Authentication State Reuse** ✅ - Save/load browser state (IMPLEMENTED via Context Manipulate node)
 3. **Shadow DOM & Iframe Interaction** - Enhanced iframe support
 4. **Pixel-Perfect Snapshot Comparison** - Visual regression
-5. **Responsive Design Testing** - Device emulation
+5. **Responsive Design Testing** ✅ - Device emulation (IMPLEMENTED via Context Manipulate node)
 6. **Network Interception** - Request/response mocking
 
 ---
 
 ## Implementation Priority Recommendations
 
-### Phase 1 (High Value, Common Use Cases)
+### Phase 1 (High Value, Common Use Cases) - UPDATED
 
-1. **Enhanced Type Node** - Add text input methods (type, pressSequentially, insertText, append, prepend, direct)
-2. Select/Dropdown Node
-3. Checkbox/Radio Node
-4. Hover Node
-5. Upload File Node
-6. Get Attribute Node
-7. Get Cookies Node / Set Cookie Node
-8. Intercept Request Node
-9. Switch to Iframe Node
+**Note**: Many Phase 1 features are already implemented. Remaining high-priority items:
 
-### Phase 2 (Advanced Interactions)
+1. **Intercept Request Node** - Network request mocking/modification
+2. **Wait for Request/Response Node** - Wait for specific network requests
+3. **Visual Comparison Node** - Visual regression testing
+4. **Set Geolocation Node** ✅ - Location-based testing (IMPLEMENTED via Context Manipulate node)
+5. **Set Permissions Node** ✅ - Browser permissions management (IMPLEMENTED via Context Manipulate node)
 
-1. Drag and Drop Node
-2. Keyboard Actions Node
-3. Scroll Node
-4. New Tab/Window Node
-5. Download File Node
-6. Handle Dialog Node
-7. Local Storage Node / Session Storage Node
+### Phase 2 (Advanced Interactions) - UPDATED
+
+**Note**: Most Phase 2 features are already implemented. Remaining items:
+
+1. **Capture Network Activity Node** - Record all network traffic
+2. **Set Viewport Size Node** ✅ - Dynamic viewport changes (IMPLEMENTED via Context Manipulate node)
+3. **Emulate Device Node** ✅ - Mobile device emulation (IMPLEMENTED via Context Manipulate node)
+4. **Set User Agent Node** ✅ - User agent customization (IMPLEMENTED via Context Manipulate node)
+5. **Shadow DOM Enhanced Support** - Better Shadow DOM selector handling
 
 ### Phase 3 (Advanced Features)
 
-1. Visual Comparison Node
-2. Performance Metrics Node
-3. Network Activity Capture Node
-4. Emulate Device Node
-5. PDF Generation Node
+1. **Performance Metrics Node** - Capture performance data
+2. **Console Logs Node** - Capture console output
+3. **JavaScript Errors Node** - Capture uncaught errors
+4. **Visual Comparison Node** - Screenshot comparison (if not in Phase 1)
 
 ### Phase 4 (API Enhancements)
 
-1. File Upload API Node
-2. WebSocket Node
-3. GraphQL Request Node
-4. Response Parser Node
-5. API Test Assertion Node
+1. **File Upload API Node** - Multipart form data uploads
+2. **WebSocket Node** - WebSocket connections
+3. **GraphQL Request Node** - GraphQL API support
+4. **Response Parser Node** - JSONPath, XML parsing
+5. **API Test Assertion Node** - API response validation
+6. **OAuth Flow Node** - OAuth authentication
+7. **JWT Token Node** - JWT generation/validation
+8. **Basic Auth Node** - HTTP Basic Authentication
+9. **API Key Auth Node** - API key authentication
+10. **Streaming Response Node** - Handle streaming responses
+11. **API Mock Server Node** - Create mock API servers
+12. **Rate Limiting Node** - Handle rate limits
 
 ---
 
 ## Notes
+
+### Implementation Patterns
 
 - All new nodes should follow the existing pattern:
 - Support CSS and XPath selectors
@@ -799,10 +696,24 @@ todos:
 - Support variable interpolation
 - Store results in context
 
-- Consider extending existing nodes rather than creating new ones where appropriate (e.g., extend Click node to support double-click, right-click; extend Type node to support multiple text input methods)
+- The codebase follows a pattern of extending existing nodes rather than creating separate nodes (e.g., Action node handles click, doubleClick, rightClick, hover, dragAndDrop; Form Input node handles select, check, uncheck, upload)
 
-- Network interception features are particularly powerful for testing edge cases and mocking backend responses
+- Type node has been successfully extended with multiple input methods (fill, type, pressSequentially, append, prepend, direct)
 
-- Cookie and storage management nodes are essential for authentication workflows and state management
+### Key Implementation Insights
 
-- Visual comparison and screenshot features enhance testing capabilities significantly
+- **Network interception features** are particularly powerful for testing edge cases and mocking backend responses - these are still missing and high priority
+
+- **Cookie and storage management nodes** are already implemented and essential for authentication workflows and state management
+
+- **Visual comparison and screenshot features** - Element screenshots and PDF generation are implemented; visual comparison/regression testing is still missing
+
+- **Performance and monitoring nodes** (metrics, console logs, JS errors) are missing and would be valuable for debugging and quality assurance
+
+- **API enhancements** - Most API features are still missing (WebSocket, GraphQL, OAuth, JWT, streaming, etc.) and represent significant opportunities for expansion
+
+### Summary Statistics
+
+- **Implemented**: ~30+ browser automation features
+- **Missing**: ~20+ browser automation features (primarily network interception, performance monitoring, advanced browser settings)
+- **API Features**: Most API enhancements are still missing (~15+ features)

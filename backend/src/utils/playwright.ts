@@ -12,6 +12,7 @@ export class PlaywrightManager {
   private screenshotsDir: string;
   private videosDir: string | null = null;
   private recordSession: boolean = false;
+  private contexts: Map<string, BrowserContext> = new Map(); // Store multiple contexts
 
   constructor(screenshotsDirectory?: string, videosDirectory?: string, recordSession: boolean = false) {
     // Use provided directory or fallback to default
@@ -354,6 +355,18 @@ export class PlaywrightManager {
 
   getBrowser(): Browser | null {
     return this.browser;
+  }
+
+  getContext(): BrowserContext | null {
+    return this.context;
+  }
+
+  async createContext(options: any): Promise<BrowserContext> {
+    if (!this.browser) {
+      throw new Error('Browser must be launched before creating a context');
+    }
+    const browserContext = await this.browser.newContext(options);
+    return browserContext;
   }
 
   async close(): Promise<string[]> {

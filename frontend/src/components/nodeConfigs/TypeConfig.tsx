@@ -72,6 +72,35 @@ export default function TypeConfig({ node, onChange }: TypeConfigProps) {
         )}
       </div>
       <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Input Method</label>
+        <select
+          value={getPropertyValue('inputMethod', 'fill')}
+          onChange={(e) => onChange('inputMethod', e.target.value)}
+          disabled={isPropertyDisabled('inputMethod')}
+          className={getInputClassName('inputMethod', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+        >
+          <option value="fill">Fill - Clear and fill instantly (default)</option>
+          <option value="type">Type - Type character by character with delays</option>
+          <option value="pressSequentially">Press Sequentially - Type with configurable delays</option>
+          <option value="append">Append - Append to existing value</option>
+          <option value="prepend">Prepend - Prepend to existing value</option>
+          <option value="direct">Direct - Set value directly via DOM</option>
+        </select>
+        {isPropertyDisabled('inputMethod') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
+        <div className="mt-1 text-xs text-gray-400">
+          {data.inputMethod === 'fill' && 'Clears the field and fills text instantly. Fastest method.'}
+          {data.inputMethod === 'type' && 'Types character by character, triggering keyboard events. Good for autocomplete and validation.'}
+          {data.inputMethod === 'pressSequentially' && 'Same as type but more explicit. Types with delays between keystrokes.'}
+          {data.inputMethod === 'append' && 'Appends text to the existing value in the field.'}
+          {data.inputMethod === 'prepend' && 'Prepends text to the existing value in the field.'}
+          {data.inputMethod === 'direct' && 'Sets value directly via DOM without triggering events. Fastest but may not trigger validation.'}
+        </div>
+      </div>
+      <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Text</label>
         <textarea
           value={getPropertyValue('text', '')}
@@ -87,6 +116,28 @@ export default function TypeConfig({ node, onChange }: TypeConfigProps) {
           </div>
         )}
       </div>
+      {(data.inputMethod === 'type' || data.inputMethod === 'pressSequentially') && (
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">Delay Between Keystrokes (ms)</label>
+          <input
+            type="number"
+            value={getPropertyValue('delay', 0)}
+            onChange={(e) => onChange('delay', parseInt(e.target.value, 10) || 0)}
+            disabled={isPropertyDisabled('delay')}
+            min="0"
+            placeholder="0"
+            className={getInputClassName('delay', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+          />
+          {isPropertyDisabled('delay') && (
+            <div className="mt-1 text-xs text-gray-500 italic">
+              This property is converted to input. Connect a node to provide the value.
+            </div>
+          )}
+          <div className="mt-1 text-xs text-gray-400">
+            Delay in milliseconds between each keystroke. 0 = no delay (fast typing), higher values = slower typing (simulates human typing).
+          </div>
+        </div>
+      )}
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
         <input

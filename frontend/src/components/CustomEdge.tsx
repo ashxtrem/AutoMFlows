@@ -83,6 +83,7 @@ export default function CustomEdge({
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     // Remove this edge
     onEdgesChange([{ id, type: 'remove' }]);
   };

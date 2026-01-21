@@ -1,12 +1,10 @@
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
 import {
-  KEY_BINDINGS,
   getKeyBindingsByCategory,
   getCategoryName,
   getCategoryOrder,
   formatKeyCombination,
-  type KeyBindingCategory,
 } from '../utils/keyBindings';
 
 interface KeyBindingsModalProps {

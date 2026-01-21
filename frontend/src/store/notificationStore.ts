@@ -44,9 +44,6 @@ export const useNotificationStore = create<NotificationState>((set) => ({
   notifications: [],
 
   addNotification: (notification) => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'notificationStore.ts:39',message:'addNotification called',data:{title:notification.title,type:notification.type,stackTrace:new Error().stack?.split('\n').slice(0,5).join('|')},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
-    // #endregion
     const id = `notification-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const newNotification: Notification = {
       ...notification,

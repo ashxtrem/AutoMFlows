@@ -9,6 +9,7 @@ import { TypeConverter } from '../utils/typeConverter';
 import { PageDebugHelper } from '../utils/pageDebugHelper';
 import { ExecutionTracker } from '../utils/executionTracker';
 import { ReportGenerator } from '../utils/reportGenerator';
+import { enforceReportRetention } from '../utils/reportRetention';
 import { getAllReusableScopes } from '../utils/reusableFlowExtractor';
 import { resolveFromProjectRoot } from '../utils/pathUtils';
 import { migrateWorkflow } from '../utils/migration';
@@ -688,6 +689,11 @@ export class Executor {
       const reportGenerator = new ReportGenerator(metadata, workflow);
       await reportGenerator.generateReports(this.reportConfig.reportTypes);
       this.traceLog(`[TRACE] Generated reports: ${this.reportConfig.reportTypes.join(', ')}`);
+      
+      // Enforce report retention after generating reports
+      const retentionCount = this.reportConfig.reportRetention ?? 10;
+      const outputPath = this.reportConfig.outputPath || './output';
+      enforceReportRetention(retentionCount, outputPath);
     } catch (error: any) {
       console.error(`Failed to generate reports: ${error.message}`);
       // Don't fail execution if report generation fails
@@ -702,28 +708,32 @@ export class Executor {
     }
     
     try {
+      // Close all contexts from ContextManager
+      const allContexts = this.context.getAllContexts();
+      for (const [key, browserContext] of Object.entries(allContexts)) {
+        try {
+          const pages = browserContext.pages();
+          // Close all pages first
+          for (const page of pages) {
+            try {
+              await page.close();
+            } catch (error) {
+              // Page might already be closed
+            }
+          }
+          // Close context to finalize videos
+          await browserContext.close();
+        } catch (error) {
+          // Context might already be closed
+        }
+      }
+      
+      // Also handle the default context from PlaywrightManager for backward compatibility
       const playwrightAny = this.playwright as any;
       const context = playwrightAny.context;
       
       if (context) {
         const pages = context.pages();
-        const videoPaths: string[] = [];
-        
-        // Get video paths from pages before closing (videos are saved when context closes)
-        for (const page of pages) {
-          try {
-            const video = page.video();
-            if (video) {
-              const videoPath = video.path();
-              // Store the path - it will be finalized when context closes
-              if (videoPath) {
-                videoPaths.push(videoPath);
-              }
-            }
-          } catch (error) {
-            // Video might not be available, ignore
-          }
-        }
         
         // Close all pages first
         for (const page of pages) {

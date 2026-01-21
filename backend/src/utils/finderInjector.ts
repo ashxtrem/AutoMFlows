@@ -5,6 +5,17 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { SelectorSessionManager } from './selectorSessionManager';
 
+// Extend Window interface to include custom properties
+declare global {
+  interface Window {
+    __finderInjected?: boolean;
+    __finder?: (element: Element) => string;
+    finder?: (element: Element) => string;
+    generateSelectors?: (elementHandle: any) => Promise<SelectorOption[]>;
+    sendSelectorsToBackend?: (selectors: SelectorOption[], targetNodeId?: string, targetFieldName?: string) => Promise<SelectorOption[]>;
+  }
+}
+
 /**
  * Injects @medv/finder library and finder overlay UI into browser pages
  */
@@ -1015,7 +1026,13 @@ export class FinderInjector {
         }
         
         // Get element info
-        const elementInfo = {
+        const elementInfo: {
+          id: string | null;
+          tagName: string;
+          className: string;
+          textContent: string;
+          attributes: Record<string, string>;
+        } = {
           id: el.id || null,
           tagName: el.tagName ? el.tagName.toLowerCase() : 'unknown',
           className: el.className || '',
@@ -1024,7 +1041,7 @@ export class FinderInjector {
         };
 
         // Get all attributes
-        Array.from(el.attributes).forEach(function(attr) {
+        (Array.from(el.attributes) as Attr[]).forEach(function(attr: Attr) {
           elementInfo.attributes[attr.name] = attr.value;
         });
 
@@ -1086,7 +1103,7 @@ export class FinderInjector {
 
         // Class-based
         if (elementInfo.className) {
-          const classes = elementInfo.className.split(/\s+/).filter(function(c) { return c; });
+          const classes = elementInfo.className.split(/\s+/).filter(function(c: string) { return c; });
           if (classes.length === 1) {
             xpathSelectors.push({
               selector: '//' + elementInfo.tagName + '[@class=\'' + classes[0] + '\']',
@@ -1165,13 +1182,13 @@ export class FinderInjector {
         });
 
         // Sort by quality
-        const qualityOrder = { high: 3, medium: 2, low: 1 };
+        const qualityOrder: Record<string, number> = { high: 3, medium: 2, low: 1 };
         result.sort(function(a, b) {
           return qualityOrder[b.quality] - qualityOrder[a.quality];
         });
 
         return result;
-      }, element);
+      }, handle);
 
       return selectors;
     });
@@ -1194,7 +1211,7 @@ export class FinderInjector {
           nodeId = await page.evaluate(() => (window as any).__automflowsNodeId);
           // If still not found, get from session manager
           if (!nodeId) {
-            nodeId = target.nodeId || null;
+            nodeId = target.nodeId || undefined;
           }
         }
         

@@ -4,7 +4,6 @@ import {
   startSelectorFinder,
   onSelectorsGenerated,
   selectSelector,
-  getSelectorFinderStatus,
 } from '../services/selectorFinder';
 import { useWorkflowStore } from '../store/workflowStore';
 

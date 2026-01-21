@@ -2,6 +2,7 @@ import { Node } from 'reactflow';
 import { useState } from 'react';
 import RetryConfigSection from '../RetryConfigSection';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
+import SelectorFinderButton from '../SelectorFinderButton';
 
 interface NavigationConfigProps {
   node: Node;
@@ -308,14 +309,19 @@ export default function NavigationConfig({ node, onChange }: NavigationConfigPro
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Wait for Selector</label>
-              <input
-                type="text"
-                value={getPropertyValue('waitForSelector', '')}
-                onChange={(e) => onChange('waitForSelector', e.target.value)}
-                placeholder="#element or //div[@id='element']"
-                disabled={isPropertyDisabled('waitForSelector')}
-                className={getInputClassName('waitForSelector', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={getPropertyValue('waitForSelector', '')}
+                  onChange={(e) => onChange('waitForSelector', e.target.value)}
+                  placeholder="#element or //div[@id='element']"
+                  disabled={isPropertyDisabled('waitForSelector')}
+                  className={getInputClassName('waitForSelector', 'flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+                />
+                {!isPropertyDisabled('waitForSelector') && (
+                  <SelectorFinderButton nodeId={node.id} fieldName="waitForSelector" />
+                )}
+              </div>
               {isPropertyDisabled('waitForSelector') && (
                 <div className="mt-1 text-xs text-gray-500 italic">
                   This property is converted to input. Connect a node to provide the value.

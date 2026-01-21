@@ -3,11 +3,21 @@ import { useNotificationStore } from '../store/notificationStore';
 
 export default function BreakpointSettings() {
   const {
+    breakpointEnabled,
     breakpointAt,
     breakpointFor,
     setBreakpointSettings,
   } = useWorkflowStore();
   const addNotification = useNotificationStore((state) => state.addNotification);
+
+  const handleBreakpointToggle = (enabled: boolean) => {
+    setBreakpointSettings({ enabled });
+    addNotification({
+      type: 'info',
+      title: 'Breakpoint',
+      message: enabled ? 'Breakpoint enabled' : 'Breakpoint disabled',
+    });
+  };
 
   const handleBreakpointAtChange = (value: 'pre' | 'post' | 'both') => {
     setBreakpointSettings({ breakpointAt: value });
@@ -29,6 +39,29 @@ export default function BreakpointSettings() {
 
   return (
     <div className="space-y-4">
+      {/* Breakpoint Enable Toggle */}
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-white font-medium">Enable Breakpoints</span>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={breakpointEnabled}
+            onChange={(e) => handleBreakpointToggle(e.target.checked)}
+            className="sr-only"
+          />
+          <div
+            className={`w-14 h-7 rounded-lg transition-colors flex items-center px-1 cursor-pointer ${
+              breakpointEnabled ? 'bg-green-600' : 'bg-gray-700'
+            }`}
+          >
+            <div
+              className={`w-5 h-5 rounded-md bg-white transition-transform duration-200 ${
+                breakpointEnabled ? 'translate-x-7' : 'translate-x-0'
+              }`}
+            />
+          </div>
+        </label>
+      </div>
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-2">Breakpoint At</label>
         <div className="space-y-2">

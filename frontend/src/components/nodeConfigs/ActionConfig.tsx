@@ -48,6 +48,12 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
             if (newAction !== 'hover' && newAction !== 'doubleClick') {
               onChange('delay', undefined);
             }
+            if (newAction !== 'dragAndDrop') {
+              onChange('targetSelector', undefined);
+              onChange('targetSelectorType', undefined);
+              onChange('targetX', undefined);
+              onChange('targetY', undefined);
+            }
           }}
           disabled={isPropertyDisabled('action')}
           className={getInputClassName('action', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
@@ -56,6 +62,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
           <option value="doubleClick">Double Click</option>
           <option value="rightClick">Right Click</option>
           <option value="hover">Hover</option>
+          <option value="dragAndDrop">Drag and Drop</option>
         </select>
         {isPropertyDisabled('action') && (
           <div className="mt-1 text-xs text-gray-500 italic">
@@ -133,6 +140,69 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
             {action === 'hover' ? 'Delay before hover operation' : 'Delay between clicks for double click'}
           </div>
         </div>
+      )}
+
+      {action === 'dragAndDrop' && (
+        <>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Target Selector Type</label>
+            <select
+              value={data.targetSelectorType || 'css'}
+              onChange={(e) => onChange('targetSelectorType', e.target.value)}
+              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+            >
+              <option value="css">CSS Selector</option>
+              <option value="xpath">XPath</option>
+            </select>
+            <div className="mt-1 text-xs text-gray-400">
+              Selector type for the target element
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Target Selector</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={data.targetSelector || ''}
+                onChange={(e) => onChange('targetSelector', e.target.value)}
+                placeholder="#target or //div[@id='target']"
+                className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+              />
+              <SelectorFinderButton nodeId={node.id} fieldName="targetSelector" />
+            </div>
+            <div className="mt-1 text-xs text-gray-400">
+              Selector for the target element to drop on. Leave empty to use coordinates instead.
+            </div>
+          </div>
+          <div className="border-t border-gray-600 pt-2 mt-2">
+            <div className="text-xs text-gray-400 mb-2">Or use coordinates (if target selector is empty):</div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Target X</label>
+                <input
+                  type="number"
+                  value={data.targetX !== undefined ? data.targetX : ''}
+                  onChange={(e) => onChange('targetX', e.target.value ? parseInt(e.target.value, 10) : undefined)}
+                  placeholder="X coordinate"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Target Y</label>
+                <input
+                  type="number"
+                  value={data.targetY !== undefined ? data.targetY : ''}
+                  onChange={(e) => onChange('targetY', e.target.value ? parseInt(e.target.value, 10) : undefined)}
+                  placeholder="Y coordinate"
+                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+                />
+              </div>
+            </div>
+            <div className="mt-1 text-xs text-gray-400">
+              Absolute coordinates (in pixels) to drop at. Requires both X and Y if target selector is not provided.
+            </div>
+          </div>
+        </>
       )}
 
       <div>
