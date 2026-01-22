@@ -95,6 +95,13 @@ interface SettingsState {
     key: K,
     value: ReportSettings[K]
   ) => void;
+
+  // Tour settings
+  tourCompleted: boolean;
+  showTour: boolean;
+  startTour: () => void;
+  completeTour: () => void;
+  resetTour: () => void;
 }
 
 const defaultCanvasSettings: CanvasSettings = {
@@ -220,11 +227,23 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
     ),
   };
 
+  // Initialize tour settings from localStorage
+  const tourCompleted = loadFromStorage(
+    'automflows_tour_completed',
+    false
+  );
+  const showTour = loadFromStorage(
+    'automflows_tour_show',
+    false
+  );
+
   return {
     canvas,
     appearance,
     notifications,
     reports,
+    tourCompleted,
+    showTour,
 
     setCanvasSetting: (key, value) => {
       const keyMap: Record<keyof CanvasSettings, string> = {
@@ -293,6 +312,23 @@ export const useSettingsStore = create<SettingsState>((set, get) => {
       set((state) => ({
         reports: { ...state.reports, [key]: value },
       }));
+    },
+
+    startTour: () => {
+      saveToStorage('automflows_tour_show', true);
+      set({ showTour: true });
+    },
+
+    completeTour: () => {
+      saveToStorage('automflows_tour_completed', true);
+      saveToStorage('automflows_tour_show', false);
+      set({ tourCompleted: true, showTour: false });
+    },
+
+    resetTour: () => {
+      saveToStorage('automflows_tour_completed', false);
+      saveToStorage('automflows_tour_show', true);
+      set({ tourCompleted: false, showTour: true });
     },
   };
 });

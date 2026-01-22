@@ -448,6 +448,7 @@ export default function LeftSidebar() {
 
   return (
     <div
+      data-tour="left-sidebar"
       className={`relative bg-gray-800 border-r border-gray-700 flex flex-col transition-all duration-300 ease-in-out ${
         isCollapsed ? 'w-16' : 'w-64'
       }`}

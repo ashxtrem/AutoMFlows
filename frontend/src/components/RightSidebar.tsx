@@ -155,6 +155,7 @@ export default function RightSidebar() {
       className="bg-gray-800 border-l border-gray-700 overflow-y-auto relative flex z-30 flex-shrink-0 h-full"
       style={{ width: `${width}px`, minWidth: `${MIN_WIDTH}px` }}
       data-testid="right-sidebar"
+      data-tour="right-sidebar"
     >
       {/* Resize handle on the left edge */}
       <div

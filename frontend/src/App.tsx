@@ -6,6 +6,7 @@ import Canvas from './components/Canvas';
 import RightSidebar from './components/RightSidebar';
 import ReportHistory from './components/ReportHistory';
 import FloatingRunButton from './components/FloatingRunButton';
+import InteractiveTour from './components/InteractiveTour';
 import { useWorkflowStore } from './store/workflowStore';
 import { useSettingsStore } from './store/settingsStore';
 import NodeErrorPopup from './components/NodeErrorPopup';
@@ -197,6 +198,7 @@ function App() {
           <Canvas />
           {selectedNode && <RightSidebar />}
         </div>
+        <InteractiveTour />
       </div>
     </ReactFlowProvider>
   );

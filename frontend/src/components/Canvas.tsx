@@ -904,7 +904,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
   }, [setViewport, getViewport]);
 
   return (
-    <div className="flex-1 relative canvas-vignette" ref={reactFlowWrapper}>
+    <div className="flex-1 relative canvas-vignette" ref={reactFlowWrapper} data-tour="canvas">
       <ReactFlow
         nodes={mappedNodes}
         edges={mappedEdges}

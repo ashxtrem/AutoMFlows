@@ -123,6 +123,7 @@ export default function FloatingRunButton() {
 
   return (
     <div
+      data-tour="run-button"
       className="fixed z-30 flex flex-col items-center gap-3"
       style={{
         left: `${position.x}px`,

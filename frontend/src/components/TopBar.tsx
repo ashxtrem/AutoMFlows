@@ -5,8 +5,10 @@ import RefreshIcon from '@mui/icons-material/Refresh';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import MenuIcon from '@mui/icons-material/Menu';
 import SettingsIcon from '@mui/icons-material/Settings';
+import PlayCircleFilledWhiteTwoToneIcon from '@mui/icons-material/PlayCircleFilledWhiteTwoTone';
 import { Eye, EyeOff, ChevronDown } from 'lucide-react';
 import { useWorkflowStore, getDefaultNodeData } from '../store/workflowStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { useExecution } from '../hooks/useExecution';
 import { serializeWorkflow, deserializeWorkflow } from '../utils/serialization';
 import ValidationErrorPopup from './ValidationErrorPopup';
@@ -29,6 +31,7 @@ export default function TopBar() {
   const { nodes, edges, setNodes, setEdges, resetExecution, edgesHidden, setEdgesHidden, selectedNode, followModeEnabled, setFollowModeEnabled } = useWorkflowStore();
   const { validationErrors, setValidationErrors } = useExecution();
   const addNotification = useNotificationStore((state) => state.addNotification);
+  const { tourCompleted, startTour, resetTour } = useSettingsStore();
   
   const [showResetWarning, setShowResetWarning] = useState(false);
   const [showLoadWarning, setShowLoadWarning] = useState(false);
@@ -592,6 +595,7 @@ export default function TopBar() {
       {/* FAB Button */}
       <button
         data-fab-button
+        data-tour="menu-button"
         onClick={() => {
           setIsMenuOpen(!isMenuOpen);
           if (isMenuOpen) {
@@ -718,6 +722,38 @@ export default function TopBar() {
               <AssessmentIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
               Report History
             </button>
+          </div>
+
+          {/* Divider */}
+          <div className="h-px bg-gray-700 my-2" />
+
+          {/* Tour Section */}
+          <div className="space-y-1">
+            {!tourCompleted ? (
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  startTour();
+                }}
+                className="w-full px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-3 text-sm transition-colors"
+                title="Take interactive tour"
+              >
+                <PlayCircleFilledWhiteTwoToneIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
+                Take Tour
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  resetTour();
+                }}
+                className="w-full px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-3 text-sm transition-colors"
+                title="Restart interactive tour"
+              >
+                <RefreshIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
+                Restart Tour
+              </button>
+            )}
           </div>
 
           {/* Divider */}
