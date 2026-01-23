@@ -763,26 +763,21 @@ export class Executor {
         const videosDirectory = this.executionTracker.getVideosDirectory();
         let finalVideoPath: string | null = null;
         
-        // First, check if any of the video paths from pages exist
-        const existingVideoPaths = videoPaths.filter(path => path && fs.existsSync(path));
-        if (existingVideoPaths.length > 0) {
-          finalVideoPath = existingVideoPaths[0];
-        } else {
-          // If not found, look for the most recent .webm file in videos directory
-          if (fs.existsSync(videosDirectory)) {
-            const videoFiles = fs.readdirSync(videosDirectory)
-              .filter(file => file.endsWith('.webm'))
-              .map(file => ({
-                name: file,
-                path: path.join(videosDirectory, file),
-                mtime: fs.statSync(path.join(videosDirectory, file)).mtime.getTime()
-              }))
-              .sort((a, b) => b.mtime - a.mtime); // Sort by modification time, newest first
-            
-            if (videoFiles.length > 0) {
-              // Use the most recent video file
-              finalVideoPath = videoFiles[0].path;
-            }
+        // Look for the most recent .webm file in videos directory
+        // Playwright saves videos when the context closes, so we check the directory
+        if (fs.existsSync(videosDirectory)) {
+          const videoFiles = fs.readdirSync(videosDirectory)
+            .filter(file => file.endsWith('.webm'))
+            .map(file => ({
+              name: file,
+              path: path.join(videosDirectory, file),
+              mtime: fs.statSync(path.join(videosDirectory, file)).mtime.getTime()
+            }))
+            .sort((a, b) => b.mtime - a.mtime); // Sort by modification time, newest first
+          
+          if (videoFiles.length > 0) {
+            // Use the most recent video file
+            finalVideoPath = videoFiles[0].path;
           }
         }
         

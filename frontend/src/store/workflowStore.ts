@@ -1456,6 +1456,10 @@ export function getDefaultNodeData(type: NodeType | string): any {
         timeout: 30000,
         isTest: true 
       },
+      [NodeType.CONTEXT_MANIPULATE]: { 
+        action: 'setGeolocation',
+        isTest: true 
+      },
     };
     const defaultData = defaults[type as NodeType] || { isTest: true };
     return defaultData;

@@ -5,7 +5,7 @@ import { PlaywrightManager } from '../utils/playwright';
 import { WaitHelper } from '../utils/waitHelper';
 import { RetryHelper } from '../utils/retryHelper';
 import { VariableInterpolator } from '../utils/variableInterpolator';
-import { devices } from 'playwright';
+import { devices, BrowserContext } from 'playwright';
 import * as fs from 'fs';
 import * as path from 'path';
 import { resolveFromProjectRoot } from '../utils/pathUtils';
@@ -280,34 +280,74 @@ export class ContextManipulateHandler implements NodeHandler {
     }
 
     if (!data.action) {
-      throw new Error('Action is required for Context Manipulate node');
+      throw new Error('Action is required for Context Manipulate node. Please select an action in the node configuration (e.g., setGeolocation, setPermissions, etc.).');
     }
 
     try {
       switch (data.action) {
         case 'setGeolocation': {
+          // Try to get context from page first, then from PlaywrightManager
+          let browserContext: BrowserContext | null = null;
           const page = contextManager.getPage();
-          if (!page) {
-            throw new Error('No page available. Ensure Open Browser node is executed first.');
+          if (page) {
+            browserContext = page.context();
+          } else {
+            // Try to get context directly from PlaywrightManager
+            browserContext = playwright.getContext();
+            if (!browserContext) {
+              throw new Error('No browser context available. Ensure Open Browser node is executed first.');
+            }
           }
-          const browserContext = page.context();
-          if (!data.geolocation || data.geolocation.latitude === undefined || data.geolocation.longitude === undefined) {
-            throw new Error('Geolocation latitude and longitude are required');
+          
+          // Validate geolocation data
+          if (!data.geolocation) {
+            throw new Error('Geolocation data is required');
           }
+          
+          const latitude = data.geolocation.latitude;
+          const longitude = data.geolocation.longitude;
+          
+          if (latitude === undefined || latitude === null || isNaN(latitude)) {
+            throw new Error('Geolocation latitude is required and must be a valid number');
+          }
+          
+          if (longitude === undefined || longitude === null || isNaN(longitude)) {
+            throw new Error('Geolocation longitude is required and must be a valid number');
+          }
+          
+          // Grant geolocation permission if not already granted
+          // This ensures geolocation works properly
+          try {
+            await browserContext.grantPermissions(['geolocation']);
+          } catch (permError) {
+            // Permission might already be granted, continue
+            console.warn('Could not grant geolocation permission (may already be granted):', permError);
+          }
+          
+          // Set geolocation
           await browserContext.setGeolocation({
-            latitude: data.geolocation.latitude,
-            longitude: data.geolocation.longitude,
+            latitude: latitude,
+            longitude: longitude,
             accuracy: data.geolocation.accuracy,
           });
+          
+          console.log(`Geolocation set to: ${latitude}, ${longitude}${data.geolocation.accuracy ? ` (accuracy: ${data.geolocation.accuracy})` : ''}`);
           break;
         }
 
         case 'setPermissions': {
+          // Try to get context from page first, then from PlaywrightManager
+          let browserContext: BrowserContext | null = null;
           const page = contextManager.getPage();
-          if (!page) {
-            throw new Error('No page available. Ensure Open Browser node is executed first.');
+          if (page) {
+            browserContext = page.context();
+          } else {
+            // Try to get context directly from PlaywrightManager
+            browserContext = playwright.getContext();
+            if (!browserContext) {
+              throw new Error('No browser context available. Ensure Open Browser node is executed first.');
+            }
           }
-          const browserContext = page.context();
           if (!data.permissions || data.permissions.length === 0) {
             throw new Error('Permissions array is required');
           }

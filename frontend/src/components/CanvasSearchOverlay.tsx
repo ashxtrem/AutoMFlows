@@ -23,6 +23,7 @@ import InventoryIcon from '@mui/icons-material/Inventory';
 import FolderIcon from '@mui/icons-material/Folder';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import StorageIcon from '@mui/icons-material/Storage';
+import SettingsIcon from '@mui/icons-material/Settings';
 
 interface IconConfig {
   icon: React.ComponentType<{ sx?: any }>;
@@ -32,6 +33,7 @@ interface IconConfig {
 const nodeIconMap: Record<NodeType, IconConfig> = {
   [NodeType.START]: { icon: PlayCircleFilledWhiteTwoToneIcon, color: '#4CAF50' },
   [NodeType.OPEN_BROWSER]: { icon: LanguageIcon, color: '#2196F3' },
+  [NodeType.CONTEXT_MANIPULATE]: { icon: SettingsIcon, color: '#9C27B0' },
   [NodeType.NAVIGATION]: { icon: LinkIcon, color: '#2196F3' },
   [NodeType.KEYBOARD]: { icon: KeyboardIcon, color: '#FF9800' },
   [NodeType.SCROLL]: { icon: ScheduleIcon, color: '#9C27B0' },

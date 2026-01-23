@@ -1,5 +1,5 @@
 import { Node } from 'reactflow';
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
 import { ContextManipulateNodeData } from '@automflows/shared';
 
@@ -33,6 +33,14 @@ export default function ContextManipulateConfig({ node, onChange }: ContextManip
   const data = node.data as ContextManipulateNodeData;
   const { getPropertyValue, isPropertyDisabled, getInputClassName } = usePropertyInput(node);
   const action = getPropertyValue('action', 'setGeolocation') as string;
+
+  // Ensure action is set if geolocation data exists but action is missing
+  useEffect(() => {
+    if (!data.action && data.geolocation && 
+        (data.geolocation.latitude !== undefined || data.geolocation.longitude !== undefined)) {
+      onChange('action', 'setGeolocation');
+    }
+  }, [data.action, data.geolocation?.latitude, data.geolocation?.longitude, onChange]);
 
   const handleActionChange = (newAction: string) => {
     onChange('action', newAction);
@@ -104,8 +112,14 @@ export default function ContextManipulateConfig({ node, onChange }: ContextManip
               step="any"
               value={data.geolocation?.latitude ?? ''}
               onChange={(e) => {
+                // Ensure action is set when geolocation is entered
+                if (!data.action) {
+                  onChange('action', 'setGeolocation');
+                }
                 const current = data.geolocation || {};
-                onChange('geolocation', { ...current, latitude: parseFloat(e.target.value) || 0 });
+                const value = e.target.value.trim();
+                const numValue = value === '' ? undefined : parseFloat(value);
+                onChange('geolocation', { ...current, latitude: numValue });
               }}
               placeholder="40.7128"
               disabled={isPropertyDisabled('geolocation')}
@@ -119,8 +133,14 @@ export default function ContextManipulateConfig({ node, onChange }: ContextManip
               step="any"
               value={data.geolocation?.longitude ?? ''}
               onChange={(e) => {
+                // Ensure action is set when geolocation is entered
+                if (!data.action) {
+                  onChange('action', 'setGeolocation');
+                }
                 const current = data.geolocation || {};
-                onChange('geolocation', { ...current, longitude: parseFloat(e.target.value) || 0 });
+                const value = e.target.value.trim();
+                const numValue = value === '' ? undefined : parseFloat(value);
+                onChange('geolocation', { ...current, longitude: numValue });
               }}
               placeholder="-74.0060"
               disabled={isPropertyDisabled('geolocation')}
@@ -135,13 +155,20 @@ export default function ContextManipulateConfig({ node, onChange }: ContextManip
               value={data.geolocation?.accuracy ?? ''}
               onChange={(e) => {
                 const current = data.geolocation || {};
-                onChange('geolocation', { ...current, accuracy: parseFloat(e.target.value) || undefined });
+                const value = e.target.value.trim();
+                const numValue = value === '' ? undefined : parseFloat(value);
+                onChange('geolocation', { ...current, accuracy: numValue });
               }}
               placeholder="Optional"
               disabled={isPropertyDisabled('geolocation')}
               className={getInputClassName('geolocation', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
             />
           </div>
+          {isPropertyDisabled('geolocation') && (
+            <div className="mt-1 text-xs text-gray-500 italic">
+              This property is converted to input. Connect a node to provide the value.
+            </div>
+          )}
         </>
       )}
 
@@ -169,6 +196,11 @@ export default function ContextManipulateConfig({ node, onChange }: ContextManip
               </label>
             ))}
           </div>
+          {isPropertyDisabled('permissions') && (
+            <div className="mt-1 text-xs text-gray-500 italic">
+              This property is converted to input. Connect a node to provide the value.
+            </div>
+          )}
         </div>
       )}
 
@@ -184,6 +216,11 @@ export default function ContextManipulateConfig({ node, onChange }: ContextManip
               disabled={isPropertyDisabled('viewportWidth')}
               className={getInputClassName('viewportWidth', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
             />
+            {isPropertyDisabled('viewportWidth') && (
+              <div className="mt-1 text-xs text-gray-500 italic">
+                This property is converted to input. Connect a node to provide the value.
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Height</label>
@@ -195,6 +232,11 @@ export default function ContextManipulateConfig({ node, onChange }: ContextManip
               disabled={isPropertyDisabled('viewportHeight')}
               className={getInputClassName('viewportHeight', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
             />
+            {isPropertyDisabled('viewportHeight') && (
+              <div className="mt-1 text-xs text-gray-500 italic">
+                This property is converted to input. Connect a node to provide the value.
+              </div>
+            )}
           </div>
         </>
       )}
@@ -210,6 +252,11 @@ export default function ContextManipulateConfig({ node, onChange }: ContextManip
             rows={3}
             className={getInputClassName('userAgent', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
           />
+          {isPropertyDisabled('userAgent') && (
+            <div className="mt-1 text-xs text-gray-500 italic">
+              This property is converted to input. Connect a node to provide the value.
+            </div>
+          )}
         </div>
       )}
 
@@ -224,7 +271,14 @@ export default function ContextManipulateConfig({ node, onChange }: ContextManip
             disabled={isPropertyDisabled('locale')}
             className={getInputClassName('locale', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
           />
-          <div className="mt-1 text-xs text-gray-500">Example: en-US, fr-FR, de-DE</div>
+          {isPropertyDisabled('locale') && (
+            <div className="mt-1 text-xs text-gray-500 italic">
+              This property is converted to input. Connect a node to provide the value.
+            </div>
+          )}
+          {!isPropertyDisabled('locale') && (
+            <div className="mt-1 text-xs text-gray-500">Example: en-US, fr-FR, de-DE</div>
+          )}
         </div>
       )}
 
@@ -239,7 +293,14 @@ export default function ContextManipulateConfig({ node, onChange }: ContextManip
             disabled={isPropertyDisabled('timezoneId')}
             className={getInputClassName('timezoneId', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
           />
-          <div className="mt-1 text-xs text-gray-500">IANA timezone database name (e.g., America/New_York, Europe/London)</div>
+          {isPropertyDisabled('timezoneId') && (
+            <div className="mt-1 text-xs text-gray-500 italic">
+              This property is converted to input. Connect a node to provide the value.
+            </div>
+          )}
+          {!isPropertyDisabled('timezoneId') && (
+            <div className="mt-1 text-xs text-gray-500">IANA timezone database name (e.g., America/New_York, Europe/London)</div>
+          )}
         </div>
       )}
 
@@ -256,6 +317,11 @@ export default function ContextManipulateConfig({ node, onChange }: ContextManip
             <option value="dark">Dark</option>
             <option value="no-preference">No Preference</option>
           </select>
+          {isPropertyDisabled('colorScheme') && (
+            <div className="mt-1 text-xs text-gray-500 italic">
+              This property is converted to input. Connect a node to provide the value.
+            </div>
+          )}
         </div>
       )}
 
@@ -277,7 +343,14 @@ export default function ContextManipulateConfig({ node, onChange }: ContextManip
             rows={5}
             className={getInputClassName('extraHTTPHeaders', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm font-mono')}
           />
-          <div className="mt-1 text-xs text-gray-500">Enter as JSON object with key-value pairs</div>
+          {isPropertyDisabled('extraHTTPHeaders') && (
+            <div className="mt-1 text-xs text-gray-500 italic">
+              This property is converted to input. Connect a node to provide the value.
+            </div>
+          )}
+          {!isPropertyDisabled('extraHTTPHeaders') && (
+            <div className="mt-1 text-xs text-gray-500">Enter as JSON object with key-value pairs</div>
+          )}
         </div>
       )}
 
@@ -292,9 +365,16 @@ export default function ContextManipulateConfig({ node, onChange }: ContextManip
             disabled={isPropertyDisabled('contextKey')}
             className={getInputClassName('contextKey', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
           />
-          <div className="mt-1 text-xs text-gray-500">
-            {action === 'createContext' ? 'Unique key to identify this context' : 'Key of the context to switch to'}
-          </div>
+          {isPropertyDisabled('contextKey') && (
+            <div className="mt-1 text-xs text-gray-500 italic">
+              This property is converted to input. Connect a node to provide the value.
+            </div>
+          )}
+          {!isPropertyDisabled('contextKey') && (
+            <div className="mt-1 text-xs text-gray-500">
+              {action === 'createContext' ? 'Unique key to identify this context' : 'Key of the context to switch to'}
+            </div>
+          )}
         </div>
       )}
 
@@ -316,7 +396,14 @@ export default function ContextManipulateConfig({ node, onChange }: ContextManip
             rows={5}
             className={getInputClassName('contextOptions', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm font-mono')}
           />
-          <div className="mt-1 text-xs text-gray-500">Optional: Browser context options as JSON</div>
+          {isPropertyDisabled('contextOptions') && (
+            <div className="mt-1 text-xs text-gray-500 italic">
+              This property is converted to input. Connect a node to provide the value.
+            </div>
+          )}
+          {!isPropertyDisabled('contextOptions') && (
+            <div className="mt-1 text-xs text-gray-500">Optional: Browser context options as JSON</div>
+          )}
         </div>
       )}
 
@@ -331,9 +418,16 @@ export default function ContextManipulateConfig({ node, onChange }: ContextManip
             disabled={isPropertyDisabled('stateFilePath')}
             className={getInputClassName('stateFilePath', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
           />
-          <div className="mt-1 text-xs text-gray-500">
-            {action === 'saveState' ? 'Path to save context state (cookies, storage)' : 'Path to load context state from'}
-          </div>
+          {isPropertyDisabled('stateFilePath') && (
+            <div className="mt-1 text-xs text-gray-500 italic">
+              This property is converted to input. Connect a node to provide the value.
+            </div>
+          )}
+          {!isPropertyDisabled('stateFilePath') && (
+            <div className="mt-1 text-xs text-gray-500">
+              {action === 'saveState' ? 'Path to save context state (cookies, storage)' : 'Path to load context state from'}
+            </div>
+          )}
         </div>
       )}
 
@@ -348,7 +442,14 @@ export default function ContextManipulateConfig({ node, onChange }: ContextManip
             disabled={isPropertyDisabled('contextKey')}
             className={getInputClassName('contextKey', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
           />
-          <div className="mt-1 text-xs text-gray-500">Key for the newly created context (defaults to timestamp)</div>
+          {isPropertyDisabled('contextKey') && (
+            <div className="mt-1 text-xs text-gray-500 italic">
+              This property is converted to input. Connect a node to provide the value.
+            </div>
+          )}
+          {!isPropertyDisabled('contextKey') && (
+            <div className="mt-1 text-xs text-gray-500">Key for the newly created context (defaults to timestamp)</div>
+          )}
         </div>
       )}
 
@@ -369,6 +470,11 @@ export default function ContextManipulateConfig({ node, onChange }: ContextManip
                 </option>
               ))}
             </select>
+            {isPropertyDisabled('device') && (
+              <div className="mt-1 text-xs text-gray-500 italic">
+                This property is converted to input. Connect a node to provide the value.
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Context Key (optional)</label>
@@ -380,7 +486,14 @@ export default function ContextManipulateConfig({ node, onChange }: ContextManip
               disabled={isPropertyDisabled('contextKey')}
               className={getInputClassName('contextKey', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
             />
-            <div className="mt-1 text-xs text-gray-500">Key for the newly created context (defaults to timestamp)</div>
+            {isPropertyDisabled('contextKey') && (
+              <div className="mt-1 text-xs text-gray-500 italic">
+                This property is converted to input. Connect a node to provide the value.
+              </div>
+            )}
+            {!isPropertyDisabled('contextKey') && (
+              <div className="mt-1 text-xs text-gray-500">Key for the newly created context (defaults to timestamp)</div>
+            )}
           </div>
         </>
       )}
@@ -396,7 +509,14 @@ export default function ContextManipulateConfig({ node, onChange }: ContextManip
             rows={8}
             className={getInputClassName('initScript', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm font-mono')}
           />
-          <div className="mt-1 text-xs text-gray-500">JavaScript code that runs before each page loads in this context</div>
+          {isPropertyDisabled('initScript') && (
+            <div className="mt-1 text-xs text-gray-500 italic">
+              This property is converted to input. Connect a node to provide the value.
+            </div>
+          )}
+          {!isPropertyDisabled('initScript') && (
+            <div className="mt-1 text-xs text-gray-500">JavaScript code that runs before each page loads in this context</div>
+          )}
         </div>
       )}
 

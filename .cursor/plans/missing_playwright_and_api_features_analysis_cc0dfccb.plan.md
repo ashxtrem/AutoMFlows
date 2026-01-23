@@ -415,21 +415,21 @@ The following features have been implemented and are available in the current co
 - **Status**: IMPLEMENTED
 - **Implementation**: Unified node consolidating all browser context operations
 - **Available Actions**:
-  - `setGeolocation` - Set latitude/longitude/accuracy
-  - `setPermissions` - Grant permissions
-  - `clearPermissions` - Clear all permissions
-  - `setViewportSize` - Change viewport dynamically
-  - `setUserAgent` - Set custom user agent
-  - `setLocale` - Set locale (e.g., "en-US")
-  - `setTimezone` - Set timezone (IANA timezone ID)
-  - `setColorScheme` - Set color scheme (light/dark/no-preference)
-  - `setExtraHTTPHeaders` - Set custom HTTP headers
-  - `createContext` - Create new browser context
-  - `switchContext` - Switch to existing context
-  - `saveState` - Save context state (cookies, storage) to file
-  - `loadState` - Load context state from file
-  - `emulateDevice` - Emulate device using Playwright devices API
-  - `addInitScript` - Add JavaScript to run before page loads
+- `setGeolocation` - Set latitude/longitude/accuracy
+- `setPermissions` - Grant permissions
+- `clearPermissions` - Clear all permissions
+- `setViewportSize` - Change viewport dynamically
+- `setUserAgent` - Set custom user agent
+- `setLocale` - Set locale (e.g., "en-US")
+- `setTimezone` - Set timezone (IANA timezone ID)
+- `setColorScheme` - Set color scheme (light/dark/no-preference)
+- `setExtraHTTPHeaders` - Set custom HTTP headers
+- `createContext` - Create new browser context
+- `switchContext` - Switch to existing context
+- `saveState` - Save context state (cookies, storage) to file
+- `loadState` - Load context state from file
+- `emulateDevice` - Emulate device using Playwright devices API
+- `addInitScript` - Add JavaScript to run before page loads
 - **Location**: `backend/src/nodes/browser.ts` (ContextManipulateHandler)
 - **Frontend**: `frontend/src/components/nodeConfigs/ContextManipulateConfig.tsx`
 

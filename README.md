@@ -36,6 +36,63 @@ AutoMFlows is a web-based visual workflow builder for browser automation, inspir
 - Node.js 20+
 - npm
 
+#### Installing Node.js and npm
+
+**macOS:**
+
+1. **Using Homebrew (Recommended):**
+   ```bash
+   # Install Homebrew if you don't have it
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+   
+   # Install Node.js (includes npm)
+   brew install node
+   ```
+
+2. **Using Official Installer:**
+   - Visit [nodejs.org](https://nodejs.org/)
+   - Download the LTS version for macOS
+   - Run the installer and follow the setup wizard
+   - npm is included with Node.js
+
+3. **Verify Installation:**
+   ```bash
+   node --version  # Should show v20.x.x or higher
+   npm --version   # Should show 10.x.x or higher
+   ```
+
+**Windows:**
+
+1. **Using Official Installer (Recommended):**
+   - Visit [nodejs.org](https://nodejs.org/)
+   - Download the LTS version for Windows (64-bit)
+   - Run the installer (.msi file)
+   - Follow the setup wizard (accept defaults or customize as needed)
+   - npm is included with Node.js
+
+2. **Using Chocolatey (Alternative):**
+   ```powershell
+   # Install Chocolatey if you don't have it
+   # Run PowerShell as Administrator, then:
+   Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))
+   
+   # Install Node.js (includes npm)
+   choco install nodejs-lts
+   ```
+
+3. **Using Winget (Windows 11/10):**
+   ```powershell
+   winget install OpenJS.NodeJS.LTS
+   ```
+
+4. **Verify Installation:**
+   ```powershell
+   node --version  # Should show v20.x.x or higher
+   npm --version   # Should show 10.x.x or higher
+   ```
+
+**Note:** After installation, you may need to restart your terminal/command prompt for the changes to take effect.
+
 ### Installation
 
 1. Clone the repository:
@@ -58,6 +115,8 @@ cd shared && npm run build && cd ..
 
 #### Quick Start (Recommended)
 
+**Unix/Linux/macOS:**
+
 Use the provided startup script to install dependencies, build, and start all servers:
 
 ```bash
@@ -68,11 +127,33 @@ This will:
 - Install all dependencies
 - Build the shared package
 - Start both backend and frontend servers
-- Open your browser automatically
 
 To stop all servers, press `Ctrl+C` or run:
 ```bash
 ./stop.sh
+```
+
+**Windows:**
+
+Use the provided PowerShell script to install dependencies, build, and start all servers:
+
+```powershell
+.\start.ps1
+```
+
+**Note:** If you encounter an execution policy error, you may need to run:
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+This will:
+- Install all dependencies
+- Build the shared package
+- Start both backend and frontend servers
+
+To stop all servers, press `Ctrl+C` or run:
+```powershell
+.\stop.ps1
 ```
 
 #### Manual Start
