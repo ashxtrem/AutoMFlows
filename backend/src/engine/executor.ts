@@ -13,6 +13,7 @@ import { enforceReportRetention } from '../utils/reportRetention';
 import { getAllReusableScopes } from '../utils/reusableFlowExtractor';
 import { resolveFromProjectRoot } from '../utils/pathUtils';
 import { migrateWorkflow } from '../utils/migration';
+import { ActionRecorderSessionManager } from '../utils/actionRecorderSessionManager';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -34,6 +35,7 @@ export class Executor {
   private executionTracker?: ExecutionTracker;
   private recordSession: boolean;
   private breakpointConfig?: BreakpointConfig;
+  private builderModeEnabled: boolean = false;
   // Pause state
   private isPaused: boolean = false;
   private pausedNodeId: string | null = null;
@@ -50,7 +52,8 @@ export class Executor {
     screenshotConfig?: ScreenshotConfig,
     reportConfig?: ReportConfig,
     recordSession: boolean = false,
-    breakpointConfig?: BreakpointConfig
+    breakpointConfig?: BreakpointConfig,
+    builderModeEnabled: boolean = false
   ) {
     this.executionId = uuidv4();
     
@@ -70,6 +73,7 @@ export class Executor {
     this.recordSession = recordSession;
     this.reportConfig = reportConfig;
     this.breakpointConfig = breakpointConfig;
+    this.builderModeEnabled = builderModeEnabled;
     this.parser = new WorkflowParser(this.workflow);
     this.context = new ContextManager();
     
@@ -602,6 +606,39 @@ export class Executor {
         }
       }
 
+      // Check if builder mode is enabled - if so, keep browser open
+      if (this.builderModeEnabled) {
+        this.traceLog(`[TRACE] Builder mode enabled - keeping browser open`);
+        
+        // Get the last node ID
+        const lastNodeId = executionOrder[executionOrder.length - 1];
+        
+        // Get page and context from context manager
+        const page = this.context.getPage();
+        const browserContext = this.context.getBrowserContext(); // Gets browser context
+        
+        if (page && browserContext) {
+          // Set page in action recorder session manager
+          const sessionManager = ActionRecorderSessionManager.getInstance();
+          sessionManager.setIO(this.io);
+          sessionManager.setPageFromExecution(page, browserContext, this.executionId);
+          
+          // Emit builder mode ready event
+          this.emitEvent({
+            type: ExecutionEventType.BUILDER_MODE_READY,
+            nodeId: lastNodeId,
+            timestamp: Date.now(),
+          });
+          
+          // Keep execution status as running (don't complete)
+          // Browser stays open, user can switch to it and start recording
+          this.traceLog(`[TRACE] Builder mode ready - browser session available for action recording`);
+          return; // Exit without completing execution
+        } else {
+          this.traceLog(`[TRACE] Builder mode enabled but no browser session found`);
+        }
+      }
+      
       this.status = ExecutionStatus.COMPLETED;
       this.currentNodeId = null;
       this.traceLog(`[TRACE] Execution completed successfully`);
@@ -803,6 +840,12 @@ export class Executor {
 
   private async cleanup(): Promise<void> {
     try {
+      // Don't close browser if builder mode is enabled (browser needs to stay open)
+      if (this.builderModeEnabled) {
+        // Don't reset context either - we need to keep page/context references
+        return;
+      }
+      
       // Browser and context should already be closed by recordVideos()
       // But close browser if still open
       const playwrightAny = this.playwright as any;

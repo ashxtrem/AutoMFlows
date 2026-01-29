@@ -117,26 +117,42 @@ export default function TypeConfig({ node, onChange }: TypeConfigProps) {
         )}
       </div>
       {(data.inputMethod === 'type' || data.inputMethod === 'pressSequentially') && (
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">Delay Between Keystrokes (ms)</label>
-          <input
-            type="number"
-            value={getPropertyValue('delay', 0)}
-            onChange={(e) => onChange('delay', parseInt(e.target.value, 10) || 0)}
-            disabled={isPropertyDisabled('delay')}
-            min="0"
-            placeholder="0"
-            className={getInputClassName('delay', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
-          />
-          {isPropertyDisabled('delay') && (
-            <div className="mt-1 text-xs text-gray-500 italic">
-              This property is converted to input. Connect a node to provide the value.
+        <>
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={data.clearFirst || false}
+                onChange={(e) => onChange('clearFirst', e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-sm text-gray-300">Clear First</span>
+            </label>
+            <div className="mt-1 text-xs text-gray-400">
+              Clear the field before typing
             </div>
-          )}
-          <div className="mt-1 text-xs text-gray-400">
-            Delay in milliseconds between each keystroke. 0 = no delay (fast typing), higher values = slower typing (simulates human typing).
           </div>
-        </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Delay Between Keystrokes (ms)</label>
+            <input
+              type="number"
+              value={getPropertyValue('delay', 0)}
+              onChange={(e) => onChange('delay', parseInt(e.target.value, 10) || 0)}
+              disabled={isPropertyDisabled('delay')}
+              min="0"
+              placeholder="0"
+              className={getInputClassName('delay', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+            />
+            {isPropertyDisabled('delay') && (
+              <div className="mt-1 text-xs text-gray-500 italic">
+                This property is converted to input. Connect a node to provide the value.
+              </div>
+            )}
+            <div className="mt-1 text-xs text-gray-400">
+              Delay in milliseconds between each keystroke. 0 = no delay (fast typing), higher values = slower typing (simulates human typing).
+            </div>
+          </div>
+        </>
       )}
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
@@ -426,20 +442,41 @@ export default function TypeConfig({ node, onChange }: TypeConfigProps) {
                       )}
                     </div>
                     {data.retryUntilCondition?.type === 'selector' && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
-                        <select
-                          value={data.retryUntilCondition?.selectorType || 'css'}
-                          onChange={(e) => onChange('retryUntilCondition', {
-                            ...data.retryUntilCondition,
-                            selectorType: e.target.value,
-                          })}
-                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-                        >
-                          <option value="css">CSS</option>
-                          <option value="xpath">XPath</option>
-                        </select>
-                      </div>
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
+                          <select
+                            value={data.retryUntilCondition?.selectorType || 'css'}
+                            onChange={(e) => onChange('retryUntilCondition', {
+                              ...data.retryUntilCondition,
+                              selectorType: e.target.value,
+                            })}
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                          >
+                            <option value="css">CSS</option>
+                            <option value="xpath">XPath</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-1">Visibility</label>
+                          <select
+                            value={data.retryUntilCondition?.visibility || 'visible'}
+                            onChange={(e) => onChange('retryUntilCondition', {
+                              ...data.retryUntilCondition,
+                              visibility: e.target.value,
+                            })}
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                          >
+                            <option value="visible">Visible - Retry until element becomes visible</option>
+                            <option value="invisible">Invisible - Retry until element becomes invisible</option>
+                          </select>
+                          <div className="mt-1 text-xs text-gray-400">
+                            {data.retryUntilCondition?.visibility === 'invisible'
+                              ? 'Retry until the element disappears or becomes hidden'
+                              : 'Retry until the element appears and becomes visible'}
+                          </div>
+                        </div>
+                      </>
                     )}
                     <div>
                       <label className="block text-sm font-medium text-gray-300 mb-1">Max Retry Timeout (ms)</label>

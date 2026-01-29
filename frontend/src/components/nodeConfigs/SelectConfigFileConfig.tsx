@@ -1,6 +1,7 @@
 import { Node } from 'reactflow';
 import { SelectConfigFileNodeData } from '@automflows/shared';
 import { useState, useRef } from 'react';
+import JsonPreview from '../JsonPreview';
 
 interface SelectConfigFileConfigProps {
   node: Node;
@@ -94,6 +95,15 @@ export default function SelectConfigFileConfig({ node, onChange }: SelectConfigF
           If specified, config will be stored under data.{data.contextKey || 'key'}. Otherwise, merged into root
         </p>
       </div>
+
+      {/* JSON Preview */}
+      {data.fileContent && (
+        <JsonPreview
+          jsonContent={data.fileContent}
+          contextKey={data.contextKey}
+          error={jsonError || undefined}
+        />
+      )}
     </div>
   );
 }

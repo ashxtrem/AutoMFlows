@@ -100,22 +100,38 @@ export default function KeyboardConfig({ node, onChange }: KeyboardConfigProps) 
       )}
 
       {(action === 'type' || action === 'insertText') && (
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">Text</label>
-          <textarea
-            value={getPropertyValue('text', '')}
-            onChange={(e) => onChange('text', e.target.value)}
-            placeholder="Text to type"
-            rows={3}
-            disabled={isPropertyDisabled('text')}
-            className={getInputClassName('text', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
-          />
-          {isPropertyDisabled('text') && (
-            <div className="mt-1 text-xs text-gray-500 italic">
-              This property is converted to input. Connect a node to provide the value.
+        <>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Text</label>
+            <textarea
+              value={getPropertyValue('text', '')}
+              onChange={(e) => onChange('text', e.target.value)}
+              placeholder="Text to type"
+              rows={3}
+              disabled={isPropertyDisabled('text')}
+              className={getInputClassName('text', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+            />
+            {isPropertyDisabled('text') && (
+              <div className="mt-1 text-xs text-gray-500 italic">
+                This property is converted to input. Connect a node to provide the value.
+              </div>
+            )}
+          </div>
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={data.clearFirst || false}
+                onChange={(e) => onChange('clearFirst', e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-sm text-gray-300">Clear First</span>
+            </label>
+            <div className="mt-1 text-xs text-gray-400">
+              Clear the field before typing or inserting text
             </div>
-          )}
-        </div>
+          </div>
+        </>
       )}
 
       {action === 'type' && (

@@ -6,6 +6,7 @@ import path from 'path';
 import workflowRoutes from './routes/workflows';
 import pluginRoutes from './routes/plugins';
 import reportRoutes from './routes/reports';
+import fileRoutes from './routes/files';
 import { findAvailablePort } from './utils/portFinder';
 import { writePortFile, deletePortFile } from './utils/writePort';
 import { PluginLoader } from './plugins/loader';
@@ -36,6 +37,7 @@ app.use((req, res, next) => {
 app.use('/api/workflows', workflowRoutes(io));
 app.use('/api/plugins', pluginRoutes());
 app.use('/api/reports', reportRoutes());
+app.use('/api/files', fileRoutes());
 
 // Serve static report files from output directory (project root)
 const outputDir = resolveFromProjectRoot('./output');

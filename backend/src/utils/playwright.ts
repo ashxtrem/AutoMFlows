@@ -12,7 +12,7 @@ export class PlaywrightManager {
   private screenshotsDir: string;
   private videosDir: string | null = null;
   private recordSession: boolean = false;
-  private contexts: Map<string, BrowserContext> = new Map(); // Store multiple contexts
+  // private contexts: Map<string, BrowserContext> = new Map(); // Store multiple contexts - reserved for future use
 
   constructor(screenshotsDirectory?: string, videosDirectory?: string, recordSession: boolean = false) {
     // Use provided directory or fallback to default
@@ -315,16 +315,32 @@ export class PlaywrightManager {
     }
 
     // Inject custom JavaScript script if provided
+    // IMPORTANT: Scripts added via addInitScript run BEFORE page scripts load
+    // This ensures mocks (like navigator.geolocation, window.AlipayJSBridge) are in place
+    // before the page's JavaScript executes and tries to use them
     if (jsScript && jsScript.trim().length > 0) {
       try {
+        // The script is already an IIFE, so we can inject it directly
+        // addInitScript ensures it runs synchronously before any page scripts
         await this.context.addInitScript(jsScript);
       } catch (error: any) {
         // Log warning but don't fail browser launch
-        console.warn('Failed to inject JavaScript script:', error.message);
+        console.warn('Failed to inject JavaScript script via context.addInitScript:', error.message);
       }
     }
 
     this.page = await this.context.newPage();
+
+    // Also add init script to the page itself for future navigations
+    // This ensures the script runs before page scripts on every navigation
+    if (jsScript && jsScript.trim().length > 0) {
+      try {
+        await this.page.addInitScript(jsScript);
+      } catch (error: any) {
+        // Log warning but don't fail browser launch
+        console.warn('Failed to add init script to page:', error.message);
+      }
+    }
 
     // Note: When maxWindow is true, we don't set viewport in browserContextOptions
     // This allows the browser to use its default/full screen size

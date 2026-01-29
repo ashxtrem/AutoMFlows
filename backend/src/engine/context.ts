@@ -145,7 +145,7 @@ export class ContextManager {
     this.contexts.set(key, browserContext);
   }
 
-  getContext(key?: string): BrowserContext | null {
+  getBrowserContext(key?: string): BrowserContext | null {
     const contextKey = key || this.currentContextKey;
     if (!contextKey) {
       return null;

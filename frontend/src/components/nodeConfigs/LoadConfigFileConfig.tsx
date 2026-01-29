@@ -1,5 +1,8 @@
 import { Node } from 'reactflow';
 import { LoadConfigFileNodeData } from '@automflows/shared';
+import { useState, useEffect } from 'react';
+import { getBackendPort } from '../../utils/getBackendPort';
+import JsonPreview from '../JsonPreview';
 
 interface LoadConfigFileConfigProps {
   node: Node;
@@ -8,6 +11,61 @@ interface LoadConfigFileConfigProps {
 
 export default function LoadConfigFileConfig({ node, onChange }: LoadConfigFileConfigProps) {
   const data = node.data as LoadConfigFileNodeData;
+  const [fileContent, setFileContent] = useState<string | null>(null);
+  const [parsedContent, setParsedContent] = useState<object | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchFileContent = async () => {
+      if (!data.filePath || data.filePath.trim() === '') {
+        setFileContent(null);
+        setParsedContent(null);
+        setError(null);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+
+      try {
+        const port = await getBackendPort();
+        const response = await fetch(
+          `http://localhost:${port}/api/files/read?filePath=${encodeURIComponent(data.filePath)}`
+        );
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || errorData.error || 'Failed to read file');
+        }
+
+        const result = await response.json();
+        
+        if (result.error) {
+          setError(result.error);
+          setFileContent(result.content || null);
+          setParsedContent(null);
+        } else {
+          setFileContent(result.content);
+          setParsedContent(result.parsed || null);
+          setError(null);
+        }
+      } catch (err: any) {
+        setError(err.message || 'Failed to load file');
+        setFileContent(null);
+        setParsedContent(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Debounce the fetch to avoid too many requests while typing
+    const timeoutId = setTimeout(() => {
+      fetchFileContent();
+    }, 500);
+
+    return () => clearTimeout(timeoutId);
+  }, [data.filePath]);
 
   return (
     <div className="space-y-4">
@@ -41,6 +99,14 @@ export default function LoadConfigFileConfig({ node, onChange }: LoadConfigFileC
           If specified, config will be stored under data.{data.contextKey || 'key'}. Otherwise, merged into root
         </p>
       </div>
+
+      {/* JSON Preview */}
+      <JsonPreview
+        jsonContent={parsedContent || fileContent}
+        contextKey={data.contextKey}
+        loading={loading}
+        error={error || undefined}
+      />
     </div>
   );
 }

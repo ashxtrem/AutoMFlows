@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Node, Edge, Connection, addEdge, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange } from 'reactflow';
-import { NodeType, PropertyDataType, PageDebugInfo } from '@automflows/shared';
+import { NodeType, PropertyDataType, PageDebugInfo, RecordedAction } from '@automflows/shared';
 import { frontendPluginRegistry } from '../plugins/registry';
 import { getNodeProperties, getPropertyInputHandleId } from '../utils/nodeProperties';
 import { ValidationError } from '../utils/validation';
@@ -149,6 +149,26 @@ interface WorkflowState {
   // Selector finder state
   setSelectorFinderSession: (sessionId: string | null) => void;
   setSelectorFinderActive: (active: boolean) => void;
+  
+  // Builder mode state
+  builderModeEnabled: boolean;
+  builderModeActive: boolean;
+  lastCompletedNodeId: string | null;
+  builderModeActions: RecordedAction[];
+  builderModeInsertedActionIds: Set<string>;
+  builderModeModalMinimized: boolean;
+  builderModeModalPosition: { x: number; y: number } | null;
+  setBuilderModeEnabled: (enabled: boolean) => void;
+  setBuilderModeActive: (active: boolean) => void;
+  setLastCompletedNodeId: (nodeId: string | null) => void;
+  setBuilderModeActions: (actions: RecordedAction[]) => void;
+  addBuilderModeAction: (action: RecordedAction) => void;
+  updateBuilderModeAction: (actionId: string, updates: Partial<RecordedAction>) => void;
+  removeBuilderModeAction: (actionId: string) => void;
+  markActionAsInserted: (actionId: string, nodeId: string) => void;
+  setBuilderModeModalMinimized: (minimized: boolean) => void;
+  setBuilderModeModalPosition: (position: { x: number; y: number } | null) => void;
+  resetBuilderModeActions: () => void;
 }
 
 // Helper function to reconnect edges when a node is deleted
@@ -274,6 +294,50 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
         return saved === 'true';
       } catch (error) {
         return false;
+      }
+    })(),
+    
+    // Builder mode state
+    builderModeEnabled: (() => {
+      try {
+        const saved = localStorage.getItem('automflows_builder_mode_enabled');
+        return saved === 'true';
+      } catch (error) {
+        return false;
+      }
+    })(),
+    builderModeActive: false,
+    lastCompletedNodeId: null,
+    builderModeActions: (() => {
+      try {
+        const saved = localStorage.getItem('automflows_builder_mode_actions');
+        return saved ? JSON.parse(saved) : [];
+      } catch (error) {
+        return [];
+      }
+    })(),
+    builderModeInsertedActionIds: (() => {
+      try {
+        const saved = localStorage.getItem('automflows_builder_mode_inserted_ids');
+        return saved ? new Set(JSON.parse(saved)) : new Set<string>();
+      } catch (error) {
+        return new Set<string>();
+      }
+    })(),
+    builderModeModalMinimized: (() => {
+      try {
+        const saved = localStorage.getItem('automflows_builder_mode_modal_minimized');
+        return saved === 'true';
+      } catch (error) {
+        return false;
+      }
+    })(),
+    builderModeModalPosition: (() => {
+      try {
+        const saved = localStorage.getItem('automflows_builder_mode_modal_position');
+        return saved ? JSON.parse(saved) : null;
+      } catch (error) {
+        return null;
       }
     })(),
 
@@ -1333,10 +1397,134 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
   setSelectorFinderActive: (active) => {
     set({ selectorFinderActive: active });
   },
+  
+  // Builder mode methods
+  setBuilderModeEnabled: (enabled) => {
+    set({ builderModeEnabled: enabled });
+    try {
+      localStorage.setItem('automflows_builder_mode_enabled', String(enabled));
+    } catch (error) {
+      console.warn('Failed to save builder mode enabled to localStorage:', error);
+    }
+  },
+  
+  setBuilderModeActive: (active) => {
+    set({ builderModeActive: active });
+  },
+  
+  setLastCompletedNodeId: (nodeId) => {
+    set({ lastCompletedNodeId: nodeId });
+  },
+  
+  setBuilderModeActions: (actions) => {
+    set({ builderModeActions: actions });
+    try {
+      localStorage.setItem('automflows_builder_mode_actions', JSON.stringify(actions));
+    } catch (error) {
+      console.warn('Failed to save builder mode actions to localStorage:', error);
+    }
+  },
+  
+  addBuilderModeAction: (action) => {
+    const state = get();
+    const newActions = [...state.builderModeActions, action];
+    set({ builderModeActions: newActions });
+    try {
+      localStorage.setItem('automflows_builder_mode_actions', JSON.stringify(newActions));
+    } catch (error) {
+      console.warn('Failed to save builder mode actions to localStorage:', error);
+    }
+  },
+  
+  updateBuilderModeAction: (actionId, updates) => {
+    const state = get();
+    const newActions = state.builderModeActions.map(action => 
+      action.id === actionId ? { ...action, ...updates } : action
+    );
+    set({ builderModeActions: newActions });
+    try {
+      localStorage.setItem('automflows_builder_mode_actions', JSON.stringify(newActions));
+    } catch (error) {
+      console.warn('Failed to save builder mode actions to localStorage:', error);
+    }
+  },
+  
+  removeBuilderModeAction: (actionId) => {
+    const state = get();
+    const newActions = state.builderModeActions.filter(action => action.id !== actionId);
+    const newInsertedIds = new Set(state.builderModeInsertedActionIds);
+    newInsertedIds.delete(actionId);
+    set({ 
+      builderModeActions: newActions,
+      builderModeInsertedActionIds: newInsertedIds
+    });
+    try {
+      localStorage.setItem('automflows_builder_mode_actions', JSON.stringify(newActions));
+      localStorage.setItem('automflows_builder_mode_inserted_ids', JSON.stringify(Array.from(newInsertedIds)));
+    } catch (error) {
+      console.warn('Failed to save builder mode actions to localStorage:', error);
+    }
+  },
+  
+  markActionAsInserted: (actionId, nodeId) => {
+    const state = get();
+    const newActions = state.builderModeActions.map(action => 
+      action.id === actionId ? { ...action, inserted: true, nodeId } : action
+    );
+    const newInsertedIds = new Set(state.builderModeInsertedActionIds);
+    newInsertedIds.add(actionId);
+    set({ 
+      builderModeActions: newActions,
+      builderModeInsertedActionIds: newInsertedIds
+    });
+    try {
+      localStorage.setItem('automflows_builder_mode_actions', JSON.stringify(newActions));
+      localStorage.setItem('automflows_builder_mode_inserted_ids', JSON.stringify(Array.from(newInsertedIds)));
+    } catch (error) {
+      console.warn('Failed to save builder mode actions to localStorage:', error);
+    }
+  },
+  
+  setBuilderModeModalMinimized: (minimized) => {
+    set({ builderModeModalMinimized: minimized });
+    try {
+      localStorage.setItem('automflows_builder_mode_modal_minimized', String(minimized));
+    } catch (error) {
+      console.warn('Failed to save builder mode modal minimized to localStorage:', error);
+    }
+  },
+  
+  setBuilderModeModalPosition: (position) => {
+    set({ builderModeModalPosition: position });
+    try {
+      if (position) {
+        localStorage.setItem('automflows_builder_mode_modal_position', JSON.stringify(position));
+      } else {
+        localStorage.removeItem('automflows_builder_mode_modal_position');
+      }
+    } catch (error) {
+      console.warn('Failed to save builder mode modal position to localStorage:', error);
+    }
+  },
+  
+  resetBuilderModeActions: () => {
+    set({ 
+      builderModeActions: [],
+      builderModeInsertedActionIds: new Set<string>(),
+      builderModeActive: false,
+      lastCompletedNodeId: null
+    });
+    try {
+      localStorage.setItem('automflows_builder_mode_actions', JSON.stringify([]));
+      localStorage.setItem('automflows_builder_mode_inserted_ids', JSON.stringify([]));
+    } catch (error) {
+      console.warn('Failed to reset builder mode actions in localStorage:', error);
+    }
+  },
 };
 });
 
-function getNodeLabel(type: NodeType | string): string {
+export function getNodeLabel(type: NodeType | string): string {
   // Check if it's a built-in node type (check if value exists in enum values)
   if (Object.values(NodeType).includes(type as NodeType)) {
     const labels: Record<NodeType, string> = {
@@ -1369,6 +1557,7 @@ function getNodeLabel(type: NodeType | string): string {
       [NodeType.DB_CONNECT]: 'DB Connect',
       [NodeType.DB_DISCONNECT]: 'DB Disconnect',
       [NodeType.DB_QUERY]: 'DB Query',
+      [NodeType.CONTEXT_MANIPULATE]: 'Context Manipulate',
     };
     return labels[type as NodeType] || type;
   }

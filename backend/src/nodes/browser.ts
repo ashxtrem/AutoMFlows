@@ -23,7 +23,10 @@ export class OpenBrowserHandler implements NodeHandler {
     const viewport = data.viewportWidth && data.viewportHeight
       ? { width: data.viewportWidth, height: data.viewportHeight }
       : undefined;
-    const jsScript = data.jsScript;
+    // Interpolate variables in jsScript before passing to playwright
+    const jsScript = data.jsScript 
+      ? VariableInterpolator.interpolateString(data.jsScript, context)
+      : undefined;
     const browserType = data.browser || 'chromium';
     const maxWindow = data.maxWindow !== false; // Default to true
     const capabilities = data.capabilities || {};
@@ -107,12 +110,28 @@ export class NavigationHandler implements NodeHandler {
             if (!url.match(/^https?:\/\//i)) {
               url = `https://${url}`;
             }
+            
+            // Ensure init scripts are set up before navigation
+            // Note: Init scripts added via context.addInitScript() will automatically run before page loads
+            
             const waitUntil = data.waitUntil || 'networkidle';
             const gotoOptions: any = { waitUntil, timeout };
             if (data.referer) {
               gotoOptions.referer = VariableInterpolator.interpolateString(data.referer, contextManager);
             }
             await page.goto(url, gotoOptions);
+            
+            // Ensure DOM is ready after navigation
+            // Wait for document.body to be available, which indicates DOM is loaded
+            try {
+              await page.waitForFunction(() => {
+                return document.body !== null && document.body !== undefined;
+              }, { timeout: 5000 }).catch(() => {
+                // If body isn't ready, that's okay - page might still be loading
+              });
+            } catch (e) {
+              // Ignore - page might be ready even if body check fails
+            }
             break;
 
           case 'goBack':
@@ -294,9 +313,10 @@ export class ContextManipulateHandler implements NodeHandler {
           } else {
             // Try to get context directly from PlaywrightManager
             browserContext = playwright.getContext();
-            if (!browserContext) {
-              throw new Error('No browser context available. Ensure Open Browser node is executed first.');
-            }
+          }
+          
+          if (!browserContext) {
+            throw new Error('No browser context available. Ensure Open Browser node is executed first.');
           }
           
           // Validate geolocation data
@@ -344,10 +364,12 @@ export class ContextManipulateHandler implements NodeHandler {
           } else {
             // Try to get context directly from PlaywrightManager
             browserContext = playwright.getContext();
-            if (!browserContext) {
-              throw new Error('No browser context available. Ensure Open Browser node is executed first.');
-            }
           }
+          
+          if (!browserContext) {
+            throw new Error('No browser context available. Ensure Open Browser node is executed first.');
+          }
+          
           if (!data.permissions || data.permissions.length === 0) {
             throw new Error('Permissions array is required');
           }
@@ -407,7 +429,6 @@ export class ContextManipulateHandler implements NodeHandler {
           }
           const contextOptions: any = {};
           // Copy current context options
-          const currentPages = currentContext.pages();
           const newContext = await browser.newContext({ ...contextOptions, locale: data.locale });
           // Create a new page in the new context
           const newPage = await newContext.newPage();
@@ -501,7 +522,7 @@ export class ContextManipulateHandler implements NodeHandler {
             throw new Error('Browser must be launched before creating a context');
           }
           const contextKey = data.contextKey || `context-${Date.now()}`;
-          if (contextManager.getContext(contextKey)) {
+          if (contextManager.getBrowserContext(contextKey)) {
             throw new Error(`Context with key "${contextKey}" already exists`);
           }
           const contextOptions = data.contextOptions || {};
@@ -517,7 +538,7 @@ export class ContextManipulateHandler implements NodeHandler {
           if (!data.contextKey) {
             throw new Error('Context key is required for switchContext action');
           }
-          const browserContext = contextManager.getContext(data.contextKey);
+          const browserContext = contextManager.getBrowserContext(data.contextKey);
           if (!browserContext) {
             throw new Error(`Context with key "${data.contextKey}" not found`);
           }

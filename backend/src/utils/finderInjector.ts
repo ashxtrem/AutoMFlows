@@ -107,7 +107,7 @@ export class FinderInjector {
             if (overlay) {
               overlay.style.setProperty('position', 'fixed', 'important');
               overlay.style.setProperty('bottom', '20px', 'important');
-              overlay.style.setProperty('right', '20px', 'important');
+              overlay.style.setProperty('left', '20px', 'important');
               overlay.style.setProperty('z-index', '2147483647', 'important');
               overlay.style.setProperty('visibility', 'visible', 'important');
               overlay.style.setProperty('opacity', '1', 'important');
@@ -321,48 +321,70 @@ export class FinderInjector {
         let finderActive = false;
         let overlayElement = null;
         
+        // Robust viewport calculation function
+        function getViewportDimensions() {
+          const vw1 = window.innerWidth || 0;
+          const vh1 = window.innerHeight || 0;
+          const vw2 = document.documentElement.clientWidth || 0;
+          const vh2 = document.documentElement.clientHeight || 0;
+          const vw3 = document.body?.clientWidth || 0;
+          const vh3 = document.body?.clientHeight || 0;
+          
+          return {
+            width: Math.max(vw1, vw2, vw3),
+            height: Math.max(vh1, vh2, vh3)
+          };
+        }
+        
         function createOverlay() {
-          console.log('[FinderInjector] createOverlay called, document.body:', !!document.body);
-          if (!document.body) {
-            console.log('[FinderInjector] document.body not ready, cannot create overlay');
+          if (!document.body && !document.documentElement) {
+            setTimeout(createOverlay, 50);
+            return;
+          }
+          
+          // Wait for viewport to be ready (not 0x0) using robust calculation
+          const viewport = getViewportDimensions();
+          if (viewport.width === 0 || viewport.height === 0) {
+            requestAnimationFrame(function checkViewport() {
+              const vp = getViewportDimensions();
+              if (vp.width > 0 && vp.height > 0) {
+                createOverlay();
+              } else {
+                requestAnimationFrame(checkViewport);
+              }
+            });
             return;
           }
           
           // Remove existing overlay if any
           const existing = document.getElementById('automflows-finder-overlay');
           if (existing) {
-            console.log('[FinderInjector] Removing existing overlay');
             existing.remove();
           }
           
-          console.log('[FinderInjector] Creating overlay element');
           overlayElement = document.createElement('div');
           overlayElement.id = 'automflows-finder-overlay';
           overlayElement.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
           
-          // Set styles individually with !important to ensure they apply
-          // Use actual viewport dimensions to ensure visibility
-          const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-          const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
           const overlayWidth = 48;
           const overlayHeight = 48;
           const margin = 20;
           
-          // Ensure position is within viewport bounds - use right/bottom positioning
+          // Clear any inset property first to avoid conflicts
+          overlayElement.style.removeProperty('inset');
+          overlayElement.style.removeProperty('inset-block');
+          overlayElement.style.removeProperty('inset-inline');
+          
+          // Core positioning properties
           overlayElement.style.setProperty('position', 'fixed', 'important');
           overlayElement.style.setProperty('bottom', margin + 'px', 'important');
-          overlayElement.style.setProperty('right', margin + 'px', 'important');
-          overlayElement.style.setProperty('left', 'auto', 'important');
+          overlayElement.style.setProperty('left', margin + 'px', 'important');
+          overlayElement.style.setProperty('right', 'auto', 'important');
           overlayElement.style.setProperty('top', 'auto', 'important');
           overlayElement.style.setProperty('width', overlayWidth + 'px', 'important');
           overlayElement.style.setProperty('height', overlayHeight + 'px', 'important');
           
-          console.log('[FinderInjector] Setting overlay position:', {
-            viewport: { width: viewportWidth, height: viewportHeight },
-            position: { right: margin + 'px', bottom: margin + 'px' },
-            expectedLeft: viewportWidth - overlayWidth - margin,
-            expectedTop: viewportHeight - overlayHeight - margin
-          });
+          // Visual styling
           overlayElement.style.setProperty('background-color', '#3B82F6', 'important');
           overlayElement.style.setProperty('border-radius', '50%', 'important');
           overlayElement.style.setProperty('display', 'flex', 'important');
@@ -375,19 +397,14 @@ export class FinderInjector {
           overlayElement.style.setProperty('visibility', 'visible', 'important');
           overlayElement.style.setProperty('opacity', '1', 'important');
           overlayElement.style.setProperty('pointer-events', 'auto', 'important');
-          overlayElement.style.setProperty('transform', 'none', 'important');
           overlayElement.style.setProperty('margin', '0', 'important');
           overlayElement.style.setProperty('padding', '0', 'important');
           
-          console.log('[FinderInjector] Overlay element created with styles:', {
-            position: overlayElement.style.position,
-            bottom: overlayElement.style.bottom,
-            right: overlayElement.style.right,
-            zIndex: overlayElement.style.zIndex,
-            display: overlayElement.style.display,
-            visibility: overlayElement.style.visibility,
-            opacity: overlayElement.style.opacity
-          });
+          // Robust CSS reset - isolate from page layout and ensure top compositing layer
+          overlayElement.style.setProperty('contain', 'layout style paint', 'important');
+          overlayElement.style.setProperty('transform', 'none', 'important');
+          overlayElement.style.setProperty('will-change', 'transform', 'important');
+          overlayElement.style.setProperty('backface-visibility', 'hidden', 'important');
           
           overlayElement.addEventListener('mouseenter', function() {
             this.style.transform = 'scale(1.1)';
@@ -407,257 +424,33 @@ export class FinderInjector {
             toggleFinderMode();
           });
           
-          // Append to document.body instead of documentElement - body is more reliable
-          // Also check if we're in an iframe
-          const isInIframe = window.self !== window.top;
-          console.log('[FinderInjector] Appending overlay, isInIframe:', isInIframe, 'window.location:', window.location.href);
-          
-          // Wait for body to be ready
+          // Fix 1: Append to documentElement (<html>) to avoid body stacking contexts
           function appendOverlay() {
-            if (document.body) {
+            if (document.documentElement) {
+              document.documentElement.appendChild(overlayElement);
+            } else if (document.body) {
               document.body.appendChild(overlayElement);
-              console.log('[FinderInjector] Overlay element appended to document.body, id:', overlayElement.id);
-              
-              // Verify it's actually in the DOM
-              const verify = document.getElementById('automflows-finder-overlay');
-              if (verify && verify.parentElement === document.body) {
-                console.log('[FinderInjector] Overlay verified in DOM, parent:', verify.parentElement.tagName);
-              } else {
-                console.error('[FinderInjector] Overlay NOT found in DOM after append!');
-              }
             } else {
-              console.log('[FinderInjector] document.body not ready, retrying...');
               setTimeout(appendOverlay, 50);
-            }
-          }
-          
-          appendOverlay();
-          
-          // If in iframe, also try appending to top window
-          if (isInIframe && window.top && window.top !== window.self) {
-            try {
-              const topDoc = window.top.document;
-              if (topDoc && topDoc.body) {
-                const topOverlay = overlayElement.cloneNode(true);
-                topOverlay.id = 'automflows-finder-overlay-top';
-                topDoc.body.appendChild(topOverlay);
-                console.log('[FinderInjector] Also appended overlay to top window body');
-              }
-            } catch (e) {
-              console.warn('[FinderInjector] Could not append to top window (cross-origin?):', e);
-            }
-          }
-          
-          // Immediately verify it's visible using requestAnimationFrame
-          requestAnimationFrame(function() {
-            const rect = overlayElement.getBoundingClientRect();
-            const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-            const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-            const computedStyle = window.getComputedStyle(overlayElement);
-            
-            // Expand all values for debugging
-            const positionInfo = {
-              rect: {
-                top: rect.top,
-                left: rect.left,
-                bottom: rect.bottom,
-                right: rect.right,
-                width: rect.width,
-                height: rect.height
-              },
-              viewport: {
-                width: viewportWidth,
-                height: viewportHeight,
-                scrollX: window.scrollX,
-                scrollY: window.scrollY
-              },
-              isInViewport: rect.top >= 0 && rect.left >= 0 && rect.bottom <= viewportHeight && rect.right <= viewportWidth,
-              parent: overlayElement.parentElement?.tagName,
-              computed: {
-                position: computedStyle.position,
-                bottom: computedStyle.bottom,
-                right: computedStyle.right,
-                top: computedStyle.top,
-                left: computedStyle.left,
-                zIndex: computedStyle.zIndex,
-                display: computedStyle.display,
-                visibility: computedStyle.visibility,
-                opacity: computedStyle.opacity,
-                transform: computedStyle.transform,
-                willChange: computedStyle.willChange
-              },
-              // Check if element is actually visible on screen (not just in viewport bounds)
-              isActuallyVisible: rect.width > 0 && rect.height > 0 && 
-                                rect.top >= 0 && rect.top < viewportHeight &&
-                                rect.left >= 0 && rect.left < viewportWidth &&
-                                rect.bottom > 0 && rect.bottom <= viewportHeight &&
-                                rect.right > 0 && rect.right <= viewportWidth
-            };
-            
-            // If element is positioned off-screen, fix it
-            if (!positionInfo.isActuallyVisible) {
-              console.error('[FinderInjector] Overlay is positioned off-screen! Fixing position...', {
-                rect: positionInfo.rect,
-                viewport: positionInfo.viewport,
-                computed: positionInfo.computed
-              });
-              
-              // Force position to be within viewport - ensure element fits
-              const overlayWidth = 48;
-              const overlayHeight = 48;
-              const margin = 10; // Use smaller margin to ensure visibility
-              
-              // Calculate safe position - ensure element is fully visible
-              const safeRight = Math.max(margin, Math.min(margin, viewportWidth - overlayWidth - margin));
-              const safeBottom = Math.max(margin, Math.min(margin, viewportHeight - overlayHeight - margin));
-              
-              overlayElement.style.setProperty('right', safeRight + 'px', 'important');
-              overlayElement.style.setProperty('bottom', safeBottom + 'px', 'important');
-              overlayElement.style.setProperty('left', 'auto', 'important');
-              overlayElement.style.setProperty('top', 'auto', 'important');
-              
-              console.log('[FinderInjector] Fixed overlay position to:', {
-                right: safeRight + 'px',
-                bottom: safeBottom + 'px',
-                viewport: { width: viewportWidth, height: viewportHeight }
-              });
+              return;
             }
             
-            
-            // If not visible, try forcing a repaint
-            if (rect.width === 0 || rect.height === 0) {
-              console.error('[FinderInjector] Overlay has zero size! Forcing repaint...');
+            // Fix 2: Simplified repaint logic without remove/re-add
+            requestAnimationFrame(function() {
+              // Toggle display to force layout calculation without detaching DOM node
               overlayElement.style.display = 'none';
               overlayElement.offsetHeight; // Force reflow
               overlayElement.style.setProperty('display', 'flex', 'important');
-            }
-            
-            
-          });
+              
+              // Fix 3: Delayed resize dispatch to allow main thread to clear
+              setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+                window.dispatchEvent(new Event('scroll'));
+              }, 250);
+            });
+          }
           
-          // Verify overlay is visible
-          setTimeout(function() {
-            const check = document.getElementById('automflows-finder-overlay');
-            if (check) {
-              const rect = check.getBoundingClientRect();
-              const computedStyle = window.getComputedStyle(check);
-              const isVisible = rect.width > 0 && rect.height > 0 && computedStyle.display !== 'none' && computedStyle.visibility !== 'hidden' && computedStyle.opacity !== '0';
-              console.log('[FinderInjector] Overlay verified:', {
-                exists: true,
-                visible: isVisible,
-                display: computedStyle.display,
-                visibility: computedStyle.visibility,
-                opacity: computedStyle.opacity,
-                width: rect.width,
-                height: rect.height,
-                position: { top: rect.top, left: rect.left, bottom: rect.bottom, right: rect.right },
-                zIndex: computedStyle.zIndex,
-                backgroundColor: computedStyle.backgroundColor
-              });
-              // Check viewport and clipping
-              const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
-              const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
-              const isInViewport = rect.top >= 0 && rect.left >= 0 && 
-                                   rect.bottom <= viewportHeight && rect.right <= viewportWidth;
-              
-              // Check for parent clipping
-              let parent = check.parentElement;
-              let clippedByParent = false;
-              while (parent && parent !== document.body) {
-                const parentStyle = window.getComputedStyle(parent);
-                if (parentStyle.overflow === 'hidden' || parentStyle.overflow === 'clip' || 
-                    parentStyle.overflowX === 'hidden' || parentStyle.overflowY === 'hidden') {
-                  clippedByParent = true;
-                  console.warn('[FinderInjector] Overlay may be clipped by parent:', parent.tagName, parent.id || parent.className);
-                  break;
-                }
-                parent = parent.parentElement;
-              }
-              
-              // Always log detailed position info for debugging
-              console.log('[FinderInjector] Detailed overlay position check:', {
-                rect: {
-                  top: rect.top,
-                  left: rect.left,
-                  bottom: rect.bottom,
-                  right: rect.right,
-                  width: rect.width,
-                  height: rect.height
-                },
-                viewport: {
-                  width: viewportWidth,
-                  height: viewportHeight,
-                  scrollX: window.scrollX,
-                  scrollY: window.scrollY
-                },
-                computed: {
-                  position: computedStyle.position,
-                  bottom: computedStyle.bottom,
-                  right: computedStyle.right,
-                  top: computedStyle.top,
-                  left: computedStyle.left,
-                  transform: computedStyle.transform,
-                  willChange: computedStyle.willChange
-                },
-                parent: {
-                  tagName: check.parentElement?.tagName,
-                  id: check.parentElement?.id,
-                  className: check.parentElement?.className
-                }
-              });
-              
-              if (!isVisible || !isInViewport || clippedByParent) {
-                console.error('[FinderInjector] Overlay visibility issues detected!', {
-                  visible: isVisible,
-                  isInViewport: isInViewport,
-                  clippedByParent: clippedByParent,
-                  display: computedStyle.display,
-                  visibility: computedStyle.visibility,
-                  opacity: computedStyle.opacity,
-                  width: rect.width,
-                  height: rect.height,
-                  position: { top: rect.top, left: rect.left, bottom: rect.bottom, right: rect.right },
-                  viewport: { width: viewportWidth, height: viewportHeight }
-                });
-                
-                // Force visibility with !important
-                check.style.setProperty('position', 'fixed', 'important');
-                check.style.setProperty('bottom', '20px', 'important');
-                check.style.setProperty('right', '20px', 'important');
-                check.style.setProperty('z-index', '2147483647', 'important');
-                check.style.setProperty('visibility', 'visible', 'important');
-                check.style.setProperty('opacity', '1', 'important');
-                check.style.setProperty('display', 'flex', 'important');
-                check.style.setProperty('pointer-events', 'auto', 'important');
-                check.style.setProperty('transform', 'none', 'important');
-                
-                // If clipped by parent, move to document.documentElement
-                if (clippedByParent && check.parentElement !== document.documentElement) {
-                  console.log('[FinderInjector] Moving overlay to document.documentElement to avoid clipping');
-                  document.documentElement.appendChild(check);
-                }
-                
-                // Re-check position after fix
-                setTimeout(function() {
-                  const newRect = check.getBoundingClientRect();
-                  console.log('[FinderInjector] Position after fix:', {
-                    top: newRect.top,
-                    left: newRect.left,
-                    bottom: newRect.bottom,
-                    right: newRect.right,
-                    width: newRect.width,
-                    height: newRect.height,
-                    inViewport: newRect.top >= 0 && newRect.left >= 0 && 
-                               newRect.bottom <= viewportHeight && newRect.right <= viewportWidth
-                  });
-                }, 50);
-                
-                console.log('[FinderInjector] Forced overlay visibility with !important');
-              }
-            } else {
-              console.error('[FinderInjector] Overlay element not found after append');
-            }
-          }, 100);
+          appendOverlay();
         }
         
         function toggleFinderMode() {
@@ -889,10 +682,22 @@ export class FinderInjector {
             // Recreate overlay on navigation (when body is replaced)
             const observer = new MutationObserver(function(mutations) {
               const overlayExists = !!document.getElementById('automflows-finder-overlay');
-              console.log('[FinderInjector] MutationObserver triggered, overlay exists:', overlayExists, 'url:', window.location.href);
-              if (!overlayExists) {
-                console.log('[FinderInjector] Overlay missing after navigation, recreating');
-                createOverlay();
+              if (!overlayExists && (document.body || document.documentElement)) {
+                setTimeout(function() {
+                  const viewport = getViewportDimensions();
+                  if (viewport.width > 0 && viewport.height > 0) {
+                    createOverlay();
+                  } else {
+                    requestAnimationFrame(function checkViewport() {
+                      const vp = getViewportDimensions();
+                      if (vp.width > 0 && vp.height > 0) {
+                        createOverlay();
+                      } else {
+                        requestAnimationFrame(checkViewport);
+                      }
+                    });
+                  }
+                }, 100);
               }
             });
             
@@ -901,16 +706,42 @@ export class FinderInjector {
               subtree: true
             });
             
-            // Also listen for navigation events
-            window.addEventListener('beforeunload', function() {
-              console.log('[FinderInjector] beforeunload event fired, url:', window.location.href);
+            // Listen for navigation events
+            window.addEventListener('popstate', function() {
+              setTimeout(function() {
+                const overlay = document.getElementById('automflows-finder-overlay');
+                if (!overlay && (document.body || document.documentElement)) {
+                  createOverlay();
+                }
+              }, 100);
+            });
+            
+            // Listen for viewport resize (mobile/desktop switch)
+            let resizeTimeout;
+            window.addEventListener('resize', function() {
+              clearTimeout(resizeTimeout);
+              resizeTimeout = setTimeout(function() {
+                const overlay = document.getElementById('automflows-finder-overlay');
+                if (overlay) {
+                  const rect = overlay.getBoundingClientRect();
+                  if (rect.width === 0 || rect.height === 0 || rect.top < 0 || rect.left < 0) {
+                    overlay.style.setProperty('position', 'fixed', 'important');
+                    overlay.style.setProperty('bottom', '20px', 'important');
+                    overlay.style.setProperty('left', '20px', 'important');
+                    overlay.style.setProperty('display', 'flex', 'important');
+                    overlay.style.setProperty('visibility', 'visible', 'important');
+                    overlay.style.setProperty('opacity', '1', 'important');
+                  }
+                } else if (document.body || document.documentElement) {
+                  createOverlay();
+                }
+              }, 100);
             });
             
             // Check overlay periodically (fallback)
             setInterval(function() {
               const overlay = document.getElementById('automflows-finder-overlay');
-              if (!overlay && document.body) {
-                console.log('[FinderInjector] Periodic check: overlay missing, recreating');
+              if (!overlay && (document.body || document.documentElement)) {
                 createOverlay();
               }
             }, 2000);
@@ -921,15 +752,41 @@ export class FinderInjector {
         }
         
         console.log('[FinderInjector] Initializing overlay, readyState:', document.readyState, 'url:', window.location.href);
+        
+        // Wait for both DOMContentLoaded AND load event to ensure page is fully painted
+        function waitForFullLoad() {
+          if (document.readyState === 'complete') {
+            console.log('[FinderInjector] Page fully loaded, initializing overlay');
+            // Wait one more frame to ensure browser has painted
+            requestAnimationFrame(function() {
+              requestAnimationFrame(function() {
+                initOverlay();
+              });
+            });
+          } else {
+            console.log('[FinderInjector] Waiting for load event, current readyState:', document.readyState);
+            window.addEventListener('load', function() {
+              console.log('[FinderInjector] Load event fired, initializing overlay');
+              // Wait for browser to complete initial paint
+              requestAnimationFrame(function() {
+                requestAnimationFrame(function() {
+                  initOverlay();
+                });
+              });
+            }, { once: true });
+          }
+        }
+        
         if (document.readyState === 'loading') {
           console.log('[FinderInjector] Waiting for DOMContentLoaded');
           document.addEventListener('DOMContentLoaded', function() {
             console.log('[FinderInjector] DOMContentLoaded fired, url:', window.location.href);
-            initOverlay();
+            // Wait for load event instead of initializing immediately
+            waitForFullLoad();
           });
         } else {
-          console.log('[FinderInjector] DOM already ready, initializing immediately');
-          initOverlay();
+          console.log('[FinderInjector] DOM already ready, waiting for full load');
+          waitForFullLoad();
         }
       })();
     `;
@@ -967,7 +824,7 @@ export class FinderInjector {
               const overlay = document.createElement('div');
               overlay.id = 'automflows-finder-overlay';
               overlay.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 21L15 15M17 10C17 13.866 13.866 17 10 17C6.13401 17 3 13.866 3 10C3 6.13401 6.13401 3 10 3C13.866 3 17 6.13401 17 10Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-              overlay.style.cssText = 'position: fixed; bottom: 20px; right: 20px; width: 48px; height: 48px; background-color: #3B82F6; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); z-index: 999999; transition: all 0.2s;';
+              overlay.style.cssText = 'position: fixed; bottom: 20px; left: 20px; width: 48px; height: 48px; background-color: #3B82F6; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3); z-index: 999999; transition: all 0.2s;';
               
               overlay.addEventListener('click', function(e) {
                 e.preventDefault();
@@ -977,7 +834,12 @@ export class FinderInjector {
                 }
               });
               
-              document.body.appendChild(overlay);
+              // Append to documentElement to avoid body stacking contexts
+              if (document.documentElement) {
+                document.documentElement.appendChild(overlay);
+              } else if (document.body) {
+                document.body.appendChild(overlay);
+              }
               console.log('[FinderInjector] Overlay created via direct injection');
             }
             

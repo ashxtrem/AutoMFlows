@@ -105,6 +105,9 @@ export function useExecution() {
     breakpointEnabled,
     breakpointAt,
     breakpointFor,
+    builderModeEnabled,
+    setBuilderModeActive,
+    setLastCompletedNodeId,
   } = useWorkflowStore();
   const reportRetention = useSettingsStore((state) => state.reports.reportRetention);
   const [port, setPort] = useState<number | null>(null);
@@ -122,14 +125,20 @@ export function useExecution() {
       if (!mounted) return;
       setPort(p);
       
-      // Initialize socket connection (only if not already exists)
-      if (!socket) {
+      // Initialize socket connection (only if not already exists and connected)
+      if (!socket || !socket.connected) {
+        // Disconnect old socket if it exists but not connected
+        if (socket) {
+          socket.disconnect();
+        }
         socket = io(`http://localhost:${p}`, {
           transports: ['websocket'],
         });
+        // Reset listenersRegistered when creating new socket so listeners are re-registered
+        listenersRegistered = false;
       }
 
-      // Only register listeners once to prevent duplicates
+      // Register listeners on current socket (always re-register if socket was recreated)
       if (!listenersRegistered) {
         // Remove any existing listeners to prevent duplicates
         socket.off('connect');
@@ -137,17 +146,32 @@ export function useExecution() {
         socket.off('disconnect');
 
         socket.on('connect', () => {
-      console.log('Connected to server');
-    });
+          console.log('Connected to server');
+        });
 
-    socket.on('execution-event', (event: any) => {
-      console.log('Execution event:', event);
+        socket.on('execution-event', async (event: any) => {
+          console.log('Execution event:', event);
       
       switch (event.type) {
         case ExecutionEventType.EXECUTION_START:
           setExecutionStatus('running');
           clearAllNodeErrors(); // Clear previous errors when starting new execution
           executionStartTimeRef.current = Date.now();
+          // Reset builder mode actions if builder mode is enabled (workflow rerun)
+          if (builderModeEnabled) {
+            const { resetBuilderModeActions } = useWorkflowStore.getState();
+            resetBuilderModeActions();
+            // Also reset on backend
+            const currentPort = port || await getBackendPortSync();
+            fetch(`http://localhost:${currentPort}/api/workflows/builder-mode/actions/reset`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            }).catch(() => {
+              // Ignore errors
+            });
+          }
           addNotification({
             type: 'info',
             title: 'Execution Started',
@@ -291,6 +315,40 @@ export function useExecution() {
             setExecutingNodeId(null);
           }, 2000);
           break;
+        case ExecutionEventType.BUILDER_MODE_READY:
+          // Builder mode ready - inject overlay
+          if (builderModeEnabled && event.nodeId) {
+            setLastCompletedNodeId(event.nodeId);
+            setBuilderModeActive(true);
+            // Call backend to inject overlay
+            (async () => {
+              const currentPort = port || await getBackendPortSync();
+              fetch(`http://localhost:${currentPort}/api/workflows/builder-mode/start`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+              }).then(async (response) => {
+                if (!response.ok) {
+                  const error = await response.json();
+                  throw new Error(error.message || 'Failed to start builder mode');
+                }
+                addNotification({
+                  type: 'info',
+                  title: 'Builder Mode Ready',
+                  message: 'Browser is ready for action recording. Click the capture icon in the browser to start recording.',
+                });
+              }).catch((error) => {
+                console.error('Failed to start builder mode:', error);
+                addNotification({
+                  type: 'error',
+                  title: 'Builder Mode Error',
+                  message: 'Failed to start builder mode: ' + error.message,
+                });
+              });
+            })();
+          }
+          break;
         case ExecutionEventType.EXECUTION_ERROR:
           setExecutionStatus('error');
           setExecutingNodeId(null);
@@ -341,10 +399,20 @@ export function useExecution() {
         socket = null;
       }
     };
-  }, [setExecutionStatus, setExecutingNodeId, resetExecution, setNodeError, clearAllNodeErrors, addNotification]);
+    }, [setExecutionStatus, setExecutingNodeId, resetExecution, setNodeError, clearAllNodeErrors, addNotification, builderModeEnabled, setBuilderModeActive, setLastCompletedNodeId, port, nodes, setValidationErrors, setStoreValidationErrors]);
 
   const executeWorkflowInternal = async (traceLogs: boolean = false, disableBreakpoints: boolean = false) => {
     try {
+      // Check if builder mode is enabled and headless browser is detected
+      if (builderModeEnabled && hasHeadlessBrowser(nodes)) {
+        addNotification({
+          type: 'error',
+          title: 'Builder Mode Requires Non-Headless Browser',
+          message: 'Builder Mode requires a non-headless browser. Please disable headless mode in the Open Browser node.',
+        });
+        return; // Prevent execution
+      }
+      
       // Validate input connections before execution
       const errors = validateInputConnections(nodes, edges);
       if (errors.length > 0) {
@@ -404,9 +472,11 @@ export function useExecution() {
           reportConfig,
           recordSession,
           breakpointConfig,
+          builderModeEnabled,
         }),
         signal: fetchController.signal,
       });
+      
       clearTimeout(fetchTimeoutId);
 
       if (!response.ok) {

@@ -24,7 +24,8 @@ export default function ApiCurlConfig({ node, onChange }: ApiCurlConfigProps) {
           placeholder={`curl -X POST https://api.example.com/users -H "Content-Type: application/json" -d '{"name": "John"}'`}
           rows={8}
           disabled={isPropertyDisabled('curlCommand')}
-          className={getInputClassName('curlCommand', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm font-mono')}
+          className={getInputClassName('curlCommand', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm font-mono whitespace-pre-wrap break-words')}
+          style={{ wordBreak: 'break-all' }}
         />
         {isPropertyDisabled('curlCommand') && (
           <div className="mt-1 text-xs text-gray-500 italic">
@@ -34,13 +35,28 @@ export default function ApiCurlConfig({ node, onChange }: ApiCurlConfigProps) {
         <div className="mt-1 text-xs text-gray-400">
           Supports variable interpolation: ${'{data.key.path}'} or ${'{variables.key.path}'}
         </div>
-        <div className="mt-2 p-3 bg-gray-800 rounded text-xs text-gray-400">
-          <div className="font-semibold mb-1">Example:</div>
-          <div className="font-mono whitespace-pre-wrap">
+        <div className="mt-2 space-y-2">
+          <div className="p-3 bg-gray-800 rounded text-xs text-gray-400">
+            <div className="font-semibold mb-1">Example (JSON):</div>
+            <div className="font-mono whitespace-pre-wrap">
 {`curl -X POST https://api.example.com/users/${'{data.api1.body.userId}'} \\
   -H "Authorization: Bearer ${'{data.auth.token}'}" \\
   -H "Content-Type: application/json" \\
   -d '{"name": "${'{data.user.name}'}"}'`}
+            </div>
+          </div>
+          <div className="p-3 bg-gray-800 rounded text-xs text-gray-400">
+            <div className="font-semibold mb-1">Example (multipart/form-data with file upload):</div>
+            <div className="font-mono whitespace-pre-wrap">
+{`curl --location 'https://api.example.com/upload' \\
+  --header 'Accept: multipart/form-data' \\
+  --form 'name="John"' \\
+  --form 'file=@"/path/to/file.csv"' \\
+  --form 'description="${'{data.description}'}"'`}
+            </div>
+            <div className="mt-2 text-gray-500 italic">
+              Note: Use --form or -F flags for multipart/form-data. File paths use @ prefix (e.g., file=@"path/to/file").
+            </div>
           </div>
         </div>
       </div>

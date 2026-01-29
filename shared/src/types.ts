@@ -97,6 +97,7 @@ export interface NavigateNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: 'css' | 'xpath';
+    visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
   retryDelay?: number;
@@ -139,6 +140,7 @@ export interface NavigationNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: 'css' | 'xpath';
+    visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
   retryDelay?: number;
@@ -163,6 +165,7 @@ export interface KeyboardNodeData {
   selector?: string; // Optional - focus element first before action
   selectorType?: 'css' | 'xpath'; // Selector type
   delay?: number; // For type action - delay between keystrokes
+  clearFirst?: boolean; // For type/insertText actions - clear field before typing
   // Advanced Waiting Options
   waitForSelector?: string;
   waitForSelectorType?: 'css' | 'xpath';
@@ -181,6 +184,7 @@ export interface KeyboardNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: 'css' | 'xpath';
+    visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
   retryDelay?: number;
@@ -223,6 +227,7 @@ export interface ScrollNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: 'css' | 'xpath';
+    visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
   retryDelay?: number;
@@ -257,6 +262,7 @@ export interface ClickNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: 'css' | 'xpath';
+    visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
   retryDelay?: number;
@@ -276,6 +282,7 @@ export interface TypeNodeData {
   text: string;
   inputMethod?: 'fill' | 'type' | 'pressSequentially' | 'append' | 'prepend' | 'direct';
   delay?: number; // Delay between keystrokes for type/pressSequentially methods (in ms)
+  clearFirst?: boolean; // Clear field before typing (for type/pressSequentially methods)
   timeout?: number;
   failSilently?: boolean;
   waitForSelector?: string;
@@ -294,6 +301,7 @@ export interface TypeNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: 'css' | 'xpath';
+    visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
   retryDelay?: number;
@@ -338,6 +346,7 @@ export interface ActionNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: 'css' | 'xpath';
+    visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
   retryDelay?: number;
@@ -378,6 +387,7 @@ export interface ElementQueryNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: 'css' | 'xpath';
+    visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
   retryDelay?: number;
@@ -421,6 +431,7 @@ export interface FormInputNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: 'css' | 'xpath';
+    visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
   retryDelay?: number;
@@ -456,6 +467,7 @@ export interface GetTextNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: 'css' | 'xpath';
+    visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
   retryDelay?: number;
@@ -498,6 +510,7 @@ export interface ScreenshotNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: 'css' | 'xpath';
+    visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
   retryDelay?: number;
@@ -549,6 +562,7 @@ export interface StorageNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: 'css' | 'xpath';
+    visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
   retryDelay?: number;
@@ -588,6 +602,7 @@ export interface DialogNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: 'css' | 'xpath';
+    visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
   retryDelay?: number;
@@ -628,6 +643,7 @@ export interface DownloadNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: 'css' | 'xpath';
+    visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
   retryDelay?: number;
@@ -671,6 +687,7 @@ export interface IframeNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: 'css' | 'xpath';
+    visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
   retryDelay?: number;
@@ -706,6 +723,7 @@ export interface WaitNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: 'css' | 'xpath';
+    visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
   retryDelay?: number;
@@ -752,6 +770,8 @@ export interface ApiRequestNodeData {
   headers?: Record<string, string>; // Supports interpolation in values
   body?: string; // Request body (supports interpolation)
   bodyType?: 'json' | 'form-data' | 'raw' | 'url-encoded';
+  formFields?: Array<{ key: string; value: string; type: 'text' }>; // For multipart/form-data text fields
+  formFiles?: Array<{ key: string; filePath: string }>; // For multipart/form-data file fields (supports interpolation in filePath)
   timeout?: number;
   contextKey?: string; // Where to store response (default: 'apiResponse')
   failSilently?: boolean;
@@ -918,6 +938,7 @@ export interface VerifyNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: 'css' | 'xpath';
+    visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
   retryDelay?: number;
@@ -1039,6 +1060,7 @@ export enum ExecutionEventType {
   EXECUTION_ERROR = 'execution_error',
   EXECUTION_PAUSED = 'execution_paused',
   BREAKPOINT_TRIGGERED = 'breakpoint_triggered',
+  BUILDER_MODE_READY = 'builder_mode_ready',
   LOG = 'log',
 }
 
@@ -1075,6 +1097,37 @@ export interface SelectorFinderEvent {
   nodeId?: string;
   fieldName?: string;
   sessionId?: string;
+}
+
+// Builder Mode Types
+export interface RecordedAction {
+  id: string;
+  type: 'click' | 'type' | 'keyboard' | 'form-input' | 'navigation' | 'scroll' | 'hover';
+  selector?: string;
+  selectorType?: 'css' | 'xpath';
+  value?: string; // For type actions
+  key?: string; // For keyboard actions
+  url?: string; // For navigation
+  timestamp: number;
+  inserted?: boolean; // Whether action has been inserted into canvas
+  nodeId?: string; // Node ID if inserted
+  elementInfo?: {
+    tagName: string;
+    id?: string;
+    className?: string;
+    text?: string;
+  };
+  detectedNodeType?: NodeType; // Auto-detected node type
+  customNodeType?: NodeType; // User-overridden node type
+}
+
+export interface BuilderModeEvent {
+  event: 'recording-started' | 'recording-stopped' | 'action-recorded' | 'actions-reset';
+  sessionId?: string;
+  action?: RecordedAction; // Single action for real-time updates
+  actions?: RecordedAction[]; // Batch actions
+  reason?: 'user' | 'execution-stopped' | 'builder-mode-disabled' | 'workflow-rerun' | 'browser-closed';
+  timestamp?: number;
 }
 
 // Execution Event
@@ -1118,6 +1171,7 @@ export interface ExecuteWorkflowRequest {
   reportConfig?: ReportConfig;
   recordSession?: boolean; // Flag to enable video recording
   breakpointConfig?: BreakpointConfig;
+  builderModeEnabled?: boolean; // Flag to enable builder mode
 }
 
 export interface ExecuteWorkflowResponse {

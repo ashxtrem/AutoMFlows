@@ -261,7 +261,7 @@ export default function InteractiveTour() {
 
   // Handle tour callbacks
   const handleJoyrideCallback = (data: CallBackProps) => {
-    const { status, index, type, action } = data;
+    const { status, index, action } = data;
 
     // Handle step navigation - skip step 3 (right sidebar) if no node is selected
     if (action === 'next' && index === 3 && !selectedNode) {
@@ -359,14 +359,6 @@ export default function InteractiveTour() {
         },
         spotlight: {
           borderRadius: '8px',
-        },
-        beacon: {
-          inner: {
-            backgroundColor: '#3B82F6', // blue-500
-          },
-          outer: {
-            borderColor: '#3B82F6', // blue-500
-          },
         },
       }}
       floaterProps={{

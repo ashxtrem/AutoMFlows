@@ -62,8 +62,93 @@ export class CurlParser {
       }
     }
 
+    // Extract form fields (-F or --form) - must be done before data extraction
+    const formFields: Array<{ key: string; value: string; type: 'text' }> = [];
+    const formFiles: Array<{ key: string; filePath: string }> = [];
+    
+    // Pattern to match --form or -F flags
+    const formFlagPattern = /--form\s+|-F\s+/gi;
+    let formFlagMatch;
+    while ((formFlagMatch = formFlagPattern.exec(command)) !== null) {
+      const flagIndex = formFlagMatch.index;
+      const flagLength = formFlagMatch[0].length;
+      const afterFlag = command.substring(flagIndex + flagLength).trim();
+      
+      // Check if the value starts with a quote
+      const quoteMatch = afterFlag.match(/^(['"])(.*)/);
+      let formValue = '';
+      
+      if (quoteMatch) {
+        // Handle quoted value (may contain nested quotes)
+        const quoteChar = quoteMatch[1];
+        const restOfCommand = quoteMatch[2];
+        
+        // Find the matching closing quote, handling escaped quotes
+        let escaped = false;
+        for (let i = 0; i < restOfCommand.length; i++) {
+          const char = restOfCommand[i];
+          if (escaped) {
+            formValue += char;
+            escaped = false;
+          } else if (char === '\\') {
+            formValue += char;
+            escaped = true;
+          } else if (char === quoteChar) {
+            // Found matching closing quote
+            break;
+          } else {
+            formValue += char;
+          }
+        }
+      } else {
+        // Unquoted value - take until next flag or whitespace boundary
+        const nextFlagMatch = afterFlag.match(/^\S+/);
+        if (nextFlagMatch) {
+          formValue = nextFlagMatch[0];
+        }
+      }
+      
+      if (formValue) {
+        // Parse form field syntax: key=value or key=@"path/to/file"
+        const equalIndex = formValue.indexOf('=');
+        if (equalIndex > 0) {
+          const key = formValue.substring(0, equalIndex).trim();
+          const value = formValue.substring(equalIndex + 1).trim();
+          
+          // Check if it's a file field (starts with @)
+          if (value.startsWith('@')) {
+            // File field: remove @ and outer quotes
+            let filePath = value.substring(1);
+            // Remove outer quotes if present (handles both 'path' and "path")
+            filePath = filePath.replace(/^(['"])(.*)\1$/, '$2');
+            formFiles.push({ key, filePath });
+          } else {
+            // Text field: remove outer quotes if present
+            const textValue = value.replace(/^(['"])(.*)\1$/, '$2');
+            formFields.push({ key, value: textValue, type: 'text' });
+          }
+        }
+      }
+    }
+    
+    // If form fields/files were found, set bodyType to form-data
+    if (formFields.length > 0 || formFiles.length > 0) {
+      config.bodyType = 'form-data';
+      config.formFields = formFields.length > 0 ? formFields : undefined;
+      config.formFiles = formFiles.length > 0 ? formFiles : undefined;
+      
+      // Remove Content-Type header if it's multipart/form-data (let axios set it automatically)
+      if (config.headers) {
+        const contentType = config.headers['Content-Type'] || config.headers['content-type'];
+        if (contentType && contentType.includes('multipart/form-data')) {
+          delete config.headers['Content-Type'];
+          delete config.headers['content-type'];
+        }
+      }
+    }
+
     // Extract data/body (-d or --data or --data-raw or --data-binary)
-    // Improved pattern to handle nested quotes in JSON bodies
+    // Improved pattern to handle nested quotes in JSON bodies and multi-line bodies
     const dataFlags = ['-d', '--data', '--data-raw', '--data-binary'];
     let dataMatch: RegExpMatchArray | null = null;
     
@@ -72,12 +157,14 @@ export class CurlParser {
       if (flagIndex !== -1) {
         // Find the start of the quoted value after the flag
         const afterFlag = command.substring(flagIndex + flag.length).trim();
-        const quoteMatch = afterFlag.match(/^(['"])(.*)/);
+        // Use dotAll flag (s) to match newlines, or use [\s\S] instead of .
+        const quoteMatch = afterFlag.match(/^(['"])([\s\S]*)/);
         if (quoteMatch) {
           const quoteChar = quoteMatch[1];
           const restOfCommand = quoteMatch[2];
           
           // Find the matching closing quote, handling escaped quotes
+          // This handles multi-line bodies correctly (newlines are included via [\s\S]*)
           let body = '';
           let escaped = false;
           for (let i = 0; i < restOfCommand.length; i++) {

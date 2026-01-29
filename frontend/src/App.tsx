@@ -15,9 +15,12 @@ import { useWorkflowAutoSave, useWorkflowLoad } from './hooks/useWorkflow';
 import { useUndoRedo } from './hooks/useUndoRedo';
 import { useBreakpointShortcut } from './hooks/useBreakpointShortcut';
 import { useReportHistoryShortcut } from './hooks/useReportHistoryShortcut';
+import { useBuilderMode } from './hooks/useBuilderMode';
 import { loadPlugins } from './plugins/loader';
 import { getBackendPort } from './utils/getBackendPort';
 import { initTheme, applyTheme } from './utils/theme';
+import ActionListModal from './components/ActionListModal';
+import BuilderModeMinimizedIcon from './components/BuilderModeMinimizedIcon';
 
 function App() {
   const selectedNode = useWorkflowStore((state) => state.selectedNode);
@@ -29,9 +32,13 @@ function App() {
   const fontSize = useSettingsStore((state) => state.appearance.fontSize);
   const fontFamily = useSettingsStore((state) => state.appearance.fontFamily);
   const highContrast = useSettingsStore((state) => state.appearance.highContrast);
+  const builderModeEnabled = useWorkflowStore((state) => state.builderModeEnabled);
   
   // State for browser installation error popup
   const [browserInstallError, setBrowserInstallError] = useState<{ nodeId: string; browserName: string } | null>(null);
+  
+  // Builder mode hook
+  const builderMode = useBuilderMode();
   
   // Initialize theme system on mount and when theme changes
   useEffect(() => {
@@ -199,6 +206,36 @@ function App() {
           {selectedNode && <RightSidebar />}
         </div>
         <InteractiveTour />
+        {/* Builder Mode Components */}
+        {builderModeEnabled && (
+          <>
+            {builderMode.showModal && !builderMode.isMinimized && (
+              <ActionListModal
+                recordedActions={builderMode.recordedActions}
+                insertedActions={builderMode.insertedActions}
+                isRecording={builderMode.isRecording}
+                isMinimized={builderMode.isMinimized}
+                onStartRecording={builderMode.startRecording}
+                onStopRecording={builderMode.stopRecording}
+                onInsertAction={builderMode.handleInsertAction}
+                onEditAction={builderMode.handleEditAction}
+                onUndo={builderMode.handleUndo}
+                onRedo={builderMode.handleRedo}
+                canUndo={builderMode.canUndo}
+                canRedo={builderMode.canRedo}
+                onMinimize={builderMode.handleMinimize}
+                onClose={builderMode.handleClose}
+                onClearActions={builderMode.handleClearActions}
+              />
+            )}
+            {builderMode.isMinimized && (
+              <BuilderModeMinimizedIcon
+                actionCount={builderMode.recordedActions.length + builderMode.insertedActions.length}
+                onMaximize={builderMode.handleMaximize}
+              />
+            )}
+          </>
+        )}
       </div>
     </ReactFlowProvider>
   );

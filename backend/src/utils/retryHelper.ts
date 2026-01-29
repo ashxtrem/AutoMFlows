@@ -14,6 +14,7 @@ export interface RetryOptions {
     type: 'selector' | 'url' | 'javascript' | 'api-status' | 'api-json-path' | 'api-javascript';
     value?: string; // Optional, used for javascript and api-javascript
     selectorType?: 'css' | 'xpath';
+    visibility?: 'visible' | 'invisible';
     timeout?: number; // Max time to retry
     // API-specific fields
     expectedStatus?: number; // For api-status
@@ -210,17 +211,22 @@ export class RetryHelper {
    */
   private static async checkCondition(
     page: any,
-    condition: { type: 'selector' | 'url' | 'javascript'; value: string; selectorType?: 'css' | 'xpath' }
+    condition: { type: 'selector' | 'url' | 'javascript'; value: string; selectorType?: 'css' | 'xpath'; visibility?: 'visible' | 'invisible' }
   ): Promise<boolean> {
     try {
       if (condition.type === 'selector') {
         const selectorType = condition.selectorType || 'css';
+        const visibility = condition.visibility || 'visible';
+        const isInvisible = visibility === 'invisible';
+        
         if (selectorType === 'xpath') {
           const element = await page.locator(`xpath=${condition.value}`).first();
-          return await element.isVisible().catch(() => false);
+          const isVisible = await element.isVisible().catch(() => false);
+          return isInvisible ? !isVisible : isVisible;
         } else {
           const element = await page.locator(condition.value).first();
-          return await element.isVisible().catch(() => false);
+          const isVisible = await element.isVisible().catch(() => false);
+          return isInvisible ? !isVisible : isVisible;
         }
       } else if (condition.type === 'url') {
         const currentUrl = page.url();

@@ -63,12 +63,20 @@ export class TypeHandler implements NodeHandler {
 
           case 'type':
             // Type character by character with delays (triggers keyboard events)
+            // Clear field first if clearFirst is enabled
+            if (data.clearFirst) {
+              await locator.fill('', { timeout });
+            }
             const typeDelay = data.delay || 0;
             await locator.type(text, { delay: typeDelay, timeout });
             break;
 
           case 'pressSequentially':
             // Type with configurable delays (same as type but more explicit)
+            // Clear field first if clearFirst is enabled
+            if (data.clearFirst) {
+              await locator.fill('', { timeout });
+            }
             const sequentialDelay = data.delay || 0;
             await locator.pressSequentially(text, { delay: sequentialDelay, timeout });
             break;
@@ -535,6 +543,10 @@ export class KeyboardHandler implements NodeHandler {
             if (data.selector) {
               const selector = VariableInterpolator.interpolateString(data.selector, context);
               const locator = data.selectorType === 'xpath' ? page.locator(`xpath=${selector}`) : page.locator(selector);
+              // Clear field first if clearFirst is enabled
+              if (data.clearFirst) {
+                await locator.fill('', { timeout });
+              }
               if (data.delay) {
                 await locator.type(text, { delay: data.delay, timeout });
               } else {
@@ -557,8 +569,13 @@ export class KeyboardHandler implements NodeHandler {
             if (data.selector) {
               const selector = VariableInterpolator.interpolateString(data.selector, context);
               const locator = data.selectorType === 'xpath' ? page.locator(`xpath=${selector}`) : page.locator(selector);
+              // Clear field first if clearFirst is enabled (fill already clears, but we'll be explicit)
+              if (data.clearFirst) {
+                await locator.fill('', { timeout });
+              }
               await locator.fill(insertText, { timeout });
             } else {
+              // For insertText without selector, clearFirst doesn't apply as we can't target a specific element
               await page.keyboard.insertText(insertText);
             }
             break;

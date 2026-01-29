@@ -155,6 +155,7 @@ function getNodeLabel(type: NodeType | string): string {
       [NodeType.DB_CONNECT]: 'DB Connect',
       [NodeType.DB_DISCONNECT]: 'DB Disconnect',
       [NodeType.DB_QUERY]: 'DB Query',
+      [NodeType.CONTEXT_MANIPULATE]: 'Context Manipulate',
     };
     return labels[type as NodeType] || type;
   }
@@ -499,6 +500,22 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
       hasProps = properties.length > 0;
       propertyCount = properties.length;
       
+      // Special handling for API_CURL nodes - enforce minimum width based on ~30 chars per line
+      if (nodeType === NodeType.API_CURL) {
+        const curlCommand = data.curlCommand;
+        if (curlCommand !== undefined && curlCommand !== null) {
+          // Calculate minimum width for curl command textarea
+          // ~30 characters per line * 8px per char + label width + padding
+          // Label "cURL Command" is ~13 chars, so: 30 * 8 + 13 * 8 + 60 + 16 + 8 = 240 + 104 + 84 = 428px
+          const curlMinWidth = 30 * 8 + 13 * 8 + 60 + 16 + 8; // ~428px
+          maxPropertyWidth = Math.max(maxPropertyWidth, curlMinWidth);
+        } else {
+          // Even without curl command, ensure minimum width for the textarea
+          const curlMinWidth = 30 * 8 + 13 * 8 + 60 + 16 + 8; // ~428px
+          maxPropertyWidth = Math.max(maxPropertyWidth, curlMinWidth);
+        }
+      }
+      
       // Calculate width for each property
       properties.forEach(prop => {
         // Skip properties that are converted to inputs (they show connection info, not values)
@@ -515,14 +532,25 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
           if (propValue !== undefined && propValue !== null) {
             if (prop.dataType === PropertyDataType.STRING) {
               valueStr = String(propValue);
-              // For long strings (like URLs or code), consider first line or reasonable max
-              // This helps prevent extremely wide nodes from very long single-line values
-              if (valueStr.length > 100 && !valueStr.includes('\n')) {
-                valueStr = valueStr.substring(0, 100);
-              } else if (valueStr.includes('\n')) {
-                // For multi-line strings, use first line for width calculation
-                const firstLine = valueStr.split('\n')[0];
-                valueStr = firstLine.length > 100 ? firstLine.substring(0, 100) : firstLine;
+              // For API_CURL curlCommand, don't truncate - let it wrap
+              if (nodeType === NodeType.API_CURL && prop.name === 'curlCommand') {
+                // Use first line or ~30 chars for width calculation
+                if (valueStr.includes('\n')) {
+                  const firstLine = valueStr.split('\n')[0];
+                  valueStr = firstLine.length > 30 ? firstLine.substring(0, 30) : firstLine;
+                } else {
+                  valueStr = valueStr.length > 30 ? valueStr.substring(0, 30) : valueStr;
+                }
+              } else {
+                // For long strings (like URLs or code), consider first line or reasonable max
+                // This helps prevent extremely wide nodes from very long single-line values
+                if (valueStr.length > 100 && !valueStr.includes('\n')) {
+                  valueStr = valueStr.substring(0, 100);
+                } else if (valueStr.includes('\n')) {
+                  // For multi-line strings, use first line for width calculation
+                  const firstLine = valueStr.split('\n')[0];
+                  valueStr = firstLine.length > 100 ? firstLine.substring(0, 100) : firstLine;
+                }
               }
             } else if (prop.dataType === PropertyDataType.INT || prop.dataType === PropertyDataType.FLOAT || prop.dataType === PropertyDataType.DOUBLE) {
               valueStr = String(propValue);
@@ -2092,7 +2120,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                     label="Permissions"
                     value={Array.isArray(renderData.permissions) ? (renderData.permissions as string[]).join(', ') : ''}
                     onChange={(value) => {
-                      const perms = value.split(',').map(p => p.trim()).filter(p => p.length > 0);
+                      const perms = value.split(',').map((p: string) => p.trim()).filter((p: string) => p.length > 0);
                       handlePropertyChange('permissions', perms);
                     }}
                     placeholder="geolocation, notifications, camera"
@@ -2114,7 +2142,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                     placeholder='{"Authorization": "Bearer token"}'
                     field="extraHTTPHeaders"
                     onOpenPopup={(_type, label, value, onChange, placeholder, min, max, field) => {
-                      handleOpenPopup('extraHTTPHeaders', label, value, onChange, placeholder, min, max, field);
+                      handleOpenPopup('code', label, value, onChange, placeholder, min, max, field);
                     }}
                   />
                 ), 13)}
@@ -2126,7 +2154,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                     placeholder="// JavaScript code"
                     field="initScript"
                     onOpenPopup={(_type, label, value, onChange, placeholder, min, max, field) => {
-                      handleOpenPopup('initScript', label, value, onChange, placeholder, min, max, field);
+                      handleOpenPopup('code', label, value, onChange, placeholder, min, max, field);
                     }}
                   />
                 ), 14)}

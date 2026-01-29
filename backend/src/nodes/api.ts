@@ -6,6 +6,27 @@ import { HttpClient, ApiRequestConfig } from '../utils/httpClient';
 import { CurlParser } from '../utils/curlParser';
 import { RetryHelper } from '../utils/retryHelper';
 
+/**
+ * Helper function to format body for logging
+ * If body is a JSON string, parse and re-stringify it nicely
+ */
+function formatBodyForLogging(body: string | undefined, bodyType?: string): string | undefined {
+  if (!body) return body;
+  
+  // If it's JSON type or looks like JSON, try to format it nicely
+  if (bodyType === 'json' || (typeof body === 'string' && body.trim().startsWith('{'))) {
+    try {
+      const parsed = JSON.parse(body);
+      return JSON.stringify(parsed, null, 2);
+    } catch {
+      // If parsing fails, return as-is
+      return body;
+    }
+  }
+  
+  return body;
+}
+
 export class ApiRequestHandler implements NodeHandler {
   async execute(node: BaseNode, context: ContextManager): Promise<void> {
     const data = node.data as ApiRequestNodeData;
@@ -17,6 +38,10 @@ export class ApiRequestHandler implements NodeHandler {
     const contextKey = data.contextKey || 'apiResponse';
     const timeout = data.timeout || 30000;
 
+    // Get trace logging function from context
+    const traceLog = context.getData('traceLog') as ((message: string) => void) | undefined;
+    const traceLogsEnabled = context.getData('traceLogs') as boolean | undefined;
+
     // Interpolate variables in URL, headers, and body
     const interpolatedUrl = VariableInterpolator.interpolateString(data.url, context);
     const interpolatedHeaders = data.headers 
@@ -26,6 +51,21 @@ export class ApiRequestHandler implements NodeHandler {
       ? VariableInterpolator.interpolateString(data.body, context)
       : undefined;
 
+    // Interpolate form fields and files
+    const interpolatedFormFields = data.formFields
+      ? data.formFields.map(field => ({
+          ...field,
+          value: VariableInterpolator.interpolateString(field.value, context),
+        }))
+      : undefined;
+    
+    const interpolatedFormFiles = data.formFiles
+      ? data.formFiles.map(fileField => ({
+          ...fileField,
+          filePath: VariableInterpolator.interpolateString(fileField.filePath, context),
+        }))
+      : undefined;
+
     // Build request config
     const requestConfig: ApiRequestConfig = {
       method: data.method || 'GET',
@@ -33,13 +73,43 @@ export class ApiRequestHandler implements NodeHandler {
       headers: interpolatedHeaders,
       body: interpolatedBody,
       bodyType: data.bodyType || 'json',
+      formFields: interpolatedFormFields,
+      formFiles: interpolatedFormFiles,
       timeout,
     };
+
+    // Log API request if trace logs are enabled
+    if (traceLogsEnabled && traceLog) {
+      const requestLog = {
+        method: requestConfig.method,
+        url: requestConfig.url,
+        headers: requestConfig.headers,
+        body: formatBodyForLogging(requestConfig.body, requestConfig.bodyType),
+        bodyType: requestConfig.bodyType,
+        formFields: requestConfig.formFields,
+        formFiles: requestConfig.formFiles,
+        timeout: requestConfig.timeout,
+      };
+      traceLog(`[TRACE] API Request: ${JSON.stringify(requestLog, null, 2)}`);
+    }
 
     // Execute request with retry logic
     const result = await RetryHelper.executeWithRetry(
       async () => {
         const response = await HttpClient.executeRequest(requestConfig);
+        
+        // Log API response if trace logs are enabled
+        if (traceLogsEnabled && traceLog) {
+          const responseLog = {
+            status: response.status,
+            statusText: response.statusText,
+            headers: response.headers,
+            body: response.body,
+            duration: response.duration,
+            timestamp: response.timestamp,
+          };
+          traceLog(`[TRACE] API Response: ${JSON.stringify(responseLog, null, 2)}`);
+        }
         
         // Store response in context
         const responseData = {
@@ -87,8 +157,17 @@ export class ApiCurlHandler implements NodeHandler {
     const contextKey = data.contextKey || 'apiResponse';
     const timeout = data.timeout || 30000;
 
+    // Get trace logging function from context
+    const traceLog = context.getData('traceLog') as ((message: string) => void) | undefined;
+    const traceLogsEnabled = context.getData('traceLogs') as boolean | undefined;
+
     // Interpolate variables in cURL command
     const interpolatedCommand = VariableInterpolator.interpolateString(data.curlCommand, context);
+
+    // Log resolved cURL command if trace logs are enabled
+    if (traceLogsEnabled && traceLog) {
+      traceLog(`[TRACE] Resolved cURL command: ${interpolatedCommand}`);
+    }
 
     // Parse cURL command
     let requestConfig: ApiRequestConfig;
@@ -103,10 +182,54 @@ export class ApiCurlHandler implements NodeHandler {
       requestConfig.timeout = timeout;
     }
 
+    // Interpolate file paths in formFiles (in case they contain variables)
+    if (requestConfig.formFiles) {
+      requestConfig.formFiles = requestConfig.formFiles.map(fileField => ({
+        ...fileField,
+        filePath: VariableInterpolator.interpolateString(fileField.filePath, context),
+      }));
+    }
+    
+    // Interpolate values in formFields (in case they contain variables)
+    if (requestConfig.formFields) {
+      requestConfig.formFields = requestConfig.formFields.map(field => ({
+        ...field,
+        value: VariableInterpolator.interpolateString(field.value, context),
+      }));
+    }
+
+    // Log API request if trace logs are enabled
+    if (traceLogsEnabled && traceLog) {
+      const requestLog = {
+        method: requestConfig.method,
+        url: requestConfig.url,
+        headers: requestConfig.headers,
+        body: formatBodyForLogging(requestConfig.body, requestConfig.bodyType),
+        bodyType: requestConfig.bodyType,
+        formFields: requestConfig.formFields,
+        formFiles: requestConfig.formFiles,
+        timeout: requestConfig.timeout,
+      };
+      traceLog(`[TRACE] API Request (cURL): ${JSON.stringify(requestLog, null, 2)}`);
+    }
+
     // Execute request with retry logic
     const result = await RetryHelper.executeWithRetry(
       async () => {
         const response = await HttpClient.executeRequest(requestConfig);
+        
+        // Log API response if trace logs are enabled
+        if (traceLogsEnabled && traceLog) {
+          const responseLog = {
+            status: response.status,
+            statusText: response.statusText,
+            headers: response.headers,
+            body: response.body,
+            duration: response.duration,
+            timestamp: response.timestamp,
+          };
+          traceLog(`[TRACE] API Response (cURL): ${JSON.stringify(responseLog, null, 2)}`);
+        }
         
         // Store response in context
         const responseData = {

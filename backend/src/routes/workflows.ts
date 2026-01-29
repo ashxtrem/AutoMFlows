@@ -1,9 +1,11 @@
 import { Router, Request, Response } from 'express';
 import { Server } from 'socket.io';
-import { ExecuteWorkflowRequest, ExecutionStatusResponse, StopExecutionResponse, SelectorFinderEvent, SelectorOption } from '@automflows/shared';
+import { ExecuteWorkflowRequest, ExecutionStatusResponse, StopExecutionResponse, SelectorFinderEvent, SelectorOption, RecordedAction } from '@automflows/shared';
 import { Executor } from '../engine/executor';
 import { SelectorSessionManager } from '../utils/selectorSessionManager';
 import { FinderInjector } from '../utils/finderInjector';
+import { ActionRecorderSessionManager } from '../utils/actionRecorderSessionManager';
+import { ActionRecorderInjector } from '../utils/actionRecorderInjector';
 
 let currentExecutor: Executor | null = null;
 
@@ -12,7 +14,7 @@ export default function workflowRoutes(io: Server) {
 
   router.post('/execute', async (req: Request, res: Response) => {
     try {
-      const { workflow, traceLogs = false, screenshotConfig, reportConfig, recordSession = false, breakpointConfig } = req.body as ExecuteWorkflowRequest;
+      const { workflow, traceLogs = false, screenshotConfig, reportConfig, recordSession = false, breakpointConfig, builderModeEnabled = false } = req.body as ExecuteWorkflowRequest;
 
       if (!workflow || !workflow.nodes || !workflow.edges) {
         return res.status(400).json({ error: 'Invalid workflow format' });
@@ -23,8 +25,8 @@ export default function workflowRoutes(io: Server) {
         await currentExecutor.stop();
       }
 
-      // Create new executor with screenshot, report config, recording flag, and breakpoint config
-      currentExecutor = new Executor(workflow, io, traceLogs, screenshotConfig, reportConfig, recordSession, breakpointConfig);
+      // Create new executor with screenshot, report config, recording flag, breakpoint config, and builder mode
+      currentExecutor = new Executor(workflow, io, traceLogs, screenshotConfig, reportConfig, recordSession, breakpointConfig, builderModeEnabled);
       const executionId = currentExecutor.getExecutionId();
 
       // Start execution asynchronously
@@ -190,6 +192,40 @@ export default function workflowRoutes(io: Server) {
         return res.status(400).json({ error: 'nodeId and fieldName are required' });
       }
 
+      // Check if there's a paused execution with an active browser
+      if (currentExecutor && currentExecutor.isExecutionPaused()) {
+        const page = currentExecutor.playwright.getPage();
+        
+        if (page && !page.isClosed()) {
+          const sessionManager = SelectorSessionManager.getInstance();
+          sessionManager.setIO(io);
+          sessionManager.setCurrentTarget(nodeId, fieldName);
+          
+          // Attach to existing page
+          const executionId = currentExecutor.getExecutionId();
+          sessionManager.attachToExistingPage(page, `execution-${executionId}`);
+          
+          // Refresh the page
+          await page.reload({ waitUntil: 'networkidle' });
+          
+          // Bring browser to foreground
+          await page.bringToFront();
+          
+          // Inject finder overlay
+          const context = page.context();
+          await FinderInjector.injectFinder(page, io, nodeId, fieldName, context);
+          
+          // Bring to foreground again after injection
+          await page.bringToFront();
+          
+          return res.json({
+            sessionId: `execution-${executionId}`,
+            pageUrl: page.url(),
+          });
+        }
+      }
+      
+      // Fallback to current behavior: create new session
       const sessionManager = SelectorSessionManager.getInstance();
       sessionManager.setIO(io);
       sessionManager.setCurrentTarget(nodeId, fieldName); // Store nodeId and fieldName in session manager
@@ -346,6 +382,178 @@ export default function workflowRoutes(io: Server) {
       });
     } catch (error: any) {
       console.error('Generate selectors error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  });
+
+  // Builder Mode Routes
+  router.post('/builder-mode/start', async (req: Request, res: Response) => {
+    try {
+      const sessionManager = ActionRecorderSessionManager.getInstance();
+      sessionManager.setIO(io);
+      
+      const page = sessionManager.getPage();
+      
+      if (!page) {
+        return res.status(400).json({ error: 'No active browser session for builder mode' });
+      }
+
+      // Inject overlay
+      await ActionRecorderInjector.injectActionRecorderOverlay(page, io);
+
+      const sessionId = sessionManager.getSessionId();
+      const pageUrl = page.url();
+
+      res.json({
+        sessionId,
+        pageUrl,
+      });
+    } catch (error: any) {
+      console.error('Start builder mode error:', error);
+      res.status(500).json({
+        error: 'Failed to start builder mode',
+        message: error.message,
+      });
+    }
+  });
+
+  router.post('/builder-mode/stop', async (req: Request, res: Response) => {
+    try {
+      const sessionManager = ActionRecorderSessionManager.getInstance();
+      const page = sessionManager.getPage();
+      
+      if (page) {
+        await ActionRecorderInjector.stopWebhookListening(page);
+      }
+      
+      sessionManager.stopRecording('user');
+
+      res.json({
+        success: true,
+        message: 'Builder mode stopped',
+      });
+    } catch (error: any) {
+      console.error('Stop builder mode error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  });
+
+  router.get('/builder-mode/status', async (req: Request, res: Response) => {
+    try {
+      const sessionManager = ActionRecorderSessionManager.getInstance();
+      const page = sessionManager.getPage();
+
+      if (page && sessionManager.isSessionActive()) {
+        const pageUrl = page.url();
+        res.json({
+          active: true,
+          recording: sessionManager.isRecording(),
+          sessionId: sessionManager.getSessionId(),
+          pageUrl,
+        });
+      } else {
+        res.json({
+          active: false,
+          recording: false,
+          sessionId: null,
+          pageUrl: null,
+        });
+      }
+    } catch (error: any) {
+      console.error('Get builder mode status error:', error);
+      res.status(500).json({
+        error: 'Failed to get builder mode status',
+        message: error.message,
+      });
+    }
+  });
+
+  router.get('/builder-mode/actions', async (req: Request, res: Response) => {
+    try {
+      const sessionManager = ActionRecorderSessionManager.getInstance();
+      const actions = sessionManager.getActions();
+
+      res.json(actions);
+    } catch (error: any) {
+      console.error('Get builder mode actions error:', error);
+      res.status(500).json({
+        error: 'Failed to get builder mode actions',
+        message: error.message,
+      });
+    }
+  });
+
+  router.post('/builder-mode/actions/reset', async (req: Request, res: Response) => {
+    try {
+      const sessionManager = ActionRecorderSessionManager.getInstance();
+      sessionManager.resetActions();
+
+      res.json({
+        success: true,
+        message: 'Actions reset',
+      });
+    } catch (error: any) {
+      console.error('Reset builder mode actions error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  });
+
+  router.post('/builder-mode/webhook/start', async (req: Request, res: Response) => {
+    try {
+      const sessionManager = ActionRecorderSessionManager.getInstance();
+      sessionManager.setIO(io);
+      
+      const page = sessionManager.getPage();
+      if (!page) {
+        return res.status(400).json({ error: 'No active browser session for builder mode' });
+      }
+
+      // Start webhook listening
+      await ActionRecorderInjector.startWebhookListening(page, io);
+      sessionManager.startRecording();
+
+      const sessionId = sessionManager.getSessionId();
+      const pageUrl = page.url();
+
+      res.json({
+        sessionId,
+        pageUrl,
+      });
+    } catch (error: any) {
+      console.error('Start webhook listening error:', error);
+      res.status(500).json({
+        error: 'Failed to start webhook listening',
+        message: error.message,
+      });
+    }
+  });
+
+  router.post('/builder-mode/webhook/stop', async (req: Request, res: Response) => {
+    try {
+      const sessionManager = ActionRecorderSessionManager.getInstance();
+      const page = sessionManager.getPage();
+      
+      if (page) {
+        await ActionRecorderInjector.stopWebhookListening(page);
+      }
+      
+      sessionManager.stopRecording('user');
+
+      res.json({
+        success: true,
+        message: 'Webhook listening stopped',
+      });
+    } catch (error: any) {
+      console.error('Stop webhook listening error:', error);
       res.status(500).json({
         success: false,
         message: error.message,

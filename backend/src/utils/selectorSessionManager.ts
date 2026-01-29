@@ -147,14 +147,21 @@ export class SelectorSessionManager {
    */
   async closeSession(): Promise<void> {
     try {
-      if (this.page && !this.page.isClosed()) {
-        await this.page.close();
-      }
-      if (this.context) {
-        await this.context.close();
-      }
-      if (this.browser) {
-        await this.browser.close();
+      // Check if this is an attached session (from paused execution)
+      // If so, don't close the browser/context/page as they're managed by the execution
+      const isAttachedSession = this.sessionId && this.sessionId.startsWith('execution-');
+      
+      if (!isAttachedSession) {
+        // Only close if this is a standalone selector finder session
+        if (this.page && !this.page.isClosed()) {
+          await this.page.close();
+        }
+        if (this.context) {
+          await this.context.close();
+        }
+        if (this.browser) {
+          await this.browser.close();
+        }
       }
 
       // Emit session closed event
@@ -165,6 +172,7 @@ export class SelectorSessionManager {
         });
       }
 
+      // Always clear references (detach)
       this.page = null;
       this.context = null;
       this.browser = null;
@@ -179,5 +187,23 @@ export class SelectorSessionManager {
    */
   isSessionActive(): boolean {
     return this.page !== null && !this.page.isClosed();
+  }
+
+  /**
+   * Attach to an existing page from a paused execution
+   */
+  attachToExistingPage(page: Page, sessionId: string): void {
+    this.page = page;
+    this.context = page.context();
+    this.browser = page.context().browser();
+    this.sessionId = sessionId;
+    
+    // Emit session attached event
+    if (this.io) {
+      this.io.emit('selector-finder-event', {
+        event: 'session-attached',
+        sessionId: this.sessionId,
+      });
+    }
   }
 }

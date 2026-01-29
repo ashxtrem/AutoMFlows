@@ -24,11 +24,12 @@ import MemoryManagementSubmenu from './MemoryManagementSubmenu';
 import KeyBindingsModal from './KeyBindingsModal';
 import { NodeType } from '@automflows/shared';
 import { useNotificationStore } from '../store/notificationStore';
+import { stopActionRecording } from '../services/actionRecorder';
 
 const STORAGE_KEY_TRACE_LOGS = 'automflows_trace_logs';
 
 export default function TopBar() {
-  const { nodes, edges, setNodes, setEdges, resetExecution, edgesHidden, setEdgesHidden, selectedNode, followModeEnabled, setFollowModeEnabled } = useWorkflowStore();
+  const { nodes, edges, setNodes, setEdges, resetExecution, edgesHidden, setEdgesHidden, selectedNode, followModeEnabled, setFollowModeEnabled, builderModeEnabled, setBuilderModeEnabled, setBuilderModeActive } = useWorkflowStore();
   const { validationErrors, setValidationErrors } = useExecution();
   const addNotification = useNotificationStore((state) => state.addNotification);
   const { tourCompleted, startTour, resetTour } = useSettingsStore();
@@ -80,6 +81,7 @@ export default function TopBar() {
 
   // Track previous follow mode state to detect changes
   const prevFollowModeRef = useRef(followModeEnabled);
+  const prevBuilderModeRef = useRef(builderModeEnabled);
 
   // Show notification when follow mode setting changes
   useEffect(() => {
@@ -92,6 +94,35 @@ export default function TopBar() {
       prevFollowModeRef.current = followModeEnabled;
     }
   }, [followModeEnabled, addNotification]);
+
+  // Show notification when builder mode setting changes
+  useEffect(() => {
+    if (prevBuilderModeRef.current !== builderModeEnabled) {
+      if (builderModeEnabled) {
+        addNotification({
+          type: 'info',
+          title: 'Builder Mode Enabled',
+          message: 'Builder Mode is now active. Actions will be recorded when workflow reaches the last node.',
+        });
+      } else {
+        // Stop webhook if builder mode is disabled (but don't close modal)
+        setBuilderModeActive(false);
+        // Stop webhook via API
+        (async () => {
+          try {
+            const response = await fetch('/.automflows-port');
+            const port = response.ok 
+              ? parseInt(await response.text(), 10)
+              : parseInt(import.meta.env.VITE_BACKEND_PORT || '3001', 10);
+            await stopActionRecording(port);
+          } catch (error) {
+            // Ignore errors
+          }
+        })();
+      }
+      prevBuilderModeRef.current = builderModeEnabled;
+    }
+  }, [builderModeEnabled, addNotification, setBuilderModeActive]);
 
   // Handle click outside menu to close it
   useEffect(() => {
@@ -840,6 +871,36 @@ export default function TopBar() {
                     <div
                       className={`w-5 h-5 rounded-md bg-white transition-transform duration-200 ${
                         followModeEnabled ? 'translate-x-7' : 'translate-x-0'
+                      }`}
+                    />
+                  </div>
+                </label>
+              </div>
+
+              {/* Builder Mode Toggle */}
+              <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
+                <span className="text-sm text-white font-medium">Builder Mode</span>
+                <label 
+                  className="relative inline-flex items-center cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={builderModeEnabled}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      const newValue = e.target.checked;
+                      setBuilderModeEnabled(newValue);
+                    }}
+                    className="sr-only"
+                  />
+                  <div
+                    className={`w-14 h-7 rounded-lg transition-colors flex items-center px-1 cursor-pointer ${
+                      builderModeEnabled ? 'bg-green-600' : 'bg-gray-700'
+                    }`}
+                  >
+                    <div
+                      className={`w-5 h-5 rounded-md bg-white transition-transform duration-200 ${
+                        builderModeEnabled ? 'translate-x-7' : 'translate-x-0'
                       }`}
                     />
                   </div>

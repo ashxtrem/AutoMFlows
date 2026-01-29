@@ -335,11 +335,6 @@ export class WaitHandler implements NodeHandler {
     const data = node.data as WaitNodeData;
     const page = context.getPage();
 
-    // API response wait doesn't require a page
-    if (data.waitType !== 'api-response' && !page) {
-      throw new Error('No page available. Ensure Open Browser node is executed first.');
-    }
-
     // If pause is enabled, pause execution indefinitely until user clicks continue or stop
     if (data.pause === true) {
       // Get pauseExecution function from context
@@ -360,15 +355,19 @@ export class WaitHandler implements NodeHandler {
     const result = await RetryHelper.executeWithRetry(
       async () => {
         if (data.waitType === 'timeout') {
-          if (!page) {
-            throw new Error('Page is required for timeout wait');
-          }
           // Use the user-specified timeout
           const timeout = typeof data.value === 'number' ? data.value : parseInt(String(data.value), 10);
           if (isNaN(timeout)) {
             throw new Error('Invalid timeout value for Wait node');
           }
-          await page.waitForTimeout(timeout);
+          
+          if (page) {
+            // Browser-level wait (preferred when available)
+            await page.waitForTimeout(timeout);
+          } else {
+            // Thread-level wait (fallback when no browser)
+            await new Promise(resolve => setTimeout(resolve, timeout));
+          }
         } else if (data.waitType === 'selector') {
           if (!page) {
             throw new Error('Page is required for selector wait');
@@ -536,12 +535,25 @@ export class IntValueHandler implements NodeHandler {
   async execute(node: BaseNode, context: ContextManager): Promise<void> {
     const data = node.data as IntValueNodeData;
     
-    // Store the value in context with the node ID as key
+    // Handle variable interpolation if value is a string
+    let resolvedValue: number = data.value;
+    if (typeof data.value === 'string' && (data.value.includes('${data.') || data.value.includes('${variables.'))) {
+      const interpolated = VariableInterpolator.interpolateString(data.value, context);
+      // Try to parse as integer after interpolation
+      const parsed = parseInt(interpolated, 10);
+      resolvedValue = isNaN(parsed) ? 0 : parsed;
+    } else if (typeof data.value === 'string') {
+      // If it's a string but doesn't contain interpolation, try to parse it
+      const parsed = parseInt(data.value, 10);
+      resolvedValue = isNaN(parsed) ? 0 : parsed;
+    }
+    
+    // Store the resolved value in context with the node ID as key
     // This allows other nodes to reference this value via edges
-    context.setVariable(node.id, data.value);
+    context.setVariable(node.id, resolvedValue);
     
     // Also store in data for compatibility
-    context.setData('value', data.value);
+    context.setData('value', resolvedValue);
   }
 }
 
@@ -549,11 +561,17 @@ export class StringValueHandler implements NodeHandler {
   async execute(node: BaseNode, context: ContextManager): Promise<void> {
     const data = node.data as StringValueNodeData;
     
-    // Store the value in context with the node ID as key
-    context.setVariable(node.id, data.value);
+    // Handle variable interpolation
+    let resolvedValue: string = data.value || '';
+    if (typeof data.value === 'string' && (data.value.includes('${data.') || data.value.includes('${variables.'))) {
+      resolvedValue = VariableInterpolator.interpolateString(data.value, context);
+    }
+    
+    // Store the resolved value in context with the node ID as key
+    context.setVariable(node.id, resolvedValue);
     
     // Also store in data for compatibility
-    context.setData('value', data.value);
+    context.setData('value', resolvedValue);
   }
 }
 
@@ -561,11 +579,24 @@ export class BooleanValueHandler implements NodeHandler {
   async execute(node: BaseNode, context: ContextManager): Promise<void> {
     const data = node.data as BooleanValueNodeData;
     
-    // Store the value in context with the node ID as key
-    context.setVariable(node.id, data.value);
+    // Handle variable interpolation if value is a string
+    let resolvedValue: boolean = data.value;
+    if (typeof data.value === 'string' && (data.value.includes('${data.') || data.value.includes('${variables.'))) {
+      const interpolated = VariableInterpolator.interpolateString(data.value, context);
+      // Convert interpolated string to boolean
+      const lowercased = interpolated.toLowerCase().trim();
+      resolvedValue = lowercased === 'true' || lowercased === '1' || lowercased === 'yes';
+    } else if (typeof data.value === 'string') {
+      // If it's a string but doesn't contain interpolation, try to parse it
+      const lowercased = data.value.toLowerCase().trim();
+      resolvedValue = lowercased === 'true' || lowercased === '1' || lowercased === 'yes';
+    }
+    
+    // Store the resolved value in context with the node ID as key
+    context.setVariable(node.id, resolvedValue);
     
     // Also store in data for compatibility
-    context.setData('value', data.value);
+    context.setData('value', resolvedValue);
   }
 }
 
