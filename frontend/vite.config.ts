@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
 import * as fs from 'fs';
@@ -23,8 +23,50 @@ function getBackendPort(): number {
 // Get backend port (will be updated dynamically via proxy)
 const backendPort = getBackendPort();
 
+// Plugin to suppress expected proxy errors during startup
+const suppressStartupProxyErrors = (): Plugin => {
+  return {
+    name: 'suppress-startup-proxy-errors',
+    configureServer(server) {
+      // Only suppress errors during the first 15 seconds (startup period)
+      const startTime = Date.now();
+      const originalConsoleError = console.error;
+      
+      console.error = (...args: any[]) => {
+        const elapsed = Date.now() - startTime;
+        
+        // During startup, filter out expected ECONNREFUSED errors for port discovery
+        if (elapsed < 15000) {
+          const message = args[0];
+          // Check if it's a Vite proxy error for the port discovery endpoint
+          if (
+            typeof message === 'string' &&
+            message.includes('[vite] http proxy error') &&
+            message.includes('.automflows-port')
+          ) {
+            // Check if it's an ECONNREFUSED error (expected during startup)
+            const errorStr = args.map(a => String(a)).join(' ');
+            if (errorStr.includes('ECONNREFUSED')) {
+              // Silently ignore - backend will be ready soon
+              return;
+            }
+          }
+        }
+        
+        // Pass through all other errors
+        originalConsoleError(...args);
+      };
+      
+      // Restore original console.error after startup period
+      setTimeout(() => {
+        console.error = originalConsoleError;
+      }, 15000);
+    },
+  };
+};
+
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), suppressStartupProxyErrors()],
   resolve: {
     alias: {
       '@automflows/shared': path.resolve(__dirname, '../shared/src'),
@@ -37,14 +79,48 @@ export default defineConfig({
       '/api': {
         target: `http://localhost:${backendPort}`,
         changeOrigin: true,
+        // Handle connection errors gracefully during startup
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, res) => {
+            // Suppress ECONNREFUSED errors during startup (backend not ready yet)
+            if ((err as any).code === 'ECONNREFUSED') {
+              // Don't log these errors - they're expected during startup
+              return;
+            }
+            console.error('Proxy error:', err);
+          });
+        },
       },
       '/socket.io': {
         target: `http://localhost:${backendPort}`,
         ws: true,
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, res) => {
+            if ((err as any).code === 'ECONNREFUSED') {
+              return;
+            }
+            console.error('Proxy error:', err);
+          });
+        },
       },
       '/.automflows-port': {
         target: `http://localhost:${backendPort}`,
         rewrite: (path) => '/.automflows-port',
+        // Suppress connection errors for port discovery endpoint
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, res) => {
+            // Silently handle ECONNREFUSED - backend will be ready soon
+            if ((err as any).code === 'ECONNREFUSED') {
+              // Return 503 to indicate service unavailable (expected during startup)
+              if (res && !res.headersSent) {
+                res.writeHead(503, { 'Content-Type': 'text/plain' });
+                res.end('Service temporarily unavailable');
+              }
+              return;
+            }
+            console.error('Proxy error:', err);
+          });
+        },
       },
     },
   },
