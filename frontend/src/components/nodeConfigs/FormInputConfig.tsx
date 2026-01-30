@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
 import SelectorFinderButton from '../SelectorFinderButton';
 import RetryConfigSection from '../RetryConfigSection';
+import { getSelectorPlaceholder, getSelectorHelpText, SELECTOR_TYPE_OPTIONS } from '../../utils/selectorHelpers';
 
 interface FormInputConfigProps {
   node: Node;
@@ -77,8 +78,9 @@ export default function FormInputConfig({ node, onChange }: FormInputConfigProps
           disabled={isPropertyDisabled('selectorType')}
           className={getInputClassName('selectorType', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
         >
-          <option value="css">CSS Selector</option>
-          <option value="xpath">XPath</option>
+          {SELECTOR_TYPE_OPTIONS.map(option => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
         </select>
         {isPropertyDisabled('selectorType') && (
           <div className="mt-1 text-xs text-gray-500 italic">
@@ -93,7 +95,7 @@ export default function FormInputConfig({ node, onChange }: FormInputConfigProps
             type="text"
             value={getPropertyValue('selector', '')}
             onChange={(e) => onChange('selector', e.target.value)}
-            placeholder="#select or //select[@id='select']"
+            placeholder={getSelectorPlaceholder(getPropertyValue('selectorType', 'css'))}
             disabled={isPropertyDisabled('selector')}
             className={getInputClassName('selector', 'flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
           />
@@ -104,6 +106,11 @@ export default function FormInputConfig({ node, onChange }: FormInputConfigProps
         {isPropertyDisabled('selector') && (
           <div className="mt-1 text-xs text-gray-500 italic">
             This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
+        {getSelectorHelpText(getPropertyValue('selectorType', 'css')) && (
+          <div className="mt-1 text-xs text-gray-400">
+            {getSelectorHelpText(getPropertyValue('selectorType', 'css'))}
           </div>
         )}
       </div>
@@ -287,8 +294,9 @@ export default function FormInputConfig({ node, onChange }: FormInputConfigProps
                   onChange={(e) => onChange('waitForSelectorType', e.target.value)}
                   className="px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
                 >
-                  <option value="css">CSS</option>
-                  <option value="xpath">XPath</option>
+                  {SELECTOR_TYPE_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
                 </select>
               </div>
               <div className="mt-1 flex items-center gap-2">

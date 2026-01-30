@@ -3,6 +3,7 @@ import { useState } from 'react';
 import RetryConfigSection from '../RetryConfigSection';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
 import SelectorFinderButton from '../SelectorFinderButton';
+import { getSelectorPlaceholder, SELECTOR_TYPE_OPTIONS } from '../../utils/selectorHelpers';
 
 interface NavigationConfigProps {
   node: Node;
@@ -314,7 +315,7 @@ export default function NavigationConfig({ node, onChange }: NavigationConfigPro
                   type="text"
                   value={getPropertyValue('waitForSelector', '')}
                   onChange={(e) => onChange('waitForSelector', e.target.value)}
-                  placeholder="#element or //div[@id='element']"
+                  placeholder={getSelectorPlaceholder(getPropertyValue('waitForSelectorType', 'css'))}
                   disabled={isPropertyDisabled('waitForSelector')}
                   className={getInputClassName('waitForSelector', 'flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
                 />
@@ -336,8 +337,9 @@ export default function NavigationConfig({ node, onChange }: NavigationConfigPro
                     disabled={isPropertyDisabled('waitForSelectorType')}
                     className={getInputClassName('waitForSelectorType', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
                   >
-                    <option value="css">CSS Selector</option>
-                    <option value="xpath">XPath</option>
+                    {SELECTOR_TYPE_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
                   </select>
                   {isPropertyDisabled('waitForSelectorType') && (
                     <div className="mt-1 text-xs text-gray-500 italic">

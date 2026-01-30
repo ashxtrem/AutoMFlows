@@ -3,6 +3,7 @@ import { useState } from 'react';
 import RetryConfigSection from '../RetryConfigSection';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
 import SelectorFinderButton from '../SelectorFinderButton';
+import { SELECTOR_TYPE_OPTIONS } from '../../utils/selectorHelpers';
 
 interface StorageConfigProps {
   node: Node;
@@ -259,8 +260,9 @@ export default function StorageConfig({ node, onChange }: StorageConfigProps) {
                   onChange={(e) => onChange('waitForSelectorType', e.target.value)}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
                 >
-                  <option value="css">CSS Selector</option>
-                  <option value="xpath">XPath</option>
+                  {SELECTOR_TYPE_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
                 </select>
               </div>
             </div>

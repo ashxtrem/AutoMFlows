@@ -1,13 +1,8 @@
 /**
- * Utility for generating multiple selector options (CSS and XPath)
+ * Utility for generating multiple selector options (CSS, XPath, and Playwright locators)
  */
 
-export interface SelectorOption {
-  selector: string;
-  type: 'css' | 'xpath';
-  quality: 'high' | 'medium' | 'low';
-  reason: string;
-}
+import { SelectorOption, SelectorType } from '@automflows/shared';
 
 export class SelectorGenerator {
   /**
@@ -31,6 +26,10 @@ export class SelectorGenerator {
     // Generate XPath alternatives
     const xpathSelectors = this.generateXPathSelectors(element);
     selectors.push(...xpathSelectors);
+
+    // Generate Playwright locator alternatives
+    const playwrightSelectors = this.generatePlaywrightSelectors(element);
+    selectors.push(...playwrightSelectors);
 
     // Sort by quality (high first)
     return selectors.sort((a, b) => {
@@ -183,5 +182,189 @@ export class SelectorGenerator {
       return 'Data attribute';
     }
     return 'Element structure';
+  }
+
+  /**
+   * Generate Playwright locator selector options
+   */
+  private static generatePlaywrightSelectors(element: Element): SelectorOption[] {
+    const selectors: SelectorOption[] = [];
+
+    // 1. getByRole - if element has a semantic role
+    const role = this.getElementRole(element);
+    if (role) {
+      const textContent = element.textContent?.trim();
+      if (textContent && textContent.length > 0 && textContent.length < 100) {
+        const escapedName = textContent.replace(/:/g, '\\:').substring(0, 50);
+        selectors.push({
+          selector: `role:${role},name:${escapedName}`,
+          type: 'getByRole',
+          quality: 'high',
+          reason: `Role "${role}" with accessible name`,
+        });
+      } else {
+        selectors.push({
+          selector: `role:${role}`,
+          type: 'getByRole',
+          quality: 'high',
+          reason: `Role "${role}"`,
+        });
+      }
+    }
+
+    // 2. getByTestId - if element has data-testid
+    const testId = element.getAttribute('data-testid');
+    if (testId) {
+      selectors.push({
+        selector: `testid:${testId}`,
+        type: 'getByTestId',
+        quality: 'high',
+        reason: 'Test ID attribute',
+      });
+    }
+
+    // 3. getByLabel - if element is associated with a label
+    const labelText = this.getAssociatedLabelText(element);
+    if (labelText) {
+      selectors.push({
+        selector: `label:${labelText}`,
+        type: 'getByLabel',
+        quality: 'high',
+        reason: `Associated with label "${labelText}"`,
+      });
+    }
+
+    // 4. getByPlaceholder - if element has placeholder
+    const placeholder = element.getAttribute('placeholder');
+    if (placeholder) {
+      selectors.push({
+        selector: `placeholder:${placeholder}`,
+        type: 'getByPlaceholder',
+        quality: 'medium',
+        reason: 'Placeholder attribute',
+      });
+    }
+
+    // 5. getByText - if element has visible text
+    const textContent = element.textContent?.trim();
+    if (textContent && textContent.length > 0 && textContent.length < 100 && !role) {
+      // Only suggest getByText if not already covered by getByRole
+      selectors.push({
+        selector: `text:${textContent.substring(0, 50)}`,
+        type: 'getByText',
+        quality: 'medium',
+        reason: 'Text content',
+      });
+    }
+
+    // 6. getByTitle - if element has title attribute
+    const title = element.getAttribute('title');
+    if (title) {
+      selectors.push({
+        selector: `title:${title}`,
+        type: 'getByTitle',
+        quality: 'medium',
+        reason: 'Title attribute',
+      });
+    }
+
+    // 7. getByAltText - if element is an image with alt text
+    if (element.tagName.toLowerCase() === 'img') {
+      const alt = element.getAttribute('alt');
+      if (alt) {
+        selectors.push({
+          selector: `alt:${alt}`,
+          type: 'getByAltText',
+          quality: 'high',
+          reason: 'Image alt text',
+        });
+      }
+    }
+
+    return selectors;
+  }
+
+  /**
+   * Get semantic role of an element
+   */
+  private static getElementRole(element: Element): string | null {
+    const tagName = element.tagName.toLowerCase();
+    const role = element.getAttribute('role');
+    
+    if (role) {
+      return role;
+    }
+
+    // Map common HTML elements to ARIA roles
+    const roleMap: Record<string, string> = {
+      'button': 'button',
+      'a': element.getAttribute('href') ? 'link' : 'button',
+      'input': this.getInputRole(element as HTMLInputElement),
+      'select': 'combobox',
+      'textarea': 'textbox',
+      'img': 'img',
+      'h1': 'heading',
+      'h2': 'heading',
+      'h3': 'heading',
+      'h4': 'heading',
+      'h5': 'heading',
+      'h6': 'heading',
+      'nav': 'navigation',
+      'main': 'main',
+      'article': 'article',
+      'aside': 'complementary',
+      'header': 'banner',
+      'footer': 'contentinfo',
+    };
+
+    return roleMap[tagName] || null;
+  }
+
+  /**
+   * Get role for input elements based on type
+   */
+  private static getInputRole(input: HTMLInputElement): string {
+    const type = input.type?.toLowerCase() || 'text';
+    if (type === 'button' || type === 'submit' || type === 'reset') {
+      return 'button';
+    }
+    if (type === 'checkbox') {
+      return 'checkbox';
+    }
+    if (type === 'radio') {
+      return 'radio';
+    }
+    return 'textbox';
+  }
+
+  /**
+   * Get associated label text for an element
+   */
+  private static getAssociatedLabelText(element: Element): string | null {
+    // Check for explicit label association via 'for' attribute
+    const id = element.id;
+    if (id) {
+      const label = document.querySelector(`label[for="${id}"]`);
+      if (label) {
+        return label.textContent?.trim() || null;
+      }
+    }
+
+    // Check if element is inside a label
+    let parent = element.parentElement;
+    while (parent) {
+      if (parent.tagName.toLowerCase() === 'label') {
+        return parent.textContent?.trim() || null;
+      }
+      parent = parent.parentElement;
+    }
+
+    // Check for aria-label
+    const ariaLabel = element.getAttribute('aria-label');
+    if (ariaLabel) {
+      return ariaLabel;
+    }
+
+    return null;
   }
 }

@@ -4,6 +4,7 @@ import { ContextManager } from '../engine/context';
 import { WaitHelper } from '../utils/waitHelper';
 import { RetryHelper } from '../utils/retryHelper';
 import { VariableInterpolator } from '../utils/variableInterpolator';
+import { LocatorHelper } from '../utils/locatorHelper';
 
 export class TypeHandler implements NodeHandler {
   async execute(node: BaseNode, context: ContextManager): Promise<void> {
@@ -51,9 +52,7 @@ export class TypeHandler implements NodeHandler {
 
         // Execute type operation based on inputMethod
         const inputMethod = data.inputMethod || 'fill'; // Default to 'fill' for backward compatibility
-        const locator = data.selectorType === 'xpath' 
-          ? page.locator(`xpath=${selector}`)
-          : page.locator(selector);
+        const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css');
 
         switch (inputMethod) {
           case 'fill':
@@ -191,27 +190,18 @@ export class ActionHandler implements NodeHandler {
         }
 
         // Execute action based on action type
+        const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css');
+        
         switch (data.action) {
           case 'click':
-            if (data.selectorType === 'xpath') {
-              await page.locator(`xpath=${selector}`).click({ 
-                button: data.button || 'left',
-                timeout 
-              });
-            } else {
-              await page.click(selector, { 
-                button: data.button || 'left',
-                timeout 
-              });
-            }
+            await locator.click({ 
+              button: data.button || 'left',
+              timeout 
+            });
             break;
 
           case 'doubleClick':
-            if (data.selectorType === 'xpath') {
-              await page.locator(`xpath=${selector}`).dblclick({ timeout });
-            } else {
-              await page.dblclick(selector, { timeout });
-            }
+            await locator.dblclick({ timeout });
             // Apply delay if specified
             if (data.delay) {
               await page.waitForTimeout(data.delay);
@@ -219,25 +209,14 @@ export class ActionHandler implements NodeHandler {
             break;
 
           case 'rightClick':
-            if (data.selectorType === 'xpath') {
-              await page.locator(`xpath=${selector}`).click({ 
-                button: 'right',
-                timeout 
-              });
-            } else {
-              await page.click(selector, { 
-                button: 'right',
-                timeout 
-              });
-            }
+            await locator.click({ 
+              button: 'right',
+              timeout 
+            });
             break;
 
           case 'hover':
-            if (data.selectorType === 'xpath') {
-              await page.locator(`xpath=${selector}`).hover({ timeout });
-            } else {
-              await page.hover(selector, { timeout });
-            }
+            await locator.hover({ timeout });
             // Apply delay if specified
             if (data.delay) {
               await page.waitForTimeout(data.delay);
@@ -249,25 +228,19 @@ export class ActionHandler implements NodeHandler {
               throw new Error('Target selector or target coordinates (targetX, targetY) are required for dragAndDrop action');
             }
             
-            const sourceLocator = data.selectorType === 'xpath' 
-              ? page.locator(`xpath=${selector}`)
-              : page.locator(selector);
-            
             if (data.targetSelector) {
               // Drag to target element
               const targetSelector = VariableInterpolator.interpolateString(data.targetSelector, context);
-              const targetLocator = (data.targetSelectorType || 'css') === 'xpath'
-                ? page.locator(`xpath=${targetSelector}`)
-                : page.locator(targetSelector);
+              const targetLocator = LocatorHelper.createLocator(page, targetSelector, data.targetSelectorType || 'css');
               
-              await sourceLocator.dragTo(targetLocator, { timeout });
+              await locator.dragTo(targetLocator, { timeout });
             } else {
               // Drag to coordinates using mouse API
               const targetX = data.targetX || 0;
               const targetY = data.targetY || 0;
               
               // Get source element bounding box
-              const sourceBox = await sourceLocator.boundingBox({ timeout });
+              const sourceBox = await locator.boundingBox({ timeout });
               if (!sourceBox) {
                 throw new Error('Source element not found or not visible');
               }
@@ -369,9 +342,7 @@ export class FormInputHandler implements NodeHandler {
         }
 
         // Execute action based on action type
-        const locator = data.selectorType === 'xpath' 
-          ? page.locator(`xpath=${selector}`)
-          : page.locator(selector);
+        const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css');
 
         switch (data.action) {
           case 'select':
@@ -512,10 +483,11 @@ export class KeyboardHandler implements NodeHandler {
           }, context);
         }
 
-        // Focus element first if selector is provided
+        // Interpolate selector once if provided
+        let locator: any = null;
         if (data.selector) {
           const selector = VariableInterpolator.interpolateString(data.selector, context);
-          const locator = data.selectorType === 'xpath' ? page.locator(`xpath=${selector}`) : page.locator(selector);
+          locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css');
           await locator.focus({ timeout });
         }
 
@@ -526,9 +498,7 @@ export class KeyboardHandler implements NodeHandler {
               throw new Error('Key is required for press action');
             }
             const key = VariableInterpolator.interpolateString(data.key, context);
-            if (data.selector) {
-              const selector = VariableInterpolator.interpolateString(data.selector, context);
-              const locator = data.selectorType === 'xpath' ? page.locator(`xpath=${selector}`) : page.locator(selector);
+            if (locator) {
               await locator.press(key, { timeout });
             } else {
               await page.keyboard.press(key);
@@ -540,9 +510,7 @@ export class KeyboardHandler implements NodeHandler {
               throw new Error('Text is required for type action');
             }
             const text = VariableInterpolator.interpolateString(data.text, context);
-            if (data.selector) {
-              const selector = VariableInterpolator.interpolateString(data.selector, context);
-              const locator = data.selectorType === 'xpath' ? page.locator(`xpath=${selector}`) : page.locator(selector);
+            if (locator) {
               // Clear field first if clearFirst is enabled
               if (data.clearFirst) {
                 await locator.fill('', { timeout });
@@ -566,9 +534,7 @@ export class KeyboardHandler implements NodeHandler {
               throw new Error('Text is required for insertText action');
             }
             const insertText = VariableInterpolator.interpolateString(data.text, context);
-            if (data.selector) {
-              const selector = VariableInterpolator.interpolateString(data.selector, context);
-              const locator = data.selectorType === 'xpath' ? page.locator(`xpath=${selector}`) : page.locator(selector);
+            if (locator) {
               // Clear field first if clearFirst is enabled (fill already clears, but we'll be explicit)
               if (data.clearFirst) {
                 await locator.fill('', { timeout });
@@ -586,9 +552,7 @@ export class KeyboardHandler implements NodeHandler {
             }
             const shortcut = VariableInterpolator.interpolateString(data.shortcut, context);
             // Note: shortcut is used directly; parsing to keys array is not currently used
-            if (data.selector) {
-              const selector = VariableInterpolator.interpolateString(data.selector, context);
-              const locator = data.selectorType === 'xpath' ? page.locator(`xpath=${selector}`) : page.locator(selector);
+            if (locator) {
               await locator.press(shortcut as any, { timeout });
             } else {
               await page.keyboard.press(shortcut as any);
@@ -696,7 +660,7 @@ export class ScrollHandler implements NodeHandler {
               throw new Error('Selector is required for scrollToElement action');
             }
             const selector = VariableInterpolator.interpolateString(data.selector, context);
-            const locator = data.selectorType === 'xpath' ? page.locator(`xpath=${selector}`) : page.locator(selector);
+            const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css');
             await locator.scrollIntoViewIfNeeded({ timeout });
             break;
 

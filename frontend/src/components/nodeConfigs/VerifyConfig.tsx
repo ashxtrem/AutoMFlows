@@ -3,6 +3,7 @@ import RetryConfigSection from '../RetryConfigSection';
 import { VerificationDomain, BrowserVerificationType, MatchType, ComparisonOperator } from '@automflows/shared';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
 import SelectorFinderButton from '../SelectorFinderButton';
+import { getSelectorPlaceholder, getSelectorHelpText, SELECTOR_TYPE_OPTIONS } from '../../utils/selectorHelpers';
 
 interface VerifyConfigProps {
   node: Node;
@@ -146,7 +147,7 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
                   type="text"
                   value={data.selector || ''}
                   onChange={(e) => onChange('selector', e.target.value)}
-                  placeholder="Leave empty to check entire page"
+                  placeholder={data.selector ? getSelectorPlaceholder(data.selectorType || 'css') : "Leave empty to check entire page"}
                   className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
                 />
                 <SelectorFinderButton nodeId={node.id} fieldName="selector" />
@@ -163,9 +164,15 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
                   onChange={(e) => onChange('selectorType', e.target.value)}
                   className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
                 >
-                  <option value="css">CSS Selector</option>
-                  <option value="xpath">XPath</option>
+                  {SELECTOR_TYPE_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
                 </select>
+                {getSelectorHelpText(data.selectorType || 'css') && (
+                  <div className="mt-1 text-xs text-gray-400">
+                    {getSelectorHelpText(data.selectorType || 'css')}
+                  </div>
+                )}
               </div>
             )}
             <div>
@@ -192,11 +199,16 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
                   type="text"
                   value={data.selector || ''}
                   onChange={(e) => onChange('selector', e.target.value)}
-                  placeholder="button:has-text('Log out')"
+                  placeholder={getSelectorPlaceholder(data.selectorType || 'css')}
                   className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
                 />
                 <SelectorFinderButton nodeId={node.id} fieldName="selector" />
               </div>
+              {getSelectorHelpText(data.selectorType || 'css') && (
+                <div className="mt-1 text-xs text-gray-400">
+                  {getSelectorHelpText(data.selectorType || 'css')}
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
@@ -205,8 +217,9 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
                 onChange={(e) => onChange('selectorType', e.target.value)}
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
               >
-                <option value="css">CSS Selector</option>
-                <option value="xpath">XPath</option>
+                {SELECTOR_TYPE_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
               </select>
             </div>
             <div>
@@ -266,11 +279,16 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
                   type="text"
                   value={data.selector || ''}
                   onChange={(e) => onChange('selector', e.target.value)}
-                  placeholder="#submit-btn"
+                  placeholder={getSelectorPlaceholder(data.selectorType || 'css')}
                   className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
                 />
                 <SelectorFinderButton nodeId={node.id} fieldName="selector" />
               </div>
+              {getSelectorHelpText(data.selectorType || 'css') && (
+                <div className="mt-1 text-xs text-gray-400">
+                  {getSelectorHelpText(data.selectorType || 'css')}
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
@@ -279,8 +297,9 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
                 onChange={(e) => onChange('selectorType', e.target.value)}
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
               >
-                <option value="css">CSS Selector</option>
-                <option value="xpath">XPath</option>
+                {SELECTOR_TYPE_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
               </select>
             </div>
             <div>
@@ -335,11 +354,16 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
                   type="text"
                   value={data.selector || ''}
                   onChange={(e) => onChange('selector', e.target.value)}
-                  placeholder="#username"
+                  placeholder={getSelectorPlaceholder(data.selectorType || 'css')}
                   className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
                 />
                 <SelectorFinderButton nodeId={node.id} fieldName="selector" />
               </div>
+              {getSelectorHelpText(data.selectorType || 'css') && (
+                <div className="mt-1 text-xs text-gray-400">
+                  {getSelectorHelpText(data.selectorType || 'css')}
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
@@ -348,8 +372,9 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
                 onChange={(e) => onChange('selectorType', e.target.value)}
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
               >
-                <option value="css">CSS Selector</option>
-                <option value="xpath">XPath</option>
+                {SELECTOR_TYPE_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
               </select>
             </div>
             <div>
@@ -492,11 +517,16 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
                   type="text"
                   value={data.selector || ''}
                   onChange={(e) => onChange('selector', e.target.value)}
-                  placeholder=".button"
+                  placeholder={getSelectorPlaceholder(data.selectorType || 'css')}
                   className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
                 />
                 <SelectorFinderButton nodeId={node.id} fieldName="selector" />
               </div>
+              {getSelectorHelpText(data.selectorType || 'css') && (
+                <div className="mt-1 text-xs text-gray-400">
+                  {getSelectorHelpText(data.selectorType || 'css')}
+                </div>
+              )}
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
@@ -505,8 +535,9 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
                 onChange={(e) => onChange('selectorType', e.target.value)}
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
               >
-                <option value="css">CSS Selector</option>
-                <option value="xpath">XPath</option>
+                {SELECTOR_TYPE_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
               </select>
             </div>
             <div>

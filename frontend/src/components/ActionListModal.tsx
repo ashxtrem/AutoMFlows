@@ -4,6 +4,7 @@ import { RecordedAction, NodeType } from '@automflows/shared';
 import { detectNodeType } from '../utils/nodeTypeDetector';
 import { getNodeLabel } from '../store/workflowStore';
 import SelectorFinderButton from './SelectorFinderButton';
+import { SELECTOR_TYPE_OPTIONS } from '../utils/selectorHelpers';
 
 interface ActionListModalProps {
   recordedActions: RecordedAction[];
@@ -871,11 +872,12 @@ function ActionItem({
                 </div>
                 <select
                   value={editSelectorType}
-                  onChange={(e) => setEditSelectorType(e.target.value as 'css' | 'xpath')}
+                  onChange={(e) => setEditSelectorType(e.target.value)}
                   className="mt-1 w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-sm text-white"
                 >
-                  <option value="css">CSS</option>
-                  <option value="xpath">XPath</option>
+                  {SELECTOR_TYPE_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
                 </select>
               </div>
               {(editType === 'type' || editType === 'form-input') && (

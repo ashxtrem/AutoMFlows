@@ -1043,6 +1043,142 @@ export class FinderInjector {
           });
         });
 
+        // Generate Playwright locator selectors
+        const playwrightSelectors = [];
+
+        // 1. getByRole
+        const tagName = elementInfo.tagName;
+        const roleMap: Record<string, string> = {
+          'button': 'button',
+          'a': el.getAttribute('href') ? 'link' : 'button',
+          'input': (() => {
+            const inputType = el.getAttribute('type')?.toLowerCase() || 'text';
+            if (inputType === 'button' || inputType === 'submit' || inputType === 'reset') return 'button';
+            if (inputType === 'checkbox') return 'checkbox';
+            if (inputType === 'radio') return 'radio';
+            return 'textbox';
+          })(),
+          'select': 'combobox',
+          'textarea': 'textbox',
+          'img': 'img',
+          'h1': 'heading',
+          'h2': 'heading',
+          'h3': 'heading',
+          'h4': 'heading',
+          'h5': 'heading',
+          'h6': 'heading',
+        };
+        const role = el.getAttribute('role') || roleMap[tagName];
+        if (role) {
+          const textContent = elementInfo.textContent;
+          if (textContent && textContent.length > 0 && textContent.length < 100) {
+            playwrightSelectors.push({
+              selector: 'role:' + role + ',name:' + textContent.substring(0, 50),
+              type: 'getByRole',
+              quality: 'high',
+              reason: 'Role "' + role + '" with accessible name',
+            });
+          } else {
+            playwrightSelectors.push({
+              selector: 'role:' + role,
+              type: 'getByRole',
+              quality: 'high',
+              reason: 'Role "' + role + '"',
+            });
+          }
+        }
+
+        // 2. getByTestId
+        const testId = el.getAttribute('data-testid');
+        if (testId) {
+          playwrightSelectors.push({
+            selector: 'testid:' + testId,
+            type: 'getByTestId',
+            quality: 'high',
+            reason: 'Test ID attribute',
+          });
+        }
+
+        // 3. getByLabel
+        const id = elementInfo.id;
+        let labelText = null;
+        if (id) {
+          const label = document.querySelector('label[for="' + id + '"]');
+          if (label) {
+            labelText = label.textContent?.trim() || null;
+          }
+        }
+        if (!labelText) {
+          let parent = el.parentElement;
+          while (parent && parent.tagName.toLowerCase() !== 'label') {
+            parent = parent.parentElement;
+          }
+          if (parent) {
+            labelText = parent.textContent?.trim() || null;
+          }
+        }
+        if (!labelText) {
+          labelText = el.getAttribute('aria-label');
+        }
+        if (labelText) {
+          playwrightSelectors.push({
+            selector: 'label:' + labelText,
+            type: 'getByLabel',
+            quality: 'high',
+            reason: 'Associated with label',
+          });
+        }
+
+        // 4. getByPlaceholder
+        const placeholder = el.getAttribute('placeholder');
+        if (placeholder) {
+          playwrightSelectors.push({
+            selector: 'placeholder:' + placeholder,
+            type: 'getByPlaceholder',
+            quality: 'medium',
+            reason: 'Placeholder attribute',
+          });
+        }
+
+        // 5. getByText (if not already covered by getByRole)
+        if (elementInfo.textContent && elementInfo.textContent.length > 0 && elementInfo.textContent.length < 100 && !role) {
+          playwrightSelectors.push({
+            selector: 'text:' + elementInfo.textContent.substring(0, 50),
+            type: 'getByText',
+            quality: 'medium',
+            reason: 'Text content',
+          });
+        }
+
+        // 6. getByTitle
+        const title = el.getAttribute('title');
+        if (title) {
+          playwrightSelectors.push({
+            selector: 'title:' + title,
+            type: 'getByTitle',
+            quality: 'medium',
+            reason: 'Title attribute',
+          });
+        }
+
+        // 7. getByAltText
+        if (tagName === 'img') {
+          const alt = el.getAttribute('alt');
+          if (alt) {
+            playwrightSelectors.push({
+              selector: 'alt:' + alt,
+              type: 'getByAltText',
+              quality: 'high',
+              reason: 'Image alt text',
+            });
+          }
+        }
+
+        // Add Playwright selectors
+        playwrightSelectors.forEach(function(ps) {
+          result.push(ps);
+        });
+
         // Sort by quality
         const qualityOrder: Record<string, number> = { high: 3, medium: 2, low: 1 };
         result.sort(function(a, b) {

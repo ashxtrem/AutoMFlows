@@ -4,6 +4,7 @@ import { ContextManager } from '../engine/context';
 import { WaitHelper } from '../utils/waitHelper';
 import { RetryHelper } from '../utils/retryHelper';
 import { VariableInterpolator } from '../utils/variableInterpolator';
+import { LocatorHelper } from '../utils/locatorHelper';
 import { verificationStrategyRegistry } from './verification/strategies';
 
 export class ElementQueryHandler implements NodeHandler {
@@ -82,9 +83,7 @@ export class ElementQueryHandler implements NodeHandler {
 
         // Execute action based on action type
         let queryResult: any;
-        const locator = data.selectorType === 'xpath' 
-          ? page.locator(`xpath=${selector}`)
-          : page.locator(selector);
+        const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css');
 
         switch (data.action) {
           case 'getText':
@@ -248,12 +247,13 @@ export class ScreenshotHandler implements NodeHandler {
               throw new Error('Selector is required for element screenshot action');
             }
             const selector = VariableInterpolator.interpolateString(data.selector, context);
-            const locator = data.selectorType === 'xpath' ? page.locator(`xpath=${selector}`) : page.locator(selector);
+            const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css');
             
             // Handle masking if specified
+            // Note: mask selectors use the same selectorType as the main selector
             const maskLocators = data.mask?.map(m => {
               const maskSelector = VariableInterpolator.interpolateString(m, context);
-              return data.selectorType === 'xpath' ? page.locator(`xpath=${maskSelector}`) : page.locator(maskSelector);
+              return LocatorHelper.createLocator(page, maskSelector, data.selectorType || 'css');
             });
             
             const screenshotTimeout = data.waitForSelectorTimeout || 30000;
@@ -377,11 +377,8 @@ export class WaitHandler implements NodeHandler {
           // Use the user-specified timeout (pause already handled above)
           const timeout = data.timeout || 30000;
 
-          if (data.selectorType === 'xpath') {
-            await page.locator(`xpath=${selector}`).waitFor({ timeout });
-          } else {
-            await page.waitForSelector(selector, { timeout });
-          }
+          const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css');
+          await locator.waitFor({ timeout, state: 'visible' });
         } else if (data.waitType === 'url') {
           if (!page) {
             throw new Error('Page is required for URL wait');
@@ -552,6 +549,11 @@ export class IntValueHandler implements NodeHandler {
     // This allows other nodes to reference this value via edges
     context.setVariable(node.id, resolvedValue);
     
+    // Additionally store under custom variableName if provided (for global variable access)
+    if (data.variableName && data.variableName.trim()) {
+      context.setVariable(data.variableName.trim(), resolvedValue);
+    }
+    
     // Also store in data for compatibility
     context.setData('value', resolvedValue);
   }
@@ -568,7 +570,13 @@ export class StringValueHandler implements NodeHandler {
     }
     
     // Store the resolved value in context with the node ID as key
+    // This allows other nodes to reference this value via edges
     context.setVariable(node.id, resolvedValue);
+    
+    // Additionally store under custom variableName if provided (for global variable access)
+    if (data.variableName && data.variableName.trim()) {
+      context.setVariable(data.variableName.trim(), resolvedValue);
+    }
     
     // Also store in data for compatibility
     context.setData('value', resolvedValue);
@@ -593,7 +601,13 @@ export class BooleanValueHandler implements NodeHandler {
     }
     
     // Store the resolved value in context with the node ID as key
+    // This allows other nodes to reference this value via edges
     context.setVariable(node.id, resolvedValue);
+    
+    // Additionally store under custom variableName if provided (for global variable access)
+    if (data.variableName && data.variableName.trim()) {
+      context.setVariable(data.variableName.trim(), resolvedValue);
+    }
     
     // Also store in data for compatibility
     context.setData('value', resolvedValue);
@@ -629,7 +643,13 @@ export class InputValueHandler implements NodeHandler {
     }
     
     // Store the converted value in context with the node ID as key
+    // This allows other nodes to reference this value via edges
     context.setVariable(node.id, convertedValue);
+    
+    // Additionally store under custom variableName if provided (for global variable access)
+    if (data.variableName && data.variableName.trim()) {
+      context.setVariable(data.variableName.trim(), convertedValue);
+    }
     
     // Also store in data for compatibility
     context.setData('value', convertedValue);
@@ -1331,7 +1351,7 @@ export class IframeHandler implements NodeHandler {
             if (data.selector) {
               const selector = VariableInterpolator.interpolateString(data.selector, context);
               // IframeNodeData doesn't have selectorType, default to CSS
-              const locator = page.locator(selector);
+              const locator = LocatorHelper.createLocator(page, selector, 'css');
               frame = await locator.contentFrame();
             } else if (data.name) {
               const name = VariableInterpolator.interpolateString(data.name, context);
@@ -1370,14 +1390,19 @@ export class IframeHandler implements NodeHandler {
             const iframeSelector = VariableInterpolator.interpolateString(data.iframeSelector, context);
             const contentSelector = VariableInterpolator.interpolateString(data.contentSelector, context);
             // IframeNodeData doesn't have selectorType, default to CSS
-            const iframeLocator = page.locator(iframeSelector);
+            const iframeLocator = LocatorHelper.createLocator(page, iframeSelector, 'css');
             const iframeFrame = await iframeLocator.contentFrame();
             
             if (!iframeFrame) {
               throw new Error('Iframe not found');
             }
             
-            const contentLocator = iframeFrame.locator(contentSelector);
+            // Content selector within iframe uses CSS (iframeFrame.locator only supports CSS/XPath)
+            // For Playwright locator methods, we'd need to use iframeFrame.getByRole, etc.
+            // For now, support CSS/XPath only for content within iframe
+            const contentLocator = contentSelector.startsWith('xpath=') || contentSelector.startsWith('//')
+              ? iframeFrame.locator(`xpath=${contentSelector}`)
+              : iframeFrame.locator(contentSelector);
             const content = await contentLocator.textContent({ timeout });
             const outputVar = data.outputVariable || 'iframeContent';
             context.setData(outputVar, content);

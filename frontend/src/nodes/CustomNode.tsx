@@ -16,6 +16,7 @@ import { getNodeProperties, isPropertyInputConnection, getPropertyInputHandleId 
 import { getContrastTextColor } from '../utils/colorContrast';
 import { validateShortcut } from '../utils/shortcutValidator';
 import { isDeprecatedNodeType, getMigrationSuggestion } from '../utils/migration';
+import { getSelectorPlaceholder, SELECTOR_TYPE_OPTIONS } from '../utils/selectorHelpers';
 import PlayCircleFilledWhiteTwoToneIcon from '@mui/icons-material/PlayCircleFilledWhiteTwoTone';
 import LanguageIcon from '@mui/icons-material/Language';
 import LinkIcon from '@mui/icons-material/Link';
@@ -836,10 +837,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   label="Selector Type"
                   value={renderData.selectorType || 'css'}
                   onChange={(value) => handlePropertyChange('selectorType', value)}
-                  options={[
-                    { label: 'CSS', value: 'css' },
-                    { label: 'XPath', value: 'xpath' },
-                  ]}
+                  options={SELECTOR_TYPE_OPTIONS.map(opt => ({ label: opt.label, value: opt.value }))}
                 />
               ), 1)}
               {renderPropertyRow('selector', (
@@ -847,7 +845,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   label="Selector"
                   value={renderData.selector || ''}
                   onChange={(value) => handlePropertyChange('selector', value)}
-                  placeholder="#button or //button[@id='button']"
+                  placeholder={getSelectorPlaceholder(renderData.selectorType || 'css')}
                   onOpenPopup={handleOpenPopup}
                 />
               ), 2)}
@@ -890,7 +888,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                       label="Target Selector"
                       value={renderData.targetSelector || ''}
                       onChange={(value) => handlePropertyChange('targetSelector', value)}
-                      placeholder="#target or //div[@id='target']"
+                      placeholder={getSelectorPlaceholder(renderData.targetSelectorType || 'css')}
                       onOpenPopup={handleOpenPopup}
                     />
                   ), 5)}
@@ -941,10 +939,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   label="Wait Selector Type"
                   value={renderData.waitForSelectorType || 'css'}
                   onChange={(value) => handlePropertyChange('waitForSelectorType', value)}
-                  options={[
-                    { label: 'CSS', value: 'css' },
-                    { label: 'XPath', value: 'xpath' },
-                  ]}
+                  options={SELECTOR_TYPE_OPTIONS.map(opt => ({ label: opt.label, value: opt.value }))}
                 />
               ), 6)}
               {renderData.waitForUrl && renderPropertyRow('waitForUrl', (
@@ -1054,10 +1049,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   label="Selector Type"
                   value={renderData.selectorType || 'css'}
                   onChange={(value) => handlePropertyChange('selectorType', value)}
-                  options={[
-                    { label: 'CSS', value: 'css' },
-                    { label: 'XPath', value: 'xpath' },
-                  ]}
+                  options={SELECTOR_TYPE_OPTIONS.map(opt => ({ label: opt.label, value: opt.value }))}
                 />
               ), 1)}
               {renderPropertyRow('selector', (
@@ -1065,7 +1057,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   label="Selector"
                   value={renderData.selector || ''}
                   onChange={(value) => handlePropertyChange('selector', value)}
-                  placeholder="#element or //div[@class='text']"
+                  placeholder={getSelectorPlaceholder(renderData.selectorType || 'css')}
                   onOpenPopup={handleOpenPopup}
                 />
               ), 2)}
@@ -1136,10 +1128,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   label="Selector Type"
                   value={renderData.selectorType || 'css'}
                   onChange={(value) => handlePropertyChange('selectorType', value)}
-                  options={[
-                    { label: 'CSS', value: 'css' },
-                    { label: 'XPath', value: 'xpath' },
-                  ]}
+                  options={SELECTOR_TYPE_OPTIONS.map(opt => ({ label: opt.label, value: opt.value }))}
                 />
               ), 1)}
               {renderPropertyRow('selector', (
@@ -1147,7 +1136,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   label="Selector"
                   value={renderData.selector || ''}
                   onChange={(value) => handlePropertyChange('selector', value)}
-                  placeholder="#select or //select[@id='select']"
+                  placeholder={getSelectorPlaceholder(renderData.selectorType || 'css')}
                   onOpenPopup={handleOpenPopup}
                 />
               ), 2)}
@@ -1471,10 +1460,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   label="Selector Type"
                   value={renderData.selectorType || 'css'}
                   onChange={(value) => handlePropertyChange('selectorType', value)}
-                  options={[
-                    { label: 'CSS', value: 'css' },
-                    { label: 'XPath', value: 'xpath' },
-                  ]}
+                  options={SELECTOR_TYPE_OPTIONS.map(opt => ({ label: opt.label, value: opt.value }))}
                 />
               ), 0)}
               {renderPropertyRow('selector', (
@@ -1482,7 +1468,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   label="Selector"
                   value={renderData.selector || ''}
                   onChange={(value) => handlePropertyChange('selector', value)}
-                  placeholder="#input or //input[@id='input']"
+                  placeholder={getSelectorPlaceholder(renderData.selectorType || 'css')}
                   onOpenPopup={handleOpenPopup}
                 />
               ), 1)}
@@ -1542,10 +1528,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   label="Wait Selector Type"
                   value={renderData.waitForSelectorType || 'css'}
                   onChange={(value) => handlePropertyChange('waitForSelectorType', value)}
-                  options={[
-                    { label: 'CSS', value: 'css' },
-                    { label: 'XPath', value: 'xpath' },
-                  ]}
+                  options={SELECTOR_TYPE_OPTIONS.map(opt => ({ label: opt.label, value: opt.value }))}
                 />
               ), 5)}
               {renderData.waitForUrl && renderPropertyRow('waitForUrl', (
@@ -1670,10 +1653,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   label="Wait Selector Type"
                   value={renderData.waitForSelectorType || 'css'}
                   onChange={(value) => handlePropertyChange('waitForSelectorType', value)}
-                  options={[
-                    { label: 'CSS', value: 'css' },
-                    { label: 'XPath', value: 'xpath' },
-                  ]}
+                  options={SELECTOR_TYPE_OPTIONS.map(opt => ({ label: opt.label, value: opt.value }))}
                 />
               ), 3)}
               {renderData.waitForUrl && renderPropertyRow('waitForUrl', (
@@ -1891,7 +1871,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                       label="Selector"
                       value={typeof renderData.value === 'string' ? renderData.value : ''}
                       onChange={(value) => handlePropertyChange('value', value)}
-                      placeholder="#element or //div[@class='element']"
+                      placeholder={getSelectorPlaceholder(renderData.selectorType || 'css')}
                       onOpenPopup={handleOpenPopup}
                     />
                   ), 2)}
@@ -2354,6 +2334,14 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   { label: 'Double', value: PropertyDataType.DOUBLE },
                   { label: 'Boolean', value: PropertyDataType.BOOLEAN },
                 ]}
+              />
+              <InlineTextInput
+                label="Variable Name (optional)"
+                value={renderData.variableName ?? ''}
+                onChange={(value) => handlePropertyChange('variableName', value)}
+                placeholder="Leave empty to use node ID"
+                field="variableName"
+                onOpenPopup={handleOpenPopup}
               />
               {inputDataType === PropertyDataType.STRING && (
                 <InlineTextInput

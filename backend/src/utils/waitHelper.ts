@@ -5,10 +5,12 @@
 
 import { ContextManager } from '../engine/context';
 import { VariableInterpolator } from './variableInterpolator';
+import { LocatorHelper } from './locatorHelper';
+import { SelectorType } from '@automflows/shared';
 
 export interface WaitOptions {
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -119,7 +121,7 @@ export class WaitHelper {
   static async waitForSelector(
     page: any,
     selector: string,
-    selectorType: 'css' | 'xpath',
+    selectorType: SelectorType | string,
     timeout: number,
     failSilently: boolean,
     waitTiming: 'before' | 'after' = 'before'
@@ -135,11 +137,8 @@ export class WaitHelper {
     }
 
     try {
-      if (selectorType === 'xpath') {
-        await page.locator(`xpath=${selector}`).waitFor({ timeout, state: 'visible' });
-      } else {
-        await page.waitForSelector(selector, { timeout, state: 'visible' });
-      }
+      const locator = LocatorHelper.createLocator(page, selector, selectorType || 'css');
+      await locator.waitFor({ timeout, state: 'visible' });
     } catch (error: any) {
       if (failSilently) {
         console.warn(`Wait for selector failed silently (${timingLabel}): ${selector} (${selectorType}): ${error.message}`);

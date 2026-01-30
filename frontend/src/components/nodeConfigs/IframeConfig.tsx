@@ -3,6 +3,7 @@ import { useState } from 'react';
 import RetryConfigSection from '../RetryConfigSection';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
 import SelectorFinderButton from '../SelectorFinderButton';
+import { getSelectorPlaceholder, SELECTOR_TYPE_OPTIONS } from '../../utils/selectorHelpers';
 
 interface IframeConfigProps {
   node: Node;
@@ -72,7 +73,7 @@ export default function IframeConfig({ node, onChange }: IframeConfigProps) {
                 type="text"
                 value={getPropertyValue('selector', '')}
                 onChange={(e) => onChange('selector', e.target.value)}
-                placeholder="#iframe or //iframe[@id='iframe']"
+                placeholder={getSelectorPlaceholder(getPropertyValue('selectorType', 'css'))}
                 disabled={isPropertyDisabled('selector')}
                 className={getInputClassName('selector', 'flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
               />
@@ -93,8 +94,9 @@ export default function IframeConfig({ node, onChange }: IframeConfigProps) {
                 disabled={isPropertyDisabled('selectorType')}
                 className={getInputClassName('selectorType', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
               >
-                <option value="css">CSS Selector</option>
-                <option value="xpath">XPath</option>
+                {SELECTOR_TYPE_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
               </select>
             </div>
           )}

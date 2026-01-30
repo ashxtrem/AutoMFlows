@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NodeType } from '@automflows/shared';
+import { SELECTOR_TYPE_OPTIONS } from '../utils/selectorHelpers';
 
 interface RetryConfigSectionProps {
   data: any;
@@ -281,8 +282,9 @@ export default function RetryConfigSection({ data, onChange }: RetryConfigSectio
                               })}
                               className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
                             >
-                              <option value="css">CSS</option>
-                              <option value="xpath">XPath</option>
+                              {SELECTOR_TYPE_OPTIONS.map(option => (
+                                <option key={option.value} value={option.value}>{option.label}</option>
+                              ))}
                             </select>
                           </div>
                           <div>

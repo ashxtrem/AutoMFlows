@@ -3,8 +3,9 @@
  * Provides retry logic with count-based and condition-based strategies
  */
 
-import { MatchType } from '@automflows/shared';
+import { MatchType, SelectorType } from '@automflows/shared';
 import { ContextManager } from '../engine/context';
+import { LocatorHelper } from './locatorHelper';
 
 export interface RetryOptions {
   enabled: boolean;
@@ -13,7 +14,7 @@ export interface RetryOptions {
   untilCondition?: {
     type: 'selector' | 'url' | 'javascript' | 'api-status' | 'api-json-path' | 'api-javascript';
     value?: string; // Optional, used for javascript and api-javascript
-    selectorType?: 'css' | 'xpath';
+    selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
     timeout?: number; // Max time to retry
     // API-specific fields
@@ -211,7 +212,7 @@ export class RetryHelper {
    */
   private static async checkCondition(
     page: any,
-    condition: { type: 'selector' | 'url' | 'javascript'; value: string; selectorType?: 'css' | 'xpath'; visibility?: 'visible' | 'invisible' }
+    condition: { type: 'selector' | 'url' | 'javascript'; value: string; selectorType?: SelectorType; visibility?: 'visible' | 'invisible' }
   ): Promise<boolean> {
     try {
       if (condition.type === 'selector') {
@@ -219,15 +220,10 @@ export class RetryHelper {
         const visibility = condition.visibility || 'visible';
         const isInvisible = visibility === 'invisible';
         
-        if (selectorType === 'xpath') {
-          const element = await page.locator(`xpath=${condition.value}`).first();
-          const isVisible = await element.isVisible().catch(() => false);
-          return isInvisible ? !isVisible : isVisible;
-        } else {
-          const element = await page.locator(condition.value).first();
-          const isVisible = await element.isVisible().catch(() => false);
-          return isInvisible ? !isVisible : isVisible;
-        }
+        const locator = LocatorHelper.createLocator(page, condition.value, selectorType);
+        const element = locator.first();
+        const isVisible = await element.isVisible().catch(() => false);
+        return isInvisible ? !isVisible : isVisible;
       } else if (condition.type === 'url') {
         const currentUrl = page.url();
         // Try to compile as regex first, fallback to string match

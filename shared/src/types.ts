@@ -7,6 +7,18 @@ export enum PropertyDataType {
   BOOLEAN = 'boolean',
 }
 
+// Selector Types - supports CSS, XPath, and Playwright locator methods
+export type SelectorType = 
+  | 'css' 
+  | 'xpath' 
+  | 'getByRole' 
+  | 'getByText' 
+  | 'getByLabel' 
+  | 'getByPlaceholder' 
+  | 'getByTestId' 
+  | 'getByTitle' 
+  | 'getByAltText';
+
 // Node Types
 export enum NodeType {
   START = 'start',
@@ -82,7 +94,7 @@ export interface NavigateNodeData {
   failSilently?: boolean;
   referer?: string;
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string; // Supports regex patterns
   waitForUrlTimeout?: number;
@@ -96,7 +108,7 @@ export interface NavigateNodeData {
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
+    selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
@@ -124,7 +136,7 @@ export interface NavigationNodeData {
   contextKey?: string; // For newTab/switchTab actions (store page reference)
   // Advanced Waiting Options
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -139,7 +151,7 @@ export interface NavigationNodeData {
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
+    selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
@@ -163,12 +175,12 @@ export interface KeyboardNodeData {
   text?: string; // For type/insertText actions
   shortcut?: string; // For shortcut action (e.g., "Control+C", "Meta+V")
   selector?: string; // Optional - focus element first before action
-  selectorType?: 'css' | 'xpath'; // Selector type
+  selectorType?: SelectorType; // Selector type
   delay?: number; // For type action - delay between keystrokes
   clearFirst?: boolean; // For type/insertText actions - clear field before typing
   // Advanced Waiting Options
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -183,7 +195,7 @@ export interface KeyboardNodeData {
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
+    selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
@@ -204,14 +216,14 @@ export interface ScrollNodeData {
   failSilently?: boolean;
   // Action-specific properties
   selector?: string; // For scrollToElement action
-  selectorType?: 'css' | 'xpath'; // For scrollToElement action
+  selectorType?: SelectorType; // For scrollToElement action
   x?: number; // For scrollToPosition action
   y?: number; // For scrollToPosition action
   deltaX?: number; // For scrollBy action
   deltaY?: number; // For scrollBy action
   // Advanced Waiting Options
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -226,7 +238,7 @@ export interface ScrollNodeData {
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
+    selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
@@ -243,11 +255,11 @@ export interface ScrollNodeData {
 
 export interface ClickNodeData {
   selector: string;
-  selectorType?: 'css' | 'xpath';
+  selectorType?: SelectorType;
   timeout?: number;
   failSilently?: boolean;
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -261,7 +273,7 @@ export interface ClickNodeData {
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
+    selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
@@ -278,7 +290,7 @@ export interface ClickNodeData {
 
 export interface TypeNodeData {
   selector: string;
-  selectorType?: 'css' | 'xpath';
+  selectorType?: SelectorType;
   text: string;
   inputMethod?: 'fill' | 'type' | 'pressSequentially' | 'append' | 'prepend' | 'direct';
   delay?: number; // Delay between keystrokes for type/pressSequentially methods (in ms)
@@ -286,7 +298,7 @@ export interface TypeNodeData {
   timeout?: number;
   failSilently?: boolean;
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -300,7 +312,7 @@ export interface TypeNodeData {
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
+    selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
@@ -318,19 +330,19 @@ export interface TypeNodeData {
 export interface ActionNodeData {
   action: 'click' | 'doubleClick' | 'rightClick' | 'hover' | 'dragAndDrop';
   selector: string;
-  selectorType?: 'css' | 'xpath';
+  selectorType?: SelectorType;
   timeout?: number;
   failSilently?: boolean;
   // Action-specific properties
   button?: 'left' | 'right' | 'middle'; // For click/rightClick actions
   delay?: number; // For hover/doubleClick actions
   targetSelector?: string; // For dragAndDrop action - target element selector
-  targetSelectorType?: 'css' | 'xpath'; // For dragAndDrop action - target selector type
+  targetSelectorType?: SelectorType; // For dragAndDrop action - target selector type
   targetX?: number; // For dragAndDrop action - optional target X coordinate
   targetY?: number; // For dragAndDrop action - optional target Y coordinate
   // Advanced Waiting Options
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -345,7 +357,7 @@ export interface ActionNodeData {
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
+    selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
@@ -363,7 +375,7 @@ export interface ActionNodeData {
 export interface ElementQueryNodeData {
   action: 'getText' | 'getAttribute' | 'getCount' | 'isVisible' | 'isEnabled' | 'isChecked' | 'getBoundingBox' | 'getAllText';
   selector: string;
-  selectorType?: 'css' | 'xpath';
+  selectorType?: SelectorType;
   timeout?: number;
   failSilently?: boolean;
   // Action-specific properties
@@ -371,7 +383,7 @@ export interface ElementQueryNodeData {
   outputVariable?: string; // For all actions (defaults vary by action)
   // Advanced Waiting Options
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -386,7 +398,7 @@ export interface ElementQueryNodeData {
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
+    selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
@@ -404,7 +416,7 @@ export interface ElementQueryNodeData {
 export interface FormInputNodeData {
   action: 'select' | 'check' | 'uncheck' | 'upload';
   selector: string;
-  selectorType?: 'css' | 'xpath';
+  selectorType?: SelectorType;
   timeout?: number;
   failSilently?: boolean;
   // Action-specific properties
@@ -415,7 +427,7 @@ export interface FormInputNodeData {
   filePaths?: string | string[]; // For upload action
   // Advanced Waiting Options
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -430,7 +442,7 @@ export interface FormInputNodeData {
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
+    selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
@@ -447,12 +459,12 @@ export interface FormInputNodeData {
 
 export interface GetTextNodeData {
   selector: string;
-  selectorType?: 'css' | 'xpath';
+  selectorType?: SelectorType;
   outputVariable?: string;
   timeout?: number;
   failSilently?: boolean;
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -466,7 +478,7 @@ export interface GetTextNodeData {
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
+    selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
@@ -488,14 +500,14 @@ export interface ScreenshotNodeData {
   failSilently?: boolean;
   // Action-specific properties
   selector?: string; // For element action
-  selectorType?: 'css' | 'xpath'; // For element action
+  selectorType?: SelectorType; // For element action
   mask?: string[]; // For element/fullPage/viewport actions - selectors to mask
   format?: 'A4' | 'Letter'; // For pdf action
   margin?: { top?: number; right?: number; bottom?: number; left?: number }; // For pdf action
   printBackground?: boolean; // For pdf action
   landscape?: boolean; // For pdf action
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -509,7 +521,7 @@ export interface ScreenshotNodeData {
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
+    selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
@@ -546,7 +558,7 @@ export interface StorageNodeData {
   value?: string; // For setLocalStorage/setSessionStorage
   // Advanced Waiting Options
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -561,7 +573,7 @@ export interface StorageNodeData {
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
+    selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
@@ -586,7 +598,7 @@ export interface DialogNodeData {
   outputVariable?: string; // For waitForDialog - store dialog message (default: 'dialogMessage')
   // Advanced Waiting Options
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -601,7 +613,7 @@ export interface DialogNodeData {
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
+    selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
@@ -627,7 +639,7 @@ export interface DownloadNodeData {
   savePath?: string; // For saveDownload - path to save file
   // Advanced Waiting Options
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -642,7 +654,7 @@ export interface DownloadNodeData {
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
+    selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
@@ -671,7 +683,7 @@ export interface IframeNodeData {
   outputVariable?: string; // For getIframeContent - store content (default: 'iframeContent')
   // Advanced Waiting Options
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -686,7 +698,7 @@ export interface IframeNodeData {
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
+    selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
@@ -704,7 +716,7 @@ export interface IframeNodeData {
 export interface WaitNodeData {
   waitType: 'timeout' | 'selector' | 'url' | 'condition' | 'api-response';
   value: number | string; // timeout in ms, selector string, URL pattern, JavaScript condition, or API response context key
-  selectorType?: 'css' | 'xpath';
+  selectorType?: SelectorType;
   timeout?: number;
   failSilently?: boolean;
   pause?: boolean; // When true, execution pauses at this wait node with 2-hour timeout override
@@ -722,7 +734,7 @@ export interface WaitNodeData {
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
+    selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
@@ -749,19 +761,23 @@ export interface LoopNodeData {
 
 export interface IntValueNodeData {
   value: number;
+  variableName?: string;
 }
 
 export interface StringValueNodeData {
   value: string;
+  variableName?: string;
 }
 
 export interface BooleanValueNodeData {
   value: boolean;
+  variableName?: string;
 }
 
 export interface InputValueNodeData {
   dataType: PropertyDataType;
   value: string | number | boolean;
+  variableName?: string;
 }
 
 export interface ApiRequestNodeData {
@@ -907,7 +923,7 @@ export interface VerifyNodeData {
   urlPattern?: string;
   expectedText?: string;
   selector?: string;
-  selectorType?: 'css' | 'xpath';
+  selectorType?: SelectorType;
   attributeName?: string;
   elementCheck?: 'visible' | 'hidden' | 'exists' | 'notExists' | 'count' | 'enabled' | 'disabled' | 'selected' | 'checked';
   cookieName?: string;
@@ -937,7 +953,7 @@ export interface VerifyNodeData {
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
+    selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
     timeout?: number;
   };
@@ -1067,7 +1083,7 @@ export enum ExecutionEventType {
 // Page Debug Info for UI node errors
 export interface SelectorSuggestion {
   selector: string;
-  selectorType: 'css' | 'xpath';
+  selectorType: SelectorType;
   reason: string; // e.g., "Similar ID found", "Class match", etc.
   elementInfo?: string; // e.g., "button#submit-btn.login-button"
 }
@@ -1086,7 +1102,7 @@ export interface PageDebugInfo {
 // Selector Finder Types
 export interface SelectorOption {
   selector: string;
-  type: 'css' | 'xpath';
+  type: SelectorType;
   quality: 'high' | 'medium' | 'low';
   reason: string;
 }
@@ -1104,7 +1120,7 @@ export interface RecordedAction {
   id: string;
   type: 'click' | 'type' | 'keyboard' | 'form-input' | 'navigation' | 'scroll' | 'hover';
   selector?: string;
-  selectorType?: 'css' | 'xpath';
+  selectorType?: SelectorType;
   value?: string; // For type actions
   key?: string; // For keyboard actions
   url?: string; // For navigation

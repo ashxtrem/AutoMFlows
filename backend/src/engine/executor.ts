@@ -921,7 +921,7 @@ export class Executor {
   /**
    * Extract selector information from node data
    */
-  private extractSelectorInfo(node: BaseNode): { selector?: string; selectorType?: 'css' | 'xpath' } {
+  private extractSelectorInfo(node: BaseNode): { selector?: string; selectorType?: string } {
     const nodeData = node.data as any;
     const nodeType = node.type;
 

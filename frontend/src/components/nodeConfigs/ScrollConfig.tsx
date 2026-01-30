@@ -3,6 +3,7 @@ import { useState } from 'react';
 import RetryConfigSection from '../RetryConfigSection';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
 import SelectorFinderButton from '../SelectorFinderButton';
+import { getSelectorPlaceholder, getSelectorHelpText, SELECTOR_TYPE_OPTIONS } from '../../utils/selectorHelpers';
 
 interface ScrollConfigProps {
   node: Node;
@@ -81,7 +82,7 @@ export default function ScrollConfig({ node, onChange }: ScrollConfigProps) {
                 type="text"
                 value={getPropertyValue('selector', '')}
                 onChange={(e) => onChange('selector', e.target.value)}
-                placeholder="#element or //div[@id='element']"
+                placeholder={getSelectorPlaceholder(getPropertyValue('selectorType', 'css'))}
                 disabled={isPropertyDisabled('selector')}
                 className={getInputClassName('selector', 'flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
               />
@@ -94,6 +95,11 @@ export default function ScrollConfig({ node, onChange }: ScrollConfigProps) {
                 This property is converted to input. Connect a node to provide the value.
               </div>
             )}
+            {getSelectorHelpText(getPropertyValue('selectorType', 'css')) && (
+              <div className="mt-1 text-xs text-gray-400">
+                {getSelectorHelpText(getPropertyValue('selectorType', 'css'))}
+              </div>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
@@ -103,8 +109,9 @@ export default function ScrollConfig({ node, onChange }: ScrollConfigProps) {
               disabled={isPropertyDisabled('selectorType')}
               className={getInputClassName('selectorType', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
             >
-              <option value="css">CSS Selector</option>
-              <option value="xpath">XPath</option>
+              {SELECTOR_TYPE_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
             </select>
           </div>
         </>
@@ -260,8 +267,9 @@ export default function ScrollConfig({ node, onChange }: ScrollConfigProps) {
                     onChange={(e) => onChange('waitForSelectorType', e.target.value)}
                     className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
                   >
-                    <option value="css">CSS Selector</option>
-                    <option value="xpath">XPath</option>
+                    {SELECTOR_TYPE_OPTIONS.map(option => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
                   </select>
                 </div>
                 <div>
