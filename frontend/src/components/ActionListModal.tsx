@@ -872,7 +872,7 @@ function ActionItem({
                 </div>
                 <select
                   value={editSelectorType}
-                  onChange={(e) => setEditSelectorType(e.target.value)}
+                  onChange={(e) => setEditSelectorType(e.target.value as typeof editSelectorType)}
                   className="mt-1 w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-sm text-white"
                 >
                   {SELECTOR_TYPE_OPTIONS.map(option => (

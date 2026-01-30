@@ -194,7 +194,8 @@ export default function workflowRoutes(io: Server) {
 
       // Check if there's a paused execution with an active browser
       if (currentExecutor && currentExecutor.isExecutionPaused()) {
-        const page = currentExecutor.playwright.getPage();
+        // Use context to get page instead of accessing private playwright property
+        const page = (currentExecutor as any).context?.getPage();
         
         if (page && !page.isClosed()) {
           const sessionManager = SelectorSessionManager.getInstance();

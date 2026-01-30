@@ -11,7 +11,9 @@ import { useWorkflowStore } from './store/workflowStore';
 import { useSettingsStore } from './store/settingsStore';
 import NodeErrorPopup from './components/NodeErrorPopup';
 import BrowserInstallErrorPopup from './components/BrowserInstallErrorPopup';
+import ServerRestartWarningPopup from './components/ServerRestartWarningPopup';
 import { useWorkflowAutoSave, useWorkflowLoad } from './hooks/useWorkflow';
+import { useServerRestartWarning } from './hooks/useServerRestartWarning';
 import { useUndoRedo } from './hooks/useUndoRedo';
 import { useBreakpointShortcut } from './hooks/useBreakpointShortcut';
 import { useReportHistoryShortcut } from './hooks/useReportHistoryShortcut';
@@ -36,6 +38,9 @@ function App() {
   
   // State for browser installation error popup
   const [browserInstallError, setBrowserInstallError] = useState<{ nodeId: string; browserName: string } | null>(null);
+  
+  // Server restart warning hook
+  const serverRestartWarning = useServerRestartWarning();
   
   // Builder mode hook
   const builderMode = useBuilderMode();
@@ -196,6 +201,12 @@ function App() {
             nodeId={browserInstallError.nodeId}
             browserName={browserInstallError.browserName}
             onClose={handleCloseBrowserInstallError}
+          />
+        )}
+        {serverRestartWarning.showWarning && (
+          <ServerRestartWarningPopup
+            onProceed={serverRestartWarning.handleProceed}
+            onCancel={serverRestartWarning.handleCancel}
           />
         )}
         <TopBar />

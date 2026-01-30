@@ -65,8 +65,35 @@ const suppressStartupProxyErrors = (): Plugin => {
   };
 };
 
+// Plugin to prevent auto-refresh on server restart
+const preventAutoRefresh = (): Plugin => {
+  return {
+    name: 'prevent-auto-refresh',
+    transformIndexHtml(html) {
+      // Inject script to handle Vite HMR reload prevention
+      return html.replace(
+        '</head>',
+        `<script>
+          if (import.meta.hot) {
+            import.meta.hot.on('vite:beforeFullReload', () => {
+              const preventAutoRefresh = sessionStorage.getItem('prevent-auto-refresh') === 'true';
+              if (preventAutoRefresh) {
+                // Prevent the reload by stopping propagation
+                // The socket disconnect handler will show the warning popup
+                console.log('Preventing auto-refresh - showing warning popup instead');
+                // Note: Vite doesn't allow cancelling reloads directly,
+                // but the warning popup will be shown by the socket disconnect handler
+              }
+            });
+          }
+        </script></head>`
+      );
+    },
+  };
+};
+
 export default defineConfig({
-  plugins: [react(), suppressStartupProxyErrors()],
+  plugins: [react(), suppressStartupProxyErrors(), preventAutoRefresh()],
   resolve: {
     alias: {
       '@automflows/shared': path.resolve(__dirname, '../shared/src'),
@@ -75,6 +102,11 @@ export default defineConfig({
   },
   server: {
     port: 5173,
+    hmr: {
+      // Prevent automatic full page reload on server restart
+      // We'll show a warning popup instead and let user decide
+      overlay: true,
+    },
     proxy: {
       '/api': {
         target: `http://localhost:${backendPort}`,

@@ -2,6 +2,7 @@ import { chromium, firefox, webkit, Browser, Page, BrowserContext } from 'playwr
 import * as fs from 'fs';
 import * as path from 'path';
 import { resolveFromProjectRoot } from './pathUtils';
+import { Logger } from './logger';
 
 type BrowserType = 'chromium' | 'firefox' | 'webkit';
 
@@ -12,6 +13,7 @@ export class PlaywrightManager {
   private screenshotsDir: string;
   private videosDir: string | null = null;
   private recordSession: boolean = false;
+  private logger?: Logger;
   // private contexts: Map<string, BrowserContext> = new Map(); // Store multiple contexts - reserved for future use
 
   constructor(screenshotsDirectory?: string, videosDirectory?: string, recordSession: boolean = false) {
@@ -42,6 +44,14 @@ export class PlaywrightManager {
     if (!fs.existsSync(this.screenshotsDir)) {
       fs.mkdirSync(this.screenshotsDir, { recursive: true });
     }
+  }
+
+  /**
+   * Set logger for capturing browser console logs
+   * @param logger - Logger instance
+   */
+  setLogger(logger: Logger): void {
+    this.logger = logger;
   }
 
   /**
@@ -342,6 +352,11 @@ export class PlaywrightManager {
       }
     }
 
+    // Capture browser console logs if logger is set
+    if (this.logger) {
+      this.attachConsoleLogCapture(this.page);
+    }
+
     // Note: When maxWindow is true, we don't set viewport in browserContextOptions
     // This allows the browser to use its default/full screen size
     // However, Playwright may need explicit window maximization for non-headless mode
@@ -382,7 +397,39 @@ export class PlaywrightManager {
       throw new Error('Browser must be launched before creating a context');
     }
     const browserContext = await this.browser.newContext(options);
+    
+    // Attach console log capture to pages created from this context
+    if (this.logger) {
+      browserContext.on('page', (page) => {
+        this.attachConsoleLogCapture(page);
+      });
+      
+      // Also attach to any existing pages in the context
+      const existingPages = browserContext.pages();
+      for (const page of existingPages) {
+        this.attachConsoleLogCapture(page);
+      }
+    }
+    
     return browserContext;
+  }
+
+  /**
+   * Attach console log capture to a page
+   * @param page - Page to attach console log capture to
+   */
+  private attachConsoleLogCapture(page: Page): void {
+    if (this.logger) {
+      page.on('console', (msg) => {
+        const level = msg.type();
+        const text = msg.text();
+        const location = msg.location();
+        const url = location?.url;
+        
+        // Write to console log file (async, non-blocking)
+        this.logger?.writeConsoleLog(level, text, url);
+      });
+    }
   }
 
   async close(): Promise<string[]> {

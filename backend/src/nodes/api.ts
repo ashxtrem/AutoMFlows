@@ -125,7 +125,7 @@ export class ApiRequestHandler implements NodeHandler {
         
         return responseData;
       },
-      {
+      RetryHelper.interpolateRetryOptions({
         enabled: data.retryEnabled || false,
         strategy: data.retryStrategy || 'count',
         count: data.retryCount,
@@ -135,7 +135,7 @@ export class ApiRequestHandler implements NodeHandler {
         maxDelay: data.retryMaxDelay,
         failSilently: data.failSilently || false,
         context: context, // Pass context for API condition checking
-      },
+      }, context),
       null // No page object needed for API requests
     );
 
@@ -245,7 +245,7 @@ export class ApiCurlHandler implements NodeHandler {
         
         return responseData;
       },
-      {
+      RetryHelper.interpolateRetryOptions({
         enabled: data.retryEnabled || false,
         strategy: data.retryStrategy || 'count',
         count: data.retryCount,
@@ -255,7 +255,7 @@ export class ApiCurlHandler implements NodeHandler {
         maxDelay: data.retryMaxDelay,
         failSilently: data.failSilently || false,
         context: context, // Pass context for API condition checking
-      },
+      }, context),
       null // No page object needed for API requests
     );
 

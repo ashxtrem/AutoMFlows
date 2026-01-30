@@ -164,7 +164,7 @@ export class ElementQueryHandler implements NodeHandler {
 
         return queryResult;
       },
-      {
+      RetryHelper.interpolateRetryOptions({
         enabled: data.retryEnabled || false,
         strategy: data.retryStrategy || 'count',
         count: data.retryCount,
@@ -173,7 +173,7 @@ export class ElementQueryHandler implements NodeHandler {
         delayStrategy: data.retryDelayStrategy || 'fixed',
         maxDelay: data.retryMaxDelay,
         failSilently: data.failSilently || false,
-      },
+      }, context),
       page
     );
 
@@ -310,7 +310,7 @@ export class ScreenshotHandler implements NodeHandler {
           });
         }
       },
-      {
+      RetryHelper.interpolateRetryOptions({
         enabled: data.retryEnabled || false,
         strategy: data.retryStrategy || 'count',
         count: data.retryCount,
@@ -319,7 +319,7 @@ export class ScreenshotHandler implements NodeHandler {
         delayStrategy: data.retryDelayStrategy || 'fixed',
         maxDelay: data.retryMaxDelay,
         failSilently: data.failSilently || false,
-      },
+      }, context),
       page
     );
     
@@ -463,7 +463,7 @@ export class WaitHandler implements NodeHandler {
           throw new Error(`Invalid wait type: ${data.waitType}`);
         }
       },
-      {
+      RetryHelper.interpolateRetryOptions({
         enabled: data.retryEnabled || false,
         strategy: data.retryStrategy || 'count',
         count: data.retryCount,
@@ -472,7 +472,7 @@ export class WaitHandler implements NodeHandler {
         delayStrategy: data.retryDelayStrategy || 'fixed',
         maxDelay: data.retryMaxDelay,
         failSilently: data.failSilently || false,
-      },
+      }, context),
       page
     );
     
@@ -533,16 +533,21 @@ export class IntValueHandler implements NodeHandler {
     const data = node.data as IntValueNodeData;
     
     // Handle variable interpolation if value is a string
-    let resolvedValue: number = data.value;
-    if (typeof data.value === 'string' && (data.value.includes('${data.') || data.value.includes('${variables.'))) {
-      const interpolated = VariableInterpolator.interpolateString(data.value, context);
-      // Try to parse as integer after interpolation
-      const parsed = parseInt(interpolated, 10);
-      resolvedValue = isNaN(parsed) ? 0 : parsed;
-    } else if (typeof data.value === 'string') {
-      // If it's a string but doesn't contain interpolation, try to parse it
-      const parsed = parseInt(data.value, 10);
-      resolvedValue = isNaN(parsed) ? 0 : parsed;
+    let resolvedValue: number;
+    const value = data.value;
+    if (typeof value === 'string') {
+      if (value.includes('${data.') || value.includes('${variables.')) {
+        const interpolated = VariableInterpolator.interpolateString(value, context);
+        // Try to parse as integer after interpolation
+        const parsed = parseInt(interpolated, 10);
+        resolvedValue = isNaN(parsed) ? 0 : parsed;
+      } else {
+        // If it's a string but doesn't contain interpolation, try to parse it
+        const parsed = parseInt(value, 10);
+        resolvedValue = isNaN(parsed) ? 0 : parsed;
+      }
+    } else {
+      resolvedValue = value;
     }
     
     // Store the resolved value in context with the node ID as key
@@ -588,16 +593,21 @@ export class BooleanValueHandler implements NodeHandler {
     const data = node.data as BooleanValueNodeData;
     
     // Handle variable interpolation if value is a string
-    let resolvedValue: boolean = data.value;
-    if (typeof data.value === 'string' && (data.value.includes('${data.') || data.value.includes('${variables.'))) {
-      const interpolated = VariableInterpolator.interpolateString(data.value, context);
-      // Convert interpolated string to boolean
-      const lowercased = interpolated.toLowerCase().trim();
-      resolvedValue = lowercased === 'true' || lowercased === '1' || lowercased === 'yes';
-    } else if (typeof data.value === 'string') {
-      // If it's a string but doesn't contain interpolation, try to parse it
-      const lowercased = data.value.toLowerCase().trim();
-      resolvedValue = lowercased === 'true' || lowercased === '1' || lowercased === 'yes';
+    let resolvedValue: boolean;
+    const value = data.value;
+    if (typeof value === 'string') {
+      if (value.includes('${data.') || value.includes('${variables.')) {
+        const interpolated = VariableInterpolator.interpolateString(value, context);
+        // Convert interpolated string to boolean
+        const lowercased = interpolated.toLowerCase().trim();
+        resolvedValue = lowercased === 'true' || lowercased === '1' || lowercased === 'yes';
+      } else {
+        // If it's a string but doesn't contain interpolation, try to parse it
+        const lowercased = value.toLowerCase().trim();
+        resolvedValue = lowercased === 'true' || lowercased === '1' || lowercased === 'yes';
+      }
+    } else {
+      resolvedValue = value;
     }
     
     // Store the resolved value in context with the node ID as key
@@ -748,7 +758,7 @@ export class VerifyHandler implements NodeHandler {
 
             return verificationResult;
           },
-          {
+          RetryHelper.interpolateRetryOptions({
             enabled: data.retryEnabled || false,
             strategy: data.retryStrategy || 'count',
             count: data.retryCount,
@@ -757,7 +767,7 @@ export class VerifyHandler implements NodeHandler {
             delayStrategy: data.retryDelayStrategy || 'fixed',
             maxDelay: data.retryMaxDelay,
             failSilently: false, // Don't let RetryHelper handle failSilently, we handle it here
-          },
+          }, context),
           context.getPage()
         );
       }
@@ -1000,7 +1010,7 @@ export class StorageHandler implements NodeHandler {
           }, context);
         }
       },
-      {
+      RetryHelper.interpolateRetryOptions({
         enabled: data.retryEnabled || false,
         strategy: data.retryStrategy || 'count',
         count: data.retryCount,
@@ -1009,7 +1019,7 @@ export class StorageHandler implements NodeHandler {
         delayStrategy: data.retryDelayStrategy || 'fixed',
         maxDelay: data.retryMaxDelay,
         failSilently: data.failSilently || false,
-      },
+      }, context),
       page
     );
     
@@ -1153,7 +1163,7 @@ export class DialogHandler implements NodeHandler {
           }, context);
         }
       },
-      {
+      RetryHelper.interpolateRetryOptions({
         enabled: data.retryEnabled || false,
         strategy: data.retryStrategy || 'count',
         count: data.retryCount,
@@ -1162,7 +1172,7 @@ export class DialogHandler implements NodeHandler {
         delayStrategy: data.retryDelayStrategy || 'fixed',
         maxDelay: data.retryMaxDelay,
         failSilently: data.failSilently || false,
-      },
+      }, context),
       page
     );
     
@@ -1286,7 +1296,7 @@ export class DownloadHandler implements NodeHandler {
           }, context);
         }
       },
-      {
+      RetryHelper.interpolateRetryOptions({
         enabled: data.retryEnabled || false,
         strategy: data.retryStrategy || 'count',
         count: data.retryCount,
@@ -1295,7 +1305,7 @@ export class DownloadHandler implements NodeHandler {
         delayStrategy: data.retryDelayStrategy || 'fixed',
         maxDelay: data.retryMaxDelay,
         failSilently: data.failSilently || false,
-      },
+      }, context),
       page
     );
     
@@ -1429,7 +1439,7 @@ export class IframeHandler implements NodeHandler {
           }, context);
         }
       },
-      {
+      RetryHelper.interpolateRetryOptions({
         enabled: data.retryEnabled || false,
         strategy: data.retryStrategy || 'count',
         count: data.retryCount,
@@ -1438,7 +1448,7 @@ export class IframeHandler implements NodeHandler {
         delayStrategy: data.retryDelayStrategy || 'fixed',
         maxDelay: data.retryMaxDelay,
         failSilently: data.failSilently || false,
-      },
+      }, context),
       page
     );
     

@@ -27,7 +27,7 @@ export class WaitHelper {
    * Execute all wait conditions based on the provided options
    * @param page - Playwright page object
    * @param options - Wait options configuration
-   * @param context - Optional ContextManager for variable interpolation
+   * @param context - Optional ContextManager for variable interpolation and traceLog access
    */
   static async executeWaits(page: any, options: WaitOptions, context?: ContextManager): Promise<void> {
     const {
@@ -59,7 +59,8 @@ export class WaitHelper {
         waitForSelectorType || 'css',
         selectorTimeout,
         failSilently,
-        waitTiming
+        waitTiming,
+        context
       );
       waitPromises.push(waitForSelectorPromise);
     }
@@ -75,7 +76,8 @@ export class WaitHelper {
         interpolatedUrl,
         urlTimeout,
         failSilently,
-        waitTiming
+        waitTiming,
+        context
       );
       waitPromises.push(waitForUrlPromise);
     }
@@ -91,7 +93,8 @@ export class WaitHelper {
         interpolatedCondition,
         conditionTimeout,
         failSilently,
-        waitTiming
+        waitTiming,
+        context
       );
       waitPromises.push(waitForConditionPromise);
     }
@@ -124,9 +127,12 @@ export class WaitHelper {
     selectorType: SelectorType | string,
     timeout: number,
     failSilently: boolean,
-    waitTiming: 'before' | 'after' = 'before'
+    waitTiming: 'before' | 'after' = 'before',
+    context?: ContextManager
   ): Promise<void> {
     const timingLabel = waitTiming === 'after' ? 'after operation' : 'before operation';
+    const traceLog = context?.getData('traceLog') as ((message: string) => void) | undefined;
+    const log = traceLog || console.log;
     
     if (!selector || selector.trim() === '') {
       if (failSilently) {
@@ -138,8 +144,33 @@ export class WaitHelper {
 
     try {
       const locator = LocatorHelper.createLocator(page, selector, selectorType || 'css');
+      const element = locator.first();
+      
+      // Log initial state
+      try {
+        const isVisible = await element.isVisible().catch(() => false);
+        const actualState = isVisible ? 'visible' : 'invisible';
+        log(`Wait [selector]: selector: ${selector} | expected: visible | got: ${actualState} | timeout: ${timeout}ms`);
+      } catch {
+        // If we can't check visibility, log anyway
+        log(`Wait [selector]: selector: ${selector} | expected: visible | got: checking... | timeout: ${timeout}ms`);
+      }
+      
       await locator.waitFor({ timeout, state: 'visible' });
     } catch (error: any) {
+      // Log final state on timeout
+      if (error.message.includes('timeout')) {
+        try {
+          const locator = LocatorHelper.createLocator(page, selector, selectorType || 'css');
+          const element = locator.first();
+          const isVisible = await element.isVisible().catch(() => false);
+          const actualState = isVisible ? 'visible' : 'invisible';
+          log(`Wait [selector]: selector: ${selector} | expected: visible | got: ${actualState} | timeout: ${timeout}ms (TIMEOUT)`);
+        } catch {
+          log(`Wait [selector]: selector: ${selector} | expected: visible | got: timeout | timeout: ${timeout}ms (TIMEOUT)`);
+        }
+      }
+      
       if (failSilently) {
         console.warn(`Wait for selector failed silently (${timingLabel}): ${selector} (${selectorType}): ${error.message}`);
         return;
@@ -156,9 +187,12 @@ export class WaitHelper {
     urlPattern: string,
     timeout: number,
     failSilently: boolean,
-    waitTiming: 'before' | 'after' = 'before'
+    waitTiming: 'before' | 'after' = 'before',
+    context?: ContextManager
   ): Promise<void> {
     const timingLabel = waitTiming === 'after' ? 'after operation' : 'before operation';
+    const traceLog = context?.getData('traceLog') as ((message: string) => void) | undefined;
+    const log = traceLog || console.log;
     
     if (!urlPattern || urlPattern.trim() === '') {
       if (failSilently) {
@@ -169,6 +203,11 @@ export class WaitHelper {
     }
 
     try {
+      // Log initial state
+      const currentUrl = page.url();
+      const truncatedUrl = this.truncateString(currentUrl, 100);
+      log(`Wait [url]: pattern: ${urlPattern} | got: ${truncatedUrl} | timeout: ${timeout}ms`);
+      
       // Try to compile as regex first, fallback to string match
       let regex: RegExp;
       try {
@@ -191,6 +230,13 @@ export class WaitHelper {
 
       await page.waitForURL(regex, { timeout });
     } catch (error: any) {
+      // Log final state on timeout
+      if (error.message.includes('timeout')) {
+        const currentUrl = page.url();
+        const truncatedUrl = this.truncateString(currentUrl, 100);
+        log(`Wait [url]: pattern: ${urlPattern} | got: ${truncatedUrl} | timeout: ${timeout}ms (TIMEOUT)`);
+      }
+      
       if (failSilently) {
         console.warn(`Wait for URL pattern failed silently (${timingLabel}): ${urlPattern}: ${error.message}`);
         return;
@@ -207,9 +253,12 @@ export class WaitHelper {
     condition: string,
     timeout: number,
     failSilently: boolean,
-    waitTiming: 'before' | 'after' = 'before'
+    waitTiming: 'before' | 'after' = 'before',
+    context?: ContextManager
   ): Promise<void> {
     const timingLabel = waitTiming === 'after' ? 'after operation' : 'before operation';
+    const traceLog = context?.getData('traceLog') as ((message: string) => void) | undefined;
+    const log = traceLog || console.log;
     
     if (!condition || condition.trim() === '') {
       if (failSilently) {
@@ -220,8 +269,30 @@ export class WaitHelper {
     }
 
     try {
+      // Log initial state
+      let currentResult = false;
+      try {
+        currentResult = await page.evaluate(condition);
+      } catch {
+        // If evaluation fails, log anyway
+      }
+      const truncatedCondition = this.truncateString(condition, 100);
+      log(`Wait [condition]: expression: ${truncatedCondition} | result: ${currentResult} | timeout: ${timeout}ms`);
+      
       await page.waitForFunction(condition, { timeout });
     } catch (error: any) {
+      // Log final state on timeout
+      if (error.message.includes('timeout')) {
+        let currentResult = false;
+        try {
+          currentResult = await page.evaluate(condition);
+        } catch {
+          // If evaluation fails, use false
+        }
+        const truncatedCondition = this.truncateString(condition, 100);
+        log(`Wait [condition]: expression: ${truncatedCondition} | result: ${currentResult} | timeout: ${timeout}ms (TIMEOUT)`);
+      }
+      
       if (failSilently) {
         console.warn(`Wait for condition failed silently (${timingLabel}): ${condition}: ${error.message}`);
         return;
@@ -236,6 +307,14 @@ export class WaitHelper {
       }
       throw new Error(errorMessage);
     }
+  }
+
+  /**
+   * Truncate string if too long
+   */
+  private static truncateString(str: string, maxLength: number): string {
+    if (str.length <= maxLength) return str;
+    return str.substring(0, maxLength - 3) + '...';
   }
 }
 

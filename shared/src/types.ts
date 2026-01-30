@@ -104,17 +104,17 @@ export interface NavigateNodeData {
   waitAfterOperation?: boolean; // false = wait before (default), true = wait after
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
-    timeout?: number;
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -147,17 +147,17 @@ export interface NavigationNodeData {
   // Retry Configuration
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
-    timeout?: number;
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -191,17 +191,17 @@ export interface KeyboardNodeData {
   // Retry Configuration
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
-    timeout?: number;
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -234,17 +234,17 @@ export interface ScrollNodeData {
   // Retry Configuration
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
-    timeout?: number;
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -269,17 +269,17 @@ export interface ClickNodeData {
   waitAfterOperation?: boolean; // false = wait before (default), true = wait after
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
-    timeout?: number;
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -308,17 +308,17 @@ export interface TypeNodeData {
   waitAfterOperation?: boolean; // false = wait before (default), true = wait after
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
-    timeout?: number;
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -353,17 +353,17 @@ export interface ActionNodeData {
   // Retry Configuration
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
-    timeout?: number;
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -394,17 +394,17 @@ export interface ElementQueryNodeData {
   // Retry Configuration
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
-    timeout?: number;
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -438,17 +438,17 @@ export interface FormInputNodeData {
   // Retry Configuration
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
-    timeout?: number;
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -474,17 +474,17 @@ export interface GetTextNodeData {
   waitAfterOperation?: boolean; // false = wait before (default), true = wait after
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
-    timeout?: number;
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -517,17 +517,17 @@ export interface ScreenshotNodeData {
   waitAfterOperation?: boolean; // false = wait before (default), true = wait after
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
-    timeout?: number;
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -569,17 +569,17 @@ export interface StorageNodeData {
   // Retry Configuration
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
-    timeout?: number;
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -609,17 +609,17 @@ export interface DialogNodeData {
   // Retry Configuration
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
-    timeout?: number;
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -650,17 +650,17 @@ export interface DownloadNodeData {
   // Retry Configuration
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
-    timeout?: number;
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -694,17 +694,17 @@ export interface IframeNodeData {
   // Retry Configuration
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
-    timeout?: number;
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -730,17 +730,17 @@ export interface WaitNodeData {
   };
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
-    timeout?: number;
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -760,7 +760,7 @@ export interface LoopNodeData {
 }
 
 export interface IntValueNodeData {
-  value: number;
+  value: number | string; // string allowed for interpolation (e.g., "${data.key}")
   variableName?: string;
 }
 
@@ -770,7 +770,7 @@ export interface StringValueNodeData {
 }
 
 export interface BooleanValueNodeData {
-  value: boolean;
+  value: boolean | string; // string allowed for interpolation (e.g., "${data.key}")
   variableName?: string;
 }
 
@@ -793,21 +793,21 @@ export interface ApiRequestNodeData {
   failSilently?: boolean;
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'api-status' | 'api-json-path' | 'api-javascript';
     value?: string; // Optional, used for api-javascript condition code
-    timeout?: number;
+    timeout?: number | string;
     // API-specific fields
-    expectedStatus?: number; // For api-status
+    expectedStatus?: number | string; // For api-status
     jsonPath?: string; // For api-json-path
     expectedValue?: any; // For api-json-path
     matchType?: MatchType; // For api-json-path
     contextKey?: string; // For api-javascript (which API response to check, defaults to node's contextKey)
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -823,21 +823,21 @@ export interface ApiCurlNodeData {
   failSilently?: boolean;
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'api-status' | 'api-json-path' | 'api-javascript';
     value?: string; // Optional, used for api-javascript condition code
-    timeout?: number;
+    timeout?: number | string;
     // API-specific fields
-    expectedStatus?: number; // For api-status
+    expectedStatus?: number | string; // For api-status
     jsonPath?: string; // For api-json-path
     expectedValue?: any; // For api-json-path
     matchType?: MatchType; // For api-json-path
     contextKey?: string; // For api-javascript (which API response to check, defaults to node's contextKey)
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -949,17 +949,17 @@ export interface VerifyNodeData {
   failSilently?: boolean;
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
     visibility?: 'visible' | 'invisible';
-    timeout?: number;
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;

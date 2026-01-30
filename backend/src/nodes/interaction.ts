@@ -126,7 +126,7 @@ export class TypeHandler implements NodeHandler {
           }, context);
         }
       },
-      {
+      RetryHelper.interpolateRetryOptions({
         enabled: data.retryEnabled || false,
         strategy: data.retryStrategy || 'count',
         count: data.retryCount,
@@ -135,7 +135,7 @@ export class TypeHandler implements NodeHandler {
         delayStrategy: data.retryDelayStrategy || 'fixed',
         maxDelay: data.retryMaxDelay,
         failSilently: data.failSilently || false,
-      },
+      }, context),
       page
     );
     
@@ -278,7 +278,7 @@ export class ActionHandler implements NodeHandler {
           }, context);
         }
       },
-      {
+      RetryHelper.interpolateRetryOptions({
         enabled: data.retryEnabled || false,
         strategy: data.retryStrategy || 'count',
         count: data.retryCount,
@@ -287,7 +287,7 @@ export class ActionHandler implements NodeHandler {
         delayStrategy: data.retryDelayStrategy || 'fixed',
         maxDelay: data.retryMaxDelay,
         failSilently: data.failSilently || false,
-      },
+      }, context),
       page
     );
     
@@ -356,17 +356,17 @@ export class FormInputHandler implements NodeHandler {
             
             // Determine select options based on selectBy
             // Playwright expects values and timeout to be separate parameters
-            let selectOptionValue: string | string[] | { value?: string | string[]; label?: string | string[]; index?: number | number[] };
+            let selectOptionValue: string | string[] | { value?: string; label?: string; index?: number };
             
             if (data.selectBy === 'label') {
               selectOptionValue = interpolatedValues.length === 1 
                 ? { label: interpolatedValues[0] }
-                : { label: interpolatedValues };
+                : interpolatedValues.map(v => ({ label: v })) as any; // Playwright accepts array of objects
             } else if (data.selectBy === 'index') {
               const indices = interpolatedValues.map(v => parseInt(v, 10));
               selectOptionValue = indices.length === 1 
                 ? { index: indices[0] }
-                : { index: indices };
+                : indices.map(i => ({ index: i })) as any; // Playwright accepts array of objects
             } else {
               // For value, pass string or array directly (Playwright accepts both)
               selectOptionValue = interpolatedValues.length === 1 
@@ -374,7 +374,7 @@ export class FormInputHandler implements NodeHandler {
                 : interpolatedValues;
             }
 
-            await locator.selectOption(selectOptionValue, { timeout });
+            await locator.selectOption(selectOptionValue as any, { timeout });
             break;
 
           case 'check':
@@ -426,7 +426,7 @@ export class FormInputHandler implements NodeHandler {
           }, context);
         }
       },
-      {
+      RetryHelper.interpolateRetryOptions({
         enabled: data.retryEnabled || false,
         strategy: data.retryStrategy || 'count',
         count: data.retryCount,
@@ -435,7 +435,7 @@ export class FormInputHandler implements NodeHandler {
         delayStrategy: data.retryDelayStrategy || 'fixed',
         maxDelay: data.retryMaxDelay,
         failSilently: data.failSilently || false,
-      },
+      }, context),
       page
     );
     
@@ -596,7 +596,7 @@ export class KeyboardHandler implements NodeHandler {
           }, context);
         }
       },
-      {
+      RetryHelper.interpolateRetryOptions({
         enabled: data.retryEnabled || false,
         strategy: data.retryStrategy || 'count',
         count: data.retryCount,
@@ -605,7 +605,7 @@ export class KeyboardHandler implements NodeHandler {
         delayStrategy: data.retryDelayStrategy || 'fixed',
         maxDelay: data.retryMaxDelay,
         failSilently: data.failSilently || false,
-      },
+      }, context),
       page
     );
     
@@ -715,7 +715,7 @@ export class ScrollHandler implements NodeHandler {
           }, context);
         }
       },
-      {
+      RetryHelper.interpolateRetryOptions({
         enabled: data.retryEnabled || false,
         strategy: data.retryStrategy || 'count',
         count: data.retryCount,
@@ -724,7 +724,7 @@ export class ScrollHandler implements NodeHandler {
         delayStrategy: data.retryDelayStrategy || 'fixed',
         maxDelay: data.retryMaxDelay,
         failSilently: data.failSilently || false,
-      },
+      }, context),
       page
     );
     

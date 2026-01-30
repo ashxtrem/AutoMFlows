@@ -269,7 +269,7 @@ export class NavigationHandler implements NodeHandler {
           }
         }
       },
-      {
+      RetryHelper.interpolateRetryOptions({
         enabled: data.retryEnabled || false,
         strategy: data.retryStrategy || 'count',
         count: data.retryCount,
@@ -278,7 +278,7 @@ export class NavigationHandler implements NodeHandler {
         delayStrategy: data.retryDelayStrategy || 'fixed',
         maxDelay: data.retryMaxDelay,
         failSilently: data.failSilently || false,
-      },
+      }, contextManager),
       page
     );
     

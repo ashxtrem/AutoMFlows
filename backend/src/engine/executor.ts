@@ -14,6 +14,7 @@ import { getAllReusableScopes } from '../utils/reusableFlowExtractor';
 import { resolveFromProjectRoot } from '../utils/pathUtils';
 import { migrateWorkflow } from '../utils/migration';
 import { ActionRecorderSessionManager } from '../utils/actionRecorderSessionManager';
+import { Logger } from '../utils/logger';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -36,6 +37,7 @@ export class Executor {
   private recordSession: boolean;
   private breakpointConfig?: BreakpointConfig;
   private builderModeEnabled: boolean = false;
+  private logger?: Logger;
   // Pause state
   private isPaused: boolean = false;
   private pausedNodeId: string | null = null;
@@ -124,6 +126,11 @@ export class Executor {
         this.playwright = new PlaywrightManager();
       }
     }
+
+    // Set logger on PlaywrightManager for browser console log capture
+    if (this.logger) {
+      this.playwright.setLogger(this.logger);
+    }
     
     // Store playwright in context for node handlers
     (this.context as any).playwright = this.playwright;
@@ -133,6 +140,26 @@ export class Executor {
     
     // Store recordSession flag in context for PlaywrightManager
     (this.context as any).recordSession = this.recordSession;
+
+    // Initialize logger if traceLogs is enabled
+    if (this.traceLogs) {
+      const workflowName = this.extractWorkflowName(this.workflow);
+      this.logger = new Logger();
+      this.logger.initialize(workflowName, this.traceLogs);
+    }
+  }
+
+  /**
+   * Extract workflow name from workflow (similar to ExecutionTracker)
+   */
+  private extractWorkflowName(workflow: Workflow): string {
+    // Try to find a Start node and use its label, or use default
+    const startNode = workflow.nodes.find(node => node.type === NodeType.START);
+    if (startNode && (startNode.data as any)?.label) {
+      // Use start node label, sanitized for filesystem
+      return (startNode.data as any).label.replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase() || 'workflow';
+    }
+    return 'workflow';
   }
 
   getExecutionId(): string {
@@ -840,6 +867,11 @@ export class Executor {
 
   private async cleanup(): Promise<void> {
     try {
+      // Close logger files
+      if (this.logger) {
+        await this.logger.close();
+      }
+
       // Don't close browser if builder mode is enabled (browser needs to stay open)
       if (this.builderModeEnabled) {
         // Don't reset context either - we need to keep page/context references
@@ -875,6 +907,9 @@ export class Executor {
       const timestamp = new Date().toISOString();
       const logMessage = `[${timestamp}] ${message}`;
       console.log(logMessage);
+      
+      // Write to logger file (async, non-blocking)
+      this.logger?.writeTerminalLog(logMessage);
       
       // Store trace log for current node if executing
       if (this.currentNodeId) {
@@ -921,7 +956,7 @@ export class Executor {
   /**
    * Extract selector information from node data
    */
-  private extractSelectorInfo(node: BaseNode): { selector?: string; selectorType?: string } {
+  private extractSelectorInfo(node: BaseNode): { selector?: string; selectorType?: 'css' | 'xpath' } {
     const nodeData = node.data as any;
     const nodeType = node.type;
 

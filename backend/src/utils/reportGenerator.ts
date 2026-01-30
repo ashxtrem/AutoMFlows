@@ -1,7 +1,53 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { ExecutionMetadata, NodeExecutionEvent } from './executionTracker';
-import { ReportType, Workflow } from '@automflows/shared';
+import { ReportType, Workflow, NodeType } from '@automflows/shared';
+
+/**
+ * Get the default display label for a node type
+ * Returns the human-readable label for built-in node types, or the nodeType string for plugin nodes
+ */
+function getDefaultNodeLabel(nodeType: string): string {
+  // Check if it's a built-in node type
+  if (Object.values(NodeType).includes(nodeType as NodeType)) {
+    const labels: Record<NodeType, string> = {
+      [NodeType.START]: 'Start',
+      [NodeType.OPEN_BROWSER]: 'Open Browser',
+      [NodeType.NAVIGATION]: 'Navigation',
+      [NodeType.KEYBOARD]: 'Keyboard',
+      [NodeType.SCROLL]: 'Scroll',
+      [NodeType.STORAGE]: 'Storage',
+      [NodeType.DIALOG]: 'Dialog',
+      [NodeType.DOWNLOAD]: 'Download',
+      [NodeType.IFRAME]: 'Iframe',
+      [NodeType.ACTION]: 'Action',
+      [NodeType.ELEMENT_QUERY]: 'Element Query',
+      [NodeType.FORM_INPUT]: 'Form Input',
+      [NodeType.TYPE]: 'Type',
+      [NodeType.SCREENSHOT]: 'Screenshot',
+      [NodeType.WAIT]: 'Wait',
+      [NodeType.JAVASCRIPT_CODE]: 'JavaScript Code',
+      [NodeType.LOOP]: 'Loop',
+      [NodeType.INT_VALUE]: 'Int Value',
+      [NodeType.STRING_VALUE]: 'String Value',
+      [NodeType.BOOLEAN_VALUE]: 'Boolean Value',
+      [NodeType.INPUT_VALUE]: 'Input Value',
+      [NodeType.VERIFY]: 'Verify',
+      [NodeType.API_REQUEST]: 'API Request',
+      [NodeType.API_CURL]: 'API cURL',
+      [NodeType.LOAD_CONFIG_FILE]: 'Load Config File',
+      [NodeType.SELECT_CONFIG_FILE]: 'Select Config File',
+      [NodeType.DB_CONNECT]: 'DB Connect',
+      [NodeType.DB_DISCONNECT]: 'DB Disconnect',
+      [NodeType.DB_QUERY]: 'DB Query',
+      [NodeType.CONTEXT_MANIPULATE]: 'Context Manipulate',
+    };
+    return labels[nodeType as NodeType] || nodeType;
+  }
+  
+  // For plugin nodes or unknown types, return the nodeType string
+  return nodeType;
+}
 
 export class ReportGenerator {
   private metadata: ExecutionMetadata;
@@ -12,6 +58,13 @@ export class ReportGenerator {
     this.metadata = metadata;
     this.outputDirectory = metadata.outputDirectory;
     this.workflow = workflow;
+  }
+
+  /**
+   * Get the display name for a node (custom label, default label, or nodeId)
+   */
+  private getNodeDisplayName(node: NodeExecutionEvent): string {
+    return node.nodeLabel || getDefaultNodeLabel(node.nodeType) || node.nodeId;
   }
 
   /**
@@ -171,7 +224,7 @@ export class ReportGenerator {
 
       return `
         <tr class="node-row">
-          <td>${node.nodeLabel || node.nodeId}</td>
+          <td>${this.getNodeDisplayName(node)}</td>
           <td>${node.nodeType}</td>
           <td>${statusBadge}</td>
           <td>${nodeDuration}s</td>
@@ -516,15 +569,15 @@ export class ReportGenerator {
         : 0;
       
       if (node.status === 'error') {
-        return `    <testcase name="${node.nodeLabel || node.nodeId}" classname="${node.nodeType}" time="${duration}">
+        return `    <testcase name="${this.escapeXml(this.getNodeDisplayName(node))}" classname="${node.nodeType}" time="${duration}">
       <failure message="${this.escapeXml(node.error || 'Unknown error')}">${this.escapeXml(node.error || 'Unknown error')}</failure>
     </testcase>`;
       } else if (node.status === 'bypassed') {
-        return `    <testcase name="${node.nodeLabel || node.nodeId}" classname="${node.nodeType}" time="${duration}">
+        return `    <testcase name="${this.escapeXml(this.getNodeDisplayName(node))}" classname="${node.nodeType}" time="${duration}">
       <skipped/>
     </testcase>`;
       } else {
-        return `    <testcase name="${node.nodeLabel || node.nodeId}" classname="${node.nodeType}" time="${duration}"/>`;
+        return `    <testcase name="${this.escapeXml(this.getNodeDisplayName(node))}" classname="${node.nodeType}" time="${duration}"/>`;
       }
     }).join('\n');
 
@@ -590,7 +643,7 @@ ${testsuites}
         : node.status === 'bypassed' ? '⏭️'
         : '⏳';
 
-      return `| ${node.nodeLabel || node.nodeId} | ${node.nodeType} | ${statusIcon} ${node.status} | ${nodeDuration}s | ${node.error || '-'} |`;
+      return `| ${this.getNodeDisplayName(node)} | ${node.nodeType} | ${statusIcon} ${node.status} | ${nodeDuration}s | ${node.error || '-'} |`;
     }).join('\n');
 
     const markdown = `# Workflow Execution Report
@@ -630,7 +683,7 @@ ${nodeRows}
     testNodes.forEach((node, index) => {
       const allureResult = {
         uuid: `${this.metadata.executionId}-${node.nodeId}`,
-        name: node.nodeLabel || node.nodeId,
+        name: this.getNodeDisplayName(node),
         fullName: `${this.metadata.workflowName}.${node.nodeId}`,
         historyId: node.nodeId,
         status: node.status === 'completed' ? 'passed' 
@@ -873,7 +926,7 @@ They are in the correct format for Allure CLI to process.
 
       return `
         <tr class="test-result ${statusClass}">
-          <td>${node.nodeLabel || node.nodeId}</td>
+          <td>${this.getNodeDisplayName(node)}</td>
           <td>${node.nodeType}</td>
           <td><span class="status-badge ${statusClass}">${statusText}</span></td>
           <td>${nodeDuration}s</td>
