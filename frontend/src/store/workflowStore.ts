@@ -92,6 +92,7 @@ interface WorkflowState {
   
   // Node arrangement
   arrangeNodes: (mode: 'vertical' | 'horizontal', nodesPerRowColumn?: number) => void;
+  arrangeSelectedNodes: (mode: 'vertical' | 'horizontal', nodesPerRowColumn: number) => void;
   
   // Copy/Paste/Duplicate
   copyNode: (nodeId: string | string[]) => void;
@@ -994,6 +995,51 @@ export const useWorkflowStore = create<WorkflowState>((set, get) => {
       ? arrangeNodesVertical(state.nodes, state.edges, { nodesPerColumn: nodesPerRowColumn })
       : arrangeNodesHorizontal(state.nodes, state.edges, { nodesPerRow: nodesPerRowColumn });
     set({ nodes: arrangedNodes });
+    setTimeout(() => get().saveToHistory(), 100);
+  },
+
+  arrangeSelectedNodes: (mode, nodesPerRowColumn) => {
+    const state = get();
+    const selectedIds = Array.from(state.selectedNodeIds);
+    
+    if (selectedIds.length < 2) {
+      return; // Need at least 2 nodes to arrange
+    }
+
+    // Filter to only selected nodes
+    const selectedNodes = state.nodes.filter(node => selectedIds.includes(node.id));
+    
+    // Filter edges to only those between selected nodes
+    const selectedEdges = state.edges.filter(edge => 
+      selectedIds.includes(edge.source) && selectedIds.includes(edge.target)
+    );
+
+    // Arrange selected nodes
+    const arrangedSelectedNodes = mode === 'vertical'
+      ? arrangeNodesVertical(selectedNodes, selectedEdges, { nodesPerColumn: nodesPerRowColumn })
+      : arrangeNodesHorizontal(selectedNodes, selectedEdges, { nodesPerRow: nodesPerRowColumn });
+
+    // Create a map of arranged node positions
+    const arrangedPositions = new Map<string, { x: number; y: number }>();
+    arrangedSelectedNodes.forEach(node => {
+      arrangedPositions.set(node.id, node.position);
+    });
+
+    // Update only selected nodes' positions, preserve others
+    const updatedNodes = state.nodes.map(node => {
+      if (selectedIds.includes(node.id)) {
+        const newPosition = arrangedPositions.get(node.id);
+        if (newPosition) {
+          return {
+            ...node,
+            position: newPosition,
+          };
+        }
+      }
+      return node;
+    });
+
+    set({ nodes: updatedNodes });
     setTimeout(() => get().saveToHistory(), 100);
   },
 

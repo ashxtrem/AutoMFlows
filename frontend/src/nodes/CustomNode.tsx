@@ -365,7 +365,6 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
   const updateNodeDimensions = useWorkflowStore((state) => state.updateNodeDimensions);
   const renameNode = useWorkflowStore((state) => state.renameNode);
-  const autoResizeNode = useWorkflowStore((state) => state.autoResizeNode);
   const edgesRaw = useWorkflowStore((state) => state.edges);
   const nodesRaw = useWorkflowStore((state) => state.nodes);
   
@@ -501,20 +500,12 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
       hasProps = properties.length > 0;
       propertyCount = properties.length;
       
-      // Special handling for API_CURL nodes - enforce minimum width based on ~30 chars per line
+      // Special handling for API_CURL nodes - use property key width only
       if (nodeType === NodeType.API_CURL) {
-        const curlCommand = data.curlCommand;
-        if (curlCommand !== undefined && curlCommand !== null) {
-          // Calculate minimum width for curl command textarea
-          // ~30 characters per line * 8px per char + label width + padding
-          // Label "cURL Command" is ~13 chars, so: 30 * 8 + 13 * 8 + 60 + 16 + 8 = 240 + 104 + 84 = 428px
-          const curlMinWidth = 30 * 8 + 13 * 8 + 60 + 16 + 8; // ~428px
-          maxPropertyWidth = Math.max(maxPropertyWidth, curlMinWidth);
-        } else {
-          // Even without curl command, ensure minimum width for the textarea
-          const curlMinWidth = 30 * 8 + 13 * 8 + 60 + 16 + 8; // ~428px
-          maxPropertyWidth = Math.max(maxPropertyWidth, curlMinWidth);
-        }
+        // Calculate minimum width based on property key only
+        // Label "cURL Command" is ~13 chars, so: 13 * 8 + 60 + 3 = 104 + 63 = 167px
+        const curlKeyWidth = 13 * 8 + 60 + 3; // ~167px
+        maxPropertyWidth = Math.max(maxPropertyWidth, curlKeyWidth);
       }
       
       // Calculate width for each property
@@ -523,48 +514,13 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
         const isInput = isPropertyInputConnection(data, prop.name);
         if (isInput) {
           // For inputs, estimate width based on label only (connection info is shorter)
-          const inputWidth = (prop.label.length * 8) + 60 + 16; // label + min-w-[60px] + padding
+          const inputWidth = (prop.label.length * 8) + 60 + 3; // label + min-w-[60px] + 3px
           maxPropertyWidth = Math.max(maxPropertyWidth, inputWidth);
         } else {
-          // Get property value from data
-          const propValue = data[prop.name];
-          let valueStr = '';
-          
-          if (propValue !== undefined && propValue !== null) {
-            if (prop.dataType === PropertyDataType.STRING) {
-              valueStr = String(propValue);
-              // For API_CURL curlCommand, don't truncate - let it wrap
-              if (nodeType === NodeType.API_CURL && prop.name === 'curlCommand') {
-                // Use first line or ~30 chars for width calculation
-                if (valueStr.includes('\n')) {
-                  const firstLine = valueStr.split('\n')[0];
-                  valueStr = firstLine.length > 30 ? firstLine.substring(0, 30) : firstLine;
-                } else {
-                  valueStr = valueStr.length > 30 ? valueStr.substring(0, 30) : valueStr;
-                }
-              } else {
-                // For long strings (like URLs or code), consider first line or reasonable max
-                // This helps prevent extremely wide nodes from very long single-line values
-                if (valueStr.length > 100 && !valueStr.includes('\n')) {
-                  valueStr = valueStr.substring(0, 100);
-                } else if (valueStr.includes('\n')) {
-                  // For multi-line strings, use first line for width calculation
-                  const firstLine = valueStr.split('\n')[0];
-                  valueStr = firstLine.length > 100 ? firstLine.substring(0, 100) : firstLine;
-                }
-              }
-            } else if (prop.dataType === PropertyDataType.INT || prop.dataType === PropertyDataType.FLOAT || prop.dataType === PropertyDataType.DOUBLE) {
-              valueStr = String(propValue);
-            } else if (prop.dataType === PropertyDataType.BOOLEAN) {
-              valueStr = String(propValue);
-            } else {
-              valueStr = String(propValue);
-            }
-          }
-          
-          // Calculate width: label length + value length * 8px + label min-width (60px) + padding (16px) + gaps (8px)
-          const propertyWidth = (prop.label.length + valueStr.length) * 8 + 60 + 16 + 8;
-          maxPropertyWidth = Math.max(maxPropertyWidth, propertyWidth);
+          // Calculate width based on property key (label) only, ignoring value length
+          // This allows resize until property key + 3px, values will overflow
+          const propertyKeyWidth = (prop.label.length * 8) + 60 + 3; // label + min-w-[60px] + 3px
+          maxPropertyWidth = Math.max(maxPropertyWidth, propertyKeyWidth);
         }
       });
     } else {
@@ -577,12 +533,10 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
         
         // Calculate width for each plugin property
         properties.forEach(propName => {
-          const propValue = data[propName] ?? pluginNode.definition.defaultData![propName];
-          const valueStr = propValue !== undefined && propValue !== null ? String(propValue) : '';
-          
-          // Use property name as label (plugin nodes use name as label)
-          const propertyWidth = (propName.length + valueStr.length) * 8 + 60 + 16 + 8;
-          maxPropertyWidth = Math.max(maxPropertyWidth, propertyWidth);
+          // Calculate width based on property key (name) only, ignoring value length
+          // This allows resize until property key + 3px, values will overflow
+          const propertyKeyWidth = (propName.length * 8) + 60 + 3; // name + min-w-[60px] + 3px
+          maxPropertyWidth = Math.max(maxPropertyWidth, propertyKeyWidth);
         });
       }
     }
@@ -625,11 +579,13 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const handleDoubleClickHeader = useCallback(() => {
     setIsRenaming(true);
     setRenameValue(label);
+    // Remove explicit height to allow natural sizing when editing header
+    updateNodeDimensions(id, currentWidth, undefined);
     setTimeout(() => {
       renameInputRef.current?.focus();
       renameInputRef.current?.select();
     }, 0);
-  }, [label]);
+  }, [label, id, currentWidth, updateNodeDimensions]);
 
   const handleRenameSubmit = useCallback(() => {
     if (renameValue.trim() && renameValue !== label) {
@@ -651,8 +607,9 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
 
   const handleBoundaryDoubleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    autoResizeNode(id);
-  }, [id, autoResizeNode]);
+    // Remove explicit height to allow natural sizing without auto-resizing
+    updateNodeDimensions(id, currentWidth, undefined);
+  }, [id, currentWidth, updateNodeDimensions]);
 
   const handlePropertyChange = useCallback((field: string, value: any) => {
     updateNodeData(id, { [field]: value });
