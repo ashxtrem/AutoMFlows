@@ -67,6 +67,7 @@ export interface StartNodeData {
   recordSession?: boolean; // Enable video recording
   screenshotAllNodes?: boolean; // Enable screenshots on all nodes
   screenshotTiming?: 'pre' | 'post' | 'both'; // When to take screenshots
+  slowMo?: number; // Delay in milliseconds between node executions
 }
 
 export interface OpenBrowserNodeData {

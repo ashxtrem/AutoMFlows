@@ -753,6 +753,16 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   ]}
                 />
               ), 2)}
+              {renderPropertyRow('slowMo', (
+                <InlineNumberInput
+                  label="Slowmo (ms)"
+                  value={renderData.slowMo || 0}
+                  onChange={(value) => handlePropertyChange('slowMo', value)}
+                  min={0}
+                  placeholder="Delay between nodes"
+                  onOpenPopup={handleOpenPopup}
+                />
+              ), 3)}
             </div>
           );
         

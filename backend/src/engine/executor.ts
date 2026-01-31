@@ -38,6 +38,7 @@ export class Executor {
   private breakpointConfig?: BreakpointConfig;
   private builderModeEnabled: boolean = false;
   private logger?: Logger;
+  private slowMo: number = 0; // Delay in milliseconds between node executions
   // Pause state
   private isPaused: boolean = false;
   private pausedNodeId: string | null = null;
@@ -79,7 +80,7 @@ export class Executor {
     this.parser = new WorkflowParser(this.workflow);
     this.context = new ContextManager();
     
-    // Extract Start node and read screenshot config from it
+    // Extract Start node and read screenshot config and slowmo from it
     const startNode = workflow.nodes.find(node => node.type === NodeType.START);
     if (startNode) {
       const startNodeData = startNode.data as StartNodeData;
@@ -91,9 +92,12 @@ export class Executor {
       } else {
         this.screenshotConfig = undefined;
       }
+      // Extract slowmo setting from Start node
+      this.slowMo = startNodeData.slowMo || 0;
     } else {
       // Fallback to passed screenshotConfig if no Start node found
       this.screenshotConfig = screenshotConfig;
+      this.slowMo = 0;
     }
     
     // Initialize execution tracker if screenshots, reporting, or recording is enabled
@@ -498,6 +502,11 @@ export class Executor {
           this.traceLog(`[TRACE] Executing node handler for: ${resolvedNode.type}`);
           await handler.execute(resolvedNode, this.context);
           this.traceLog(`[TRACE] Node ${nodeId} completed successfully`);
+
+          // Apply slowmo delay if enabled (skip delay for last node)
+          if (this.slowMo > 0 && nodeId !== executionOrder[executionOrder.length - 1]) {
+            await new Promise(resolve => setTimeout(resolve, this.slowMo));
+          }
 
           // Check if this is a switch node and handle conditional branching
           if (resolvedNode.type === 'switch.switch') {
