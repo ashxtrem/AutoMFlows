@@ -132,6 +132,53 @@ export class NavigationHandler implements NodeHandler {
             } catch (e) {
               // Ignore - page might be ready even if body check fails
             }
+
+            // Trigger layout recalculation to fix button visibility issues
+            // This addresses cases where CSS layout depends on viewport calculations
+            // and doesn't recalculate until a resize event occurs
+            try {
+              // Wait for page to be fully loaded
+              await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+              
+              // Trigger resize event to force layout recalculation
+              // This is critical for CSS that uses viewport units (vh, vw) or depends on window dimensions
+              await page.evaluate(() => {
+                // Trigger resize event
+                window.dispatchEvent(new Event('resize', { bubbles: true }));
+                // Also trigger visualViewport resize for mobile browsers
+                if (window.visualViewport) {
+                  window.visualViewport.dispatchEvent(new Event('resize'));
+                }
+                // Force reflow on all elements, especially fixed-position containers
+                const fixedElements = Array.from(document.querySelectorAll('*')).filter(el => {
+                  const styles = window.getComputedStyle(el);
+                  return styles.position === 'fixed' || styles.position === 'sticky';
+                });
+                fixedElements.forEach(el => {
+                  void (el as HTMLElement).offsetHeight;
+                });
+                // Force reflow on body
+                if (document.body) {
+                  void document.body.offsetHeight;
+                  void document.body.scrollHeight;
+                }
+              });
+              
+              // Wait for paint to complete
+              await page.evaluate(() => {
+                return new Promise<void>((resolve) => {
+                  requestAnimationFrame(() => {
+                    requestAnimationFrame(() => {
+                      requestAnimationFrame(() => {
+                        resolve();
+                      });
+                    });
+                  });
+                });
+              });
+            } catch (e) {
+              // Ignore errors - layout recalculation is best effort
+            }
             break;
 
           case 'goBack':

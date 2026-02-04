@@ -170,6 +170,29 @@ export class PlaywrightManager {
         ...launchOptions, // User-provided launch options override defaults
       };
       
+      // Ensure headless is false when devtools is enabled (devtools only works in non-headless mode)
+      if (launchOpts.devtools === true) {
+        launchOpts.headless = false;
+        console.log('[PlaywrightManager] DevTools enabled - forcing headless to false');
+        
+        // For Chromium, also add the Chrome flag to ensure DevTools opens
+        if (browserType === 'chromium') {
+          if (!launchOpts.args) {
+            launchOpts.args = [];
+          }
+          // Add flag to auto-open DevTools for tabs
+          if (!launchOpts.args.includes('--auto-open-devtools-for-tabs')) {
+            launchOpts.args.push('--auto-open-devtools-for-tabs');
+            console.log('[PlaywrightManager] Added --auto-open-devtools-for-tabs Chrome flag');
+          }
+        }
+      }
+      
+      // Log final launch options for debugging
+      if (launchOpts.devtools || Object.keys(launchOptions || {}).length > 0) {
+        console.log('[PlaywrightManager] Final launch options:', JSON.stringify(launchOpts, null, 2));
+      }
+      
       // Add stealth mode launch args for Chromium
       if (stealthMode && browserType === 'chromium') {
         if (!launchOpts.args) {
@@ -307,7 +330,17 @@ export class PlaywrightManager {
 
     // Apply capabilities to context options
     if (capabilities && Object.keys(capabilities).length > 0) {
-      Object.assign(browserContextOptions, capabilities);
+      // Normalize numeric capabilities to ensure they're numbers, not strings
+      const normalizedCapabilities = { ...capabilities };
+      if (normalizedCapabilities.deviceScaleFactor !== undefined) {
+        normalizedCapabilities.deviceScaleFactor = typeof normalizedCapabilities.deviceScaleFactor === 'string' 
+          ? parseFloat(normalizedCapabilities.deviceScaleFactor) 
+          : normalizedCapabilities.deviceScaleFactor;
+      }
+      
+      Object.assign(browserContextOptions, normalizedCapabilities);
+      // Log capabilities being applied for debugging
+      console.log(`[PlaywrightManager] Applying capabilities:`, JSON.stringify(normalizedCapabilities, null, 2));
     }
 
     // Add video recording if enabled
@@ -316,6 +349,16 @@ export class PlaywrightManager {
         dir: this.videosDir,
       };
     }
+
+    // Log final browser context options being passed to Playwright (for debugging)
+    console.log(`[PlaywrightManager] Creating browser context with options:`, JSON.stringify({
+      viewport: browserContextOptions.viewport,
+      isMobile: browserContextOptions.isMobile,
+      deviceScaleFactor: browserContextOptions.deviceScaleFactor,
+      colorScheme: browserContextOptions.colorScheme,
+      hasTouch: browserContextOptions.hasTouch,
+      userAgent: browserContextOptions.userAgent ? '...' : undefined,
+    }, null, 2));
 
     this.context = await this.browser.newContext(browserContextOptions);
 

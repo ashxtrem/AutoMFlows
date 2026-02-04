@@ -5,7 +5,7 @@ import { resolveFromProjectRoot } from './pathUtils';
 /**
  * Logger utility for writing execution logs to files
  * Creates separate files for terminal logs and browser console logs
- * Maintains a maximum of 20 log files (deletes oldest when exceeded)
+ * Maintains a maximum of 10 executions (20 log files total, deletes oldest when exceeded)
  */
 export class Logger {
   private terminalLogStream: fs.WriteStream | null = null;
@@ -15,7 +15,7 @@ export class Logger {
   private enabled: boolean;
   private terminalLogPath: string | null = null;
   private consoleLogPath: string | null = null;
-  private readonly MAX_LOG_FILES = 20;
+  private readonly MAX_LOG_FILES = 10;
 
   constructor() {
     this.logsDir = resolveFromProjectRoot('./logs');
@@ -42,11 +42,22 @@ export class Logger {
 
     // Sanitize workflow name for filesystem compatibility
     this.workflowName = this.sanitizeWorkflowName(workflowName);
-    const timestamp = Date.now();
+    
+    // Format date as dd-mm-yy
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const yy = String(now.getFullYear()).slice(-2);
+    const dateStr = `${dd}-${mm}-${yy}`;
+    
+    // Add hour-minute suffix to ensure uniqueness for multiple executions on same day
+    const hh = String(now.getHours()).padStart(2, '0');
+    const min = String(now.getMinutes()).padStart(2, '0');
+    const timeStr = `${hh}-${min}`;
 
-    // Create file paths
-    this.terminalLogPath = path.join(this.logsDir, `${this.workflowName}-${timestamp}-terminal.txt`);
-    this.consoleLogPath = path.join(this.logsDir, `${this.workflowName}-${timestamp}-console.txt`);
+    // Create file paths with new format: {filename}-{dd}-{mm}-{yy}-{HH}-{MM}-terminal.log / console.txt
+    this.terminalLogPath = path.join(this.logsDir, `${this.workflowName}-${dateStr}-${timeStr}-terminal.log`);
+    this.consoleLogPath = path.join(this.logsDir, `${this.workflowName}-${dateStr}-${timeStr}-console.txt`);
 
     try {
       // Create write streams for terminal and console logs
@@ -156,58 +167,71 @@ export class Logger {
 
       // Read all files in logs directory
       const files = fs.readdirSync(this.logsDir)
-        .map(fileName => ({
-          name: fileName,
-          path: path.join(this.logsDir, fileName),
-          mtime: fs.statSync(path.join(this.logsDir, fileName)).mtime.getTime()
-        }))
-        .filter(file => file.name.endsWith('-terminal.txt') || file.name.endsWith('-console.txt'))
-        .sort((a, b) => a.mtime - b.mtime); // Sort by modification time, oldest first
+        .filter(fileName => fileName.endsWith('-terminal.log') || fileName.endsWith('-console.txt'));
 
-      // Count unique executions (each execution has 2 files: terminal and console)
-      // File format: {workflowName}-{timestamp}-terminal.txt or {workflowName}-{timestamp}-console.txt
-      const executionGroups = new Map<string, number>();
-      for (const file of files) {
-        // Extract execution identifier (workflow-timestamp)
-        // Match pattern: anything followed by -{timestamp}-terminal.txt or -{timestamp}-console.txt
-        // The timestamp is always a number at the end before -terminal or -console
-        const match = file.name.match(/^(.+)-(\d+)-(terminal|console)\.txt$/);
-        if (match) {
-          const workflowName = match[1];
-          const timestamp = match[2];
-          const executionId = `${workflowName}-${timestamp}`;
-          executionGroups.set(executionId, (executionGroups.get(executionId) || 0) + 1);
+      // Group files by execution ID and extract date for sorting
+      // File format: {workflowName}-{dd}-{mm}-{yy}-{HH}-{MM}-terminal.log or {workflowName}-{dd}-{mm}-{yy}-{HH}-{MM}-console.txt
+      const executionMap = new Map<string, { date: Date; files: string[] }>();
+      
+      for (const fileName of files) {
+        // Match new format: {workflowName}-{dd}-{mm}-{yy}-{HH}-{MM}-{type}.{ext}
+        const newFormatMatch = fileName.match(/^(.+)-(\d{2})-(\d{2})-(\d{2})-(\d{2})-(\d{2})-(terminal|console)\.(txt|log)$/);
+        // Match old format (timestamp only) for backward compatibility
+        const oldFormatMatch = fileName.match(/^(.+)-(\d+)-(terminal|console)\.(txt|log)$/);
+        
+        if (newFormatMatch) {
+          // New format: {workflowName}-{dd}-{mm}-{yy}-{HH}-{MM}-{type}.{ext}
+          const workflowName = newFormatMatch[1];
+          const dd = parseInt(newFormatMatch[2], 10);
+          const mm = parseInt(newFormatMatch[3], 10);
+          const yy = parseInt(newFormatMatch[4], 10);
+          const hh = parseInt(newFormatMatch[5], 10);
+          const min = parseInt(newFormatMatch[6], 10);
+          // Convert yy to full year (assuming 20yy for years 00-99)
+          const fullYear = yy < 50 ? 2000 + yy : 1900 + yy;
+          const date = new Date(fullYear, mm - 1, dd, hh, min);
+          // Use date-time for execution ID to ensure uniqueness
+          const executionId = `${workflowName}-${newFormatMatch[2]}-${newFormatMatch[3]}-${newFormatMatch[4]}-${newFormatMatch[5]}-${newFormatMatch[6]}`;
+          
+          if (!executionMap.has(executionId)) {
+            executionMap.set(executionId, { date, files: [] });
+          }
+          executionMap.get(executionId)!.files.push(fileName);
+        } else if (oldFormatMatch) {
+          // Old format: {workflowName}-{timestamp}-{type}.{ext} (for backward compatibility)
+          const workflowName = oldFormatMatch[1];
+          const timestamp = parseInt(oldFormatMatch[2], 10);
+          const date = new Date(timestamp);
+          const executionId = `${workflowName}-${oldFormatMatch[2]}`;
+          
+          if (!executionMap.has(executionId)) {
+            executionMap.set(executionId, { date, files: [] });
+          }
+          executionMap.get(executionId)!.files.push(fileName);
         }
       }
 
-      const executionCount = executionGroups.size;
+      const executionCount = executionMap.size;
 
       // If we exceed MAX_LOG_FILES executions, delete oldest ones
       if (executionCount > this.MAX_LOG_FILES) {
+        // Sort executions by date (oldest first)
+        const sortedExecutions = Array.from(executionMap.entries())
+          .sort((a, b) => a[1].date.getTime() - b[1].date.getTime());
+        
         const executionsToDelete = executionCount - this.MAX_LOG_FILES;
-        const executionIds = Array.from(executionGroups.keys()).slice(0, executionsToDelete);
+        const executionsToRemove = sortedExecutions.slice(0, executionsToDelete);
 
         // Delete all files for executions that need to be removed
-        for (const executionId of executionIds) {
-          // executionId format is: {workflowName}-{timestamp}
-          const terminalFile = path.join(this.logsDir, `${executionId}-terminal.txt`);
-          const consoleFile = path.join(this.logsDir, `${executionId}-console.txt`);
-
-          // Try to delete terminal log file
-          if (fs.existsSync(terminalFile)) {
-            try {
-              fs.unlinkSync(terminalFile);
-            } catch (error: any) {
-              console.warn(`[Logger] Failed to delete old log file ${terminalFile}: ${error.message}`);
-            }
-          }
-
-          // Try to delete console log file
-          if (fs.existsSync(consoleFile)) {
-            try {
-              fs.unlinkSync(consoleFile);
-            } catch (error: any) {
-              console.warn(`[Logger] Failed to delete old log file ${consoleFile}: ${error.message}`);
+        for (const [_, executionData] of executionsToRemove) {
+          for (const fileName of executionData.files) {
+            const filePath = path.join(this.logsDir, fileName);
+            if (fs.existsSync(filePath)) {
+              try {
+                fs.unlinkSync(filePath);
+              } catch (error: any) {
+                console.warn(`[Logger] Failed to delete old log file ${filePath}: ${error.message}`);
+              }
             }
           }
         }

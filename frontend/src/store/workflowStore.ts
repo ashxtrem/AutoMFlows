@@ -1627,6 +1627,7 @@ export function getDefaultNodeData(type: NodeType | string): any {
         screenshotAllNodes: false,
         screenshotTiming: 'post',
         slowMo: 0,
+        scrollThenAction: false,
       },
       [NodeType.OPEN_BROWSER]: { 
         headless: true, 

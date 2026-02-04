@@ -11,6 +11,8 @@ import NodeMenuBar from '../components/NodeMenuBar';
 import CapabilitiesPopup from '../components/CapabilitiesPopup';
 import PropertyEditorPopup, { PropertyEditorType } from '../components/PropertyEditorPopup';
 import MarkdownEditorPopup from '../components/MarkdownEditorPopup';
+import Editor from '@monaco-editor/react';
+import { X } from 'lucide-react';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import { getNodeProperties, isPropertyInputConnection, getPropertyInputHandleId } from '../utils/nodeProperties';
 import { getContrastTextColor } from '../utils/colorContrast';
@@ -254,6 +256,11 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     max?: number;
   } | null>(null);
   
+  // State for Set Config modal (Monaco editor)
+  const [showSetConfigModal, setShowSetConfigModal] = useState(false);
+  const [setConfigJsonValue, setSetConfigJsonValue] = useState<string>('{}');
+  const [setConfigJsonError, setSetConfigJsonError] = useState<string | null>(null);
+  
   // State for markdown editor popup (for comment box)
   const [showMarkdownEditor, setShowMarkdownEditor] = useState(false);
   
@@ -266,6 +273,23 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   // Use data prop for searchHighlighted (set in mappedNodes) but fall back to store for other properties
   // This ensures searchHighlighted updates correctly when search results change
   const latestNodeData = { ...storeNodeData, ...data };
+  
+  // Get nodeType early for use in useEffect
+  const nodeType = latestNodeData.type as NodeType | string;
+  
+  // Update Set Config modal when config changes
+  useEffect(() => {
+    if (showSetConfigModal && nodeType === 'setConfig.setConfig') {
+      const configValue = latestNodeData.config || {};
+      try {
+        const jsonString = JSON.stringify(configValue, null, 2);
+        setSetConfigJsonValue(jsonString);
+        setSetConfigJsonError(null);
+      } catch (error: any) {
+        setSetConfigJsonError(error.message);
+      }
+    }
+  }, [showSetConfigModal, latestNodeData.config, nodeType, id]);
   // Check if this node is currently paused
   const pausedNodeId = useWorkflowStore((state) => state.pausedNodeId);
   const isPaused = pausedNodeId === id;
@@ -344,6 +368,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     method: latestNodeData.method,
     curlCommand: latestNodeData.curlCommand,
     contextKey: latestNodeData.contextKey,
+    config: latestNodeData.config, // Include config for setConfig nodes
   });
   
   // Update version when data changes to force re-render
@@ -355,8 +380,6 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
       setDataVersion(prev => prev + 1);
     }
   }, [currentDataVersion, id, latestNodeData.url, latestNodeData.timeout]);
-  
-  const nodeType = renderData.type as NodeType | string;
   
   const customLabel = renderData.label;
   const defaultLabel = getNodeLabel(nodeType);
@@ -763,6 +786,13 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   onOpenPopup={handleOpenPopup}
                 />
               ), 3)}
+              {renderPropertyRow('scrollThenAction', (
+                <InlineCheckbox
+                  label="Scroll Then Action"
+                  value={renderData.scrollThenAction || false}
+                  onChange={(value) => handlePropertyChange('scrollThenAction', value)}
+                />
+              ), 4)}
             </div>
           );
         
@@ -2730,10 +2760,92 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     const pluginNode = frontendPluginRegistry.getPluginNode(nodeType);
     if (pluginNode && pluginNode.definition.defaultData) {
       const properties = Object.keys(pluginNode.definition.defaultData);
+      
+      // Special handling for setConfig.setConfig nodes
+      if (nodeType === 'setConfig.setConfig') {
+        return (
+          <div className="mt-2 space-y-1">
+            {properties.map((key) => {
+              const value = latestNodeData[key] ?? pluginNode.definition.defaultData![key];
+              const valueType = typeof value;
+              
+              // Special handling for 'config' property - show summary and open Monaco editor
+              if (key === 'config' && valueType === 'object' && value !== null && !Array.isArray(value)) {
+                const configKeys = Object.keys(value);
+                const configSummary = configKeys.length > 0 
+                  ? `{${configKeys.length} key${configKeys.length !== 1 ? 's' : ''}: ${configKeys.slice(0, 3).join(', ')}${configKeys.length > 3 ? '...' : ''}}`
+                  : '{empty}';
+                
+                return (
+                  <div 
+                    key={key}
+                    className="flex items-center gap-1 cursor-pointer hover:bg-gray-700/50 rounded px-1 py-0.5 min-w-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      // Initialize modal with current config
+                      try {
+                        const jsonString = JSON.stringify(value, null, 2);
+                        setSetConfigJsonValue(jsonString);
+                        setSetConfigJsonError(null);
+                      } catch (error: any) {
+                        setSetConfigJsonError(error.message);
+                        setSetConfigJsonValue('{}');
+                      }
+                      setShowSetConfigModal(true);
+                    }}
+                    onMouseDown={(e) => e.stopPropagation()}
+                  >
+                    <span className="text-xs text-gray-400 min-w-[60px] flex-shrink-0">{key}:</span>
+                    <span className="text-xs text-gray-200 flex-1 truncate min-w-0" title={configSummary}>
+                      {configSummary}
+                    </span>
+                  </div>
+                );
+              }
+              
+              if (valueType === 'boolean') {
+                return (
+                  <InlineCheckbox
+                    key={key}
+                    label={key}
+                    value={value}
+                    onChange={(val) => handlePropertyChange(key, val)}
+                  />
+                );
+              } else if (valueType === 'number') {
+                return (
+                  <InlineNumberInput
+                    key={key}
+                    label={key}
+                    value={value}
+                    onChange={(val) => handlePropertyChange(key, val)}
+                    field={key}
+                    onOpenPopup={handleOpenPopup}
+                  />
+                );
+              } else {
+                return (
+                  <InlineTextInput
+                    key={key}
+                    label={key}
+                    value={String(value || '')}
+                    onChange={(val) => handlePropertyChange(key, val)}
+                    field={key}
+                    onOpenPopup={handleOpenPopup}
+                  />
+                );
+              }
+            })}
+          </div>
+        );
+      }
+      
+      // Generic plugin node handling
       return (
         <div className="mt-2 space-y-1">
           {properties.map((key) => {
-            const value = data[key] ?? pluginNode.definition.defaultData![key];
+            const value = latestNodeData[key] ?? pluginNode.definition.defaultData![key];
             const valueType = typeof value;
             
             if (valueType === 'boolean') {
@@ -3069,6 +3181,109 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
           }}
           onClose={() => setShowMarkdownEditor(false)}
         />,
+        document.body
+      )}
+      {/* Render Set Config Modal via portal (Monaco editor for setConfig nodes) */}
+      {showSetConfigModal && nodeType === 'setConfig.setConfig' && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowSetConfigModal(false);
+              setSetConfigJsonError(null);
+            }
+          }}
+        >
+          <div 
+            className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[85vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+              <h2 className="text-lg font-semibold text-white">Edit Config</h2>
+              <button
+                onClick={() => {
+                  setShowSetConfigModal(false);
+                  setSetConfigJsonError(null);
+                }}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="overflow-y-auto p-4 flex-1">
+              <div className="mb-4">
+                <div className="bg-gray-900 border border-gray-700 rounded overflow-hidden" style={{ minHeight: '400px' }}>
+                  <Editor
+                    height="400px"
+                    language="json"
+                    value={setConfigJsonValue}
+                    onChange={(value) => {
+                      setSetConfigJsonValue(value || '{}');
+                      setSetConfigJsonError(null);
+                    }}
+                    theme="vs-dark"
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 12,
+                      lineNumbers: 'on',
+                      scrollBeyondLastLine: false,
+                      automaticLayout: true,
+                      formatOnPaste: true,
+                      formatOnType: true,
+                      readOnly: false,
+                    }}
+                    loading={
+                      <div className="flex items-center justify-center h-[400px] text-gray-400">
+                        Loading editor...
+                      </div>
+                    }
+                  />
+                </div>
+                {setConfigJsonError && (
+                  <p className="mt-2 text-sm text-red-400">{setConfigJsonError}</p>
+                )}
+                <p className="mt-2 text-xs text-gray-400">
+                  Enter valid JSON object. Press Escape to cancel.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-gray-700 flex justify-end gap-2">
+              <button
+                onClick={() => {
+                  setShowSetConfigModal(false);
+                  setSetConfigJsonError(null);
+                }}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  try {
+                    const parsed = JSON.parse(setConfigJsonValue.trim());
+                    
+                    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+                      setSetConfigJsonError('Config must be a JSON object');
+                      return;
+                    }
+
+                    handlePropertyChange('config', parsed);
+                    setSetConfigJsonError(null);
+                    setShowSetConfigModal(false);
+                  } catch (error: any) {
+                    setSetConfigJsonError(`Invalid JSON: ${error.message}`);
+                  }
+                }}
+                disabled={!!setConfigJsonError}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>,
         document.body
       )}
       {selected && (

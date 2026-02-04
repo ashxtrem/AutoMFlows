@@ -50,6 +50,17 @@ export class TypeHandler implements NodeHandler {
           }, context);
         }
 
+        // Scroll to element if scrollThenAction is enabled
+        const scrollThenAction = context.getData('scrollThenAction');
+        if (scrollThenAction && selector) {
+          try {
+            await LocatorHelper.scrollToElementSmooth(page, selector, data.selectorType || 'css', timeout);
+          } catch (error: any) {
+            // Log warning but continue execution
+            console.warn(`[TypeHandler] Failed to scroll to element before action: ${error.message}`);
+          }
+        }
+
         // Execute type operation based on inputMethod
         const inputMethod = data.inputMethod || 'fill'; // Default to 'fill' for backward compatibility
         const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css');
@@ -187,6 +198,17 @@ export class ActionHandler implements NodeHandler {
             defaultTimeout: timeout,
             waitTiming: 'before',
           }, context);
+        }
+
+        // Scroll to element if scrollThenAction is enabled
+        const scrollThenAction = context.getData('scrollThenAction');
+        if (scrollThenAction && selector) {
+          try {
+            await LocatorHelper.scrollToElementSmooth(page, selector, data.selectorType || 'css', timeout);
+          } catch (error: any) {
+            // Log warning but continue execution
+            console.warn(`[ActionHandler] Failed to scroll to element before action: ${error.message}`);
+          }
         }
 
         // Execute action based on action type
@@ -341,6 +363,17 @@ export class FormInputHandler implements NodeHandler {
           }, context);
         }
 
+        // Scroll to element if scrollThenAction is enabled
+        const scrollThenAction = context.getData('scrollThenAction');
+        if (scrollThenAction && selector) {
+          try {
+            await LocatorHelper.scrollToElementSmooth(page, selector, data.selectorType || 'css', timeout);
+          } catch (error: any) {
+            // Log warning but continue execution
+            console.warn(`[FormInputHandler] Failed to scroll to element before action: ${error.message}`);
+          }
+        }
+
         // Execute action based on action type
         const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css');
 
@@ -487,6 +520,18 @@ export class KeyboardHandler implements NodeHandler {
         let locator: any = null;
         if (data.selector) {
           const selector = VariableInterpolator.interpolateString(data.selector, context);
+          
+          // Scroll to element if scrollThenAction is enabled
+          const scrollThenAction = context.getData('scrollThenAction');
+          if (scrollThenAction && selector) {
+            try {
+              await LocatorHelper.scrollToElementSmooth(page, selector, data.selectorType || 'css', timeout);
+            } catch (error: any) {
+              // Log warning but continue execution
+              console.warn(`[KeyboardHandler] Failed to scroll to element before action: ${error.message}`);
+            }
+          }
+          
           locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css');
           await locator.focus({ timeout });
         }

@@ -150,4 +150,81 @@ export class LocatorHelper {
         return page.locator(selector);
     }
   }
+
+  /**
+   * Smoothly scroll to an element if it's not already in viewport
+   * Handles errors gracefully - never throws, only logs warnings
+   * @param page - Playwright page object
+   * @param selector - Selector string (already interpolated)
+   * @param selectorType - Type of selector (css, xpath, etc.)
+   * @param timeout - Timeout in milliseconds
+   */
+  static async scrollToElementSmooth(
+    page: Page,
+    selector: string,
+    selectorType: SelectorType | string = 'css',
+    timeout: number = 30000
+  ): Promise<void> {
+    try {
+      if (!selector || selector.trim() === '') {
+        return; // No selector, nothing to scroll to
+      }
+
+      const locator = this.createLocator(page, selector, selectorType);
+
+      // Check if element is already centered in viewport (more strict check)
+      // We want to scroll to center the element even if it's partially visible
+      try {
+        const boundingBox = await locator.boundingBox({ timeout: Math.min(timeout, 5000) }).catch(() => null);
+        if (boundingBox) {
+          // Element exists, check if it's already centered in viewport
+          const viewportSize = page.viewportSize();
+          if (viewportSize) {
+            // Check if element center is near viewport center (within 20% margin)
+            const elementCenterX = boundingBox.x + boundingBox.width / 2;
+            const elementCenterY = boundingBox.y + boundingBox.height / 2;
+            const viewportCenterX = viewportSize.width / 2;
+            const viewportCenterY = viewportSize.height / 2;
+            const centerMarginX = viewportSize.width * 0.2; // 20% margin
+            const centerMarginY = viewportSize.height * 0.2; // 20% margin
+            
+            const isCentered = 
+              Math.abs(elementCenterX - viewportCenterX) <= centerMarginX &&
+              Math.abs(elementCenterY - viewportCenterY) <= centerMarginY;
+            
+            if (isCentered) {
+              // Element is already centered, no need to scroll
+              return;
+            }
+          }
+        }
+      } catch (error: any) {
+        // If we can't check viewport, continue with scroll attempt
+        // This handles cases where element might not be visible yet
+      }
+
+      // Scroll element into view if needed
+      try {
+        await locator.scrollIntoViewIfNeeded({ timeout });
+        console.log(`[ScrollHelper] Scrolled element into view: "${selector}"`);
+      } catch (error: any) {
+        console.warn(`[ScrollHelper] Failed to scroll element into view with selector "${selector}": ${error.message}`);
+        return; // Don't throw, just return
+      }
+
+      // Perform smooth scroll using JavaScript
+      try {
+        await locator.evaluate((element: Element) => {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+        console.log(`[ScrollHelper] Applied smooth scroll to element: "${selector}"`);
+      } catch (error: any) {
+        console.warn(`[ScrollHelper] Failed to perform smooth scroll for selector "${selector}": ${error.message}`);
+        // Don't throw, scrollIntoViewIfNeeded already handled the basic scroll
+      }
+    } catch (error: any) {
+      // Catch any unexpected errors and log them without throwing
+      console.warn(`[ScrollHelper] Unexpected error while scrolling to element with selector "${selector}": ${error.message}`);
+    }
+  }
 }

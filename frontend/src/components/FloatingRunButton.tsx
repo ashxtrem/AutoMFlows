@@ -7,6 +7,7 @@ import { SkipForward } from 'lucide-react';
 import { useWorkflowStore } from '../store/workflowStore';
 import { useExecution } from '../hooks/useExecution';
 import BreakpointHeadlessWarning from './BreakpointHeadlessWarning';
+import StopExecutionWarning from './StopExecutionWarning';
 
 const BUTTON_SIZE = 48; // Size of the circular button
 const BUTTON_GAP = 12; // Gap between buttons
@@ -39,6 +40,9 @@ export default function FloatingRunButton() {
   const traceLogs = typeof window !== 'undefined' 
     ? localStorage.getItem('automflows_trace_logs') === 'true'
     : false;
+
+  const [showStopWarning, setShowStopWarning] = useState(false);
+  const [pendingStopAction, setPendingStopAction] = useState<(() => void | Promise<void>) | null>(null);
 
   const isPaused = pausedNodeId !== null;
   const hasFailedNodes = failedNodes.size > 0 && !isPaused;
@@ -79,13 +83,40 @@ export default function FloatingRunButton() {
     resetExecution();
   };
 
+  const handleStopClick = () => {
+    setPendingStopAction(() => () => {
+      handleStop();
+    });
+    setShowStopWarning(true);
+  };
+
+  const handleStopFromPauseClick = () => {
+    setPendingStopAction(() => () => {
+      handleStopFromPause();
+    });
+    setShowStopWarning(true);
+  };
+
+  const handleConfirmStop = async () => {
+    setShowStopWarning(false);
+    if (pendingStopAction) {
+      await pendingStopAction();
+      setPendingStopAction(null);
+    }
+  };
+
+  const handleCancelStop = () => {
+    setShowStopWarning(false);
+    setPendingStopAction(null);
+  };
+
   const handleRunClick = () => {
     // Don't allow clicking when paused - pause icon should be unclickable
     if (isPaused) {
       return;
     }
     if (executionStatus === 'running') {
-      handleStop();
+      handleStopClick();
     } else {
       handleRun();
     }
@@ -187,7 +218,7 @@ export default function FloatingRunButton() {
               <PlayArrowIcon sx={{ fontSize: '20px', color: '#ffffff' }} />
             </button>
             <button
-              onClick={handleStopFromPause}
+              onClick={handleStopFromPauseClick}
               className="w-10 h-10 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center shadow-lg transition-all hover:scale-110"
               title="Stop execution"
             >
@@ -285,6 +316,14 @@ export default function FloatingRunButton() {
           onDisableAndRun={handleBreakpointWarningDisable}
           onCancel={handleBreakpointWarningCancel}
           onDontAskAgain={handleBreakpointWarningDontAskAgain}
+        />
+      )}
+
+      {/* Stop Execution Warning Dialog */}
+      {showStopWarning && (
+        <StopExecutionWarning
+          onConfirm={handleConfirmStop}
+          onCancel={handleCancelStop}
         />
       )}
     </div>

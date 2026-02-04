@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { ReactFlowProvider } from 'reactflow';
 import TopBar from './components/TopBar';
-import LeftSidebar from './components/LeftSidebar';
+import LeftSidebar, { LeftSidebarHandle } from './components/LeftSidebar';
 import Canvas from './components/Canvas';
 import RightSidebar from './components/RightSidebar';
 import ReportHistory from './components/ReportHistory';
@@ -44,6 +44,16 @@ function App() {
   
   // Builder mode hook
   const builderMode = useBuilderMode();
+  
+  // LeftSidebar ref for hiding on canvas click
+  const leftSidebarRef = useRef<LeftSidebarHandle>(null);
+  
+  // Hide sidebar callback for Canvas
+  const handleHideSidebar = useCallback(() => {
+    if (leftSidebarRef.current) {
+      leftSidebarRef.current.hide();
+    }
+  }, []);
   
   // Initialize theme system on mount and when theme changes
   useEffect(() => {
@@ -211,9 +221,9 @@ function App() {
         )}
         <TopBar />
         <FloatingRunButton />
+        <LeftSidebar ref={leftSidebarRef} />
         <div className="flex flex-1 overflow-hidden">
-          <LeftSidebar />
-          <Canvas />
+          <Canvas hideSidebar={handleHideSidebar} />
           {selectedNode && <RightSidebar />}
         </div>
         <InteractiveTour />

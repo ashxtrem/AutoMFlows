@@ -94,10 +94,14 @@ export class Executor {
       }
       // Extract slowmo setting from Start node
       this.slowMo = startNodeData.slowMo || 0;
+      // Extract scrollThenAction setting from Start node and store in context
+      const scrollThenAction = startNodeData.scrollThenAction || false;
+      this.context.setData('scrollThenAction', scrollThenAction);
     } else {
       // Fallback to passed screenshotConfig if no Start node found
       this.screenshotConfig = screenshotConfig;
       this.slowMo = 0;
+      this.context.setData('scrollThenAction', false);
     }
     
     // Initialize execution tracker if screenshots, reporting, or recording is enabled
@@ -326,7 +330,8 @@ export class Executor {
       this.context.setData('pauseExecution', (nodeId: string, reason: 'wait-pause' | 'breakpoint') => this.pauseExecution(nodeId, reason));
 
       this.status = ExecutionStatus.RUNNING;
-      this.traceLog(`[TRACE] Execution started - ID: ${this.executionId}`);
+      const workflowName = this.extractWorkflowName(this.workflow);
+      this.traceLog(`[TRACE] Execution started - ${workflowName}`);
       this.emitEvent({
         type: ExecutionEventType.EXECUTION_START,
         timestamp: Date.now(),
@@ -352,7 +357,8 @@ export class Executor {
         for (const nodeId of executionOrder) {
         if (this.stopRequested) {
           this.status = ExecutionStatus.STOPPED;
-          this.traceLog(`[TRACE] Execution stopped by user`);
+          const workflowName = this.extractWorkflowName(this.workflow);
+          this.traceLog(`[TRACE] Execution cancelled - ${workflowName}`);
           this.emitEvent({
             type: ExecutionEventType.EXECUTION_ERROR,
             message: 'Execution stopped by user',
@@ -677,7 +683,7 @@ export class Executor {
       
       this.status = ExecutionStatus.COMPLETED;
       this.currentNodeId = null;
-      this.traceLog(`[TRACE] Execution completed successfully`);
+      this.traceLog(`[TRACE] Execution done - ${workflowName}`);
       
       // Record videos before generating reports (videos are finalized when browser closes)
       await this.recordVideos();
@@ -699,7 +705,8 @@ export class Executor {
     } catch (error: any) {
       this.status = ExecutionStatus.ERROR;
       this.error = error.message;
-      this.traceLog(`[TRACE] Execution failed: ${error.message}`);
+      const workflowName = this.extractWorkflowName(this.workflow);
+      this.traceLog(`[TRACE] Execution failed - ${workflowName}: ${error.message}`);
       
       // Record videos before generating reports (videos are finalized when browser closes)
       await this.recordVideos();

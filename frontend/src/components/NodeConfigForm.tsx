@@ -36,6 +36,8 @@ import { useCallback } from 'react';
 import SwitchConfig from '@plugins/switch-node/config';
 // Import reusable node config components directly (until plugin loader supports dynamic loading)
 import { ReusableConfig, RunReusableConfig } from '@plugins/reusable-node/config';
+// Import set config node config component directly (until plugin loader supports dynamic loading)
+import SetConfigConfig from '@plugins/set-config-node/config';
 
 interface NodeConfigFormProps {
   node: Node;
@@ -134,6 +136,11 @@ export default function NodeConfigForm({ node }: NodeConfigFormProps) {
       }
       if (nodeType === 'reusable.runReusable') {
         return <RunReusableConfig node={node} onChange={handleChange} />;
+      }
+      
+      // Special handling for set config node (until plugin loader supports dynamic loading)
+      if (nodeType === 'setConfig.setConfig') {
+        return <SetConfigConfig node={node} onChange={handleChange} />;
       }
       
       // If plugin has a custom config component, use it

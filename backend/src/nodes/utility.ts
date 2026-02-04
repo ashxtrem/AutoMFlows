@@ -81,6 +81,17 @@ export class ElementQueryHandler implements NodeHandler {
           }, context);
         }
 
+        // Scroll to element if scrollThenAction is enabled
+        const scrollThenAction = context.getData('scrollThenAction');
+        if (scrollThenAction && selector) {
+          try {
+            await LocatorHelper.scrollToElementSmooth(page, selector, data.selectorType || 'css', timeout);
+          } catch (error: any) {
+            // Log warning but continue execution
+            console.warn(`[ElementQueryHandler] Failed to scroll to element before action: ${error.message}`);
+          }
+        }
+
         // Execute action based on action type
         let queryResult: any;
         const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css');

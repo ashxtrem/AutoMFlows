@@ -30,6 +30,7 @@ function getNodeDimensions(node: Node): { width: number; height: number } {
 /**
  * Calculate minimum spacing between two nodes to ensure at least MIN_NODE_GAP gap
  */
+// @ts-ignore - Function may be used in future
 function calculateMinSpacing(node1: Node, node2: Node, direction: 'horizontal' | 'vertical'): number {
   const dim1 = getNodeDimensions(node1);
   const dim2 = getNodeDimensions(node2);
@@ -103,7 +104,7 @@ function getDriverConnections(nodeId: string, edges: Edge[]): Edge[] {
 /**
  * Get all connected node IDs via BFS following driver connections only
  */
-function getConnectedNodeIds(startNodeId: string, nodes: Node[], edges: Edge[]): Set<string> {
+function getConnectedNodeIds(startNodeId: string, _nodes: Node[], edges: Edge[]): Set<string> {
   const visited = new Set<string>();
   const queue: string[] = [startNodeId];
   visited.add(startNodeId);
@@ -261,7 +262,7 @@ export function arrangeNodesVertical(
   const startNodeId = startNode?.id || null;
 
   // Categorize nodes
-  const { connected, reusable, unconnected, propertyInputs } = categorizeNodes(nodes, edges, startNodeId);
+  const { connected: _connected, reusable, unconnected, propertyInputs } = categorizeNodes(nodes, edges, startNodeId);
 
   // Get connection sequence for connected nodes
   const connectionSequence = startNodeId 
@@ -416,7 +417,7 @@ export function arrangeNodesHorizontal(
   const startNodeId = startNode?.id || null;
 
   // Categorize nodes
-  const { connected, reusable, unconnected, propertyInputs } = categorizeNodes(nodes, edges, startNodeId);
+  const { connected: _connected, reusable, unconnected, propertyInputs } = categorizeNodes(nodes, edges, startNodeId);
 
   // Get connection sequence for connected nodes
   const connectionSequence = startNodeId 

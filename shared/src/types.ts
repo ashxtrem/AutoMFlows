@@ -68,6 +68,7 @@ export interface StartNodeData {
   screenshotAllNodes?: boolean; // Enable screenshots on all nodes
   screenshotTiming?: 'pre' | 'post' | 'both'; // When to take screenshots
   slowMo?: number; // Delay in milliseconds between node executions
+  scrollThenAction?: boolean; // Enable smooth scroll to elements before actions on UI nodes
 }
 
 export interface OpenBrowserNodeData {
@@ -856,6 +857,12 @@ export interface SelectConfigFileNodeData {
   fileContent: string; // JSON content from file picker
   fileName?: string; // Optional: name of the selected file
   contextKey?: string; // Optional key to store under (default: merge into root)
+}
+
+export interface SetConfigNodeData {
+  config?: Record<string, any>; // The config object (stored as JSON)
+  contextKey?: string; // Optional key to store under (default: merge into root)
+  exportedFileName?: string; // Optional: name of exported file (for reference)
 }
 
 export interface DbConnectNodeData {

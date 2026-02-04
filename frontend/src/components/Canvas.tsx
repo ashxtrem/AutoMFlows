@@ -68,9 +68,10 @@ interface CanvasInnerProps {
   reactFlowInstanceRef: React.MutableRefObject<ReturnType<typeof useReactFlow> | null>;
   isFirstMountRef: React.MutableRefObject<boolean>;
   hasRunInitialFitViewRef: React.MutableRefObject<boolean>;
+  hideSidebar?: () => void;
 }
 
-function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, hasRunInitialFitViewRef }: CanvasInnerProps) {
+function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, hasRunInitialFitViewRef, hideSidebar }: CanvasInnerProps) {
   const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setSelectedNodeIds, clearSelection, selectAllNodes, deleteNode, duplicateNode, copyNode, pasteNode, onConnectStart, onConnectEnd, onEdgeUpdate, failedNodes, showErrorPopupForNode, canvasReloading, executingNodeId, executionStatus, followModeEnabled, setFollowModeEnabled, pausedNodeId, pauseReason, selectedNodeIds } = useWorkflowStore();
   const addNotification = useNotificationStore((state) => state.addNotification);
   const { showGrid, gridSize, snapToGrid } = useSettingsStore((state) => ({
@@ -330,7 +331,12 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     clearSelection();
     setContextMenu(null);
     setSearchOverlay(null);
-  }, [clearSelection, screenToFlowPosition]);
+    
+    // Hide sidebar if unpinned
+    if (hideSidebar) {
+      hideSidebar();
+    }
+  }, [clearSelection, screenToFlowPosition, hideSidebar]);
 
 
   const handleNodeSelect = useCallback((nodeType: string, flowPosition: { x: number; y: number }) => {
@@ -1074,7 +1080,11 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
   );
 }
 
-export default function Canvas() {
+interface CanvasProps {
+  hideSidebar?: () => void;
+}
+
+export default function Canvas({ hideSidebar }: CanvasProps) {
   const canvasReloading = useWorkflowStore((state) => state.canvasReloading);
   // Use a ref to track the reload key to ensure it changes when reloading starts
   const reloadKeyRef = useRef(0);
@@ -1092,6 +1102,6 @@ export default function Canvas() {
     }
   }, [canvasReloading]);
   
-  return <CanvasInner key={`canvas-${reloadKeyRef.current}`} savedViewportRef={savedViewportRef} reactFlowInstanceRef={reactFlowInstanceRef} isFirstMountRef={isFirstMountRef} hasRunInitialFitViewRef={hasRunInitialFitViewRef} />;
+  return <CanvasInner key={`canvas-${reloadKeyRef.current}`} savedViewportRef={savedViewportRef} reactFlowInstanceRef={reactFlowInstanceRef} isFirstMountRef={isFirstMountRef} hasRunInitialFitViewRef={hasRunInitialFitViewRef} hideSidebar={hideSidebar} />;
 }
 
