@@ -47,6 +47,7 @@ import ChatBubbleIcon from '@mui/icons-material/ChatBubble';
 import DownloadIcon from '@mui/icons-material/Download';
 import PictureInPictureIcon from '@mui/icons-material/PictureInPicture';
 import SettingsIcon from '@mui/icons-material/Settings';
+import EditIcon from '@mui/icons-material/Edit';
 
 interface IconConfig {
   icon: React.ComponentType<{ sx?: any }>;
@@ -89,6 +90,11 @@ const nodeIcons: Record<NodeType, IconConfig> = {
 function getNodeIcon(nodeType: NodeType | string): IconConfig | null {
   if (Object.values(NodeType).includes(nodeType as NodeType)) {
     return nodeIcons[nodeType as NodeType] || { icon: InventoryIcon, color: '#757575' };
+  }
+  
+  // Special handling for setConfig.setConfig to use EditIcon
+  if (nodeType === 'setConfig.setConfig') {
+    return { icon: EditIcon, color: '#FF9800' };
   }
   
   const pluginNode = frontendPluginRegistry.getPluginNode(nodeType);
@@ -238,6 +244,239 @@ function ResizeHandle({ onResize }: ResizeHandleProps) {
   );
 }
 
+// Validation types and functions for Set Config
+interface PathInfo {
+  path: string;
+  type: 'primitive' | 'object' | 'array';
+  value: any;
+}
+
+interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+}
+
+function findDuplicateKeys(jsonString: string): string[] {
+  const duplicates: string[] = [];
+  const trimmed = jsonString.trim();
+  
+  if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) {
+    return duplicates;
+  }
+  
+  const extractRootLevelKeys = (content: string): string[] => {
+    const keys: string[] = [];
+    let i = 0;
+    let depth = 0;
+    let inString = false;
+    let stringChar = '';
+    let escapeNext = false;
+    
+    while (i < content.length) {
+      const char = content[i];
+      
+      if (escapeNext) {
+        escapeNext = false;
+        i++;
+        continue;
+      }
+      
+      if (char === '\\' && inString) {
+        escapeNext = true;
+        i++;
+        continue;
+      }
+      
+      if (!inString) {
+        if (char === '"' || char === "'") {
+          inString = true;
+          stringChar = char;
+          
+          if (depth === 0) {
+            let j = i + 1;
+            let foundColon = false;
+            let keyEnd = -1;
+            
+            while (j < content.length && j < i + 500) {
+              const nextChar = content[j];
+              
+              if (nextChar === stringChar && content[j - 1] !== '\\') {
+                keyEnd = j;
+                j++;
+                while (j < content.length && /\s/.test(content[j])) {
+                  j++;
+                }
+                if (j < content.length && content[j] === ':') {
+                  foundColon = true;
+                }
+                break;
+              }
+              j++;
+            }
+            
+            if (foundColon && keyEnd > i) {
+              const key = content.substring(i + 1, keyEnd);
+              const unescapedKey = key.replace(/\\(.)/g, (match, escaped) => {
+                const escapes: Record<string, string> = {
+                  'n': '\n',
+                  't': '\t',
+                  'r': '\r',
+                  '\\': '\\',
+                  '"': '"',
+                  "'": "'"
+                };
+                return escapes[escaped] || escaped;
+              });
+              keys.push(unescapedKey);
+            }
+          }
+        } else if (char === '{' || char === '[') {
+          depth++;
+        } else if (char === '}' || char === ']') {
+          depth--;
+        }
+      } else {
+        if (char === stringChar) {
+          inString = false;
+          stringChar = '';
+        }
+      }
+      
+      i++;
+    }
+    
+    return keys;
+  };
+  
+  const rootContent = trimmed.slice(1, -1);
+  const rootKeys = extractRootLevelKeys(rootContent);
+  
+  const seen = new Map<string, number>();
+  for (const key of rootKeys) {
+    const count = seen.get(key) || 0;
+    seen.set(key, count + 1);
+    if (count === 1 && !duplicates.includes(key)) {
+      duplicates.push(key);
+    }
+  }
+  
+  return duplicates;
+}
+
+function collectAllPaths(obj: any, prefix = '', paths: Map<string, PathInfo> = new Map()): Map<string, PathInfo> {
+  if (obj === null || obj === undefined) {
+    const path = prefix || 'null';
+    if (!paths.has(path)) {
+      paths.set(path, { path, type: 'primitive', value: null });
+    }
+    return paths;
+  }
+  
+  if (Array.isArray(obj)) {
+    const arrayPath = prefix || '[]';
+    if (!paths.has(arrayPath)) {
+      paths.set(arrayPath, { path: arrayPath, type: 'array', value: obj });
+    }
+    
+    obj.forEach((item, index) => {
+      const itemPath = prefix ? `${prefix}[${index}]` : `[${index}]`;
+      if (typeof item === 'object' && item !== null && !Array.isArray(item)) {
+        collectAllPaths(item, itemPath, paths);
+      } else if (Array.isArray(item)) {
+        collectAllPaths(item, itemPath, paths);
+      } else {
+        paths.set(itemPath, { path: itemPath, type: 'primitive', value: item });
+      }
+    });
+    
+    return paths;
+  }
+  
+  if (typeof obj === 'object') {
+    const objectPath = prefix || '{}';
+    if (!paths.has(objectPath)) {
+      paths.set(objectPath, { path: objectPath, type: 'object', value: obj });
+    }
+    
+    for (const [key, value] of Object.entries(obj)) {
+      const newPath = prefix ? `${prefix}.${key}` : key;
+      
+      if (value === null || value === undefined) {
+        paths.set(newPath, { path: newPath, type: 'primitive', value: null });
+      } else if (Array.isArray(value)) {
+        collectAllPaths(value, newPath, paths);
+      } else if (typeof value === 'object') {
+        collectAllPaths(value, newPath, paths);
+      } else {
+        paths.set(newPath, { path: newPath, type: 'primitive', value: value });
+      }
+    }
+    
+    return paths;
+  }
+  
+  const primitivePath = prefix || 'value';
+  paths.set(primitivePath, { path: primitivePath, type: 'primitive', value: obj });
+  
+  return paths;
+}
+
+function findPathConflicts(paths: Map<string, PathInfo>): string[] {
+  const errors: string[] = [];
+  const pathArray = Array.from(paths.entries());
+  
+  const pathTypes = new Map<string, Set<string>>();
+  
+  for (const [path, info] of pathArray) {
+    if (!pathTypes.has(path)) {
+      pathTypes.set(path, new Set());
+    }
+    pathTypes.get(path)!.add(info.type);
+  }
+  
+  for (const [path, types] of pathTypes.entries()) {
+    if (types.size > 1) {
+      errors.push(`Path conflict: '${path}' has conflicting types: ${Array.from(types).join(', ')}`);
+    }
+  }
+  
+  for (const [path, info] of pathArray) {
+    if (info.type === 'primitive') {
+      const childPaths = pathArray.filter(([p]) => {
+        if (path === '') return false;
+        return p.startsWith(path + '.') || p.startsWith(path + '[');
+      });
+      
+      if (childPaths.length > 0) {
+        const childPathList = childPaths.map(([p]) => `'${p}'`).join(', ');
+        errors.push(`Path conflict: '${path}' is a primitive value but has child paths: ${childPathList}`);
+      }
+    }
+  }
+  
+  return errors;
+}
+
+function validateConfigPaths(jsonString: string, parsed: any): ValidationResult {
+  const errors: string[] = [];
+  
+  const duplicateKeys = findDuplicateKeys(jsonString);
+  if (duplicateKeys.length > 0) {
+    errors.push(`Duplicate keys found at the same level: ${duplicateKeys.map(k => `'${k}'`).join(', ')}`);
+  }
+  
+  const paths = collectAllPaths(parsed);
+  const conflicts = findPathConflicts(paths);
+  if (conflicts.length > 0) {
+    errors.push(...conflicts);
+  }
+  
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
+
 export default function CustomNode({ id, data, selected }: NodeProps) {
   const width = (data as any).width;
   const height = (data as any).height;
@@ -260,6 +499,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const [showSetConfigModal, setShowSetConfigModal] = useState(false);
   const [setConfigJsonValue, setSetConfigJsonValue] = useState<string>('{}');
   const [setConfigJsonError, setSetConfigJsonError] = useState<string | null>(null);
+  const [setConfigOriginalJsonValue, setSetConfigOriginalJsonValue] = useState<string>('{}');
   
   // State for markdown editor popup (for comment box)
   const [showMarkdownEditor, setShowMarkdownEditor] = useState(false);
@@ -284,12 +524,82 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
       try {
         const jsonString = JSON.stringify(configValue, null, 2);
         setSetConfigJsonValue(jsonString);
+        setSetConfigOriginalJsonValue(jsonString);
         setSetConfigJsonError(null);
       } catch (error: any) {
         setSetConfigJsonError(error.message);
       }
     }
   }, [showSetConfigModal, latestNodeData.config, nodeType, id]);
+
+  // Check if there are unsaved changes in Set Config modal
+  const hasSetConfigUnsavedChanges = useCallback((): boolean => {
+    try {
+      const current = setConfigJsonValue.trim();
+      const original = setConfigOriginalJsonValue.trim();
+      
+      // Parse both to compare structure (ignoring formatting)
+      const currentParsed = JSON.parse(current);
+      const originalParsed = JSON.parse(original);
+      
+      return JSON.stringify(currentParsed) !== JSON.stringify(originalParsed);
+    } catch {
+      // If parsing fails, consider it changed if strings differ
+      return setConfigJsonValue.trim() !== setConfigOriginalJsonValue.trim();
+    }
+  }, [setConfigJsonValue, setConfigOriginalJsonValue]);
+
+  // Handle closing Set Config modal with unsaved changes check
+  const handleCloseSetConfigModal = useCallback(() => {
+    if (hasSetConfigUnsavedChanges()) {
+      const confirmed = window.confirm(
+        'You have unsaved changes. Are you sure you want to close without saving?'
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+    setShowSetConfigModal(false);
+    setSetConfigJsonError(null);
+    // Reset to original value if not saved
+    setSetConfigJsonValue(setConfigOriginalJsonValue);
+  }, [hasSetConfigUnsavedChanges, setConfigOriginalJsonValue]);
+
+  // Handle keyboard events for Set Config modal (ESC and Backspace prevention)
+  useEffect(() => {
+    if (!showSetConfigModal || nodeType !== 'setConfig.setConfig') return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent backspace from deleting nodes when modal is open
+      if (e.key === 'Backspace') {
+        const target = e.target as HTMLElement;
+        // Allow backspace in Monaco editor and input fields
+        const isInEditableElement = target instanceof HTMLInputElement || 
+                                    target instanceof HTMLTextAreaElement ||
+                                    target.closest('.monaco-editor') !== null ||
+                                    target.closest('[contenteditable="true"]') !== null;
+        
+        if (!isInEditableElement) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+        }
+      }
+      
+      // Handle ESC key
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        handleCloseSetConfigModal();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true); // Use capture phase to catch early
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [showSetConfigModal, nodeType, handleCloseSetConfigModal]);
   // Check if this node is currently paused
   const pausedNodeId = useWorkflowStore((state) => state.pausedNodeId);
   const isPaused = pausedNodeId === id;
@@ -2787,10 +3097,12 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                       try {
                         const jsonString = JSON.stringify(value, null, 2);
                         setSetConfigJsonValue(jsonString);
+                        setSetConfigOriginalJsonValue(jsonString);
                         setSetConfigJsonError(null);
                       } catch (error: any) {
                         setSetConfigJsonError(error.message);
                         setSetConfigJsonValue('{}');
+                        setSetConfigOriginalJsonValue('{}');
                       }
                       setShowSetConfigModal(true);
                     }}
@@ -3075,6 +3387,14 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
         />
         {icon ? (() => {
           const IconComponent = icon.icon;
+          // Special styling for setConfig.setConfig with orange border
+          if (nodeType === 'setConfig.setConfig') {
+            return (
+              <div className="flex-shrink-0 p-0.5 rounded border-2 border-orange-500">
+                <IconComponent sx={{ fontSize: '1rem', color: icon.color }} />
+              </div>
+            );
+          }
           return (
             <div className="flex-shrink-0">
               <IconComponent sx={{ fontSize: '1.25rem', color: icon.color }} />
@@ -3189,8 +3509,14 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
           className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]"
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              setShowSetConfigModal(false);
-              setSetConfigJsonError(null);
+              handleCloseSetConfigModal();
+            }
+          }}
+          onKeyDown={(e) => {
+            // Prevent backspace from propagating
+            if (e.key === 'Backspace' && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
+              e.preventDefault();
+              e.stopPropagation();
             }
           }}
         >
@@ -3201,10 +3527,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
             <div className="flex items-center justify-between p-4 border-b border-gray-700">
               <h2 className="text-lg font-semibold text-white">Edit Config</h2>
               <button
-                onClick={() => {
-                  setShowSetConfigModal(false);
-                  setSetConfigJsonError(null);
-                }}
+                onClick={handleCloseSetConfigModal}
                 className="text-gray-400 hover:text-white transition-colors"
               >
                 <X size={20} />
@@ -3241,7 +3564,16 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                   />
                 </div>
                 {setConfigJsonError && (
-                  <p className="mt-2 text-sm text-red-400">{setConfigJsonError}</p>
+                  <div className="mt-2">
+                    <div className="text-sm text-red-400 font-medium mb-1">Validation Errors:</div>
+                    <div className="text-sm text-red-400 whitespace-pre-wrap break-words">
+                      {setConfigJsonError.split('\n').map((error, index) => (
+                        <div key={index} className="mb-1">
+                          • {error}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                 )}
                 <p className="mt-2 text-xs text-gray-400">
                   Enter valid JSON object. Press Escape to cancel.
@@ -3251,10 +3583,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
 
             <div className="p-4 border-t border-gray-700 flex justify-end gap-2">
               <button
-                onClick={() => {
-                  setShowSetConfigModal(false);
-                  setSetConfigJsonError(null);
-                }}
+                onClick={handleCloseSetConfigModal}
                 className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
               >
                 Cancel
@@ -3262,15 +3591,26 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
               <button
                 onClick={() => {
                   try {
-                    const parsed = JSON.parse(setConfigJsonValue.trim());
+                    const trimmedJson = setConfigJsonValue.trim();
+                    const parsed = JSON.parse(trimmedJson);
                     
                     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
                       setSetConfigJsonError('Config must be a JSON object');
                       return;
                     }
 
+                    // Validate paths for duplicates and conflicts
+                    const validation = validateConfigPaths(trimmedJson, parsed);
+                    if (!validation.isValid) {
+                      const errorMessage = validation.errors.join('\n');
+                      setSetConfigJsonError(errorMessage);
+                      return;
+                    }
+
                     handlePropertyChange('config', parsed);
                     setSetConfigJsonError(null);
+                    // Update original value to current saved value
+                    setSetConfigOriginalJsonValue(trimmedJson);
                     setShowSetConfigModal(false);
                   } catch (error: any) {
                     setSetConfigJsonError(`Invalid JSON: ${error.message}`);

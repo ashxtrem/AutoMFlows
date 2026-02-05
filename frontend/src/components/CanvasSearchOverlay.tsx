@@ -24,6 +24,7 @@ import FolderIcon from '@mui/icons-material/Folder';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import StorageIcon from '@mui/icons-material/Storage';
 import SettingsIcon from '@mui/icons-material/Settings';
+import EditIcon from '@mui/icons-material/Edit';
 
 interface IconConfig {
   icon: React.ComponentType<{ sx?: any }>;
@@ -280,6 +281,10 @@ export default function CanvasSearchOverlay({ position, flowPosition, onClose, o
                   {/* Icon */}
                   {iconConfig ? (
                     <iconConfig.icon sx={{ fontSize: '1.25rem', color: iconConfig.color }} />
+                  ) : node.type === 'setConfig.setConfig' ? (
+                    <div className="flex-shrink-0 p-0.5 rounded border-2 border-orange-500">
+                      <EditIcon sx={{ fontSize: '1rem', color: '#FF9800' }} />
+                    </div>
                   ) : (
                     <span className="text-lg flex-shrink-0">{pluginNode?.icon || '📦'}</span>
                   )}

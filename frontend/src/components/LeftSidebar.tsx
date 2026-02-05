@@ -24,6 +24,7 @@ import FolderIcon from '@mui/icons-material/Folder';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import StorageIcon from '@mui/icons-material/Storage';
 import SettingsIcon from '@mui/icons-material/Settings';
+import EditIcon from '@mui/icons-material/Edit';
 
 interface IconConfig {
   icon: React.ComponentType<{ sx?: any }>;
@@ -521,6 +522,14 @@ const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
                             if (iconConfig) {
                               const IconComponent = iconConfig.icon;
                               return <IconComponent sx={{ fontSize: '1.25rem', color: iconConfig.color }} />;
+                            }
+                            // Special handling for setConfig.setConfig to use EditIcon with orange border
+                            if (node.type === 'setConfig.setConfig') {
+                              return (
+                                <div className="flex-shrink-0 p-0.5 rounded border-2 border-orange-500">
+                                  <EditIcon sx={{ fontSize: '1rem', color: '#FF9800' }} />
+                                </div>
+                              );
                             }
                             const pluginNode = frontendPluginRegistry.getPluginNode(node.type);
                             return <span className="text-lg flex-shrink-0">{pluginNode?.icon || '📦'}</span>;

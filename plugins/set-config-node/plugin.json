@@ -7,7 +7,7 @@
     {
       "type": "setConfig.setConfig",
       "label": "Set Config",
-      "category": "Data",
+      "category": "Configuration",
       "icon": "⚙️",
       "description": "Define and edit configuration/test data using JSON editor. Data is stored in context.data and can overwrite existing values.",
       "handlerPath": "handler.js",

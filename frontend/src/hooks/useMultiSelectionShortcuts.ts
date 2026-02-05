@@ -41,7 +41,13 @@ export function useMultiSelectionShortcuts() {
       }
 
       // Don't handle if canvas is reloading or properties panel is open
-      if (canvasReloading || selectedNode) {
+      // Also check if any modal/popup is open (prevent shortcuts when modals are active)
+      const hasModal = document.querySelector('.fixed.inset-0.bg-black.bg-opacity-50') !== null ||
+                      document.querySelector('[role="dialog"]') !== null ||
+                      document.querySelector('[role="alertdialog"]') !== null ||
+                      document.querySelector('[data-modal="true"]') !== null;
+      
+      if (canvasReloading || selectedNode || hasModal) {
         return;
       }
 
