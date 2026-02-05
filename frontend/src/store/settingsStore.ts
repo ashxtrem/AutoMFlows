@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { createWithEqualityFn } from 'zustand/traditional';
 import { ReportType } from '@automflows/shared';
 
 // Helper function to load from localStorage with default
@@ -133,7 +133,7 @@ const defaultReportSettings: ReportSettings = {
   autoOpenReports: false,
 };
 
-export const useSettingsStore = create<SettingsState>((set, get) => {
+export const useSettingsStore = createWithEqualityFn<SettingsState>((set, get) => {
   // Initialize canvas settings from localStorage
   const canvas: CanvasSettings = {
     autoArrangeNodes: loadFromStorage(

@@ -849,14 +849,31 @@ export interface ApiCurlNodeData {
 }
 
 export interface LoadConfigFileNodeData {
-  filePath: string; // Relative or absolute path
-  contextKey?: string; // Optional key to store under (default: merge into root)
+  configs?: Array<{
+    id: string; // Unique ID for each config
+    fileName: string; // Name of the selected file
+    fileContent: string; // JSON content from file picker
+    contextKey?: string; // Optional key to store under
+    enabled: boolean; // Whether this config is enabled
+  }>;
+  // Legacy fields for backward compatibility (deprecated)
+  filePath?: string; // Relative or absolute path (deprecated - use configs array instead)
+  contextKey?: string; // Optional key to store under (deprecated - use configs array instead)
 }
 
 export interface SelectConfigFileNodeData {
-  fileContent: string; // JSON content from file picker
-  fileName?: string; // Optional: name of the selected file
-  contextKey?: string; // Optional key to store under (default: merge into root)
+  // Use same structure as LoadConfigFileNodeData for unified handling
+  configs?: Array<{
+    id: string; // Unique ID for each config
+    fileName: string; // Name of the selected file
+    fileContent: string; // JSON content from file picker
+    contextKey?: string; // Optional key to store under
+    enabled: boolean; // Whether this config is enabled
+  }>;
+  // Legacy fields for backward compatibility (deprecated)
+  fileContent?: string; // JSON content from file picker (deprecated - use configs array instead)
+  fileName?: string; // Optional: name of the selected file (deprecated - use configs array instead)
+  contextKey?: string; // Optional key to store under (deprecated - use configs array instead)
 }
 
 export interface SetConfigNodeData {

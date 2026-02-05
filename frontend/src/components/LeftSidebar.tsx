@@ -58,7 +58,6 @@ const nodeIconMap: Record<NodeType, IconConfig> = {
   [NodeType.API_REQUEST]: { icon: HttpIcon, color: '#2196F3' },
   [NodeType.API_CURL]: { icon: TerminalIcon, color: '#9C27B0' },
   [NodeType.LOAD_CONFIG_FILE]: { icon: FolderIcon, color: '#FF9800' },
-  [NodeType.SELECT_CONFIG_FILE]: { icon: FolderOpenIcon, color: '#FF9800' },
   [NodeType.DB_CONNECT]: { icon: StorageIcon, color: '#4CAF50' },
   [NodeType.DB_DISCONNECT]: { icon: StorageIcon, color: '#F44336' },
   [NodeType.DB_QUERY]: { icon: StorageIcon, color: '#2196F3' },
@@ -159,7 +158,6 @@ const NODE_CATEGORIES = [
     label: 'Configuration',
     nodes: [
       { type: NodeType.LOAD_CONFIG_FILE, label: 'Load Config File' },
-      { type: NodeType.SELECT_CONFIG_FILE, label: 'Select Config File' },
     ],
   },
 ];
@@ -220,7 +218,6 @@ function getNodeCategory(nodeType: NodeType | string, _nodeLabel?: string): 'bro
     case NodeType.BOOLEAN_VALUE:
     case NodeType.INPUT_VALUE:
     case NodeType.LOAD_CONFIG_FILE:
-    case NodeType.SELECT_CONFIG_FILE:
     case NodeType.START:
     default:
       return 'utils';

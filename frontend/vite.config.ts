@@ -73,7 +73,7 @@ const preventAutoRefresh = (): Plugin => {
       // Inject script to handle Vite HMR reload prevention
       return html.replace(
         '</head>',
-        `<script>
+        `<script type="module">
           if (import.meta.hot) {
             import.meta.hot.on('vite:beforeFullReload', () => {
               const preventAutoRefresh = sessionStorage.getItem('prevent-auto-refresh') === 'true';

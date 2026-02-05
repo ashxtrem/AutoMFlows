@@ -47,6 +47,7 @@ todos:
   - id: testing
     content: Create test workflows for all network interception features
     status: pending
+isProject: false
 ---
 
 # Network Interception Features Implementation
@@ -85,14 +86,15 @@ Based on your requirements for comprehensive network interception capabilities, 
 
 **Files to Modify:**
 
-- [`backend/src/nodes/browser.ts`](backend/src/nodes/browser.ts) - OpenBrowserHandler
-- [`backend/src/utils/playwright.ts`](backend/src/utils/playwright.ts) - PlaywrightManager
-- [`frontend/src/components/nodeConfigs/OpenBrowserConfig.tsx`](frontend/src/components/nodeConfigs/OpenBrowserConfig.tsx)
-- [`shared/src/types.ts`](shared/src/types.ts) - OpenBrowserNodeData interface
+- `[backend/src/nodes/browser.ts](backend/src/nodes/browser.ts)` - OpenBrowserHandler
+- `[backend/src/utils/playwright.ts](backend/src/utils/playwright.ts)` - PlaywrightManager
+- `[frontend/src/components/nodeConfigs/OpenBrowserConfig.tsx](frontend/src/components/nodeConfigs/OpenBrowserConfig.tsx)`
+- `[shared/src/types.ts](shared/src/types.ts)` - OpenBrowserNodeData interface
 
 **Implementation Steps:**
 
 1. **Add network capture settings to OpenBrowserNodeData**
+
 ```typescript
 interface OpenBrowserNodeData {
   // ... existing fields
@@ -108,7 +110,7 @@ interface OpenBrowserNodeData {
 }
 ```
 
-2. **Implement network capture in PlaywrightManager.launch()**
+1. **Implement network capture in PlaywrightManager.launch()**
 
 Set up event listeners on context:
 
@@ -116,7 +118,7 @@ Set up event listeners on context:
 - `context.on('response', handler)` - Capture all responses
 - Store captured data in ContextManager under configurable key
 
-3. **Add UI controls in OpenBrowserConfig.tsx**
+1. **Add UI controls in OpenBrowserConfig.tsx**
 
 - Checkbox: "Capture Network Activity"
 - Expandable section with:
@@ -378,28 +380,21 @@ All string fields should support variable interpolation:
 ### Browser Tests
 
 1. **Global Capture Test**
-
-   - Enable network capture in Open Browser
-   - Navigate and make API calls
-   - Verify captured data in context
-
+  - Enable network capture in Open Browser
+  - Navigate and make API calls
+  - Verify captured data in context
 2. **Request Interception Test**
-
-   - Add Intercept Request node to mock API
-   - Verify page receives mocked response
-   - Test abort and modify actions
-
+  - Add Intercept Request node to mock API
+  - Verify page receives mocked response
+  - Test abort and modify actions
 3. **Response Interception Test**
-
-   - Add Intercept Response node
-   - Modify response data
-   - Verify modified data appears in page
-
+  - Add Intercept Response node
+  - Modify response data
+  - Verify modified data appears in page
 4. **Wait for Network Test**
-
-   - Trigger async API call
-   - Use Wait for Network node
-   - Verify captured response data
+  - Trigger async API call
+  - Use Wait for Network node
+  - Verify captured response data
 
 ### Example Workflow
 
@@ -427,3 +422,4 @@ This hybrid approach provides:
 - **Comprehensive coverage** of all use cases (monitoring, mocking, modification, blocking)
 - **Familiar patterns** consistent with existing node architecture
 - **Flexibility** to enable features independently based on needs
+

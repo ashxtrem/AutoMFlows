@@ -42,42 +42,78 @@ export class LoadConfigFileHandler implements NodeHandler {
   async execute(node: BaseNode, context: ContextManager): Promise<void> {
     const data = node.data as LoadConfigFileNodeData;
 
-    if (!data.filePath) {
-      throw new Error('File path is required for Load Config File node');
-    }
-
-    try {
-      // Resolve file path (handles both relative and absolute)
-      const resolvedPath = resolveFilePath(data.filePath);
-
-      // Check if file exists
-      try {
-        await fs.access(resolvedPath);
-      } catch {
-        throw new Error(`Config file not found: ${resolvedPath}`);
+    // New format: process configs array
+    if (data.configs && Array.isArray(data.configs) && data.configs.length > 0) {
+      const enabledConfigs = data.configs.filter(c => c.enabled);
+      
+      if (enabledConfigs.length === 0) {
+        // No enabled configs - skip silently
+        return;
       }
 
-      // Read file content
-      const fileContent = await fs.readFile(resolvedPath, 'utf-8');
+      // Process enabled configs in order
+      for (const config of enabledConfigs) {
+        try {
+          // Parse JSON (trim whitespace first)
+          let configData: Record<string, any>;
+          try {
+            configData = JSON.parse(config.fileContent.trim());
+          } catch (error: any) {
+            throw new Error(`Invalid JSON in config file "${config.fileName}": ${error.message}`);
+          }
 
-      // Parse JSON (trim whitespace first)
-      let configData: Record<string, any>;
+          // Validate that it's an object
+          if (typeof configData !== 'object' || configData === null || Array.isArray(configData)) {
+            throw new Error(`Config file "${config.fileName}" must contain a JSON object`);
+          }
+
+          // Merge into context (later configs override earlier ones for same keys)
+          mergeIntoContext(context, configData, config.contextKey);
+        } catch (error: any) {
+          throw new Error(`Failed to load config file "${config.fileName}": ${error.message}`);
+        }
+      }
+      return;
+    }
+
+    // Legacy format: use filePath
+    if (data.filePath) {
       try {
-        configData = JSON.parse(fileContent.trim());
+        // Resolve file path (handles both relative and absolute)
+        const resolvedPath = resolveFilePath(data.filePath);
+
+        // Check if file exists
+        try {
+          await fs.access(resolvedPath);
+        } catch {
+          throw new Error(`Config file not found: ${resolvedPath}`);
+        }
+
+        // Read file content
+        const fileContent = await fs.readFile(resolvedPath, 'utf-8');
+
+        // Parse JSON (trim whitespace first)
+        let configData: Record<string, any>;
+        try {
+          configData = JSON.parse(fileContent.trim());
+        } catch (error: any) {
+          throw new Error(`Invalid JSON in config file: ${error.message}`);
+        }
+
+        // Validate that it's an object
+        if (typeof configData !== 'object' || configData === null || Array.isArray(configData)) {
+          throw new Error('Config file must contain a JSON object');
+        }
+
+        // Merge into context
+        mergeIntoContext(context, configData, data.contextKey);
       } catch (error: any) {
-        throw new Error(`Invalid JSON in config file: ${error.message}`);
+        throw new Error(`Failed to load config file: ${error.message}`);
       }
-
-      // Validate that it's an object
-      if (typeof configData !== 'object' || configData === null || Array.isArray(configData)) {
-        throw new Error('Config file must contain a JSON object');
-      }
-
-      // Merge into context
-      mergeIntoContext(context, configData, data.contextKey);
-    } catch (error: any) {
-      throw new Error(`Failed to load config file: ${error.message}`);
+      return;
     }
+
+    throw new Error('No config files specified. Please load at least one config file.');
   }
 }
 
@@ -85,28 +121,64 @@ export class SelectConfigFileHandler implements NodeHandler {
   async execute(node: BaseNode, context: ContextManager): Promise<void> {
     const data = node.data as SelectConfigFileNodeData;
 
-    if (!data.fileContent) {
-      throw new Error('File content is required for Select Config File node');
+    // New format: process configs array (same as LoadConfigFileHandler)
+    if (data.configs && Array.isArray(data.configs) && data.configs.length > 0) {
+      const enabledConfigs = data.configs.filter(c => c.enabled);
+      
+      if (enabledConfigs.length === 0) {
+        // No enabled configs - skip silently
+        return;
+      }
+
+      // Process enabled configs in order
+      for (const config of enabledConfigs) {
+        try {
+          // Parse JSON (trim whitespace first)
+          let configData: Record<string, any>;
+          try {
+            configData = JSON.parse(config.fileContent.trim());
+          } catch (error: any) {
+            throw new Error(`Invalid JSON in config file "${config.fileName}": ${error.message}`);
+          }
+
+          // Validate that it's an object
+          if (typeof configData !== 'object' || configData === null || Array.isArray(configData)) {
+            throw new Error(`Config file "${config.fileName}" must contain a JSON object`);
+          }
+
+          // Merge into context (later configs override earlier ones for same keys)
+          mergeIntoContext(context, configData, config.contextKey);
+        } catch (error: any) {
+          throw new Error(`Failed to load config file "${config.fileName}": ${error.message}`);
+        }
+      }
+      return;
     }
 
-    try {
-      // Parse JSON (trim whitespace first)
-      let configData: Record<string, any>;
+    // Legacy format: use fileContent
+    if (data.fileContent) {
       try {
-        configData = JSON.parse(data.fileContent.trim());
+        // Parse JSON (trim whitespace first)
+        let configData: Record<string, any>;
+        try {
+          configData = JSON.parse(data.fileContent.trim());
+        } catch (error: any) {
+          throw new Error(`Invalid JSON in config file: ${error.message}`);
+        }
+
+        // Validate that it's an object
+        if (typeof configData !== 'object' || configData === null || Array.isArray(configData)) {
+          throw new Error('Config file must contain a JSON object');
+        }
+
+        // Merge into context
+        mergeIntoContext(context, configData, data.contextKey);
       } catch (error: any) {
-        throw new Error(`Invalid JSON in config file: ${error.message}`);
+        throw new Error(`Failed to load config file: ${error.message}`);
       }
-
-      // Validate that it's an object
-      if (typeof configData !== 'object' || configData === null || Array.isArray(configData)) {
-        throw new Error('Config file must contain a JSON object');
-      }
-
-      // Merge into context
-      mergeIntoContext(context, configData, data.contextKey);
-    } catch (error: any) {
-      throw new Error(`Failed to load config file: ${error.message}`);
+      return;
     }
+
+    throw new Error('No config files specified. Please load at least one config file.');
   }
 }

@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom';
 import { shallow } from 'zustand/shallow';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { NodeType, PropertyDataType, OpenBrowserNodeData } from '@automflows/shared';
+import { NodeType, PropertyDataType, OpenBrowserNodeData, LoadConfigFileNodeData, SelectConfigFileNodeData } from '@automflows/shared';
 import { frontendPluginRegistry } from '../plugins/registry';
 import { useWorkflowStore } from '../store/workflowStore';
 import { useSettingsStore } from '../store/settingsStore';
@@ -698,6 +698,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
   const updateNodeDimensions = useWorkflowStore((state) => state.updateNodeDimensions);
   const renameNode = useWorkflowStore((state) => state.renameNode);
+  const setSelectedNode = useWorkflowStore((state) => state.setSelectedNode);
   const edgesRaw = useWorkflowStore((state) => state.edges);
   const nodesRaw = useWorkflowStore((state) => state.nodes);
   
@@ -771,7 +772,6 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(label);
   const renameInputRef = useRef<HTMLInputElement>(null);
-  const selectConfigFileInputRef = useRef<HTMLInputElement>(null);
   const [connectingHandleId, setConnectingHandleId] = useState<string | null>(null);
   
   // Check if this handle has an incoming/outgoing connection
@@ -2767,84 +2767,39 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
           );
         
         case NodeType.LOAD_CONFIG_FILE:
-          return (
-            <div className="mt-2 space-y-1">
-              {renderPropertyRow('filePath', (
-                <InlineTextInput
-                  label="File Path"
-                  value={renderData.filePath || ''}
-                  onChange={(value) => handlePropertyChange('filePath', value)}
-                  placeholder="tests/resources/env.Env1.json"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 0)}
-              {renderData.contextKey && renderPropertyRow('contextKey', (
-                <InlineTextInput
-                  label="Context Key"
-                  value={renderData.contextKey || ''}
-                  onChange={(value) => handlePropertyChange('contextKey', value)}
-                  placeholder="env (optional)"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 1)}
-            </div>
-          );
-        
         case NodeType.SELECT_CONFIG_FILE:
-          const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            
-            if (!file.name.endsWith('.json')) {
-              alert('Please select a JSON file');
-              return;
-            }
-            
-            try {
-              const fileContent = await file.text();
-              // Validate JSON
-              JSON.parse(fileContent);
-              handlePropertyChange('fileContent', fileContent);
-              handlePropertyChange('fileName', file.name);
-            } catch (error: any) {
-              alert(`Invalid JSON: ${error.message}`);
+          const configData = renderData as LoadConfigFileNodeData | SelectConfigFileNodeData;
+          const configs = configData.configs || [];
+          const hasConfigs = configs.length > 0;
+          const activeConfigs = configs.filter(c => c.enabled).length;
+          
+          const handleOpenConfigSidebar = () => {
+            // Get current node from store
+            const currentNode = storeNodes.find(n => n.id === id);
+            if (currentNode) {
+              setSelectedNode(currentNode);
             }
           };
           
           return (
             <div className="mt-2 space-y-1">
-              <input
-                ref={selectConfigFileInputRef}
-                type="file"
-                accept="application/json"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
               <div className="px-2 py-1">
                 <button
                   type="button"
-                  onClick={() => selectConfigFileInputRef.current?.click()}
-                  className="w-full px-2 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded text-gray-200 transition-colors"
+                  onClick={handleOpenConfigSidebar}
+                  className="w-full px-2 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 border border-blue-500 rounded text-white transition-colors"
                 >
-                  {renderData.fileName || 'Select JSON File'}
+                  {hasConfigs ? 'Add Config' : 'Load Config'}
                 </button>
-                {renderData.fileName && (
-                  <p className="mt-1 text-xs text-gray-400 truncate" title={renderData.fileName}>
-                    {renderData.fileName}
+                {hasConfigs && (
+                  <p className="mt-1 text-xs text-gray-400 text-center">
+                    {configs.length} config{configs.length !== 1 ? 's' : ''} loaded ({activeConfigs} active)
                   </p>
                 )}
               </div>
-              {renderData.contextKey && renderPropertyRow('contextKey', (
-                <InlineTextInput
-                  label="Context Key"
-                  value={renderData.contextKey || ''}
-                  onChange={(value) => handlePropertyChange('contextKey', value)}
-                  placeholder="env (optional)"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 1)}
             </div>
           );
+        
         
         case NodeType.DB_CONNECT:
           return (

@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { createWithEqualityFn } from 'zustand/traditional';
 import { Node, Edge, Connection, addEdge, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange } from 'reactflow';
 import { NodeType, PropertyDataType, PageDebugInfo, RecordedAction } from '@automflows/shared';
 import { frontendPluginRegistry } from '../plugins/registry';
@@ -229,7 +229,7 @@ function reconnectEdgesOnNodeDeletion(nodeId: string, edges: Edge[]): Edge[] {
   return [...remainingEdges, ...newEdges];
 }
 
-export const useWorkflowStore = create<WorkflowState>((set, get) => {
+export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) => {
   const initialState: WorkflowSnapshot = { nodes: [], edges: [] };
   return {
     nodes: [],

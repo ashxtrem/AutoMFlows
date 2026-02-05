@@ -58,7 +58,6 @@ const nodeIconMap: Record<NodeType, IconConfig> = {
   [NodeType.API_REQUEST]: { icon: HttpIcon, color: '#2196F3' },
   [NodeType.API_CURL]: { icon: TerminalIcon, color: '#9C27B0' },
   [NodeType.LOAD_CONFIG_FILE]: { icon: FolderIcon, color: '#FF9800' },
-  [NodeType.SELECT_CONFIG_FILE]: { icon: FolderOpenIcon, color: '#FF9800' },
   [NodeType.DB_CONNECT]: { icon: StorageIcon, color: '#4CAF50' },
   [NodeType.DB_DISCONNECT]: { icon: StorageIcon, color: '#F44336' },
   [NodeType.DB_QUERY]: { icon: StorageIcon, color: '#2196F3' },
@@ -99,7 +98,6 @@ function getNodeLabel(nodeType: NodeType | string): string {
       [NodeType.API_REQUEST]: 'API Request',
       [NodeType.API_CURL]: 'API cURL',
       [NodeType.LOAD_CONFIG_FILE]: 'Load Config File',
-      [NodeType.SELECT_CONFIG_FILE]: 'Select Config File',
       [NodeType.DB_CONNECT]: 'DB Connect',
       [NodeType.DB_DISCONNECT]: 'DB Disconnect',
       [NodeType.DB_QUERY]: 'DB Query',
@@ -164,12 +162,14 @@ export default function CanvasSearchOverlay({ position, flowPosition, onClose, o
   const allNodes = useMemo(() => {
     const nodes: Array<{ type: string; label: string }> = [];
     
-    // Add built-in nodes
+    // Add built-in nodes (exclude SELECT_CONFIG_FILE as it's deprecated)
     Object.values(NodeType).forEach((nodeType) => {
-      nodes.push({
-        type: nodeType,
-        label: getNodeLabel(nodeType),
-      });
+      if (nodeType !== NodeType.SELECT_CONFIG_FILE) {
+        nodes.push({
+          type: nodeType,
+          label: getNodeLabel(nodeType),
+        });
+      }
     });
     
     // Add plugin nodes

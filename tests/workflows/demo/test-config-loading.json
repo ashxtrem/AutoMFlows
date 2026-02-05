@@ -1,0 +1,145 @@
+{
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 100
+      },
+      "data": {
+        "type": "start",
+        "label": "Start",
+        "isTest": false,
+        "recordSession": false,
+        "screenshotAllNodes": false,
+        "screenshotTiming": "post",
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 284
+      }
+    },
+    {
+      "id": "loadConfig-1",
+      "type": "loadConfigFile",
+      "position": {
+        "x": 100,
+        "y": 300
+      },
+      "data": {
+        "type": "loadConfigFile",
+        "label": "Load Config 1 (Enabled)",
+        "configs": [
+          {
+            "id": "config-1",
+            "fileName": "config-test-1.json",
+            "fileContent": "{\n  \"appName\": \"TestApp\",\n  \"version\": \"1.0.0\",\n  \"apiUrl\": \"https://api.example.com/v1\",\n  \"database\": {\n    \"host\": \"localhost\",\n    \"port\": 5432\n  },\n  \"environment\": \"development\"\n}",
+            "enabled": true
+          },
+          {
+            "id": "config-2",
+            "fileName": "config-test-2.json",
+            "fileContent": "{\n  \"appName\": \"TestAppV2\",\n  \"version\": \"2.0.0\",\n  \"apiUrl\": \"https://api.example.com/v2\",\n  \"feature\": {\n    \"enabled\": true,\n    \"name\": \"New Feature\"\n  },\n  \"timeout\": 5000\n}",
+            "enabled": true
+          },
+          {
+            "id": "config-3",
+            "fileName": "config-test-3.json",
+            "fileContent": "{\n  \"appName\": \"TestAppV3\",\n  \"feature\": {\n    \"enabled\": false,\n    \"name\": \"Disabled Feature\"\n  },\n  \"newFeature\": {\n    \"active\": true,\n    \"description\": \"This config is disabled\"\n  },\n  \"disabledConfigValue\": \"This should not be available\"\n}",
+            "enabled": false
+          }
+        ],
+        "isTest": false,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 200
+      }
+    },
+    {
+      "id": "test-enabled-configs",
+      "type": "javascriptCode",
+      "position": {
+        "x": 100,
+        "y": 500
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Test Enabled Configs",
+        "code": "// Test that enabled configs are resolved\nconsole.log('=== Testing Enabled Configs ===');\nconsole.log('appName:', context.data.appName);\nconsole.log('version:', context.data.version);\nconsole.log('apiUrl:', context.data.apiUrl);\nconsole.log('database.host:', context.data.database?.host);\nconsole.log('database.port:', context.data.database?.port);\nconsole.log('environment:', context.data.environment);\nconsole.log('feature.enabled:', context.data.feature?.enabled);\nconsole.log('feature.name:', context.data.feature?.name);\nconsole.log('timeout:', context.data.timeout);\n\n// Verify expected values from config2 (last enabled config)\nif (context.data.appName === 'TestAppV2') {\n  console.log('✓ appName is correct (from config2)');\n} else {\n  console.error('✗ appName is incorrect. Expected: TestAppV2, Got:', context.data.appName);\n}\n\nif (context.data.version === '2.0.0') {\n  console.log('✓ version is correct (from config2)');\n} else {\n  console.error('✗ version is incorrect. Expected: 2.0.0, Got:', context.data.version);\n}\n\nif (context.data.apiUrl === 'https://api.example.com/v2') {\n  console.log('✓ apiUrl is correct (from config2)');\n} else {\n  console.error('✗ apiUrl is incorrect. Expected: https://api.example.com/v2, Got:', context.data.apiUrl);\n}\n\nreturn context.data;",
+        "isTest": false,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 200
+      }
+    },
+    {
+      "id": "test-disabled-configs",
+      "type": "javascriptCode",
+      "position": {
+        "x": 100,
+        "y": 700
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Test Disabled Configs",
+        "code": "// Test that disabled configs are NOT resolved\nconsole.log('=== Testing Disabled Configs ===');\nconsole.log('disabledConfigValue:', context.data.disabledConfigValue);\nconsole.log('newFeature.active:', context.data.newFeature?.active);\nconsole.log('newFeature.description:', context.data.newFeature?.description);\n\n// Verify that disabled config values are NOT available\nif (context.data.disabledConfigValue === undefined) {\n  console.log('✓ disabledConfigValue is correctly NOT available (config3 is disabled)');\n} else {\n  console.error('✗ disabledConfigValue should not be available. Got:', context.data.disabledConfigValue);\n}\n\nif (context.data.newFeature === undefined) {\n  console.log('✓ newFeature is correctly NOT available (config3 is disabled)');\n} else {\n  console.error('✗ newFeature should not be available. Got:', context.data.newFeature);\n}\n\nreturn context.data;",
+        "isTest": false,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 200
+      }
+    },
+    {
+      "id": "test-conflicting-keys",
+      "type": "javascriptCode",
+      "position": {
+        "x": 100,
+        "y": 900
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Test Conflicting Keys",
+        "code": "// Test that conflicting keys use the last loaded config value\nconsole.log('=== Testing Conflicting Keys ===');\nconsole.log('appName:', context.data.appName);\nconsole.log('version:', context.data.version);\nconsole.log('apiUrl:', context.data.apiUrl);\nconsole.log('feature.enabled:', context.data.feature?.enabled);\nconsole.log('feature.name:', context.data.feature?.name);\n\n// Verify that conflicting keys use values from config2 (last enabled config)\n// Config1: appName='TestApp', version='1.0.0', apiUrl='https://api.example.com/v1'\n// Config2: appName='TestAppV2', version='2.0.0', apiUrl='https://api.example.com/v2'\n// Expected: Values from Config2 (last enabled)\n\nconst tests = [\n  { key: 'appName', expected: 'TestAppV2', actual: context.data.appName, description: 'appName should be from config2' },\n  { key: 'version', expected: '2.0.0', actual: context.data.version, description: 'version should be from config2' },\n  { key: 'apiUrl', expected: 'https://api.example.com/v2', actual: context.data.apiUrl, description: 'apiUrl should be from config2' },\n  { key: 'feature.enabled', expected: true, actual: context.data.feature?.enabled, description: 'feature.enabled should be from config2' },\n  { key: 'feature.name', expected: 'New Feature', actual: context.data.feature?.name, description: 'feature.name should be from config2' }\n];\n\nlet allPassed = true;\ntests.forEach(test => {\n  if (test.actual === test.expected) {\n    console.log(`✓ ${test.description}: ${test.actual}`);\n  } else {\n    console.error(`✗ ${test.description}. Expected: ${test.expected}, Got: ${test.actual}`);\n    allPassed = false;\n  }\n});\n\nif (allPassed) {\n  console.log('\\n✓ All conflicting key tests passed! Last loaded config values are used correctly.');\n} else {\n  console.error('\\n✗ Some conflicting key tests failed!');\n}\n\nreturn context.data;",
+        "isTest": false,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 200
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "start-1->loadConfig-1",
+      "source": "start-1",
+      "target": "loadConfig-1",
+      "sourceHandle": "source",
+      "targetHandle": "target"
+    },
+    {
+      "id": "loadConfig-1->test-enabled-configs",
+      "source": "loadConfig-1",
+      "target": "test-enabled-configs",
+      "sourceHandle": "source",
+      "targetHandle": "target"
+    },
+    {
+      "id": "test-enabled-configs->test-disabled-configs",
+      "source": "test-enabled-configs",
+      "target": "test-disabled-configs",
+      "sourceHandle": "source",
+      "targetHandle": "target"
+    },
+    {
+      "id": "test-disabled-configs->test-conflicting-keys",
+      "source": "test-disabled-configs",
+      "target": "test-conflicting-keys",
+      "sourceHandle": "source",
+      "targetHandle": "target"
+    }
+  ]
+}

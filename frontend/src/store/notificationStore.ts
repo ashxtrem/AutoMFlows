@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { createWithEqualityFn } from 'zustand/traditional';
 import { playNotificationSound } from '../utils/audioNotifications';
 
 export type NotificationType = 'success' | 'error' | 'info' | 'settings';
@@ -40,7 +40,7 @@ const getDefaultDuration = (type: NotificationType): number => {
   }
 };
 
-export const useNotificationStore = create<NotificationState>((set) => ({
+export const useNotificationStore = createWithEqualityFn<NotificationState>((set) => ({
   notifications: [],
 
   addNotification: (notification) => {

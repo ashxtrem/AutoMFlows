@@ -25,7 +25,6 @@ import VerifyConfig from './nodeConfigs/VerifyConfig';
 import ApiRequestConfig from './nodeConfigs/ApiRequestConfig';
 import ApiCurlConfig from './nodeConfigs/ApiCurlConfig';
 import LoadConfigFileConfig from './nodeConfigs/LoadConfigFileConfig';
-import SelectConfigFileConfig from './nodeConfigs/SelectConfigFileConfig';
 import DbConnectConfig from './nodeConfigs/DbConnectConfig';
 import DbDisconnectConfig from './nodeConfigs/DbDisconnectConfig';
 import DbQueryConfig from './nodeConfigs/DbQueryConfig';
@@ -108,9 +107,8 @@ export default function NodeConfigForm({ node }: NodeConfigFormProps) {
         case NodeType.API_CURL:
           return <ApiCurlConfig node={node} onChange={handleChange} />;
         case NodeType.LOAD_CONFIG_FILE:
-          return <LoadConfigFileConfig node={node} onChange={handleChange} />;
         case NodeType.SELECT_CONFIG_FILE:
-          return <SelectConfigFileConfig node={node} onChange={handleChange} />;
+          return <LoadConfigFileConfig node={node} onChange={handleChange} />;
         case NodeType.DB_CONNECT:
           return <DbConnectConfig node={node} onChange={handleChange} />;
         case NodeType.DB_DISCONNECT:

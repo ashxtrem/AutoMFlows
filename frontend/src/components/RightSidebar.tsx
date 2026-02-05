@@ -1,6 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { X } from 'lucide-react';
-import { NodeType } from '@automflows/shared';
+import { NodeType, LoadConfigFileNodeData, SelectConfigFileNodeData } from '@automflows/shared';
 import { useWorkflowStore } from '../store/workflowStore';
 import { frontendPluginRegistry } from '../plugins/registry';
 import NodeConfigForm from './NodeConfigForm';
@@ -151,6 +151,22 @@ export default function RightSidebar() {
   const defaultLabel = getNodeLabel(selectedNode.data.type);
   const nodeLabel = customLabel || defaultLabel;
 
+  // Check if multiple configs are enabled (for LOAD_CONFIG_FILE or SELECT_CONFIG_FILE nodes)
+  const multipleConfigsEnabled = useMemo(() => {
+    const nodeType = selectedNode.data.type;
+    if (nodeType !== NodeType.LOAD_CONFIG_FILE && nodeType !== NodeType.SELECT_CONFIG_FILE) {
+      return false;
+    }
+
+    const nodeData = selectedNode.data as LoadConfigFileNodeData | SelectConfigFileNodeData;
+    if (!nodeData.configs || !Array.isArray(nodeData.configs)) {
+      return false;
+    }
+
+    const enabledCount = nodeData.configs.filter(c => c.enabled).length;
+    return enabledCount >= 2;
+  }, [selectedNode]);
+
   return (
     <div 
       className="bg-gray-800 border-l border-gray-700 overflow-y-auto relative flex z-30 flex-shrink-0 h-full"
@@ -179,6 +195,22 @@ export default function RightSidebar() {
             <X size={20} />
           </button>
         </div>
+        
+        {/* Warning banner for multiple enabled configs */}
+        {multipleConfigsEnabled && (
+          <div className="mb-4 p-3 bg-yellow-900/30 border border-yellow-600/50 rounded-lg">
+            <div className="flex items-start gap-2">
+              <span className="text-yellow-400 text-lg">⚠️</span>
+              <div className="flex-1">
+                <div className="text-yellow-400 font-semibold mb-1">Multiple Configs Enabled</div>
+                <div className="text-yellow-300 text-sm">
+                  Multiple configs are enabled. Overlapping keys will use values from the last loaded config.
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <NodeConfigForm node={selectedNode} />
       </div>
     </div>
