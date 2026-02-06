@@ -178,7 +178,7 @@ function findDuplicateKeys(jsonString: string): string[] {
               // Extract key
               const key = content.substring(i + 1, keyEnd);
               // Unescape key
-              const unescapedKey = key.replace(/\\(.)/g, (match, escaped) => {
+              const unescapedKey = key.replace(/\\(.)/g, (_match, escaped) => {
                 const escapes: Record<string, string> = {
                   'n': '\n',
                   't': '\t',

@@ -118,6 +118,11 @@ dist/
 # AutoMflows runtime files
 .automflows-port
 
+# MCP Server
+mcp-server/dist/
+mcp-server/node_modules/
+mcp-server/config.json
+
 # Database files
 *.db
 *.sqlite

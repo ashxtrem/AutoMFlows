@@ -1,7 +1,7 @@
 import { NodeType } from '@automflows/shared';
 import { useMemo, useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { frontendPluginRegistry } from '../plugins/registry';
-import { Search, X, Menu, Pin, PinOff } from 'lucide-react';
+import { Search, X, Menu, Pin, PinOff, BookOpen } from 'lucide-react';
 import PlayCircleFilledWhiteTwoToneIcon from '@mui/icons-material/PlayCircleFilledWhiteTwoTone';
 import LanguageIcon from '@mui/icons-material/Language';
 import LinkIcon from '@mui/icons-material/Link';
@@ -58,6 +58,7 @@ const nodeIconMap: Record<NodeType, IconConfig> = {
   [NodeType.API_REQUEST]: { icon: HttpIcon, color: '#2196F3' },
   [NodeType.API_CURL]: { icon: TerminalIcon, color: '#9C27B0' },
   [NodeType.LOAD_CONFIG_FILE]: { icon: FolderIcon, color: '#FF9800' },
+  [NodeType.SELECT_CONFIG_FILE]: { icon: FolderOpenIcon, color: '#FF9800' },
   [NodeType.DB_CONNECT]: { icon: StorageIcon, color: '#4CAF50' },
   [NodeType.DB_DISCONNECT]: { icon: StorageIcon, color: '#F44336' },
   [NodeType.DB_QUERY]: { icon: StorageIcon, color: '#2196F3' },
@@ -455,19 +456,32 @@ const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
           style={{ width: `${DEFAULT_WIDTH}px`, height: 'calc(100vh - 120px)', maxHeight: '600px', left: '60px' }}
           data-tour="left-sidebar"
         >
-          {/* Header with Pin Button */}
+          {/* Header with Pin Button and Wiki Button */}
           <div className="flex items-center justify-between p-4 border-b border-gray-700 bg-gray-800">
             <h2 className="text-sm font-semibold text-gray-400 uppercase">Node Library</h2>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsPinned((prev) => !prev);
-              }}
-              className="p-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
-              aria-label={isPinned ? 'Unpin sidebar' : 'Pin sidebar'}
-            >
-              {isPinned ? <Pin size={16} /> : <PinOff size={16} />}
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open('/wiki/index.html', '_blank');
+                }}
+                className="p-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
+                aria-label="Open wiki"
+                title="Open documentation wiki"
+              >
+                <BookOpen size={16} />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsPinned((prev) => !prev);
+                }}
+                className="p-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
+                aria-label={isPinned ? 'Unpin sidebar' : 'Pin sidebar'}
+              >
+                {isPinned ? <Pin size={16} /> : <PinOff size={16} />}
+              </button>
+            </div>
           </div>
 
           {/* Scrollable Content Area - Nodes */}

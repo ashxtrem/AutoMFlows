@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { X } from 'lucide-react';
+import { X, HelpCircle } from 'lucide-react';
 import { NodeType, LoadConfigFileNodeData, SelectConfigFileNodeData } from '@automflows/shared';
 import { useWorkflowStore } from '../store/workflowStore';
 import { frontendPluginRegistry } from '../plugins/registry';
@@ -151,6 +151,12 @@ export default function RightSidebar() {
   const defaultLabel = getNodeLabel(selectedNode.data.type);
   const nodeLabel = customLabel || defaultLabel;
 
+  // Helper function to generate wiki URL with node-specific hash
+  const getWikiUrl = (nodeType: string): string => {
+    const nodeId = nodeType.replace(/\./g, '-'); // Convert dots to dashes for URL
+    return `/wiki/index.html#node-${nodeId}`;
+  };
+
   // Check if multiple configs are enabled (for LOAD_CONFIG_FILE or SELECT_CONFIG_FILE nodes)
   const multipleConfigsEnabled = useMemo(() => {
     const nodeType = selectedNode.data.type;
@@ -186,7 +192,17 @@ export default function RightSidebar() {
       />
       <div className="p-4 flex-1">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-white">{nodeLabel} | Node Properties</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-white">{nodeLabel} | Node Properties</h2>
+            <button
+              onClick={() => window.open(getWikiUrl(selectedNode.data.type), '_blank')}
+              className="text-gray-400 hover:text-blue-400 p-1 transition-colors"
+              aria-label="Open node documentation"
+              title="View node documentation"
+            >
+              <HelpCircle size={18} />
+            </button>
+          </div>
           <button
             onClick={() => setSelectedNode(null)}
             className="text-gray-400 hover:text-white p-1"

@@ -1,0 +1,697 @@
+{
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 200
+      },
+      "data": {
+        "type": "start",
+        "label": "Start"
+      }
+    },
+    {
+      "id": "openBrowser-1",
+      "type": "openBrowser",
+      "position": {
+        "x": 350,
+        "y": 200
+      },
+      "data": {
+        "type": "openBrowser",
+        "label": "Open Browser",
+        "headless": true,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "browser": "chromium"
+      }
+    },
+    {
+      "id": "generate-credentials-1",
+      "type": "javascriptCode",
+      "position": {
+        "x": 600,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Generate Random Credentials",
+        "code": "// Generate random username and password\nconst timestamp = Date.now();\nconst randomNum = Math.floor(Math.random() * 10000);\nconst username = `user${timestamp}${randomNum}`;\nconst password = `Pass${randomNum}${timestamp.toString().slice(-4)}!`;\n\n// Store in context variables for use by other nodes\ncontext.setVariable('username', username);\ncontext.setVariable('password', password);\n\nreturn { username, password };"
+      }
+    },
+    {
+      "id": "navigate-home-1",
+      "type": "navigate",
+      "position": {
+        "x": 600,
+        "y": 200
+      },
+      "data": {
+        "type": "navigate",
+        "label": "Navigate to ParaBank",
+        "url": "https://parabank.parasoft.com",
+        "timeout": 30000,
+        "waitUntil": "networkidle"
+      }
+    },
+    {
+      "id": "click-register-1",
+      "type": "click",
+      "position": {
+        "x": 850,
+        "y": 200
+      },
+      "data": {
+        "type": "click",
+        "label": "Click Register",
+        "selector": "a[href*='register.htm']",
+        "selectorType": "css",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "wait-register-page-1",
+      "type": "wait",
+      "position": {
+        "x": 1100,
+        "y": 200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for Register Page",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "type-firstname-1",
+      "type": "type",
+      "position": {
+        "x": 1350,
+        "y": 100
+      },
+      "data": {
+        "type": "type",
+        "label": "Type First Name",
+        "selector": "#customer\\.firstName",
+        "selectorType": "css",
+        "text": "John",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "type-lastname-1",
+      "type": "type",
+      "position": {
+        "x": 1350,
+        "y": 150
+      },
+      "data": {
+        "type": "type",
+        "label": "Type Last Name",
+        "selector": "#customer\\.lastName",
+        "selectorType": "css",
+        "text": "Doe",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "type-address-1",
+      "type": "type",
+      "position": {
+        "x": 1350,
+        "y": 200
+      },
+      "data": {
+        "type": "type",
+        "label": "Type Address",
+        "selector": "#customer\\.address\\.street",
+        "selectorType": "css",
+        "text": "123 Main Street",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "type-city-1",
+      "type": "type",
+      "position": {
+        "x": 1350,
+        "y": 250
+      },
+      "data": {
+        "type": "type",
+        "label": "Type City",
+        "selector": "#customer\\.address\\.city",
+        "selectorType": "css",
+        "text": "New York",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "type-state-1",
+      "type": "type",
+      "position": {
+        "x": 1350,
+        "y": 300
+      },
+      "data": {
+        "type": "type",
+        "label": "Type State",
+        "selector": "#customer\\.address\\.state",
+        "selectorType": "css",
+        "text": "NY",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "type-zipcode-1",
+      "type": "type",
+      "position": {
+        "x": 1350,
+        "y": 350
+      },
+      "data": {
+        "type": "type",
+        "label": "Type Zip Code",
+        "selector": "#customer\\.address\\.zipCode",
+        "selectorType": "css",
+        "text": "10001",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "type-phone-1",
+      "type": "type",
+      "position": {
+        "x": 1350,
+        "y": 400
+      },
+      "data": {
+        "type": "type",
+        "label": "Type Phone",
+        "selector": "#customer\\.phoneNumber",
+        "selectorType": "css",
+        "text": "5551234567",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "type-ssn-1",
+      "type": "type",
+      "position": {
+        "x": 1350,
+        "y": 450
+      },
+      "data": {
+        "type": "type",
+        "label": "Type SSN",
+        "selector": "#customer\\.ssn",
+        "selectorType": "css",
+        "text": "123456789",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "type-username-1",
+      "type": "type",
+      "position": {
+        "x": 1350,
+        "y": 500
+      },
+      "data": {
+        "type": "type",
+        "label": "Type Username",
+        "selector": "#customer\\.username",
+        "selectorType": "css",
+        "text": "${variables.username}",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "type-password-1",
+      "type": "type",
+      "position": {
+        "x": 1350,
+        "y": 550
+      },
+      "data": {
+        "type": "type",
+        "label": "Type Password",
+        "selector": "#customer\\.password",
+        "selectorType": "css",
+        "text": "${variables.password}",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "type-confirm-password-1",
+      "type": "type",
+      "position": {
+        "x": 1350,
+        "y": 600
+      },
+      "data": {
+        "type": "type",
+        "label": "Type Confirm Password",
+        "selector": "#repeatedPassword",
+        "selectorType": "css",
+        "text": "${variables.password}",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "click-register-button-1",
+      "type": "click",
+      "position": {
+        "x": 1600,
+        "y": 350
+      },
+      "data": {
+        "type": "click",
+        "label": "Click Register Button",
+        "selector": "input[value='Register']",
+        "selectorType": "css",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "wait-account-created-1",
+      "type": "wait",
+      "position": {
+        "x": 1850,
+        "y": 350
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for Account Creation",
+        "waitType": "timeout",
+        "value": 5000,
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "click-logout-1",
+      "type": "click",
+      "position": {
+        "x": 2100,
+        "y": 350
+      },
+      "data": {
+        "type": "click",
+        "label": "Click Logout",
+        "selector": "a[href*='logout']",
+        "selectorType": "css",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "navigate-home-again-1",
+      "type": "navigate",
+      "position": {
+        "x": 2350,
+        "y": 350
+      },
+      "data": {
+        "type": "navigate",
+        "label": "Navigate to Home",
+        "url": "https://parabank.parasoft.com",
+        "timeout": 30000,
+        "waitUntil": "networkidle"
+      }
+    },
+    {
+      "id": "type-login-username-1",
+      "type": "type",
+      "position": {
+        "x": 2600,
+        "y": 300
+      },
+      "data": {
+        "type": "type",
+        "label": "Type Login Username",
+        "selector": "input[name='username']",
+        "selectorType": "css",
+        "text": "${variables.username}",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "type-login-password-1",
+      "type": "type",
+      "position": {
+        "x": 2600,
+        "y": 350
+      },
+      "data": {
+        "type": "type",
+        "label": "Type Login Password",
+        "selector": "input[name='password']",
+        "selectorType": "css",
+        "text": "${variables.password}",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "click-login-button-1",
+      "type": "click",
+      "position": {
+        "x": 2600,
+        "y": 400
+      },
+      "data": {
+        "type": "click",
+        "label": "Click Login Button",
+        "selector": "input[value='Log In']",
+        "selectorType": "css",
+        "timeout": 30000
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-openBrowser-input",
+      "source": "start-1",
+      "target": "openBrowser-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-start-openBrowser-driver",
+      "source": "start-1",
+      "target": "openBrowser-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-openBrowser-generate-credentials-input",
+      "source": "openBrowser-1",
+      "target": "generate-credentials-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-openBrowser-generate-credentials-driver",
+      "source": "openBrowser-1",
+      "target": "generate-credentials-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-generate-credentials-navigate-home-input",
+      "source": "generate-credentials-1",
+      "target": "navigate-home-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-generate-credentials-navigate-home-driver",
+      "source": "generate-credentials-1",
+      "target": "navigate-home-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-navigate-home-click-register-input",
+      "source": "navigate-home-1",
+      "target": "click-register-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-navigate-home-click-register-driver",
+      "source": "navigate-home-1",
+      "target": "click-register-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-click-register-wait-register-page-input",
+      "source": "click-register-1",
+      "target": "wait-register-page-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-click-register-wait-register-page-driver",
+      "source": "click-register-1",
+      "target": "wait-register-page-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-register-page-type-firstname-input",
+      "source": "wait-register-page-1",
+      "target": "type-firstname-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-register-page-type-firstname-driver",
+      "source": "wait-register-page-1",
+      "target": "type-firstname-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-firstname-type-lastname-input",
+      "source": "type-firstname-1",
+      "target": "type-lastname-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-firstname-type-lastname-driver",
+      "source": "type-firstname-1",
+      "target": "type-lastname-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-lastname-type-address-input",
+      "source": "type-lastname-1",
+      "target": "type-address-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-lastname-type-address-driver",
+      "source": "type-lastname-1",
+      "target": "type-address-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-address-type-city-input",
+      "source": "type-address-1",
+      "target": "type-city-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-address-type-city-driver",
+      "source": "type-address-1",
+      "target": "type-city-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-city-type-state-input",
+      "source": "type-city-1",
+      "target": "type-state-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-city-type-state-driver",
+      "source": "type-city-1",
+      "target": "type-state-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-state-type-zipcode-input",
+      "source": "type-state-1",
+      "target": "type-zipcode-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-state-type-zipcode-driver",
+      "source": "type-state-1",
+      "target": "type-zipcode-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-zipcode-type-phone-input",
+      "source": "type-zipcode-1",
+      "target": "type-phone-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-zipcode-type-phone-driver",
+      "source": "type-zipcode-1",
+      "target": "type-phone-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-phone-type-ssn-input",
+      "source": "type-phone-1",
+      "target": "type-ssn-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-phone-type-ssn-driver",
+      "source": "type-phone-1",
+      "target": "type-ssn-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-ssn-type-username-input",
+      "source": "type-ssn-1",
+      "target": "type-username-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-ssn-type-username-driver",
+      "source": "type-ssn-1",
+      "target": "type-username-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-username-type-password-input",
+      "source": "type-username-1",
+      "target": "type-password-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-username-type-password-driver",
+      "source": "type-username-1",
+      "target": "type-password-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-password-type-confirm-password-input",
+      "source": "type-password-1",
+      "target": "type-confirm-password-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-password-type-confirm-password-driver",
+      "source": "type-password-1",
+      "target": "type-confirm-password-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-confirm-password-click-register-button-input",
+      "source": "type-confirm-password-1",
+      "target": "click-register-button-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-confirm-password-click-register-button-driver",
+      "source": "type-confirm-password-1",
+      "target": "click-register-button-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-click-register-button-wait-account-created-input",
+      "source": "click-register-button-1",
+      "target": "wait-account-created-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-click-register-button-wait-account-created-driver",
+      "source": "click-register-button-1",
+      "target": "wait-account-created-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-account-created-click-logout-input",
+      "source": "wait-account-created-1",
+      "target": "click-logout-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-account-created-click-logout-driver",
+      "source": "wait-account-created-1",
+      "target": "click-logout-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-click-logout-navigate-home-again-input",
+      "source": "click-logout-1",
+      "target": "navigate-home-again-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-click-logout-navigate-home-again-driver",
+      "source": "click-logout-1",
+      "target": "navigate-home-again-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-navigate-home-again-type-login-username-input",
+      "source": "navigate-home-again-1",
+      "target": "type-login-username-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-navigate-home-again-type-login-username-driver",
+      "source": "navigate-home-again-1",
+      "target": "type-login-username-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-login-username-type-login-password-input",
+      "source": "type-login-username-1",
+      "target": "type-login-password-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-login-username-type-login-password-driver",
+      "source": "type-login-username-1",
+      "target": "type-login-password-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-login-password-click-login-button-input",
+      "source": "type-login-password-1",
+      "target": "click-login-button-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-login-password-click-login-button-driver",
+      "source": "type-login-password-1",
+      "target": "click-login-button-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    }
+  ]
+}

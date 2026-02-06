@@ -316,7 +316,7 @@ function findDuplicateKeys(jsonString: string): string[] {
             
             if (foundColon && keyEnd > i) {
               const key = content.substring(i + 1, keyEnd);
-              const unescapedKey = key.replace(/\\(.)/g, (match, escaped) => {
+              const unescapedKey = key.replace(/\\(.)/g, (_match, escaped) => {
                 const escapes: Record<string, string> = {
                   'n': '\n',
                   't': '\t',
