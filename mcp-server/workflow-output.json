@@ -1,0 +1,122 @@
+{
+  "nodes": [
+    {
+      "id": "start-1770483178231",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 200
+      },
+      "data": {
+        "type": "start",
+        "label": "Start"
+      }
+    },
+    {
+      "id": "openBrowser-1770483178233-xfdec5tyo",
+      "type": "openBrowser",
+      "position": {
+        "x": 400,
+        "y": 200
+      },
+      "data": {
+        "type": "openBrowser",
+        "label": "Open Browser",
+        "headless": false,
+        "browser": "chromium",
+        "viewportWidth": 1280,
+        "viewportHeight": 720
+      }
+    },
+    {
+      "id": "navigate-1770483178233-2c0h033qm",
+      "type": "navigate",
+      "position": {
+        "x": 700,
+        "y": 200
+      },
+      "data": {
+        "type": "navigate",
+        "label": "Navigate to https://sauce-demo.myshopify.com/,",
+        "url": "https://sauce-demo.myshopify.com/,",
+        "waitUntil": "networkidle"
+      }
+    },
+    {
+      "id": "wait-1770483178233-ntclh8doy",
+      "type": "wait",
+      "position": {
+        "x": 1000,
+        "y": 200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait after navigate",
+        "timeout": 2000
+      }
+    },
+    {
+      "id": "click-1770483178233-hft61j3rb",
+      "type": "click",
+      "position": {
+        "x": 1300,
+        "y": 200
+      },
+      "data": {
+        "type": "click",
+        "label": "Click create, verify user sees Log Out",
+        "selector": "create, verify user sees Log Out"
+      }
+    },
+    {
+      "id": "wait-1770483178233-zlqu71a6e",
+      "type": "wait",
+      "position": {
+        "x": 1600,
+        "y": 200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait after click",
+        "timeout": 2000
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-1770483178231-openBrowser-1770483178233-xfdec5tyo-output-input",
+      "source": "start-1770483178231",
+      "target": "openBrowser-1770483178233-xfdec5tyo",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-openBrowser-1770483178233-xfdec5tyo-navigate-1770483178233-2c0h033qm-output-input",
+      "source": "openBrowser-1770483178233-xfdec5tyo",
+      "target": "navigate-1770483178233-2c0h033qm",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-navigate-1770483178233-2c0h033qm-wait-1770483178233-ntclh8doy-output-input",
+      "source": "navigate-1770483178233-2c0h033qm",
+      "target": "wait-1770483178233-ntclh8doy",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-1770483178233-ntclh8doy-click-1770483178233-hft61j3rb-output-input",
+      "source": "wait-1770483178233-ntclh8doy",
+      "target": "click-1770483178233-hft61j3rb",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-click-1770483178233-hft61j3rb-wait-1770483178233-zlqu71a6e-output-input",
+      "source": "click-1770483178233-hft61j3rb",
+      "target": "wait-1770483178233-zlqu71a6e",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    }
+  ]
+}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useWorkflowStore as useWorkflowStoreDirect } from '../store/workflowStore';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 import PauseIcon from '@mui/icons-material/Pause';
@@ -8,6 +9,7 @@ import { useWorkflowStore } from '../store/workflowStore';
 import { useExecution } from '../hooks/useExecution';
 import BreakpointHeadlessWarning from './BreakpointHeadlessWarning';
 import StopExecutionWarning from './StopExecutionWarning';
+import Tooltip from './Tooltip';
 
 const BUTTON_SIZE = 48; // Size of the circular button
 const BUTTON_GAP = 12; // Gap between buttons
@@ -24,6 +26,7 @@ export default function FloatingRunButton() {
     pauseBreakpointAt,
     navigateToPausedNode,
   } = useWorkflowStore();
+  const workflowStore = useWorkflowStore;
   const { 
     executeWorkflow, 
     stopExecution, 
@@ -123,6 +126,9 @@ export default function FloatingRunButton() {
   };
 
   const handleContinue = async () => {
+    if (!isPaused) {
+      return; // Only allow when paused
+    }
     if (pauseReason === 'breakpoint') {
       await pauseControl('continue');
     } else {
@@ -131,6 +137,9 @@ export default function FloatingRunButton() {
   };
 
   const handleStopFromPause = async () => {
+    if (!isPaused) {
+      return; // Only allow when paused
+    }
     if (pauseReason === 'breakpoint') {
       await pauseControl('stop');
       resetExecution();
@@ -141,16 +150,23 @@ export default function FloatingRunButton() {
   };
 
   const handleSkip = async () => {
+    if (!isPaused) {
+      return; // Only allow when paused
+    }
     await pauseControl('skip');
   };
 
   const handleContinueWithoutBreakpoint = async () => {
+    if (!isPaused) {
+      return; // Only allow when paused
+    }
     await pauseControl('continueWithoutBreakpoint');
   };
 
   const isRunning = executionStatus === 'running';
   const pauseButtonText = pauseReason === 'breakpoint' ? 'Go to Breakpoint Node' : 'Go to Pause Node';
   const isBreakpointPause = pauseReason === 'breakpoint';
+  const isWaitPause = pauseReason === 'wait-pause';
 
   return (
     <div
@@ -210,64 +226,68 @@ export default function FloatingRunButton() {
       {isPaused && (
         <>
           <div className={`flex gap-2 ${isBreakpointPause ? 'flex-wrap justify-center' : ''}`}>
-            <button
-              onClick={handleContinue}
-              className="w-10 h-10 rounded-full bg-green-600 hover:bg-green-700 flex items-center justify-center shadow-lg transition-all hover:scale-110"
-              title="Continue execution"
-            >
-              <PlayArrowIcon sx={{ fontSize: '20px', color: '#ffffff' }} />
-            </button>
-            <button
-              onClick={handleStopFromPauseClick}
-              className="w-10 h-10 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center shadow-lg transition-all hover:scale-110"
-              title="Stop execution"
-            >
-              <StopIcon sx={{ fontSize: '20px', color: '#ffffff' }} />
-            </button>
+            <Tooltip content="Continue execution">
+              <button
+                onClick={handleContinue}
+                className="w-10 h-10 rounded-full bg-green-600 hover:bg-green-700 flex items-center justify-center shadow-lg transition-all hover:scale-110 cursor-pointer"
+              >
+                <PlayArrowIcon sx={{ fontSize: '20px', color: '#ffffff' }} />
+              </button>
+            </Tooltip>
+            <Tooltip content="Stop execution">
+              <button
+                onClick={handleStopFromPauseClick}
+                className="w-10 h-10 rounded-full bg-red-600 hover:bg-red-700 flex items-center justify-center shadow-lg transition-all hover:scale-110 cursor-pointer"
+              >
+                <StopIcon sx={{ fontSize: '20px', color: '#ffffff' }} />
+              </button>
+            </Tooltip>
             {/* Breakpoint-specific controls */}
             {isBreakpointPause && (
               <>
                 {/* Skip button - only show for pre breakpoint */}
                 {pauseBreakpointAt === 'pre' && (
-                  <button
-                    onClick={handleSkip}
-                    className="w-10 h-10 rounded-full bg-purple-600 hover:bg-purple-700 flex items-center justify-center shadow-lg transition-all hover:scale-110"
-                    title="Skip node"
-                  >
-                    <SkipForward size={20} color="#ffffff" />
-                  </button>
+                  <Tooltip content="Skip current node">
+                    <button
+                      onClick={handleSkip}
+                      className="w-10 h-10 rounded-full bg-purple-600 hover:bg-purple-700 flex items-center justify-center shadow-lg transition-all hover:scale-110 cursor-pointer"
+                    >
+                      <SkipForward size={20} color="#ffffff" />
+                    </button>
+                  </Tooltip>
                 )}
-                <button
-                  onClick={handleContinueWithoutBreakpoint}
-                  className="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 flex items-center justify-center shadow-lg transition-all hover:scale-110"
-                  title="Continue without breakpoint"
-                >
-                  <PlayArrowIcon sx={{ fontSize: '20px', color: '#ffffff' }} />
-                </button>
+                <Tooltip content="Continue without breakpoint">
+                  <button
+                    onClick={handleContinueWithoutBreakpoint}
+                    className="w-10 h-10 rounded-full bg-blue-600 hover:bg-blue-700 flex items-center justify-center shadow-lg transition-all hover:scale-110 cursor-pointer"
+                  >
+                    <PlayArrowIcon sx={{ fontSize: '20px', color: '#ffffff' }} />
+                  </button>
+                </Tooltip>
               </>
             )}
           </div>
           {/* Go to Paused Node Button */}
-          <button
-            onClick={() => navigateToPausedNode?.()}
-            className={`
-              w-12 h-12 rounded-full flex items-center justify-center relative flex-shrink-0
-              bg-white/10 dark:bg-gray-800/20 backdrop-blur-md
-              border border-white/20 dark:border-gray-700/50
-              shadow-lg
-              transition-all duration-200
-              hover:bg-white/20 dark:hover:bg-gray-800/30
-              hover:bg-yellow-500/20 dark:hover:bg-yellow-500/30
-              hover:scale-110
-              select-none
-              cursor-pointer
-            `}
-            style={{ 
-              pointerEvents: 'auto',
-              boxShadow: '0 0 20px rgba(234, 179, 8, 0.6), 0 0 40px rgba(234, 179, 8, 0.4), 0 4px 6px rgba(0, 0, 0, 0.3)'
-            }}
-            title={pauseButtonText}
-          >
+          <Tooltip content={pauseButtonText}>
+            <button
+              onClick={() => navigateToPausedNode?.()}
+              className={`
+                w-12 h-12 rounded-full flex items-center justify-center relative flex-shrink-0
+                bg-white/10 dark:bg-gray-800/20 backdrop-blur-md
+                border border-white/20 dark:border-gray-700/50
+                shadow-lg
+                transition-all duration-200
+                hover:bg-white/20 dark:hover:bg-gray-800/30
+                hover:bg-yellow-500/20 dark:hover:bg-yellow-500/30
+                hover:scale-110
+                select-none
+                cursor-pointer
+              `}
+              style={{ 
+                pointerEvents: 'auto',
+                boxShadow: '0 0 20px rgba(234, 179, 8, 0.6), 0 0 40px rgba(234, 179, 8, 0.4), 0 4px 6px rgba(0, 0, 0, 0.3)'
+              }}
+            >
             {/* Yellow blur backdrop */}
             <div 
               className="absolute inset-0 rounded-full blur-xl opacity-60 bg-yellow-500"
@@ -275,6 +295,16 @@ export default function FloatingRunButton() {
             />
             <ErrorIcon sx={{ fontSize: '24px', color: '#ffffff', pointerEvents: 'none', filter: 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.8))' }} />
           </button>
+          </Tooltip>
+          
+          {/* Workflow modification indicator */}
+          <div className="mt-2 px-3 py-1.5 rounded-lg bg-white/10 dark:bg-gray-800/20 backdrop-blur-md border border-white/20 dark:border-gray-700/50 text-xs text-white text-center max-w-xs">
+            {isBreakpointPause ? (
+              <span className="text-green-300">✓ Workflow changes will be applied when you continue</span>
+            ) : isWaitPause ? (
+              <span className="text-yellow-300">⚠ Workflow changes saved for next execution</span>
+            ) : null}
+          </div>
         </>
       )}
 

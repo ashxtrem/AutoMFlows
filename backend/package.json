@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@automflows/shared": "*",
+    "@faker-js/faker": "^10.2.0",
     "@medv/finder": "4.0.2",
     "axios": "^1.13.2",
     "better-sqlite3": "^11.0.0",

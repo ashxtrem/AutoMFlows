@@ -102,6 +102,8 @@ export function useExecution() {
     setValidationErrors: setStoreValidationErrors, 
     clearValidationErrors,
     setPausedNode,
+    pausedNodeId,
+    pauseReason,
     breakpointEnabled,
     breakpointAt,
     breakpointFor,
@@ -116,6 +118,7 @@ export function useExecution() {
   const executionStartTimeRef = useRef<number | null>(null);
   const [showBreakpointWarning, setShowBreakpointWarning] = useState(false);
   const [pendingExecution, setPendingExecution] = useState<{ traceLogs: boolean; disableBreakpoints: boolean } | null>(null);
+  const justContinuedRef = useRef<boolean>(false); // Track if execution just continued to prevent immediate breakpoint re-trigger
 
   useEffect(() => {
     let mounted = true;
@@ -215,6 +218,11 @@ export function useExecution() {
           }
           break;
         case ExecutionEventType.BREAKPOINT_TRIGGERED:
+          // Ignore BREAKPOINT_TRIGGERED if execution just continued (to prevent buttons from reappearing immediately)
+          if (justContinuedRef.current) {
+            break;
+          }
+          
           if (event.nodeId) {
             setPausedNode(event.nodeId, 'breakpoint', event.data?.breakpointAt);
             addNotification({
@@ -613,7 +621,60 @@ export function useExecution() {
     }
   };
 
+  const updateWorkflowDuringExecution = async (workflow: any) => {
+    try {
+      const currentPort = port || await getBackendPortSync();
+      const response = await fetch(`http://localhost:${currentPort}/api/workflows/execution/update-workflow`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ workflow }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update workflow');
+      }
+
+      const result = await response.json();
+      console.log('Workflow updated during execution:', result);
+
+      return result;
+    } catch (error: any) {
+      // Don't show error notification if execution resumed (this is expected behavior)
+      // The error "Execution is not paused" means execution resumed between check and API call
+      const errorMessage = error?.message || '';
+      const isExecutionResumedError = errorMessage.includes('Execution is not paused') || 
+                                     errorMessage.includes('not paused');
+      
+      if (!isExecutionResumedError) {
+        console.error('Update workflow error:', error);
+        addNotification({
+          type: 'error',
+          title: 'Update Failed',
+          message: errorMessage || 'Failed to update workflow during execution',
+        });
+      } else {
+        // Silently ignore - execution resumed, which is expected
+      }
+      throw error;
+    }
+  };
+
   const pauseControl = async (action: 'continue' | 'stop' | 'skip' | 'continueWithoutBreakpoint') => {
+    // Check if execution is paused (not if it's running - when paused, status is still 'running')
+    const isCurrentlyPaused = useWorkflowStore.getState().pausedNodeId !== null;
+    
+    if (!isCurrentlyPaused) {
+      addNotification({
+        type: 'error',
+        title: 'Action Not Available',
+        message: 'Execution is not paused. This action is only available when execution is paused at a breakpoint.',
+      });
+      return;
+    }
+
     try {
       const currentPort = port || await getBackendPortSync();
       const response = await fetch(`http://localhost:${currentPort}/api/workflows/execution/pause-control`, {
@@ -625,24 +686,81 @@ export function useExecution() {
       });
 
       if (!response.ok) {
-        throw new Error('Failed to execute pause control');
+        const errorData = await response.json().catch(() => ({ message: 'Failed to execute pause control' }));
+        const errorMessage = errorData.message || 'Failed to execute pause control';
+        
+        // Handle "Execution is not paused" error gracefully
+        if (errorMessage.includes('Execution is not paused')) {
+          addNotification({
+            type: 'info',
+            title: 'Execution Already Running',
+            message: 'Execution has already resumed. The action was not applied.',
+          });
+          return;
+        }
+        
+        throw new Error(errorMessage);
       }
       
       // Clear pause state for continue actions
       if (action === 'continue' || action === 'skip' || action === 'continueWithoutBreakpoint') {
         setPausedNode(null, null);
+        // Set flag to ignore immediate BREAKPOINT_TRIGGERED events
+        justContinuedRef.current = true;
+        // Clear flag after a short delay to allow execution to actually start
+        setTimeout(() => {
+          justContinuedRef.current = false;
+        }, 500); // 500ms should be enough for execution to start
       }
     } catch (error: any) {
       console.error('Pause control error:', error);
-      alert('Failed to execute pause control: ' + error.message);
+      addNotification({
+        type: 'error',
+        title: 'Action Failed',
+        message: error.message || 'Failed to execute pause control. Please try again.',
+      });
     }
   };
+
+  // Auto-sync workflow changes during breakpoint pause (debounced)
+  useEffect(() => {
+    // Only sync during breakpoint pause, not wait-pause
+    if (pauseReason !== 'breakpoint' || !pausedNodeId) {
+      return;
+    }
+
+    // Debounce workflow sync to avoid too many API calls
+    const syncTimeout = setTimeout(async () => {
+      // CRITICAL FIX: Check pause state again before making API call
+      // Execution may have resumed between timeout setup and execution
+      const currentPauseReason = useWorkflowStore.getState().pauseReason;
+      const currentPausedNodeId = useWorkflowStore.getState().pausedNodeId;
+      
+      if (currentPauseReason !== 'breakpoint' || !currentPausedNodeId) {
+        return; // Execution resumed, don't update
+      }
+      
+      try {
+        const workflow = serializeWorkflow(nodes, edges);
+        await updateWorkflowDuringExecution(workflow);
+      } catch (error) {
+        // Error handling is done in updateWorkflowDuringExecution
+        // It will suppress notifications for "Execution is not paused" errors
+      }
+    }, 1000); // 1 second debounce
+
+    return () => {
+      clearTimeout(syncTimeout);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodes, edges, pauseReason, pausedNodeId]); // Only sync when nodes/edges change during breakpoint pause
 
   return {
     executeWorkflow,
     stopExecution,
     continueExecution,
     pauseControl,
+    updateWorkflowDuringExecution,
     validationErrors,
     setValidationErrors,
     showBreakpointWarning,

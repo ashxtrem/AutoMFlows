@@ -17,6 +17,7 @@ import { analyzeWorkflowErrors } from './tools/analyzeWorkflowErrors.js';
 import { fixWorkflow } from './tools/fixWorkflow.js';
 import { validateWorkflow } from './tools/validateWorkflow.js';
 import { extendWorkflow } from './tools/extendWorkflow.js';
+import { createAndExecuteWorkflow } from './tools/createAndExecuteWorkflow.js';
 
 // Load configuration
 loadConfig();
@@ -178,6 +179,21 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               description: 'Record the session as video',
               default: false,
             },
+            waitForCompletion: {
+              type: 'boolean',
+              description: 'Wait for workflow to complete before returning (with timeout protection)',
+              default: false,
+            },
+            pollIntervalMs: {
+              type: 'number',
+              description: 'Polling interval in milliseconds when waitForCompletion is true',
+              default: 1000,
+            },
+            maxDurationMs: {
+              type: 'number',
+              description: 'Maximum execution duration in milliseconds (timeout). Default: 300000 (5 minutes)',
+              default: 300000,
+            },
           },
           required: ['workflow'],
         },
@@ -316,6 +332,46 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ['workflow', 'userRequest'],
         },
       },
+      {
+        name: 'create_and_execute_workflow',
+        description: 'Create a workflow from a user prompt, execute it, and automatically fix selector issues using DOM capture at breakpoints. Iterates until workflow completes successfully or max iterations reached.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            userRequest: {
+              type: 'string',
+              description: 'User request describing what the workflow should do (e.g., "create a wf to navigate to amazon.in, search toys, add to cart and open cart verify same toys are in cart, then proceed to payment")',
+            },
+            useCase: {
+              type: 'string',
+              description: 'Use case description for the workflow',
+            },
+            maxIterations: {
+              type: 'number',
+              description: 'Maximum number of retry attempts (default: 5)',
+              default: 5,
+            },
+            breakpointStrategy: {
+              type: 'string',
+              enum: ['pre', 'post', 'both'],
+              description: 'When to trigger breakpoint (default: "pre")',
+              default: 'pre',
+            },
+            breakpointFor: {
+              type: 'string',
+              enum: ['all', 'marked'],
+              description: 'Which nodes to pause on (default: "marked")',
+              default: 'marked',
+            },
+            useLLMForSelectors: {
+              type: 'boolean',
+              description: 'Use LLM for selector inference (default: false, uses rule-based)',
+              default: false,
+            },
+          },
+          required: ['userRequest', 'useCase'],
+        },
+      },
     ],
   };
 });
@@ -363,6 +419,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           workflow: args.workflow as any,
           traceLogs: args.traceLogs as boolean | undefined,
           recordSession: args.recordSession as boolean | undefined,
+          waitForCompletion: args.waitForCompletion as boolean | undefined,
+          pollIntervalMs: args.pollIntervalMs as number | undefined,
+          maxDurationMs: args.maxDurationMs as number | undefined,
         });
         return {
           content: [
@@ -451,6 +510,25 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: 'text',
               text: JSON.stringify(extended, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'create_and_execute_workflow': {
+        const result = await createAndExecuteWorkflow({
+          userRequest: args.userRequest as string,
+          useCase: args.useCase as string,
+          maxIterations: args.maxIterations as number | undefined,
+          breakpointStrategy: args.breakpointStrategy as 'pre' | 'post' | 'both' | undefined,
+          breakpointFor: args.breakpointFor as 'all' | 'marked' | undefined,
+          useLLMForSelectors: args.useLLMForSelectors as boolean | undefined,
+        });
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
             },
           ],
         };

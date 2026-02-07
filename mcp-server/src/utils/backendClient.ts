@@ -149,19 +149,77 @@ export class BackendClient {
     maxDurationMs: number = 300000
   ): Promise<ExecutionResult> {
     const startTime = Date.now();
+    let consecutiveErrors = 0;
+    const maxConsecutiveErrors = 5;
 
     while (Date.now() - startTime < maxDurationMs) {
-      const status = await this.getExecutionStatus();
-      
-      if (status.executionId === executionId) {
-        if (status.status === 'completed' || status.status === 'error' || status.status === 'stopped') {
-          return status;
+      try {
+        const status = await this.getExecutionStatus();
+        
+        // Reset error counter on successful status check
+        consecutiveErrors = 0;
+        
+        // Check if this is the execution we're waiting for
+        if (status.executionId === executionId || !executionId) {
+          if (status.status === 'completed' || status.status === 'error' || status.status === 'stopped') {
+            return status;
+          }
+        } else if (status.executionId && status.executionId !== executionId) {
+          // If there's a different execution running, wait a bit longer
+          // This handles cases where the backend hasn't switched to our execution yet
         }
-      }
 
-      await new Promise(resolve => setTimeout(resolve, intervalMs));
+        await new Promise(resolve => setTimeout(resolve, intervalMs));
+      } catch (error: any) {
+        consecutiveErrors++;
+        if (consecutiveErrors >= maxConsecutiveErrors) {
+          throw new Error(
+            `Failed to poll execution status after ${maxConsecutiveErrors} consecutive errors: ${error.message}`
+          );
+        }
+        // Wait before retrying on error
+        await new Promise(resolve => setTimeout(resolve, intervalMs));
+      }
     }
 
-    throw new Error('Execution status polling timeout');
+    const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
+    throw new Error(
+      `Execution status polling timeout after ${elapsedSeconds}s (max: ${Math.round(maxDurationMs / 1000)}s). ` +
+      `Execution ID: ${executionId}`
+    );
+  }
+
+  /**
+   * Capture DOM at current breakpoint
+   */
+  async captureDOMAtBreakpoint(): Promise<any> {
+    try {
+      const response = await this.httpClient.post<{ success: boolean; debugInfo: any }>(
+        '/api/workflows/execution/capture-dom'
+      );
+      
+      if (!response.data.success) {
+        throw new Error('Failed to capture DOM');
+      }
+      
+      return response.data.debugInfo;
+    } catch (error: any) {
+      throw new Error(`Failed to capture DOM at breakpoint: ${error.message}`);
+    }
+  }
+
+  /**
+   * Skip current node and continue execution
+   */
+  async skipNode(): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await this.httpClient.post<{ success: boolean; message: string }>(
+        '/api/workflows/execution/pause-control',
+        { action: 'skip' }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(`Failed to skip node: ${error.message}`);
+    }
   }
 }

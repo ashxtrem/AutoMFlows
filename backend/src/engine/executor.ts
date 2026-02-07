@@ -47,6 +47,10 @@ export class Executor {
   private pauseReject: ((error: Error) => void) | null = null;
   private pausePromise: Promise<void> | null = null;
   private skipNextNode: boolean = false;
+  // Execution state tracking for runtime workflow updates
+  private executedNodeIds: Set<string> = new Set();
+  private currentExecutionOrder: string[] = [];
+  private executionOrderIndex: number = 0;
 
   constructor(
     workflow: Workflow, 
@@ -194,6 +198,14 @@ export class Executor {
     return this.pauseReason;
   }
 
+  getExecutedNodeIds(): string[] {
+    return Array.from(this.executedNodeIds);
+  }
+
+  getCurrentExecutionOrder(): string[] {
+    return [...this.currentExecutionOrder];
+  }
+
   isExecutionPaused(): boolean {
     return this.isPaused;
   }
@@ -272,6 +284,143 @@ export class Executor {
   }
 
   /**
+   * Update workflow during breakpoint pause
+   * Only allowed when execution is paused due to breakpoint
+   */
+  updateWorkflow(newWorkflow: Workflow): void {
+    // Validate execution is paused
+    if (!this.isPaused) {
+      throw new Error('Cannot update workflow: execution is not paused');
+    }
+
+    // Validate pause reason is breakpoint (not wait-pause)
+    if (this.pauseReason !== 'breakpoint') {
+      throw new Error('Cannot update workflow: workflow updates are only allowed during breakpoint pauses, not wait-pause');
+    }
+
+    // Validate current node still exists in new workflow
+    const currentNodeId = this.pausedNodeId || this.currentNodeId;
+    if (currentNodeId) {
+      const nodeExists = newWorkflow.nodes.some(node => node.id === currentNodeId);
+      if (!nodeExists) {
+        throw new Error(`Cannot update workflow: current paused node ${currentNodeId} does not exist in new workflow`);
+      }
+    }
+
+    this.traceLog(`[TRACE] Updating workflow during breakpoint pause`);
+
+    // Migrate workflow
+    const migrationResult = migrateWorkflow(newWorkflow);
+    if (migrationResult.warnings.length > 0) {
+      console.warn('[Migration] Workflow migration warnings:');
+      migrationResult.warnings.forEach(warning => {
+        console.warn(`[Migration] ${warning}`);
+      });
+    }
+
+    // Update workflow
+    this.workflow = { ...newWorkflow, nodes: migrationResult.nodes };
+
+    // Recreate parser with new workflow
+    this.parser = new WorkflowParser(this.workflow);
+
+    // Validate new workflow
+    const validation = this.parser.validate();
+    if (!validation.valid) {
+      const errorMsg = validation.errors.join(', ');
+      throw new Error(`Workflow validation failed: ${errorMsg}`);
+    }
+
+    // Recompute execution order from current position
+    const newExecutionOrder = this.parser.getExecutionOrder(true);
+    
+    // Find current position in new execution order
+    let newIndex = 0;
+    if (currentNodeId) {
+      const currentIndex = newExecutionOrder.indexOf(currentNodeId);
+      if (currentIndex !== -1) {
+        // If current node exists in new order, start from it (or next if it was already executed)
+        newIndex = this.executedNodeIds.has(currentNodeId) ? currentIndex + 1 : currentIndex;
+      } else {
+        // Current node not found - this shouldn't happen due to validation above, but handle gracefully
+        // Find the first unexecuted node
+        for (let i = 0; i < newExecutionOrder.length; i++) {
+          if (!this.executedNodeIds.has(newExecutionOrder[i])) {
+            newIndex = i;
+            break;
+          }
+        }
+      }
+    }
+
+    // Filter out already executed nodes from the new execution order
+    const remainingExecutionOrder = newExecutionOrder.filter(nodeId => !this.executedNodeIds.has(nodeId));
+    
+    // Validate that we have nodes to execute
+    if (remainingExecutionOrder.length === 0 && this.executedNodeIds.size < newExecutionOrder.length) {
+      // This means all remaining nodes were deleted - execution should complete
+      this.traceLog(`[TRACE] All remaining nodes were deleted in workflow update - execution will complete`);
+    }
+    
+    // Update execution order
+    this.currentExecutionOrder = remainingExecutionOrder;
+    
+    // Set execution index to the current paused node's position in the filtered order
+    // Since the loop increments index BEFORE executing, we set it to the paused node's position
+    // so it will execute the paused node when execution continues
+    let newExecutionIndex = 0;
+    if (currentNodeId) {
+      const indexInFilteredOrder = remainingExecutionOrder.indexOf(currentNodeId);
+      if (indexInFilteredOrder !== -1) {
+        // Current node is in filtered order - set index to its position
+        // The loop will increment before executing, so we need to set it to index-1
+        // But actually, the increment happens before execution, so if we want to execute
+        // the node at index N, we should set executionOrderIndex to N (it will increment to N+1, then execute N)
+        // Wait, that's wrong. Let me check the loop logic again...
+        // Loop: get nodeId = currentExecutionOrder[executionOrderIndex], then increment, then execute
+        // So if executionOrderIndex = 0, it gets node[0], increments to 1, executes node[0]
+        // If we want to execute node at index 0, we set executionOrderIndex to 0
+        // But if execution is paused AT node 0, and we've already incremented, then executionOrderIndex might be 1
+        // Actually, when paused, executionOrderIndex points to the NEXT node to execute
+        // So if we're paused at node 0, executionOrderIndex should be 0 (will execute node 0)
+        // If node 0 is already executed and filtered out, remainingExecutionOrder[0] is node 1
+        // So we need to find where currentNodeId is in remainingExecutionOrder
+        newExecutionIndex = indexInFilteredOrder;
+      } else if (this.executedNodeIds.has(currentNodeId)) {
+        // Current node is already executed - start from beginning of filtered order
+        newExecutionIndex = 0;
+      } else {
+        // Current node not in filtered order and not executed - shouldn't happen, but start from beginning
+        newExecutionIndex = 0;
+      }
+    }
+    this.executionOrderIndex = newExecutionIndex;
+    
+    // If execution order is empty, we've completed all remaining work
+    if (remainingExecutionOrder.length === 0) {
+      this.traceLog(`[TRACE] No remaining nodes to execute after workflow update`);
+    }
+
+    this.traceLog(`[TRACE] Updated execution order: ${remainingExecutionOrder.join(' -> ')}`);
+    this.traceLog(`[TRACE] Executed nodes: ${Array.from(this.executedNodeIds).join(', ')}`);
+
+    // Update context with new workflow
+    this.context.setData('fullWorkflow', this.workflow);
+    this.context.setData('reusableScopes', this.parser.getReusableScopes());
+    this.context.setData('resolvePropertyInputs', (node: BaseNode) => this.resolvePropertyInputs(node));
+    
+    // Store workflow in context for node handlers (needed for RunReusableHandler)
+    (this.context as any).workflow = this.workflow;
+
+    // Update breakpoint config if nodes have changed
+    // Re-check breakpoint settings from new workflow nodes
+    if (this.breakpointConfig && this.breakpointConfig.breakpointFor === 'marked') {
+      // Breakpoint config remains the same, but nodes may have changed
+      // The shouldTriggerBreakpoint method will check node.data.breakpoint
+    }
+  }
+
+  /**
    * Check if breakpoint should trigger for a node
    */
   private shouldTriggerBreakpoint(node: BaseNode, timing: 'pre' | 'post'): boolean {
@@ -339,6 +488,9 @@ export class Executor {
 
       // Get execution order (excludes nodes in reusable scopes)
       const executionOrder = this.parser.getExecutionOrder(true);
+      this.currentExecutionOrder = [...executionOrder];
+      this.executionOrderIndex = 0;
+      this.executedNodeIds.clear();
       this.traceLog(`[TRACE] Execution order: ${executionOrder.join(' -> ')}`);
 
       // Track skipped nodes (nodes unreachable due to switch node branching)
@@ -353,8 +505,27 @@ export class Executor {
         }
       }
 
-        // Execute nodes in order
-        for (const nodeId of executionOrder) {
+        // Execute nodes in order (use dynamic execution order that can be updated)
+        while (this.executionOrderIndex < this.currentExecutionOrder.length) {
+          // Check if execution order was updated (workflow modified during breakpoint)
+          // If so, we may need to recompute - but this is handled by updateWorkflow
+          const nodeId = this.currentExecutionOrder[this.executionOrderIndex];
+          
+          // Safety check: ensure node still exists
+          if (!nodeId) {
+            this.traceLog(`[TRACE] Warning: Empty nodeId in execution order at index ${this.executionOrderIndex}`);
+            this.executionOrderIndex++;
+            continue;
+          }
+          
+          // Safety check: skip if node is already executed (shouldn't happen if filtering works correctly)
+          if (this.executedNodeIds.has(nodeId)) {
+            this.traceLog(`[TRACE] Skipping already executed node: ${nodeId}`);
+            this.executionOrderIndex++;
+            continue;
+          }
+          
+          this.executionOrderIndex++;
         if (this.stopRequested) {
           this.status = ExecutionStatus.STOPPED;
           const workflowName = this.extractWorkflowName(this.workflow);
@@ -382,6 +553,9 @@ export class Executor {
             this.executionTracker.recordNodeBypassed(nodeId);
           }
           
+          // Mark as executed (skipped nodes are considered executed)
+          this.executedNodeIds.add(nodeId);
+          
           this.emitEvent({
             type: ExecutionEventType.NODE_COMPLETE,
             nodeId,
@@ -400,6 +574,9 @@ export class Executor {
             this.executionTracker.recordNodeStart(node);
             this.executionTracker.recordNodeBypassed(nodeId);
           }
+          
+          // Mark as executed (skipped nodes are considered executed)
+          this.executedNodeIds.add(nodeId);
           
           this.emitEvent({
             type: ExecutionEventType.NODE_COMPLETE,
@@ -420,6 +597,9 @@ export class Executor {
             this.executionTracker.recordNodeBypassed(nodeId);
           }
           
+          // Mark as executed (skipped nodes are considered executed)
+          this.executedNodeIds.add(nodeId);
+          
           this.emitEvent({
             type: ExecutionEventType.NODE_COMPLETE,
             nodeId,
@@ -439,6 +619,9 @@ export class Executor {
             this.executionTracker.recordNodeStart(node);
             this.executionTracker.recordNodeBypassed(nodeId);
           }
+          
+          // Mark as executed (bypassed nodes are considered executed)
+          this.executedNodeIds.add(nodeId);
           
           this.emitEvent({
             type: ExecutionEventType.NODE_COMPLETE,
@@ -465,6 +648,8 @@ export class Executor {
           if (this.skipNextNode) {
             this.skipNextNode = false;
             this.traceLog(`[TRACE] Skipping node due to breakpoint skip: ${nodeId}`);
+            // Mark as executed even though we're skipping
+            this.executedNodeIds.add(nodeId);
             continue;
           }
         }
@@ -510,7 +695,7 @@ export class Executor {
           this.traceLog(`[TRACE] Node ${nodeId} completed successfully`);
 
           // Apply slowmo delay if enabled (skip delay for last node)
-          if (this.slowMo > 0 && nodeId !== executionOrder[executionOrder.length - 1]) {
+          if (this.slowMo > 0 && nodeId !== this.currentExecutionOrder[this.currentExecutionOrder.length - 1]) {
             await new Promise(resolve => setTimeout(resolve, this.slowMo));
           }
 
@@ -558,6 +743,9 @@ export class Executor {
           if (this.executionTracker) {
             this.executionTracker.recordNodeComplete(nodeId);
           }
+
+          // Mark node as executed
+          this.executedNodeIds.add(nodeId);
 
           this.emitEvent({
             type: ExecutionEventType.NODE_COMPLETE,
@@ -638,6 +826,8 @@ export class Executor {
           // If failSilently is enabled, continue execution instead of throwing
           if (failSilently) {
             this.traceLog(`[TRACE] Node ${nodeId} failed silently, continuing execution`);
+            // Mark as executed even though it failed (failSilently means we continue)
+            this.executedNodeIds.add(nodeId);
             // Don't emit NODE_COMPLETE - keep node in 'error' status for reporting
             // Execution continues to next node, but node remains marked as failed
             continue; // Continue to next node
@@ -653,7 +843,7 @@ export class Executor {
         this.traceLog(`[TRACE] Builder mode enabled - keeping browser open`);
         
         // Get the last node ID
-        const lastNodeId = executionOrder[executionOrder.length - 1];
+        const lastNodeId = this.currentExecutionOrder[this.currentExecutionOrder.length - 1];
         
         // Get page and context from context manager
         const page = this.context.getPage();

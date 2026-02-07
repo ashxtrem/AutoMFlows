@@ -25,31 +25,40 @@
       "id": "openBrowser-1",
       "type": "openBrowser",
       "position": {
-        "x": 400,
+        "x": 505,
         "y": 200
       },
       "data": {
         "headless": false,
-        "viewportWidth": 1280,
-        "viewportHeight": 720,
-        "maxWindow": true,
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "maxWindow": false,
         "browser": "chromium",
         "stealthMode": true,
-        "capabilities": {},
-        "launchOptions": {},
+        "capabilities": {
+          "isMobile": true,
+          "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "hasTouch": true
+        },
         "isTest": false,
         "type": "openBrowser",
         "label": "Open Browser",
         "isPinned": false,
         "isMinimized": false,
-        "width": 228
+        "width": 228,
+        "searchHighlighted": false,
+        "jsScript": "// Mobile Viewport Emulation Script\n// This script emulates a mobile device viewport and capabilities\n// Compatible with iPhone 12/13 dimensions (390x844) or iPhone SE (375x667)\n\n(function() {\n  'use strict';\n\n  // Mobile viewport dimensions - iPhone 12/13 Pro dimensions\n  const MOBILE_WIDTH = 390;\n  const MOBILE_HEIGHT = 844;\n\n  // iPhone 12/13 Pro user agent\n  const MOBILE_USER_AGENT = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1';\n\n  // Override window.innerWidth to return mobile width\n  Object.defineProperty(window, 'innerWidth', {\n    get: () => MOBILE_WIDTH, // Mobile width\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override window.innerHeight to return mobile height\n  Object.defineProperty(window, 'innerHeight', {\n    get: () => MOBILE_HEIGHT, // Mobile height\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override window.outerWidth\n  Object.defineProperty(window, 'outerWidth', {\n    get: () => MOBILE_WIDTH,\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override window.outerHeight\n  Object.defineProperty(window, 'outerHeight', {\n    get: () => MOBILE_HEIGHT,\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override screen.width\n  Object.defineProperty(screen, 'width', {\n    get: () => MOBILE_WIDTH,\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override screen.height\n  Object.defineProperty(screen, 'height', {\n    get: () => MOBILE_HEIGHT,\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override screen.availWidth\n  Object.defineProperty(screen, 'availWidth', {\n    get: () => MOBILE_WIDTH,\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override screen.availHeight\n  Object.defineProperty(screen, 'availHeight', {\n    get: () => MOBILE_HEIGHT - 44, // Account for status bar\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override navigator.userAgent with mobile user agent\n  Object.defineProperty(navigator, 'userAgent', {\n    get: () => MOBILE_USER_AGENT,\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override navigator.platform\n  Object.defineProperty(navigator, 'platform', {\n    get: () => 'iPhone',\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override navigator.maxTouchPoints to indicate touch support\n  Object.defineProperty(navigator, 'maxTouchPoints', {\n    get: () => 5,\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override navigator.hardwareConcurrency (mobile devices typically have fewer cores)\n  Object.defineProperty(navigator, 'hardwareConcurrency', {\n    get: () => 6,\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override navigator.deviceMemory (if available)\n  if ('deviceMemory' in navigator) {\n    Object.defineProperty(navigator, 'deviceMemory', {\n      get: () => 4, // 4GB typical for modern iPhone\n      configurable: true,\n      enumerable: true\n    });\n  }\n\n  // Override connection type for mobile\n  if ('connection' in navigator) {\n    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;\n    if (connection) {\n      Object.defineProperty(connection, 'effectiveType', {\n        get: () => '4g',\n        configurable: true,\n        enumerable: true\n      });\n    }\n  }\n\n  // Add touch event support\n  if (!('ontouchstart' in window)) {\n    Object.defineProperty(window, 'ontouchstart', {\n      get: () => null,\n      set: () => {},\n      configurable: true,\n      enumerable: true\n    });\n  }\n\n  // Override matchMedia to return mobile viewport\n  const originalMatchMedia = window.matchMedia;\n  window.matchMedia = function(query) {\n    if (query.includes('max-width')) {\n      // Return a mock MediaQueryList that matches mobile viewport\n      const match = query.match(/max-width:\\s*(\\d+)px/);\n      if (match && parseInt(match[1]) >= MOBILE_WIDTH) {\n        return {\n          matches: true,\n          media: query,\n          onchange: null,\n          addListener: function() {},\n          removeListener: function() {},\n          addEventListener: function() {},\n          removeEventListener: function() {},\n          dispatchEvent: function() { return true; }\n        };\n      }\n    }\n    return originalMatchMedia.call(window, query);\n  };\n\n  // Set viewport meta tag if it doesn't exist\n  if (document.documentElement) {\n    let viewportMeta = document.querySelector('meta[name=\"viewport\"]');\n    if (!viewportMeta) {\n      viewportMeta = document.createElement('meta');\n      viewportMeta.setAttribute('name', 'viewport');\n      document.head.appendChild(viewportMeta);\n    }\n    viewportMeta.setAttribute('content', `width=${MOBILE_WIDTH}, initial-scale=1.0, maximum-scale=1.0, user-scalable=no`);\n  }\n\n  // Log mobile emulation activation (for debugging)\n  console.log(`[Mobile Emulation] Viewport set to ${MOBILE_WIDTH}x${MOBILE_HEIGHT}`);\n})();\n"
       }
     },
     {
       "id": "navigate-1",
       "type": "navigation",
       "position": {
-        "x": 700,
+        "x": 910,
         "y": 200
       },
       "data": {
@@ -70,7 +79,7 @@
       "id": "wait-1",
       "type": "wait",
       "position": {
-        "x": 1000,
+        "x": 1315,
         "y": 200
       },
       "data": {
@@ -90,13 +99,13 @@
       "id": "type-search-1",
       "type": "type",
       "position": {
-        "x": 1300,
+        "x": 1720,
         "y": 200
       },
       "data": {
         "type": "type",
         "label": "Type 'toys' in search",
-        "selector": "#twotabsearchtextbox",
+        "selector": "#twotabsearchtextbox, #nav-search-text, input[type='text'][name='field-keywords'], input[name='field-keywords']",
         "selectorType": "css",
         "inputMethod": "fill",
         "text": "toys",
@@ -113,20 +122,16 @@
       "id": "action-search-click-1",
       "type": "action",
       "position": {
-        "x": 1600,
+        "x": 2125,
         "y": 200
       },
       "data": {
         "type": "action",
         "label": "Click search button",
         "action": "click",
-        "selector": "#nav-search-submit-button",
+        "selector": "#nav-search-submit-button, input[type='submit'][value='Go'], button[type='submit'][aria-label*='Go'], .nav-search-submit",
         "selectorType": "css",
         "timeout": 30000,
-        "retryEnabled": true,
-        "retryStrategy": "count",
-        "retryCount": 3,
-        "retryDelay": 1000,
         "isTest": false,
         "isPinned": false,
         "isMinimized": false,
@@ -138,7 +143,7 @@
       "id": "wait-search-results-1",
       "type": "wait",
       "position": {
-        "x": 1900,
+        "x": 2530,
         "y": 200
       },
       "data": {
@@ -158,22 +163,16 @@
       "id": "action-add-toy-1",
       "type": "action",
       "position": {
-        "x": 2200,
+        "x": 2935,
         "y": 200
       },
       "data": {
         "type": "action",
         "label": "Click first toy (Add to cart)",
         "action": "click",
-        "selector": "[data-component-type='s-search-result']:nth-of-type(1) h2 a, .s-result-item:first-of-type h2 a, [data-asin]:first-of-type h2 a",
+        "selector": "[data-component-type='s-search-result']:nth-of-type(1) h2 a",
         "selectorType": "css",
         "timeout": 30000,
-        "retryEnabled": true,
-        "retryStrategy": "count",
-        "retryCount": 3,
-        "retryDelay": 2000,
-        "waitForSelector": "[data-component-type='s-search-result'], .s-result-item, [data-asin]",
-        "waitForSelectorTimeout": 10000,
         "isTest": false,
         "isPinned": false,
         "isMinimized": false,
@@ -185,8 +184,8 @@
       "id": "wait-toy-page-1",
       "type": "wait",
       "position": {
-        "x": 2500,
-        "y": 200
+        "x": 100,
+        "y": 450
       },
       "data": {
         "type": "wait",
@@ -205,22 +204,16 @@
       "id": "action-add-to-cart-1",
       "type": "action",
       "position": {
-        "x": 2800,
-        "y": 200
+        "x": 505,
+        "y": 450
       },
       "data": {
         "type": "action",
         "label": "Add first toy to cart",
         "action": "click",
-        "selector": "#add-to-cart-button, input[name='submit.add-to-cart'], #add-to-cart-button-announce, [aria-labelledby='submit.add-to-cart-announce']",
+        "selector": "#add-to-cart-button, input[name='submit.add-to-cart']",
         "selectorType": "css",
         "timeout": 30000,
-        "retryEnabled": true,
-        "retryStrategy": "count",
-        "retryCount": 3,
-        "retryDelay": 2000,
-        "waitForSelector": "#add-to-cart-button, input[name='submit.add-to-cart']",
-        "waitForSelectorTimeout": 10000,
         "isTest": false,
         "isPinned": false,
         "isMinimized": false,
@@ -232,8 +225,8 @@
       "id": "wait-cart-added-1",
       "type": "wait",
       "position": {
-        "x": 3100,
-        "y": 200
+        "x": 910,
+        "y": 450
       },
       "data": {
         "type": "wait",
@@ -252,8 +245,8 @@
       "id": "navigate-back-search-1",
       "type": "navigation",
       "position": {
-        "x": 3400,
-        "y": 200
+        "x": 1315,
+        "y": 450
       },
       "data": {
         "type": "navigation",
@@ -273,8 +266,8 @@
       "id": "wait-search-again-1",
       "type": "wait",
       "position": {
-        "x": 3700,
-        "y": 200
+        "x": 1720,
+        "y": 450
       },
       "data": {
         "type": "wait",
@@ -293,22 +286,16 @@
       "id": "action-add-toy-2",
       "type": "action",
       "position": {
-        "x": 4000,
-        "y": 200
+        "x": 2125,
+        "y": 450
       },
       "data": {
         "type": "action",
         "label": "Click second toy",
         "action": "click",
-        "selector": "[data-component-type='s-search-result']:nth-of-type(2) h2 a, .s-result-item:nth-of-type(2) h2 a, [data-asin]:nth-of-type(2) h2 a",
+        "selector": "[data-component-type='s-search-result']:nth-of-type(2) h2 a",
         "selectorType": "css",
         "timeout": 30000,
-        "retryEnabled": true,
-        "retryStrategy": "count",
-        "retryCount": 3,
-        "retryDelay": 2000,
-        "waitForSelector": "[data-component-type='s-search-result'], .s-result-item, [data-asin]",
-        "waitForSelectorTimeout": 10000,
         "isTest": false,
         "isPinned": false,
         "isMinimized": false,
@@ -320,8 +307,8 @@
       "id": "wait-toy-page-2",
       "type": "wait",
       "position": {
-        "x": 4300,
-        "y": 200
+        "x": 2530,
+        "y": 450
       },
       "data": {
         "type": "wait",
@@ -340,20 +327,14 @@
       "id": "action-add-to-cart-2",
       "type": "action",
       "position": {
-        "x": 4600,
-        "y": 200
+        "x": 2935,
+        "y": 450
       },
       "data": {
         "type": "action",
         "label": "Add second toy to cart",
         "action": "click",
-        "selector": "#add-to-cart-button, input[name='submit.add-to-cart'], #add-to-cart-button-announce, [aria-labelledby='submit.add-to-cart-announce']",
-        "retryEnabled": true,
-        "retryStrategy": "count",
-        "retryCount": 3,
-        "retryDelay": 2000,
-        "waitForSelector": "#add-to-cart-button, input[name='submit.add-to-cart']",
-        "waitForSelectorTimeout": 10000,
+        "selector": "#add-to-cart-button, input[name='submit.add-to-cart']",
         "selectorType": "css",
         "timeout": 30000,
         "isTest": false,
@@ -367,8 +348,8 @@
       "id": "wait-cart-added-2",
       "type": "wait",
       "position": {
-        "x": 4900,
-        "y": 200
+        "x": 100,
+        "y": 700
       },
       "data": {
         "type": "wait",
@@ -387,8 +368,8 @@
       "id": "navigate-back-search-2",
       "type": "navigation",
       "position": {
-        "x": 5200,
-        "y": 200
+        "x": 505,
+        "y": 700
       },
       "data": {
         "type": "navigation",
@@ -408,8 +389,8 @@
       "id": "wait-search-again-2",
       "type": "wait",
       "position": {
-        "x": 5500,
-        "y": 200
+        "x": 910,
+        "y": 700
       },
       "data": {
         "type": "wait",
@@ -428,22 +409,16 @@
       "id": "action-add-toy-3",
       "type": "action",
       "position": {
-        "x": 5800,
-        "y": 200
+        "x": 1315,
+        "y": 700
       },
       "data": {
         "type": "action",
         "label": "Click third toy",
         "action": "click",
-        "selector": "[data-component-type='s-search-result']:nth-of-type(3) h2 a, .s-result-item:nth-of-type(3) h2 a, [data-asin]:nth-of-type(3) h2 a",
+        "selector": "[data-component-type='s-search-result']:nth-of-type(3) h2 a",
         "selectorType": "css",
         "timeout": 30000,
-        "retryEnabled": true,
-        "retryStrategy": "count",
-        "retryCount": 3,
-        "retryDelay": 2000,
-        "waitForSelector": "[data-component-type='s-search-result'], .s-result-item, [data-asin]",
-        "waitForSelectorTimeout": 10000,
         "isTest": false,
         "isPinned": false,
         "isMinimized": false,
@@ -455,8 +430,8 @@
       "id": "wait-toy-page-3",
       "type": "wait",
       "position": {
-        "x": 6100,
-        "y": 200
+        "x": 1720,
+        "y": 700
       },
       "data": {
         "type": "wait",
@@ -475,20 +450,14 @@
       "id": "action-add-to-cart-3",
       "type": "action",
       "position": {
-        "x": 6400,
-        "y": 200
+        "x": 2125,
+        "y": 700
       },
       "data": {
         "type": "action",
         "label": "Add third toy to cart",
         "action": "click",
-        "selector": "#add-to-cart-button, input[name='submit.add-to-cart'], #add-to-cart-button-announce, [aria-labelledby='submit.add-to-cart-announce']",
-        "retryEnabled": true,
-        "retryStrategy": "count",
-        "retryCount": 3,
-        "retryDelay": 2000,
-        "waitForSelector": "#add-to-cart-button, input[name='submit.add-to-cart']",
-        "waitForSelectorTimeout": 10000,
+        "selector": "#add-to-cart-button, input[name='submit.add-to-cart']",
         "selectorType": "css",
         "timeout": 30000,
         "isTest": false,
@@ -502,8 +471,8 @@
       "id": "wait-cart-added-3",
       "type": "wait",
       "position": {
-        "x": 6700,
-        "y": 200
+        "x": 2530,
+        "y": 700
       },
       "data": {
         "type": "wait",
@@ -522,8 +491,8 @@
       "id": "navigate-back-search-3",
       "type": "navigation",
       "position": {
-        "x": 7000,
-        "y": 200
+        "x": 2935,
+        "y": 700
       },
       "data": {
         "type": "navigation",
@@ -543,8 +512,8 @@
       "id": "wait-search-again-3",
       "type": "wait",
       "position": {
-        "x": 7300,
-        "y": 200
+        "x": 100,
+        "y": 950
       },
       "data": {
         "type": "wait",
@@ -563,22 +532,16 @@
       "id": "action-add-toy-4",
       "type": "action",
       "position": {
-        "x": 7600,
-        "y": 200
+        "x": 505,
+        "y": 950
       },
       "data": {
         "type": "action",
         "label": "Click fourth toy",
         "action": "click",
-        "selector": "[data-component-type='s-search-result']:nth-of-type(4) h2 a, .s-result-item:nth-of-type(4) h2 a, [data-asin]:nth-of-type(4) h2 a",
+        "selector": "[data-component-type='s-search-result']:nth-of-type(4) h2 a",
         "selectorType": "css",
         "timeout": 30000,
-        "retryEnabled": true,
-        "retryStrategy": "count",
-        "retryCount": 3,
-        "retryDelay": 2000,
-        "waitForSelector": "[data-component-type='s-search-result'], .s-result-item, [data-asin]",
-        "waitForSelectorTimeout": 10000,
         "isTest": false,
         "isPinned": false,
         "isMinimized": false,
@@ -590,8 +553,8 @@
       "id": "wait-toy-page-4",
       "type": "wait",
       "position": {
-        "x": 7900,
-        "y": 200
+        "x": 910,
+        "y": 950
       },
       "data": {
         "type": "wait",
@@ -610,20 +573,14 @@
       "id": "action-add-to-cart-4",
       "type": "action",
       "position": {
-        "x": 8200,
-        "y": 200
+        "x": 1315,
+        "y": 950
       },
       "data": {
         "type": "action",
         "label": "Add fourth toy to cart",
         "action": "click",
-        "selector": "#add-to-cart-button, input[name='submit.add-to-cart'], #add-to-cart-button-announce, [aria-labelledby='submit.add-to-cart-announce']",
-        "retryEnabled": true,
-        "retryStrategy": "count",
-        "retryCount": 3,
-        "retryDelay": 2000,
-        "waitForSelector": "#add-to-cart-button, input[name='submit.add-to-cart']",
-        "waitForSelectorTimeout": 10000,
+        "selector": "#add-to-cart-button, input[name='submit.add-to-cart']",
         "selectorType": "css",
         "timeout": 30000,
         "isTest": false,
@@ -637,8 +594,8 @@
       "id": "wait-cart-added-4",
       "type": "wait",
       "position": {
-        "x": 8500,
-        "y": 200
+        "x": 1720,
+        "y": 950
       },
       "data": {
         "type": "wait",
@@ -657,8 +614,8 @@
       "id": "navigate-back-search-4",
       "type": "navigation",
       "position": {
-        "x": 8800,
-        "y": 200
+        "x": 2125,
+        "y": 950
       },
       "data": {
         "type": "navigation",
@@ -678,8 +635,8 @@
       "id": "wait-search-again-4",
       "type": "wait",
       "position": {
-        "x": 9100,
-        "y": 200
+        "x": 2530,
+        "y": 950
       },
       "data": {
         "type": "wait",
@@ -698,22 +655,16 @@
       "id": "action-add-toy-5",
       "type": "action",
       "position": {
-        "x": 9400,
-        "y": 200
+        "x": 2935,
+        "y": 950
       },
       "data": {
         "type": "action",
         "label": "Click fifth toy",
         "action": "click",
-        "selector": "[data-component-type='s-search-result']:nth-of-type(5) h2 a, .s-result-item:nth-of-type(5) h2 a, [data-asin]:nth-of-type(5) h2 a",
+        "selector": "[data-component-type='s-search-result']:nth-of-type(5) h2 a",
         "selectorType": "css",
         "timeout": 30000,
-        "retryEnabled": true,
-        "retryStrategy": "count",
-        "retryCount": 3,
-        "retryDelay": 2000,
-        "waitForSelector": "[data-component-type='s-search-result'], .s-result-item, [data-asin]",
-        "waitForSelectorTimeout": 10000,
         "isTest": false,
         "isPinned": false,
         "isMinimized": false,
@@ -725,8 +676,8 @@
       "id": "wait-toy-page-5",
       "type": "wait",
       "position": {
-        "x": 9700,
-        "y": 200
+        "x": 100,
+        "y": 1200
       },
       "data": {
         "type": "wait",
@@ -745,20 +696,14 @@
       "id": "action-add-to-cart-5",
       "type": "action",
       "position": {
-        "x": 10000,
-        "y": 200
+        "x": 505,
+        "y": 1200
       },
       "data": {
         "type": "action",
         "label": "Add fifth toy to cart",
         "action": "click",
-        "selector": "#add-to-cart-button, input[name='submit.add-to-cart'], #add-to-cart-button-announce, [aria-labelledby='submit.add-to-cart-announce']",
-        "retryEnabled": true,
-        "retryStrategy": "count",
-        "retryCount": 3,
-        "retryDelay": 2000,
-        "waitForSelector": "#add-to-cart-button, input[name='submit.add-to-cart']",
-        "waitForSelectorTimeout": 10000,
+        "selector": "#add-to-cart-button, input[name='submit.add-to-cart']",
         "selectorType": "css",
         "timeout": 30000,
         "isTest": false,
@@ -772,8 +717,8 @@
       "id": "wait-cart-added-5",
       "type": "wait",
       "position": {
-        "x": 10300,
-        "y": 200
+        "x": 910,
+        "y": 1200
       },
       "data": {
         "type": "wait",
@@ -792,20 +737,16 @@
       "id": "action-click-cart",
       "type": "action",
       "position": {
-        "x": 10600,
-        "y": 200
+        "x": 1315,
+        "y": 1200
       },
       "data": {
         "type": "action",
         "label": "Click on cart icon",
         "action": "click",
-        "selector": "#nav-cart, #nav-cart-count, #nav-cart-text-container, a[href*='/cart']",
+        "selector": "#nav-cart, #nav-cart-count, #nav-cart-text-container, a[href*='/cart'], #nav-cart-count-container",
         "selectorType": "css",
         "timeout": 30000,
-        "retryEnabled": true,
-        "retryStrategy": "count",
-        "retryCount": 3,
-        "retryDelay": 2000,
         "isTest": false,
         "isPinned": false,
         "isMinimized": false,
@@ -817,8 +758,8 @@
       "id": "wait-cart-page",
       "type": "wait",
       "position": {
-        "x": 10900,
-        "y": 200
+        "x": 1720,
+        "y": 1200
       },
       "data": {
         "type": "wait",
@@ -837,15 +778,15 @@
       "id": "verify-cart-count",
       "type": "verify",
       "position": {
-        "x": 11200,
-        "y": 200
+        "x": 2125,
+        "y": 1200
       },
       "data": {
         "type": "verify",
         "label": "Verify 5 items in cart",
         "domain": "browser",
         "verificationType": "element",
-        "selector": "[data-name='Active Items'] .sc-list-item, .sc-list-item, .sc-cart-item, [data-item-count]",
+        "selector": "[data-name='Active Items'] .sc-list-item, .sc-list-item",
         "selectorType": "css",
         "check": "count",
         "expectedValue": "5",
@@ -862,22 +803,16 @@
       "id": "action-proceed-payment",
       "type": "action",
       "position": {
-        "x": 11500,
-        "y": 200
+        "x": 2530,
+        "y": 1200
       },
       "data": {
         "type": "action",
         "label": "Proceed to payment",
         "action": "click",
-        "selector": "input[name='proceedToRetailCheckout'], input[name='proceedToCheckout'], [name='proceedToCheckout'], input[value*='Proceed'], .a-button-primary input",
+        "selector": "input[name='proceedToRetailCheckout'], input[name='proceedToCheckout'], [name='proceedToCheckout']",
         "selectorType": "css",
         "timeout": 30000,
-        "retryEnabled": true,
-        "retryStrategy": "count",
-        "retryCount": 3,
-        "retryDelay": 2000,
-        "waitForSelector": "input[name='proceedToRetailCheckout'], input[name='proceedToCheckout']",
-        "waitForSelectorTimeout": 10000,
         "isTest": false,
         "isPinned": false,
         "isMinimized": false,

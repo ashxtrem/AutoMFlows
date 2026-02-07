@@ -452,6 +452,92 @@ export class WorkflowModifier {
   }
 
   /**
+   * Insert wait node before target node with breakpoint configuration
+   */
+  static insertWaitNodeBefore(
+    workflow: Workflow,
+    targetNodeId: string,
+    breakpointConfig: {
+      pause: boolean;
+      breakpointAt: 'pre' | 'post' | 'both';
+      breakpointFor: 'all' | 'marked';
+    }
+  ): { workflow: Workflow; waitNodeId: string } {
+    const modifiedWorkflow = this.deepClone(workflow);
+    const targetIndex = modifiedWorkflow.nodes.findIndex(n => n.id === targetNodeId);
+    
+    if (targetIndex === -1) {
+      throw new Error(`Target node ${targetNodeId} not found`);
+    }
+
+    // Create wait node with pause enabled
+    const waitNode: BaseNode = {
+      id: `wait-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      type: NodeType.WAIT,
+      position: {
+        x: modifiedWorkflow.nodes[targetIndex].position.x - 300,
+        y: modifiedWorkflow.nodes[targetIndex].position.y,
+      },
+      data: {
+        type: NodeType.WAIT,
+        label: 'Wait (Breakpoint)',
+        waitType: 'timeout',
+        value: 1000, // 1 second timeout (will be paused anyway)
+        timeout: 1000,
+        pause: breakpointConfig.pause,
+        // Mark node for breakpoint if breakpointFor === 'marked'
+        breakpoint: breakpointConfig.breakpointFor === 'marked',
+      },
+    };
+
+    // Insert wait node before target
+    modifiedWorkflow.nodes.splice(targetIndex, 0, waitNode);
+
+    // Find incoming edges to target node
+    const incomingEdges = modifiedWorkflow.edges.filter(e => e.target === targetNodeId);
+    
+    // Reconnect edges: original sources -> waitNode -> target
+    for (const edge of incomingEdges) {
+      // Remove original edge
+      const edgeIndex = modifiedWorkflow.edges.findIndex(e => e.id === edge.id);
+      if (edgeIndex !== -1) {
+        modifiedWorkflow.edges.splice(edgeIndex, 1);
+      }
+      
+      // Create edge from original source to wait node
+      modifiedWorkflow.edges.push({
+        id: `edge-${edge.source}-${waitNode.id}-${Date.now()}`,
+        source: edge.source,
+        target: waitNode.id,
+        sourceHandle: edge.sourceHandle || 'output',
+        targetHandle: 'input',
+      });
+      
+      // Create edge from wait node to target
+      modifiedWorkflow.edges.push({
+        id: `edge-${waitNode.id}-${targetNodeId}-${Date.now()}`,
+        source: waitNode.id,
+        target: targetNodeId,
+        sourceHandle: 'output',
+        targetHandle: edge.targetHandle || 'input',
+      });
+    }
+
+    // If no incoming edges, just connect wait node to target
+    if (incomingEdges.length === 0) {
+      modifiedWorkflow.edges.push({
+        id: `edge-${waitNode.id}-${targetNodeId}-${Date.now()}`,
+        source: waitNode.id,
+        target: targetNodeId,
+        sourceHandle: 'output',
+        targetHandle: 'input',
+      });
+    }
+
+    return { workflow: modifiedWorkflow, waitNodeId: waitNode.id };
+  }
+
+  /**
    * Deep clone workflow
    */
   private static deepClone<T>(obj: T): T {

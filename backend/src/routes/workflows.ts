@@ -183,6 +183,116 @@ export default function workflowRoutes(io: Server) {
     }
   });
 
+  router.post('/execution/update-workflow', async (req: Request, res: Response) => {
+    try {
+      const { workflow } = req.body as { workflow: any };
+
+      if (!workflow || !workflow.nodes || !workflow.edges) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid workflow format',
+        });
+      }
+
+      if (!currentExecutor) {
+        return res.status(400).json({
+          success: false,
+          message: 'No execution running',
+        });
+      }
+
+      if (!currentExecutor.isExecutionPaused()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Execution is not paused',
+        });
+      }
+
+      // Check pause reason is breakpoint (not wait-pause)
+      const pauseReason = currentExecutor.getPauseReason();
+      if (pauseReason !== 'breakpoint') {
+        return res.status(400).json({
+          success: false,
+          message: 'Workflow updates are only allowed during breakpoint pauses, not wait-pause',
+          code: 'WAIT_PAUSE_NOT_ALLOWED',
+        });
+      }
+
+      // Update workflow in executor
+      try {
+        currentExecutor.updateWorkflow(workflow);
+        
+        // Get updated execution state
+        const executedNodeIds = currentExecutor.getExecutedNodeIds();
+        const currentExecutionOrder = currentExecutor.getCurrentExecutionOrder();
+
+        res.json({
+          success: true,
+          message: 'Workflow updated successfully',
+          executionOrder: currentExecutionOrder,
+          executedNodes: executedNodeIds,
+        });
+      } catch (error: any) {
+        console.error('Update workflow error:', error);
+        res.status(400).json({
+          success: false,
+          message: error.message || 'Failed to update workflow',
+        });
+      }
+    } catch (error: any) {
+      console.error('Update workflow error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to update workflow',
+      });
+    }
+  });
+
+  // Capture DOM at current breakpoint
+  router.post('/execution/capture-dom', async (req: Request, res: Response) => {
+    try {
+      if (!currentExecutor) {
+        return res.status(400).json({
+          success: false,
+          message: 'No execution running',
+        });
+      }
+
+      if (!currentExecutor.isExecutionPaused()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Execution is not paused',
+        });
+      }
+
+      // Get page from executor context
+      const page = (currentExecutor as any).context?.getPage();
+      if (!page || page.isClosed()) {
+        return res.status(400).json({
+          success: false,
+          message: 'No active page available',
+        });
+      }
+
+      // Import PageDebugHelper
+      const { PageDebugHelper } = await import('../utils/pageDebugHelper');
+      
+      // Capture debug info
+      const debugInfo = await PageDebugHelper.captureDebugInfo(page);
+
+      res.json({
+        success: true,
+        debugInfo,
+      });
+    } catch (error: any) {
+      console.error('Capture DOM error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to capture DOM',
+      });
+    }
+  });
+
   // Selector Finder Routes
   router.post('/selector-finder/start', async (req: Request, res: Response) => {
     try {
@@ -206,8 +316,32 @@ export default function workflowRoutes(io: Server) {
           const executionId = currentExecutor.getExecutionId();
           sessionManager.attachToExistingPage(page, `execution-${executionId}`);
           
-          // Refresh the page
-          await page.reload({ waitUntil: 'networkidle' });
+          // Refresh the page with timeout and more lenient wait condition
+          // Use 'load' instead of 'networkidle' to avoid timeout on pages with continuous network activity
+          // 'networkidle' waits for network to be idle for 500ms, which can timeout on pages with continuous requests
+          try {
+            await page.reload({ 
+              waitUntil: 'load', 
+              timeout: 30000 
+            });
+          } catch (error: any) {
+            // If reload times out, try with domcontentloaded as fallback (faster, less strict)
+            if (error.message && (error.message.includes('timeout') || error.message.includes('Timeout'))) {
+              console.warn('Page reload with "load" timed out, trying "domcontentloaded"');
+              try {
+                await page.reload({ 
+                  waitUntil: 'domcontentloaded', 
+                  timeout: 15000 
+                });
+              } catch (fallbackError: any) {
+                console.warn('Page reload failed, continuing anyway - page may still be usable:', fallbackError.message);
+                // Continue even if reload fails - page might still be usable for selector finder
+              }
+            } else {
+              // Re-throw if it's not a timeout error
+              throw error;
+            }
+          }
           
           // Bring browser to foreground
           await page.bringToFront();
