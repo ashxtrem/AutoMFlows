@@ -152,15 +152,19 @@ interface WorkflowState {
   setSelectorFinderActive: (active: boolean) => void;
   
   // Builder mode state
+  /** @deprecated builderModeEnabled is deprecated - builder mode is now triggered via breakpoint pause */
   builderModeEnabled: boolean;
   builderModeActive: boolean;
+  /** @deprecated lastCompletedNodeId is deprecated - no longer used */
   lastCompletedNodeId: string | null;
   builderModeActions: RecordedAction[];
   builderModeInsertedActionIds: Set<string>;
   builderModeModalMinimized: boolean;
   builderModeModalPosition: { x: number; y: number } | null;
+  /** @deprecated setBuilderModeEnabled is deprecated - builder mode is now triggered via breakpoint pause */
   setBuilderModeEnabled: (enabled: boolean) => void;
   setBuilderModeActive: (active: boolean) => void;
+  /** @deprecated setLastCompletedNodeId is deprecated - no longer used */
   setLastCompletedNodeId: (nodeId: string | null) => void;
   setBuilderModeActions: (actions: RecordedAction[]) => void;
   addBuilderModeAction: (action: RecordedAction) => void;
@@ -1445,13 +1449,11 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
   },
   
   // Builder mode methods
+  /** @deprecated setBuilderModeEnabled is deprecated - builder mode is now triggered via breakpoint pause */
   setBuilderModeEnabled: (enabled) => {
+    // Keep for backward compatibility but don't persist to localStorage
     set({ builderModeEnabled: enabled });
-    try {
-      localStorage.setItem('automflows_builder_mode_enabled', String(enabled));
-    } catch (error) {
-      console.warn('Failed to save builder mode enabled to localStorage:', error);
-    }
+    // Note: localStorage persistence removed - builder mode is now breakpoint-based
   },
   
   setBuilderModeActive: (active) => {
@@ -1558,11 +1560,13 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
       builderModeActions: [],
       builderModeInsertedActionIds: new Set<string>(),
       builderModeActive: false,
+      builderModeModalMinimized: false,
       lastCompletedNodeId: null
     });
     try {
       localStorage.setItem('automflows_builder_mode_actions', JSON.stringify([]));
       localStorage.setItem('automflows_builder_mode_inserted_ids', JSON.stringify([]));
+      localStorage.setItem('automflows_builder_mode_modal_minimized', 'false');
     } catch (error) {
       console.warn('Failed to reset builder mode actions in localStorage:', error);
     }

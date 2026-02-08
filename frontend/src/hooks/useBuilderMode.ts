@@ -128,6 +128,28 @@ export function useBuilderMode() {
   const startRecording = useCallback(async () => {
     if (!backendPort) return;
     try {
+      // Show warning notification about overlay visibility
+      addNotification({
+        type: 'info',
+        title: 'Recording Started',
+        message: 'If the overlay button is not visible, click the device toggle to re-render the viewport and the overlay will appear.',
+        duration: 8000, // Show for 8 seconds
+      });
+
+      // Call backend to inject overlay (switch to browser and inject)
+      const response = await fetch(`http://localhost:${backendPort}/api/workflows/builder-mode/start`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to start builder mode');
+      }
+
+      // Start recording after overlay is injected
       await startActionRecording(backendPort);
       setIsRecording(true);
     } catch (error: any) {

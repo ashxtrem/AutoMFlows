@@ -439,7 +439,34 @@ export class ActionRecorderInjector {
     
     // Also inject directly into current page
     try {
-      await page.evaluate(overlayScript);
+      // Check if already injected before evaluating
+      const alreadyInjected = await page.evaluate(() => {
+        return !!window.__actionRecorderInjected;
+      });
+      
+      // If not already injected, evaluate the script
+      if (!alreadyInjected) {
+        await page.evaluate(overlayScript);
+        
+        // Verify overlay was created
+        const overlayExists = await page.evaluate(() => {
+          return !!document.getElementById('automflows-action-recorder-overlay');
+        });
+      } else {
+        // Already injected - check if overlay exists
+        const overlayExists = await page.evaluate(() => {
+          return !!document.getElementById('automflows-action-recorder-overlay');
+        });
+        
+        // If overlay doesn't exist, force recreate it
+        if (!overlayExists) {
+          // Reset flag and re-evaluate
+          await page.evaluate(() => {
+            window.__actionRecorderInjected = false;
+          });
+          await page.evaluate(overlayScript);
+        }
+      }
     } catch (error: any) {
       console.warn('Failed to inject overlay directly:', error.message);
     }

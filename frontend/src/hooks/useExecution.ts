@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useWorkflowStore } from '../store/workflowStore';
 import { serializeWorkflow } from '../utils/serialization';
@@ -108,8 +108,8 @@ export function useExecution() {
     breakpointAt,
     breakpointFor,
     builderModeEnabled,
-    setBuilderModeActive,
-    setLastCompletedNodeId,
+    builderModeActions,
+    resetBuilderModeActions,
   } = useWorkflowStore();
   const reportRetention = useSettingsStore((state) => state.reports.reportRetention);
   const [port, setPort] = useState<number | null>(null);
@@ -160,21 +160,6 @@ export function useExecution() {
           setExecutionStatus('running');
           clearAllNodeErrors(); // Clear previous errors when starting new execution
           executionStartTimeRef.current = Date.now();
-          // Reset builder mode actions if builder mode is enabled (workflow rerun)
-          if (builderModeEnabled) {
-            const { resetBuilderModeActions } = useWorkflowStore.getState();
-            resetBuilderModeActions();
-            // Also reset on backend
-            const currentPort = port || await getBackendPortSync();
-            fetch(`http://localhost:${currentPort}/api/workflows/builder-mode/actions/reset`, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-            }).catch(() => {
-              // Ignore errors
-            });
-          }
           addNotification({
             type: 'info',
             title: 'Execution Started',
@@ -323,40 +308,6 @@ export function useExecution() {
             setExecutingNodeId(null);
           }, 2000);
           break;
-        case ExecutionEventType.BUILDER_MODE_READY:
-          // Builder mode ready - inject overlay
-          if (builderModeEnabled && event.nodeId) {
-            setLastCompletedNodeId(event.nodeId);
-            setBuilderModeActive(true);
-            // Call backend to inject overlay
-            (async () => {
-              const currentPort = port || await getBackendPortSync();
-              fetch(`http://localhost:${currentPort}/api/workflows/builder-mode/start`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-              }).then(async (response) => {
-                if (!response.ok) {
-                  const error = await response.json();
-                  throw new Error(error.message || 'Failed to start builder mode');
-                }
-                addNotification({
-                  type: 'info',
-                  title: 'Builder Mode Ready',
-                  message: 'Browser is ready for action recording. Click the capture icon in the browser to start recording.',
-                });
-              }).catch((error) => {
-                console.error('Failed to start builder mode:', error);
-                addNotification({
-                  type: 'error',
-                  title: 'Builder Mode Error',
-                  message: 'Failed to start builder mode: ' + error.message,
-                });
-              });
-            })();
-          }
-          break;
         case ExecutionEventType.EXECUTION_ERROR:
           setExecutionStatus('error');
           setExecutingNodeId(null);
@@ -407,7 +358,7 @@ export function useExecution() {
         socket = null;
       }
     };
-    }, [setExecutionStatus, setExecutingNodeId, resetExecution, setNodeError, clearAllNodeErrors, addNotification, builderModeEnabled, setBuilderModeActive, setLastCompletedNodeId, port, nodes, setValidationErrors, setStoreValidationErrors]);
+    }, [setExecutionStatus, setExecutingNodeId, resetExecution, setNodeError, clearAllNodeErrors, addNotification, builderModeEnabled, port, nodes, setValidationErrors, setStoreValidationErrors]);
 
   const executeWorkflowInternal = async (traceLogs: boolean = false, disableBreakpoints: boolean = false) => {
     try {
@@ -535,6 +486,27 @@ export function useExecution() {
   };
 
   const executeWorkflow = async (traceLogs: boolean = false) => {
+    // Clear builder mode actions if workflow is being rerun
+    const currentBuilderModeActions = useWorkflowStore.getState().builderModeActions;
+    if (currentBuilderModeActions && currentBuilderModeActions.length > 0) {
+      // Clear builder mode actions
+      resetBuilderModeActions();
+      
+      // Also reset backend actions if port is available
+      if (port) {
+        try {
+          await fetch(`http://localhost:${port}/api/workflows/builder-mode/actions/reset`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          }).catch(() => {
+            // Ignore errors
+          });
+        } catch (error) {
+          // Ignore errors
+        }
+      }
+    }
+    
     // Check if breakpoints are enabled and browser is headless
     if (breakpointEnabled && hasHeadlessBrowser(nodes)) {
       // Check localStorage for global preference (not workflow-specific)
@@ -580,6 +552,7 @@ export function useExecution() {
     setShowBreakpointWarning(false);
     setPendingExecution(null);
   };
+
 
   const handleBreakpointWarningDontAskAgain = (choice: 'continue' | 'disable') => {
     // Store global preference (not workflow-specific)

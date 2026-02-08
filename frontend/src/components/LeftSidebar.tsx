@@ -1,7 +1,8 @@
 import { NodeType } from '@automflows/shared';
 import { useMemo, useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { frontendPluginRegistry } from '../plugins/registry';
-import { Search, X, Menu, Pin, PinOff, BookOpen } from 'lucide-react';
+import { Search, X, Menu, Pin, PinOff, BookOpen, Layers } from 'lucide-react';
+import Tooltip from './Tooltip';
 import PlayCircleFilledWhiteTwoToneIcon from '@mui/icons-material/PlayCircleFilledWhiteTwoTone';
 import LanguageIcon from '@mui/icons-material/Language';
 import LinkIcon from '@mui/icons-material/Link';
@@ -433,18 +434,20 @@ const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
     <>
       {/* FAB Button - shows when not expanded, positioned next to zoom controls */}
       {!isExpanded && (
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setIsExpanded(true);
-          }}
-          className="fixed bottom-5 z-30 w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 border border-gray-700 shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
-          data-tour="left-sidebar"
-          aria-label="Open node library"
-          style={{ left: '60px' }}
-        >
-          <Menu size={24} className="text-gray-200" />
-        </button>
+        <Tooltip content="Open node library">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(true);
+            }}
+            className="fixed bottom-5 z-30 w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 border border-gray-700 shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
+            data-tour="left-sidebar"
+            aria-label="Open node library"
+            style={{ left: '60px' }}
+          >
+            <Layers size={24} className="text-gray-200" />
+          </button>
+        </Tooltip>
       )}
 
           {/* Expanded Menu */}
@@ -460,27 +463,30 @@ const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
           <div className="flex items-center justify-between p-4 border-b border-gray-700 bg-gray-800">
             <h2 className="text-sm font-semibold text-gray-400 uppercase">Node Library</h2>
             <div className="flex items-center gap-2">
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  window.open('/wiki/index.html', '_blank');
-                }}
-                className="p-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
-                aria-label="Open wiki"
-                title="Open documentation wiki"
-              >
-                <BookOpen size={16} />
-              </button>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsPinned((prev) => !prev);
-                }}
-                className="p-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
-                aria-label={isPinned ? 'Unpin sidebar' : 'Pin sidebar'}
-              >
-                {isPinned ? <Pin size={16} /> : <PinOff size={16} />}
-              </button>
+              <Tooltip content="Open documentation wiki">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open('/wiki/index.html', '_blank');
+                  }}
+                  className="p-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
+                  aria-label="Open wiki"
+                >
+                  <BookOpen size={16} />
+                </button>
+              </Tooltip>
+              <Tooltip content={isPinned ? 'Unpin sidebar' : 'Pin sidebar'}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsPinned((prev) => !prev);
+                  }}
+                  className="p-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
+                  aria-label={isPinned ? 'Unpin sidebar' : 'Pin sidebar'}
+                >
+                  {isPinned ? <Pin size={16} /> : <PinOff size={16} />}
+                </button>
+              </Tooltip>
             </div>
           </div>
 

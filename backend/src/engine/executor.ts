@@ -219,6 +219,17 @@ export class Executor {
     this.pausedNodeId = nodeId;
     this.pauseReason = reason;
 
+    // If breakpoint pause, set page in session manager for builder mode
+    if (reason === 'breakpoint') {
+      const page = this.context.getPage();
+      const browserContext = this.context.getBrowserContext();
+      if (page && browserContext) {
+        const sessionManager = ActionRecorderSessionManager.getInstance();
+        sessionManager.setIO(this.io);
+        sessionManager.setPageFromExecution(page, browserContext, this.executionId);
+      }
+    }
+
     // Emit pause event
     this.emitEvent({
       type: ExecutionEventType.EXECUTION_PAUSED,

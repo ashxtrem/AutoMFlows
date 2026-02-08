@@ -18,6 +18,7 @@ import { useUndoRedo } from './hooks/useUndoRedo';
 import { useBreakpointShortcut } from './hooks/useBreakpointShortcut';
 import { useReportHistoryShortcut } from './hooks/useReportHistoryShortcut';
 import { useBuilderMode } from './hooks/useBuilderMode';
+import { useExecution } from './hooks/useExecution';
 import { loadPlugins } from './plugins/loader';
 import { getBackendPort } from './utils/getBackendPort';
 import { initTheme, applyTheme } from './utils/theme';
@@ -30,11 +31,16 @@ function App() {
   const errorPopupNodeId = useWorkflowStore((state) => state.errorPopupNodeId);
   const showErrorPopupForNode = useWorkflowStore((state) => state.showErrorPopupForNode);
   const canvasReloading = useWorkflowStore((state) => state.canvasReloading);
+  const pauseReason = useWorkflowStore((state) => state.pauseReason);
+  const pausedNodeId = useWorkflowStore((state) => state.pausedNodeId);
+  const builderModeActive = useWorkflowStore((state) => state.builderModeActive);
+  const setBuilderModeActive = useWorkflowStore((state) => state.setBuilderModeActive);
+  const resetBuilderModeActions = useWorkflowStore((state) => state.resetBuilderModeActions);
+  const builderModeActions = useWorkflowStore((state) => state.builderModeActions);
   const theme = useSettingsStore((state) => state.appearance.theme);
   const fontSize = useSettingsStore((state) => state.appearance.fontSize);
   const fontFamily = useSettingsStore((state) => state.appearance.fontFamily);
   const highContrast = useSettingsStore((state) => state.appearance.highContrast);
-  const builderModeEnabled = useWorkflowStore((state) => state.builderModeEnabled);
   
   // State for browser installation error popup
   const [browserInstallError, setBrowserInstallError] = useState<{ nodeId: string; browserName: string } | null>(null);
@@ -44,6 +50,44 @@ function App() {
   
   // Builder mode hook
   const builderMode = useBuilderMode();
+  
+  // Execution hook (for builder mode warning)
+  const execution = useExecution();
+  
+  // Show builder icon when paused at breakpoint or when builder mode is minimized
+  const showBuilderIcon = (pauseReason === 'breakpoint' && pausedNodeId !== null) || builderMode.isMinimized;
+  const isMinimized = builderMode.isMinimized;
+  
+  // Pulse animation state for builder icon when it first appears at breakpoint
+  const [builderIconJustAppeared, setBuilderIconJustAppeared] = useState(false);
+  const prevShowBuilderIconRef = useRef(false);
+  
+  useEffect(() => {
+    const shouldShowPulse = pauseReason === 'breakpoint' && pausedNodeId !== null && !builderModeActive;
+    if (shouldShowPulse && !prevShowBuilderIconRef.current) {
+      // Icon just appeared - trigger pulse animation
+      setBuilderIconJustAppeared(true);
+      // Reset pulse after animation duration (3 seconds)
+      const timer = setTimeout(() => {
+        setBuilderIconJustAppeared(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+    prevShowBuilderIconRef.current = shouldShowPulse;
+  }, [pauseReason, pausedNodeId, builderModeActive]);
+  
+  // Handle unified builder icon click
+  const handleBuilderIconClick = useCallback(() => {
+    if (isMinimized) {
+      // Maximize the builder modal
+      builderMode.handleMaximize();
+    } else {
+      // Open builder mode (paused at breakpoint)
+      resetBuilderModeActions();
+      setBuilderModeActive(true);
+      builderMode.setShowModal(true);
+    }
+  }, [isMinimized, builderMode, resetBuilderModeActions, setBuilderModeActive]);
   
   // LeftSidebar ref for hiding on canvas click
   const leftSidebarRef = useRef<LeftSidebarHandle>(null);
@@ -228,34 +272,34 @@ function App() {
         </div>
         <InteractiveTour />
         {/* Builder Mode Components */}
-        {builderModeEnabled && (
-          <>
-            {builderMode.showModal && !builderMode.isMinimized && (
-              <ActionListModal
-                recordedActions={builderMode.recordedActions}
-                insertedActions={builderMode.insertedActions}
-                isRecording={builderMode.isRecording}
-                isMinimized={builderMode.isMinimized}
-                onStartRecording={builderMode.startRecording}
-                onStopRecording={builderMode.stopRecording}
-                onInsertAction={builderMode.handleInsertAction}
-                onEditAction={builderMode.handleEditAction}
-                onUndo={builderMode.handleUndo}
-                onRedo={builderMode.handleRedo}
-                canUndo={builderMode.canUndo}
-                canRedo={builderMode.canRedo}
-                onMinimize={builderMode.handleMinimize}
-                onClose={builderMode.handleClose}
-                onClearActions={builderMode.handleClearActions}
-              />
-            )}
-            {builderMode.isMinimized && (
-              <BuilderModeMinimizedIcon
-                actionCount={builderMode.recordedActions.length + builderMode.insertedActions.length}
-                onMaximize={builderMode.handleMaximize}
-              />
-            )}
-          </>
+        {builderMode.showModal && !builderMode.isMinimized && (
+          <ActionListModal
+            recordedActions={builderMode.recordedActions}
+            insertedActions={builderMode.insertedActions}
+            isRecording={builderMode.isRecording}
+            isMinimized={builderMode.isMinimized}
+            onStartRecording={builderMode.startRecording}
+            onStopRecording={builderMode.stopRecording}
+            onInsertAction={builderMode.handleInsertAction}
+            onEditAction={builderMode.handleEditAction}
+            onUndo={builderMode.handleUndo}
+            onRedo={builderMode.handleRedo}
+            canUndo={builderMode.canUndo}
+            canRedo={builderMode.canRedo}
+            onMinimize={builderMode.handleMinimize}
+            onClose={builderMode.handleClose}
+            onClearActions={builderMode.handleClearActions}
+          />
+        )}
+        {/* Unified Builder Icon - Shows when minimized OR paused at breakpoint (but not when modal is open) */}
+        {showBuilderIcon && !builderMode.showModal && (
+          <BuilderModeMinimizedIcon
+            actionCount={builderMode.recordedActions.length + builderMode.insertedActions.length}
+            onMaximize={handleBuilderIconClick}
+            isMinimized={isMinimized}
+            showPulse={builderIconJustAppeared}
+            zIndex={selectedNode ? 'z-20' : 'z-50'}
+          />
         )}
       </div>
     </ReactFlowProvider>

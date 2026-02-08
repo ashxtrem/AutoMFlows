@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useWorkflowStore as useWorkflowStoreDirect } from '../store/workflowStore';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import StopIcon from '@mui/icons-material/Stop';
 import PauseIcon from '@mui/icons-material/Pause';
@@ -26,7 +25,6 @@ export default function FloatingRunButton() {
     pauseBreakpointAt,
     navigateToPausedNode,
   } = useWorkflowStore();
-  const workflowStore = useWorkflowStore;
   const { 
     executeWorkflow, 
     stopExecution, 
@@ -179,48 +177,49 @@ export default function FloatingRunButton() {
       }}
     >
       {/* Run/Stop/Pause Button */}
-      <button
-        onClick={handleRunClick}
-        disabled={isPaused}
-        className={`
-          w-12 h-12 rounded-full flex items-center justify-center relative flex-shrink-0
-          bg-white/10 dark:bg-gray-800/20 backdrop-blur-md
-          border border-white/20 dark:border-gray-700/50
-          shadow-lg
-          transition-all duration-200
-          ${isPaused 
-            ? 'cursor-not-allowed opacity-75' 
-            : (isRunning 
-              ? 'hover:bg-red-500/20 dark:hover:bg-red-500/30 hover:scale-110 cursor-pointer' 
-              : 'hover:bg-green-500/20 dark:hover:bg-green-500/30 hover:scale-110 cursor-pointer')
-          }
-          select-none
-        `}
-        style={{ 
-          pointerEvents: isPaused ? 'none' : 'auto',
-          boxShadow: isPaused
-            ? '0 0 20px rgba(234, 179, 8, 0.6), 0 0 40px rgba(234, 179, 8, 0.4), 0 4px 6px rgba(0, 0, 0, 0.3)'
-            : (isRunning 
-              ? '0 0 20px rgba(239, 68, 68, 0.6), 0 0 40px rgba(239, 68, 68, 0.4), 0 4px 6px rgba(0, 0, 0, 0.3)'
-              : '0 0 20px rgba(34, 197, 94, 0.6), 0 0 40px rgba(34, 197, 94, 0.4), 0 4px 6px rgba(0, 0, 0, 0.3)')
-        }}
-        title={isPaused ? 'Execution paused - use controls below' : (isRunning ? 'Stop execution' : 'Run workflow')}
-      >
-        {/* Colored blur backdrop */}
-        <div 
-          className={`absolute inset-0 rounded-full blur-xl opacity-60 ${
-            isPaused ? 'bg-yellow-500' : (isRunning ? 'bg-red-500' : 'bg-green-500')
-          }`}
-          style={{ zIndex: -1 }}
-        />
-        {isPaused ? (
-          <PauseIcon sx={{ fontSize: '24px', color: '#ffffff', pointerEvents: 'none', filter: 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.8))' }} />
-        ) : isRunning ? (
-          <StopIcon sx={{ fontSize: '24px', color: '#ffffff', pointerEvents: 'none', filter: 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.8))' }} />
-        ) : (
-          <PlayArrowIcon sx={{ fontSize: '24px', color: '#ffffff', pointerEvents: 'none', filter: 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.8))' }} />
-        )}
-      </button>
+      <Tooltip content={isPaused ? 'Execution paused - use controls below' : (isRunning ? 'Stop execution' : 'Run workflow')}>
+        <button
+          onClick={handleRunClick}
+          disabled={isPaused}
+          className={`
+            w-12 h-12 rounded-full flex items-center justify-center relative flex-shrink-0
+            bg-white/10 dark:bg-gray-800/20 backdrop-blur-md
+            border border-white/20 dark:border-gray-700/50
+            shadow-lg
+            transition-all duration-200
+            ${isPaused 
+              ? 'cursor-not-allowed opacity-75' 
+              : (isRunning 
+                ? 'hover:bg-red-500/20 dark:hover:bg-red-500/30 hover:scale-110 cursor-pointer' 
+                : 'hover:bg-green-500/20 dark:hover:bg-green-500/30 hover:scale-110 cursor-pointer')
+            }
+            select-none
+          `}
+          style={{ 
+            pointerEvents: isPaused ? 'none' : 'auto',
+            boxShadow: isPaused
+              ? '0 0 20px rgba(234, 179, 8, 0.6), 0 0 40px rgba(234, 179, 8, 0.4), 0 4px 6px rgba(0, 0, 0, 0.3)'
+              : (isRunning 
+                ? '0 0 20px rgba(239, 68, 68, 0.6), 0 0 40px rgba(239, 68, 68, 0.4), 0 4px 6px rgba(0, 0, 0, 0.3)'
+                : '0 0 20px rgba(34, 197, 94, 0.6), 0 0 40px rgba(34, 197, 94, 0.4), 0 4px 6px rgba(0, 0, 0, 0.3)')
+          }}
+        >
+          {/* Colored blur backdrop */}
+          <div 
+            className={`absolute inset-0 rounded-full blur-xl opacity-60 ${
+              isPaused ? 'bg-yellow-500' : (isRunning ? 'bg-red-500' : 'bg-green-500')
+            }`}
+            style={{ zIndex: -1 }}
+          />
+          {isPaused ? (
+            <PauseIcon sx={{ fontSize: '24px', color: '#ffffff', pointerEvents: 'none', filter: 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.8))' }} />
+          ) : isRunning ? (
+            <StopIcon sx={{ fontSize: '24px', color: '#ffffff', pointerEvents: 'none', filter: 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.8))' }} />
+          ) : (
+            <PlayArrowIcon sx={{ fontSize: '24px', color: '#ffffff', pointerEvents: 'none', filter: 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.8))' }} />
+          )}
+        </button>
+      </Tooltip>
 
       {/* Pause Controls - Show when paused */}
       {isPaused && (
