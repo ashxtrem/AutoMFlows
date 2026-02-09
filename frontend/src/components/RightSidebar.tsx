@@ -142,6 +142,19 @@ export default function RightSidebar() {
     return () => window.removeEventListener('resize', handleWindowResize);
   }, [width, getMaxWidth]);
 
+  // Close on Escape key
+  useEffect(() => {
+    if (!selectedNode) return;
+
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedNode(null);
+      }
+    };
+    window.addEventListener('keydown', handleEscape);
+    return () => window.removeEventListener('keydown', handleEscape);
+  }, [selectedNode, setSelectedNode]);
+
   if (!selectedNode) {
     return null;
   }

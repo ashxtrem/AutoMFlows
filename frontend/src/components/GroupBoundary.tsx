@@ -120,10 +120,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
       const offsetX = newGroupX - currentGroup.position.x;
       const offsetY = newGroupY - currentGroup.position.y;
 
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GroupBoundary.tsx:130',message:'Drag mouse move',data:{deltaFlowX,deltaFlowY,offsetX,offsetY,groupId:group.id,initialPos:initialGroupPosRef,currentPos:currentGroup.position},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
-      // #endregion
-      
       // Move all nodes in the group by the offset (only if changed)
       if (Math.abs(offsetX - lastAppliedOffset.x) > 0.01 || Math.abs(offsetY - lastAppliedOffset.y) > 0.01) {
         moveGroupNodes(group.id, offsetX, offsetY);
@@ -154,17 +150,11 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
   // Handle resize functionality
   useEffect(() => {
     if (!isResizing || !resizeHandle || !resizeStartPos) return;
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GroupBoundary.tsx:146',message:'Resize effect triggered',data:{isResizing,resizeHandle,hasResizeStartPos:!!resizeStartPos},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
 
     // Capture initial values at resize start (don't depend on group state which may change)
     const initialGroupPos = { x: resizeStartPos.groupX, y: resizeStartPos.groupY };
     const initialGroupSize = { width: resizeStartPos.width, height: resizeStartPos.height };
     const initialScreenPos = { x: resizeStartPos.x, y: resizeStartPos.y };
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GroupBoundary.tsx:148',message:'Resize started',data:{handle:resizeHandle,initialPos:initialGroupPos,initialSize:initialGroupSize,initialScreenPos,resizeStartPos},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
 
     const handleMouseMove = (e: MouseEvent) => {
       // Get viewport to access zoom
@@ -181,10 +171,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
       // Convert screen delta to flow delta (divide by zoom)
       const deltaFlowX = deltaScreenX / zoom;
       const deltaFlowY = deltaScreenY / zoom;
-
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GroupBoundary.tsx:165',message:'Resize mouse move',data:{deltaScreenX,deltaScreenY,deltaFlowX,deltaFlowY,zoom,handle:resizeHandle},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
 
       const MIN_SIZE = 50;
       let newX = initialGroupPos.x;
@@ -215,13 +201,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
           break;
       }
 
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GroupBoundary.tsx:201',message:'Updating group size',data:{newX,newY,newWidth,newHeight,groupId:group.id},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
-
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GroupBoundary.tsx:208',message:'Updating group size',data:{newX,newY,newWidth,newHeight,groupId:group.id},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
       updateGroup(group.id, {
         position: { x: newX, y: newY },
         width: newWidth,
@@ -231,10 +210,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
     };
 
     const handleMouseUp = () => {
-      // #region agent log
-      const currentGroup = useWorkflowStore.getState().groups.find(g => g.id === group.id);
-      fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GroupBoundary.tsx:216',message:'Resize mouse up - NOT calling updateGroupBounds',data:{currentGroupSize:{width:currentGroup?.width,height:currentGroup?.height},groupId:group.id},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
-      // #endregion
       setIsResizing(false);
       setResizeHandle(null);
       setResizeStartPos(null);
@@ -277,9 +252,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
   };
 
   const handleResizeMouseDown = (e: React.MouseEvent, handleType: ResizeHandleType) => {
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GroupBoundary.tsx:330',message:'Resize handle mouse down',data:{handleType,clientX:e.clientX,clientY:e.clientY,groupId:group.id},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
     e.stopPropagation();
     e.preventDefault();
     setIsResizing(true);
@@ -326,8 +298,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
           pointerEvents: 'auto',
           zIndex: 0,
         }}
-        onMouseEnter={() => {}}
-        onMouseLeave={() => {}}
       />
       {/* Bottom edge - excludes corners */}
       <div
@@ -340,8 +310,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
           pointerEvents: 'auto',
           zIndex: 0,
         }}
-        onMouseEnter={() => {}}
-        onMouseLeave={() => {}}
       />
       {/* Left edge - excludes corners */}
       <div
@@ -354,8 +322,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
           pointerEvents: 'auto',
           zIndex: 0,
         }}
-        onMouseEnter={() => {}}
-        onMouseLeave={() => {}}
       />
       {/* Right edge - excludes corners */}
       <div
@@ -368,8 +334,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
           pointerEvents: 'auto',
           zIndex: 0,
         }}
-        onMouseEnter={() => {}}
-        onMouseLeave={() => {}}
       />
         {/* Header - positioned outside boundary to avoid overlapping nodes */}
         <div
@@ -389,9 +353,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
           onDoubleClick={handleDoubleClick}
           onContextMenu={handleHeaderRightClick}
           onMouseDown={(e) => {
-            // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GroupBoundary.tsx:352',message:'Header mouse down',data:{clientX:e.clientX,clientY:e.clientY},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
-            // #endregion
             // Allow header drag - start drag on mousedown
             if (!showRenamePopup) {
               e.stopPropagation();
@@ -469,9 +430,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
           boxShadow: hoveredHandle === 'nw' ? '0 0 4px rgba(17, 24, 39, 0.5)' : 'none',
         }}
         onMouseEnter={(e) => {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GroupBoundary.tsx:730',message:'Resize handle hover',data:{handle:'nw',groupId:group.id,clientX:e.clientX,clientY:e.clientY},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
-          // #endregion
           e.stopPropagation();
           e.preventDefault();
           setHoveredHandle('nw');
@@ -481,9 +439,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
           e.stopPropagation();
         }}
         onMouseDown={(e) => {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GroupBoundary.tsx:745',message:'Resize handle nw mouse down',data:{clientX:e.clientX,clientY:e.clientY,groupId:group.id},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
-          // #endregion
           e.stopPropagation();
           e.preventDefault();
           handleResizeMouseDown(e, 'nw');
@@ -510,9 +465,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
           boxShadow: hoveredHandle === 'ne' ? '0 0 4px rgba(17, 24, 39, 0.5)' : 'none',
         }}
         onMouseEnter={(e) => {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GroupBoundary.tsx:765',message:'Resize handle hover',data:{handle:'ne',groupId:group.id,clientX:e.clientX,clientY:e.clientY},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
-          // #endregion
           e.stopPropagation();
           e.preventDefault();
           setHoveredHandle('ne');
@@ -522,9 +474,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
           e.stopPropagation();
         }}
         onMouseDown={(e) => {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GroupBoundary.tsx:780',message:'Resize handle ne mouse down',data:{clientX:e.clientX,clientY:e.clientY,groupId:group.id},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
-          // #endregion
           e.stopPropagation();
           e.preventDefault();
           handleResizeMouseDown(e, 'ne');
@@ -551,9 +500,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
           boxShadow: hoveredHandle === 'sw' ? '0 0 4px rgba(17, 24, 39, 0.5)' : 'none',
         }}
         onMouseEnter={(e) => {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GroupBoundary.tsx:800',message:'Resize handle hover',data:{handle:'sw',groupId:group.id,clientX:e.clientX,clientY:e.clientY},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
-          // #endregion
           e.stopPropagation();
           e.preventDefault();
           setHoveredHandle('sw');
@@ -563,9 +509,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
           e.stopPropagation();
         }}
         onMouseDown={(e) => {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GroupBoundary.tsx:815',message:'Resize handle sw mouse down',data:{clientX:e.clientX,clientY:e.clientY,groupId:group.id},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
-          // #endregion
           e.stopPropagation();
           e.preventDefault();
           handleResizeMouseDown(e, 'sw');
@@ -592,9 +535,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
           boxShadow: hoveredHandle === 'se' ? '0 0 4px rgba(17, 24, 39, 0.5)' : 'none',
         }}
         onMouseEnter={(e) => {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GroupBoundary.tsx:835',message:'Resize handle hover',data:{handle:'se',groupId:group.id,clientX:e.clientX,clientY:e.clientY},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
-          // #endregion
           e.stopPropagation();
           e.preventDefault();
           setHoveredHandle('se');
@@ -604,9 +544,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
           e.stopPropagation();
         }}
         onMouseDown={(e) => {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GroupBoundary.tsx:850',message:'Resize handle se mouse down',data:{clientX:e.clientX,clientY:e.clientY,groupId:group.id},timestamp:Date.now(),hypothesisId:'C'})}).catch(()=>{});
-          // #endregion
           e.stopPropagation();
           e.preventDefault();
           handleResizeMouseDown(e, 'se');

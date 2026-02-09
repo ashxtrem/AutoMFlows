@@ -278,6 +278,29 @@ const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
     }
   }, [isPinned]); // Only run when pin state changes
 
+  // Auto-minimize when clicking outside if not pinned
+  useEffect(() => {
+    if (!isExpanded || isPinned) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node | null;
+      if (menuRef.current && target && !menuRef.current.contains(target)) {
+        setIsExpanded(false);
+      }
+    };
+
+    // Add event listener with a small delay to avoid immediate closure
+    const timeoutId = setTimeout(() => {
+      // Use capture phase to catch events before they're stopped by ReactFlow
+      document.addEventListener('mousedown', handleClickOutside, true);
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside, true);
+    };
+  }, [isExpanded, isPinned]);
+
   // Monitor plugin registry changes
   useEffect(() => {
     const checkPlugins = () => {

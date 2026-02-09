@@ -152,11 +152,12 @@ export default function CanvasSearchOverlay({ position, flowPosition, onClose, o
       }
     };
     // Use setTimeout to avoid immediate close when opening
-    setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('click', handleClickOutside);
     }, 0);
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      clearTimeout(timeoutId);
+      document.removeEventListener('click', handleClickOutside);
     };
   }, [onClose]);
 
@@ -235,6 +236,8 @@ export default function CanvasSearchOverlay({ position, flowPosition, onClose, o
         display: 'flex',
         flexDirection: 'column',
       }}
+      onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
     >
       {/* Search Input */}
       <div className="p-3 border-b border-gray-700">
