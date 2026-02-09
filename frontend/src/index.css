@@ -303,6 +303,13 @@ body {
   position: absolute;
 }
 
+/* Resize handles for group boundaries */
+.resize-handle {
+  cursor: inherit !important;
+  pointer-events: auto !important;
+  z-index: 1000 !important;
+}
+
 /* Bullseye inner dot */
 .react-flow__handle::before {
   content: '';

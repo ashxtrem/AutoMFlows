@@ -18,6 +18,7 @@ import NodeSearchOverlay from './NodeSearchOverlay';
 import GroupBoundary from './GroupBoundary';
 import { useShortcutNavigation } from '../hooks/useShortcutNavigation';
 import { searchNodes } from '../utils/nodeSearch';
+import { filterValidEdges, suppressReactFlowWarnings } from '../utils/edgeValidation';
 
 const nodeTypes = {
   custom: CustomNode,
@@ -301,23 +302,9 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
         e.preventDefault();
         e.stopPropagation();
         
-        // Convert screen coordinates to flow coordinates for node placement
-        const flowPosition = screenToFlowPosition({
-          x: clickX,
-          y: clickY,
-        });
-        
-        // Calculate position relative to canvas container for overlay display
-        if (reactFlowWrapper.current) {
-          const rect = reactFlowWrapper.current.getBoundingClientRect();
-          const relativeX = clickX - rect.left;
-          const relativeY = clickY - rect.top;
-          
-          setSearchOverlay({
-            screen: { x: relativeX, y: relativeY },
-            flow: flowPosition,
-          });
-        }
+        // Note: Double-click detection in onPaneClick is kept for compatibility,
+        // but actual double-click handling is done via handleWrapperDoubleClick
+        // which opens CanvasSearchOverlay
         
         return;
       }
@@ -337,23 +324,16 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     lastClickRef.current = { time: now, x: clickX, y: clickY };
     
     // Normal single-click behavior - clear selection
-    // #region agent log
-    const currentSelectedIds = Array.from(useWorkflowStore.getState().selectedNodeIds);
-    fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Canvas.tsx:337',message:'Pane click - clearing selection',data:{selectedNodeCount:currentSelectedIds.length,selectedNodeIds:currentSelectedIds},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
-    
     // Set flag to prevent onSelectionChange from interfering
     isClearingSelectionRef.current = true;
     
-    // Clear store selection first
-    clearSelection();
+    // Clear selectedNodeIds but preserve selectedNode (Properties panel should stay open)
+    // selectedNode should only be cleared when explicitly closing the sidebar, not when clicking on pane
+    setSelectedNodeIds([]);
     
     // Also clear ReactFlow selection state - use getNodes() to get current ReactFlow state
     const currentNodes = getNodes();
     const nodesToUpdate = currentNodes.filter(n => n.selected);
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Canvas.tsx:345',message:'Clearing ReactFlow selection state',data:{nodesWithSelectionCount:nodesToUpdate.length,nodeIds:nodesToUpdate.map(n=>n.id),totalNodes:currentNodes.length},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
     
     if (nodesToUpdate.length > 0) {
       setNodes((nds) =>
@@ -376,7 +356,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     if (hideSidebar) {
       hideSidebar();
     }
-  }, [clearSelection, screenToFlowPosition, hideSidebar, setSelectedGroupId, setNodes, getNodes]);
+  }, [setSelectedNodeIds, screenToFlowPosition, hideSidebar, setSelectedGroupId, setNodes, getNodes]);
 
 
   const handleNodeSelect = useCallback((nodeType: string, flowPosition: { x: number; y: number }) => {
@@ -934,13 +914,20 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
   }, [nodes, nodesContentChanged, nodesRefsChanged, currentNodesContentKey, matchingNodeIds, matchingNodeIdsChanged]);
 
   // Map edges with hidden property and animated prop based on edgesHidden state
+  // Also filter out invalid edges to prevent React Flow warnings
   const mappedEdges = useMemo(() => {
-    return edges.map(edge => ({
+    const validEdges = filterValidEdges(edges, nodes);
+    return validEdges.map(edge => ({
       ...edge,
       hidden: edgesHidden,
       animated: true, // Enable animation for all edges
     }));
-  }, [edges, edgesHidden]);
+  }, [edges, nodes, edgesHidden]);
+  
+  // Suppress React Flow console warnings for invalid edges
+  useEffect(() => {
+    suppressReactFlowWarnings();
+  }, []);
 
   // Load viewport from localStorage on mount (for page refresh persistence)
   useEffect(() => {
@@ -1170,8 +1157,8 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     // Set flag to prevent onSelectionChange from interfering
     isClearingSelectionRef.current = true;
     
-    // Clear store selection
-    clearSelection();
+    // Clear selectedNodeIds but preserve selectedNode (Properties panel should stay open)
+    setSelectedNodeIds([]);
     
     // Clear ReactFlow selection state
     const currentNodes = getNodes();
@@ -1189,7 +1176,45 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     setTimeout(() => {
       isClearingSelectionRef.current = false;
     }, 50);
-  }, [clearSelection, getNodes, setNodes]);
+  }, [setSelectedNodeIds, getNodes, setNodes]);
+
+  // Handle double-click on wrapper div (ReactFlow's onPaneClick doesn't fire for double-clicks)
+  const handleWrapperDoubleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    // Only handle if clicking on the pane (not on nodes, groups, or other elements)
+    const isNode = target.closest('.react-flow__node');
+    const isControl = target.closest('.react-flow__controls');
+    const isGroupBoundary = target.closest('.react-flow__group-boundary');
+    const isSelectionBox = target.closest('.react-flow__nodesselection');
+    const isContextMenu = target.closest('[role="menu"]') || target.closest('.fixed.bg-gray-800');
+    
+    // If clicking on node, control, group boundary, selection box, or context menu, ignore
+    if (isNode || isControl || isGroupBoundary || isSelectionBox || isContextMenu) {
+      return;
+    }
+    
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Convert screen coordinates to flow coordinates for node placement
+    const flowPosition = screenToFlowPosition({
+      x: e.clientX,
+      y: e.clientY,
+    });
+    
+    // Calculate position relative to canvas container for overlay display
+    if (reactFlowWrapper.current) {
+      const rect = reactFlowWrapper.current.getBoundingClientRect();
+      const relativeX = e.clientX - rect.left;
+      const relativeY = e.clientY - rect.top;
+      
+      // Open CanvasSearchOverlay (node menu) - same as right-click "Add Node"
+      setSearchOverlay({
+        screen: { x: relativeX, y: relativeY },
+        flow: flowPosition,
+      });
+    }
+  }, [screenToFlowPosition]);
 
   // Handle contextmenu directly on wrapper div using oncontextmenu attribute
   // This fires early and prevents system menu, but doesn't stop propagation
@@ -1216,6 +1241,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
       data-tour="canvas"
       onMouseDown={handleWrapperMouseDown}
       onClick={handleWrapperClick}
+      onDoubleClick={handleWrapperDoubleClick}
       onContextMenu={handleWrapperContextMenu}
     >
       <ReactFlow
@@ -1270,10 +1296,10 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
           const newSelectedId = selectedIds.length > 0 ? selectedIds[0] : null;
           const lastReactFlowSelection = reactFlowSelectionRef.current;
           
-          // If ReactFlow cleared selection (0 nodes) but store still has selection, clear store
-          // This handles the case where onPaneClick doesn't fire but ReactFlow clears selection
+          // If ReactFlow cleared selection (0 nodes) but store still has selection, clear selectedNodeIds only
+          // Preserve selectedNode (Properties panel) - it should only be cleared when explicitly closing the sidebar
           if (selectedIds.length === 0 && selectedNodeIds.size > 0) {
-            clearSelection();
+            setSelectedNodeIds([]);
             reactFlowSelectionRef.current = null;
             return;
           }

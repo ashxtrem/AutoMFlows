@@ -169,8 +169,15 @@ export class WorkflowParser {
         
         // Visit all dependents (forward traversal to continue from this node)
         // This ensures we traverse the entire connected graph from start
+        // Skip dependents that are still in the visiting set to avoid false cycles
+        // (they'll be visited naturally when their dependencies are fully processed)
         for (const dependentId of executionNode.dependents) {
-          visit(dependentId);
+          // Skip if still being visited (prevents false cycle detection)
+          // This can happen when a node has both a dependency and dependent relationship
+          // with another node through different edge types (e.g., property input + control flow)
+          if (!visiting.has(dependentId) && !visited.has(dependentId)) {
+            visit(dependentId);
+          }
         }
       }
     };

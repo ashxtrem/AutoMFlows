@@ -559,10 +559,6 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
     const bounds = calculateGroupBounds(nodesToGroup);
     if (!bounds) return;
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'workflowStore.ts:547',message:'updateGroupBounds called',data:{groupId,currentSize:{width:group.width,height:group.height},newBounds:bounds},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
-    // #endregion
-
     state.updateGroup(groupId, {
       position: { x: bounds.x, y: bounds.y },
       width: bounds.width,

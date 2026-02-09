@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useWorkflowStore } from '../store/workflowStore';
 import GroupMenuBar from './GroupMenuBar';
+import GroupRenamePopup from './GroupRenamePopup';
 
 // Define Group interface locally (matches shared/src/types.ts)
 interface Group {
@@ -39,8 +40,7 @@ type ResizeHandleType = 'nw' | 'ne' | 'sw' | 'se';
 
 export default function GroupBoundary({ group }: GroupBoundaryProps) {
   const { updateGroup, selectedGroupId, setSelectedGroupId, moveGroupNodes } = useWorkflowStore();
-  const [isRenaming, setIsRenaming] = useState(false);
-  const [renameValue, setRenameValue] = useState(group.name);
+  const [showRenamePopup, setShowRenamePopup] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [viewportElement, setViewportElement] = useState<HTMLElement | null>(null);
   const [hoveredHandle, setHoveredHandle] = useState<ResizeHandleType | null>(null);
@@ -49,7 +49,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
   const [resizeHandle, setResizeHandle] = useState<ResizeHandleType | null>(null);
   const [dragStartPos, setDragStartPos] = useState<{ x: number; y: number } | null>(null);
   const [resizeStartPos, setResizeStartPos] = useState<{ x: number; y: number; width: number; height: number; groupX: number; groupY: number } | null>(null);
-  const renameInputRef = useRef<HTMLInputElement>(null);
   const colorPickerRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const boundaryRef = useRef<HTMLDivElement>(null);
@@ -69,18 +68,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
     findViewport();
   }, []);
 
-  // Update rename value when group name changes externally
-  useEffect(() => {
-    setRenameValue(group.name);
-  }, [group.name]);
-
-  // Focus rename input when entering rename mode
-  useEffect(() => {
-    if (isRenaming && renameInputRef.current) {
-      renameInputRef.current.focus();
-      renameInputRef.current.select();
-    }
-  }, [isRenaming]);
 
   // Close color picker when clicking outside
   useEffect(() => {
@@ -266,25 +253,16 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setIsRenaming(true);
+    setShowRenamePopup(true);
   };
 
-  const handleRenameSubmit = () => {
-    if (renameValue.trim()) {
-      updateGroup(group.id, { name: renameValue.trim() });
-    } else {
-      setRenameValue(group.name);
-    }
-    setIsRenaming(false);
+  const handleRenameSave = (newName: string) => {
+    updateGroup(group.id, { name: newName });
+    setShowRenamePopup(false);
   };
 
-  const handleRenameKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      handleRenameSubmit();
-    } else if (e.key === 'Escape') {
-      setRenameValue(group.name);
-      setIsRenaming(false);
-    }
+  const handleRenameCancel = () => {
+    setShowRenamePopup(false);
   };
 
   const handleHeaderRightClick = (e: React.MouseEvent) => {
@@ -412,10 +390,10 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
           onContextMenu={handleHeaderRightClick}
           onMouseDown={(e) => {
             // #region agent log
-            fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GroupBoundary.tsx:352',message:'Header mouse down',data:{clientX:e.clientX,clientY:e.clientY,isRenaming},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
+            fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'GroupBoundary.tsx:352',message:'Header mouse down',data:{clientX:e.clientX,clientY:e.clientY},timestamp:Date.now(),hypothesisId:'B'})}).catch(()=>{});
             // #endregion
             // Allow header drag - start drag on mousedown
-            if (!isRenaming) {
+            if (!showRenamePopup) {
               e.stopPropagation();
               e.preventDefault();
               setIsDragging(true);
@@ -423,33 +401,19 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
             }
           }}
           onClick={(e) => {
-            if (!isRenaming) {
+            if (!showRenamePopup) {
               e.stopPropagation();
               setSelectedGroupId(group.id);
             }
           }}
         >
-          {isRenaming ? (
-            <input
-              ref={renameInputRef}
-              type="text"
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              onBlur={handleRenameSubmit}
-              onKeyDown={handleRenameKeyDown}
-              className="text-sm font-medium bg-gray-800 border border-gray-600 rounded px-2 py-0.5 text-gray-100 min-w-[100px]"
-              onClick={(e) => e.stopPropagation()}
-              style={{ pointerEvents: 'auto' }}
-            />
-          ) : (
-            <div
-              className="text-sm font-medium text-gray-300 cursor-text select-none"
-              style={{ pointerEvents: 'auto' }}
-              title="Double-click to rename, right-click to change color"
-            >
-              {group.name}
-            </div>
-          )}
+          <div
+            className="text-sm font-medium text-gray-300 cursor-text select-none"
+            style={{ pointerEvents: 'auto' }}
+            title="Double-click to rename, right-click to change color"
+          >
+            {group.name}
+          </div>
         </div>
 
         {/* Color picker */}
@@ -659,6 +623,14 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
       {/* Group menu bar - show when group is selected */}
       {isSelected && (
         <GroupMenuBar groupId={group.id} />
+      )}
+      {/* Rename popup */}
+      {showRenamePopup && (
+        <GroupRenamePopup
+          currentName={group.name}
+          onSave={handleRenameSave}
+          onClose={handleRenameCancel}
+        />
       )}
     </>
   );
