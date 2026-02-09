@@ -164,7 +164,6 @@ export default function FloatingRunButton() {
   const isRunning = executionStatus === 'running';
   const pauseButtonText = pauseReason === 'breakpoint' ? 'Go to Breakpoint Node' : 'Go to Pause Node';
   const isBreakpointPause = pauseReason === 'breakpoint';
-  const isWaitPause = pauseReason === 'wait-pause';
 
   return (
     <div

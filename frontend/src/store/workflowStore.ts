@@ -18,6 +18,7 @@ import { getNodeProperties, getPropertyInputHandleId } from '../utils/nodeProper
 import { ValidationError } from '../utils/validation';
 import { arrangeNodesVertical, arrangeNodesHorizontal } from '../utils/nodeArrangement';
 import { calculateGroupBounds } from '../utils/groupUtils';
+import { getReactFlowSetNodes } from '../components/Canvas';
 
 // Type conversion helper (frontend version)
 function canConvertType(sourceType: PropertyDataType, targetType: PropertyDataType): boolean {
@@ -1495,21 +1496,50 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
       arrangedPositions.set(node.id, node.position);
     });
 
-    // Update only selected nodes' positions, preserve others
+    // Create a completely new array with ALL nodes (like arrangeNodes does)
+    // Create completely new node objects to ensure ReactFlow accepts the update
+    // This matches how arrangeNodes works - it gets a completely new array from arrangeNodesVertical/Horizontal
     const updatedNodes = state.nodes.map(node => {
-      if (selectedIds.includes(node.id)) {
-        const newPosition = arrangedPositions.get(node.id);
-        if (newPosition) {
-          return {
-            ...node,
-            position: newPosition,
-          };
-        }
-      }
-      return node;
+      const isSelected = selectedIds.includes(node.id);
+      const newPosition = isSelected ? arrangedPositions.get(node.id) : null;
+      
+      // Create completely new node object with all properties copied
+      const newNode = {
+        ...node,
+        data: { ...node.data }, // Ensure data object is new
+        position: isSelected && newPosition 
+          ? { x: newPosition.x, y: newPosition.y } // New position for selected nodes
+          : { x: node.position.x, y: node.position.y }, // New position object for non-selected
+      };
+      
+      return newNode;
     });
 
+    // Replace ALL nodes (like arrangeNodes does) - this ensures ReactFlow accepts the update
     set({ nodes: updatedNodes });
+    
+    // Use ReactFlow's setNodes API directly to force position updates for selected nodes
+    // This bypasses ReactFlow's internal caching that might prevent position updates for selected nodes
+    const reactFlowSetNodesFn = getReactFlowSetNodes();
+    if (reactFlowSetNodesFn) {
+      // Get current nodes from ReactFlow to merge with our updates
+      // This ensures ReactFlow's internal state is updated correctly
+      reactFlowSetNodesFn((currentNodes: Node[]) => {
+        // Merge our updated positions with ReactFlow's current nodes
+        const mergedNodes = currentNodes.map((rfNode: Node) => {
+          const updatedNode = updatedNodes.find(n => n.id === rfNode.id);
+          if (updatedNode) {
+            return {
+              ...rfNode,
+              position: updatedNode.position, // Use our updated position
+            };
+          }
+          return rfNode;
+        });
+        return mergedNodes;
+      });
+    }
+    
     setTimeout(() => get().saveToHistory(), 100);
   },
 

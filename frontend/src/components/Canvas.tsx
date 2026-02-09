@@ -34,6 +34,15 @@ let hasRunInitialFitViewGlobal = false;
 // Module-level variable to store the last known viewport (persists across StrictMode remounts)
 // This prevents viewport reset when React.StrictMode causes unexpected remounts
 let lastKnownViewport: { x: number; y: number; zoom: number } | null = null;
+// Module-level variable to store ReactFlow's setNodes function so workflowStore can use it
+// ReactFlow's setNodes accepts either Node[] or a function (nodes: Node[]) => Node[]
+type SetNodesFunction = (nodes: Node[] | ((nodes: Node[]) => Node[])) => void;
+let reactFlowSetNodes: SetNodesFunction | null = null;
+
+// Export getter function for workflowStore to access ReactFlow's setNodes
+export const getReactFlowSetNodes = (): SetNodesFunction | null => {
+  return reactFlowSetNodes;
+};
 
 // LocalStorage key for persisting viewport across page refreshes
 const VIEWPORT_STORAGE_KEY = 'reactflow-viewport';
@@ -112,7 +121,9 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
   // Store ReactFlow instance in parent's ref so it can save viewport before remount
   useEffect(() => {
     reactFlowInstanceRef.current = reactFlowInstance;
-  }, [reactFlowInstance, reactFlowInstanceRef]);
+    // Store setNodes globally so workflowStore can use it
+    reactFlowSetNodes = setNodes;
+  }, [reactFlowInstance, reactFlowInstanceRef, setNodes]);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId?: string; flowPosition?: { x: number; y: number }; screenPosition?: { x: number; y: number } } | null>(null);
   // Ref to access setContextMenu in event handlers
   const setContextMenuRef = useRef(setContextMenu);
