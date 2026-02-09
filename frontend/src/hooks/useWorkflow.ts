@@ -3,22 +3,22 @@ import { useWorkflowStore } from '../store/workflowStore';
 import { saveToLocalStorage, loadFromLocalStorage } from '../utils/serialization';
 
 export function useWorkflowAutoSave() {
-  const { nodes, edges } = useWorkflowStore();
+  const { nodes, edges, groups } = useWorkflowStore();
 
   useEffect(() => {
-    // Auto-save to localStorage whenever nodes or edges change
+    // Auto-save to localStorage whenever nodes, edges, or groups change
     const timeoutId = setTimeout(() => {
       if (nodes.length > 0 || edges.length > 0) {
-        saveToLocalStorage(nodes, edges);
+        saveToLocalStorage(nodes, edges, groups);
       }
     }, 1000); // Debounce by 1 second
 
     return () => clearTimeout(timeoutId);
-  }, [nodes, edges]);
+  }, [nodes, edges, groups]);
 }
 
 export function useWorkflowLoad() {
-  const { setNodes, setEdges, saveToHistory, clearAllNodeErrors } = useWorkflowStore();
+  const { setNodes, setEdges, setGroups, saveToHistory, clearAllNodeErrors } = useWorkflowStore();
 
   useEffect(() => {
     // Load workflow from localStorage on mount
@@ -26,6 +26,11 @@ export function useWorkflowLoad() {
     if (loaded) {
       setNodes(loaded.nodes);
       setEdges(loaded.edges);
+      if (loaded.groups) {
+        setGroups(loaded.groups);
+      } else {
+        setGroups([]); // Clear groups if not present
+      }
       // Clear error states on page refresh (execution state is lost)
       clearAllNodeErrors();
       // Save initial loaded state to history
@@ -33,6 +38,6 @@ export function useWorkflowLoad() {
         saveToHistory();
       }, 100);
     }
-  }, [setNodes, setEdges, saveToHistory, clearAllNodeErrors]);
+  }, [setNodes, setEdges, setGroups, saveToHistory, clearAllNodeErrors]);
 }
 

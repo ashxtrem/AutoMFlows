@@ -2,7 +2,7 @@ import { Node, Edge } from 'reactflow';
 import { Workflow, BaseNode as WorkflowNode, Edge as WorkflowEdge, NodeType } from '@automflows/shared';
 import { migrateWorkflow } from './migration';
 
-export function serializeWorkflow(nodes: Node[], edges: Edge[]): Workflow {
+export function serializeWorkflow(nodes: Node[], edges: Edge[], groups?: any[]): Workflow {
   const workflowNodes: WorkflowNode[] = nodes.map((node) => ({
     id: node.id,
     type: node.data.type as NodeType,
@@ -27,10 +27,11 @@ export function serializeWorkflow(nodes: Node[], edges: Edge[]): Workflow {
   return {
     nodes: workflowNodes,
     edges: workflowEdges,
+    groups: groups || undefined,
   };
 }
 
-export function deserializeWorkflow(workflow: Workflow): { nodes: Node[]; edges: Edge[] } {
+export function deserializeWorkflow(workflow: Workflow): { nodes: Node[]; edges: Edge[]; groups?: any[] } {
   const nodes: Node[] = workflow.nodes.map((node) => ({
     id: node.id,
     type: 'custom',
@@ -60,7 +61,7 @@ export function deserializeWorkflow(workflow: Workflow): { nodes: Node[]; edges:
     targetHandle: edge.targetHandle || 'input',
   }));
 
-  return { nodes, edges };
+  return { nodes, edges, groups: workflow.groups };
 }
 
 function getNodeLabel(type: NodeType): string {
@@ -99,12 +100,12 @@ function getNodeLabel(type: NodeType): string {
   return labels[type] || type;
 }
 
-export function saveToLocalStorage(nodes: Node[], edges: Edge[]): void {
-  const workflow = serializeWorkflow(nodes, edges);
+export function saveToLocalStorage(nodes: Node[], edges: Edge[], groups?: any[]): void {
+  const workflow = serializeWorkflow(nodes, edges, groups);
   localStorage.setItem('automflows-workflow', JSON.stringify(workflow));
 }
 
-export function loadFromLocalStorage(): { nodes: Node[]; edges: Edge[]; warnings?: string[] } | null {
+export function loadFromLocalStorage(): { nodes: Node[]; edges: Edge[]; groups?: any[]; warnings?: string[] } | null {
   const stored = localStorage.getItem('automflows-workflow');
   if (!stored) {
     return null;

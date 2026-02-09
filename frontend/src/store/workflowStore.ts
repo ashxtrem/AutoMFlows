@@ -1,10 +1,23 @@
 import { createWithEqualityFn } from 'zustand/traditional';
 import { Node, Edge, Connection, addEdge, applyNodeChanges, applyEdgeChanges, NodeChange, EdgeChange } from 'reactflow';
 import { NodeType, PropertyDataType, PageDebugInfo, RecordedAction } from '@automflows/shared';
+
+// Define Group interface locally
+interface Group {
+  id: string;
+  name: string;
+  nodeIds: string[];
+  position: { x: number; y: number };
+  width: number;
+  height: number;
+  borderColor?: string;
+  manuallyResized?: boolean; // Flag to prevent automatic bounds recalculation
+}
 import { frontendPluginRegistry } from '../plugins/registry';
 import { getNodeProperties, getPropertyInputHandleId } from '../utils/nodeProperties';
 import { ValidationError } from '../utils/validation';
 import { arrangeNodesVertical, arrangeNodesHorizontal } from '../utils/nodeArrangement';
+import { calculateGroupBounds } from '../utils/groupUtils';
 
 // Type conversion helper (frontend version)
 function canConvertType(sourceType: PropertyDataType, targetType: PropertyDataType): boolean {
@@ -28,6 +41,7 @@ function canConvertType(sourceType: PropertyDataType, targetType: PropertyDataTy
 interface WorkflowSnapshot {
   nodes: Node[];
   edges: Edge[];
+  groups?: Group[];
 }
 
 interface NodeError {
@@ -56,10 +70,11 @@ interface WorkflowState {
   maxHistorySize: number;
   
   // Clipboard
-  clipboard: Node | null;
+  clipboard: Node | Node[] | null;
   
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
+  setGroups: (groups: Group[]) => void;
   onNodesChange: (changes: NodeChange[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
   onConnect: (connection: Connection) => void;
@@ -180,6 +195,22 @@ interface WorkflowState {
   hasUnsavedChanges: boolean;
   setWorkflowFileName: (fileName: string) => void;
   setHasUnsavedChanges: (hasChanges: boolean) => void;
+  
+  // Group state
+  groups: Group[];
+  selectedGroupId: string | null;
+  createGroup: (nodeIds: string[]) => void;
+  updateGroup: (groupId: string, updates: Partial<Group>) => void;
+  deleteGroup: (groupId: string) => void;
+  addNodesToGroup: (groupId: string, nodeIds: string[]) => void;
+  removeNodesFromGroup: (groupId: string, nodeIds: string[]) => void;
+  getGroupForNode: (nodeId: string) => Group | null;
+  getGroupsForNode: (nodeId: string) => Group[];
+  calculateGroupBounds: (nodeIds: string[]) => { x: number; y: number; width: number; height: number } | null;
+  updateGroupBounds: (groupId: string) => void;
+  setGroupColor: (groupId: string, color: string) => void;
+  setSelectedGroupId: (groupId: string | null) => void;
+  moveGroupNodes: (groupId: string, offsetX: number, offsetY: number) => void;
 }
 
 // Helper function to reconnect edges when a node is deleted
@@ -369,6 +400,10 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
         return false;
       }
     })(),
+    
+    // Group state
+    groups: [],
+    selectedGroupId: null,
 
   setWorkflowFileName: (fileName) => {
     set({ workflowFileName: fileName });
@@ -385,6 +420,210 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
       localStorage.setItem('automflows_workflow_unsaved_changes', String(hasChanges));
     } catch (error) {
       console.warn('Failed to save unsaved changes flag to localStorage:', error);
+    }
+  },
+
+  // Group methods
+  createGroup: (nodeIds) => {
+    const state = get();
+    if (nodeIds.length === 0) {
+      return;
+    }
+
+    // Calculate bounds for the group
+    const nodesToGroup = state.nodes.filter((n) => nodeIds.includes(n.id));
+    const bounds = calculateGroupBounds(nodesToGroup);
+    if (!bounds) {
+      return;
+    }
+
+    // Generate unique group ID
+    const groupId = `group-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+    // Generate default name
+    const existingGroupNames = state.groups.map((g) => g.name);
+    let groupNumber = 1;
+    let groupName = `Group ${groupNumber}`;
+    while (existingGroupNames.includes(groupName)) {
+      groupNumber++;
+      groupName = `Group ${groupNumber}`;
+    }
+
+    const newGroup: Group = {
+      id: groupId,
+      name: groupName,
+      nodeIds: [...nodeIds],
+      position: { x: bounds.x, y: bounds.y },
+      width: bounds.width,
+      height: bounds.height,
+    };
+
+    set({ groups: [...state.groups, newGroup], hasUnsavedChanges: true });
+  },
+
+  updateGroup: (groupId, updates) => {
+    const state = get();
+    // If updating width/height, mark as manually resized
+    const isManualResize = updates.width !== undefined || updates.height !== undefined;
+    const updatedGroups = state.groups.map((g) =>
+      g.id === groupId ? { ...g, ...updates, manuallyResized: isManualResize ? true : g.manuallyResized } : g
+    );
+    set({ groups: updatedGroups, hasUnsavedChanges: true });
+  },
+
+  deleteGroup: (groupId) => {
+    const state = get();
+    const updatedGroups = state.groups.filter((g) => g.id !== groupId);
+    set({ groups: updatedGroups, selectedGroupId: state.selectedGroupId === groupId ? null : state.selectedGroupId, hasUnsavedChanges: true });
+  },
+
+  addNodesToGroup: (groupId, nodeIds) => {
+    const state = get();
+    const group = state.groups.find((g) => g.id === groupId);
+    if (!group) return;
+
+    // Add nodes that aren't already in the group
+    const newNodeIds = [...new Set([...group.nodeIds, ...nodeIds])];
+    const nodesToGroup = state.nodes.filter((n) => newNodeIds.includes(n.id));
+    const bounds = calculateGroupBounds(nodesToGroup);
+    if (!bounds) return;
+
+    const updatedGroups = state.groups.map((g) =>
+      g.id === groupId
+        ? {
+            ...g,
+            nodeIds: newNodeIds,
+            position: { x: bounds.x, y: bounds.y },
+            width: bounds.width,
+            height: bounds.height,
+            manuallyResized: false, // Clear flag when nodes are added
+          }
+        : g
+    );
+    set({ groups: updatedGroups, hasUnsavedChanges: true });
+  },
+
+  removeNodesFromGroup: (groupId, nodeIds) => {
+    const state = get();
+    const group = state.groups.find((g) => g.id === groupId);
+    if (!group) return;
+
+    const updatedNodeIds = group.nodeIds.filter((id: string) => !nodeIds.includes(id));
+    if (updatedNodeIds.length === 0) {
+      // Remove group if no nodes left
+      state.deleteGroup(groupId);
+      return;
+    }
+
+    const nodesToGroup = state.nodes.filter((n) => updatedNodeIds.includes(n.id));
+    const bounds = calculateGroupBounds(nodesToGroup);
+    if (!bounds) return;
+
+    const updatedGroups = state.groups.map((g) =>
+      g.id === groupId
+        ? {
+            ...g,
+            nodeIds: updatedNodeIds,
+            position: { x: bounds.x, y: bounds.y },
+            width: bounds.width,
+            height: bounds.height,
+            manuallyResized: false, // Clear flag when nodes are removed
+          }
+        : g
+    );
+    set({ groups: updatedGroups, hasUnsavedChanges: true });
+  },
+
+  getGroupForNode: (nodeId) => {
+    const state = get();
+    return state.groups.find((g) => g.nodeIds.includes(nodeId)) || null;
+  },
+
+  getGroupsForNode: (nodeId) => {
+    const state = get();
+    return state.groups.filter((g) => g.nodeIds.includes(nodeId));
+  },
+
+  calculateGroupBounds: (nodeIds) => {
+    const state = get();
+    const nodesToGroup = state.nodes.filter((n) => nodeIds.includes(n.id));
+    return calculateGroupBounds(nodesToGroup);
+  },
+
+  updateGroupBounds: (groupId) => {
+    const state = get();
+    const group = state.groups.find((g) => g.id === groupId);
+    if (!group) return;
+
+    const nodesToGroup = state.nodes.filter((n) => group.nodeIds.includes(n.id));
+    const bounds = calculateGroupBounds(nodesToGroup);
+    if (!bounds) return;
+
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'workflowStore.ts:547',message:'updateGroupBounds called',data:{groupId,currentSize:{width:group.width,height:group.height},newBounds:bounds},timestamp:Date.now(),hypothesisId:'D'})}).catch(()=>{});
+    // #endregion
+
+    state.updateGroup(groupId, {
+      position: { x: bounds.x, y: bounds.y },
+      width: bounds.width,
+      height: bounds.height,
+    });
+  },
+
+  setGroupColor: (groupId, color) => {
+    const state = get();
+    state.updateGroup(groupId, { borderColor: color });
+  },
+
+  setSelectedGroupId: (groupId) => {
+    set({ selectedGroupId: groupId });
+  },
+
+  moveGroupNodes: (groupId, offsetX, offsetY) => {
+    const state = get();
+    const group = state.groups.find((g) => g.id === groupId);
+    if (!group) return;
+
+    // Update all node positions in the group
+    const updatedNodes = state.nodes.map((node) => {
+      if (group.nodeIds.includes(node.id)) {
+        return {
+          ...node,
+          position: {
+            x: node.position.x + offsetX,
+            y: node.position.y + offsetY,
+          },
+        };
+      }
+      return node;
+    });
+
+    // Update group position
+    // When dragging group, update bounds but preserve manuallyResized flag
+    const updatedGroups = state.groups.map((g) =>
+      g.id === groupId
+        ? {
+            ...g,
+            position: {
+              x: g.position.x + offsetX,
+              y: g.position.y + offsetY,
+            },
+          }
+        : g
+    );
+
+    set({
+      nodes: updatedNodes,
+      groups: updatedGroups,
+      hasUnsavedChanges: true,
+    });
+    
+    // Update bounds after moving (but skip if manually resized - bounds will be updated by onNodesChange)
+    if (!group.manuallyResized) {
+      setTimeout(() => {
+        const { updateGroupBounds } = useWorkflowStore.getState();
+        updateGroupBounds(groupId);
+      }, 0);
     }
   },
 
@@ -430,6 +669,9 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
       set({ history: newHistory, historyIndex: 0 });
     }
   },
+  setGroups: (groups) => {
+    set({ groups, hasUnsavedChanges: true });
+  },
 
   onNodesChange: (changes) => {
     const state = get();
@@ -442,11 +684,45 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
     // Detect node removals and reconnect edges before applying changes
     const removalChanges = changes.filter((change) => change.type === 'remove' && change.id);
     let edgesToUpdate = state.edges;
+    const removedNodeIds = new Set<string>();
     
     // Reconnect edges for each node being removed
     for (const removalChange of removalChanges) {
       if (removalChange.type === 'remove' && removalChange.id) {
+        removedNodeIds.add(removalChange.id);
         edgesToUpdate = reconnectEdgesOnNodeDeletion(removalChange.id, edgesToUpdate);
+      }
+    }
+    
+    // Clean up groups: remove deleted nodes from groups, and delete groups with no nodes
+    if (removedNodeIds.size > 0) {
+      const updatedGroups = state.groups
+        .map((group) => {
+          // Remove deleted node IDs from group
+          const validNodeIds = group.nodeIds.filter((id: string) => !removedNodeIds.has(id));
+          
+          // If group has no valid nodes left, mark for deletion
+          if (validNodeIds.length === 0) {
+            return null;
+          }
+          
+          // If some nodes were removed but group still has nodes, update the group
+          if (validNodeIds.length !== group.nodeIds.length) {
+            return {
+              ...group,
+              nodeIds: validNodeIds,
+              manuallyResized: false, // Reset manual resize flag when nodes are removed
+            };
+          }
+          
+          return group;
+        })
+        .filter((group): group is Group => group !== null);
+      
+      // Only update if groups changed
+      if (updatedGroups.length !== state.groups.length || 
+          updatedGroups.some((g, i) => g.nodeIds.length !== state.groups[i]?.nodeIds.length)) {
+        set({ groups: updatedGroups, hasUnsavedChanges: true });
       }
     }
     
@@ -474,9 +750,40 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
     
     // If all changes were filtered out, don't update anything
     if (filteredChanges.length === 0) {
-      // Still update edges if we reconnected any
+      // Still update edges if we reconnected any, and groups if nodes were removed
+      const updates: any = {};
       if (edgesToUpdate !== state.edges) {
-        set({ edges: edgesToUpdate });
+        updates.edges = edgesToUpdate;
+      }
+      if (removedNodeIds.size > 0) {
+        const updatedGroups = state.groups
+          .map((group) => {
+            const validNodeIds = group.nodeIds.filter((id: string) => !removedNodeIds.has(id));
+            if (validNodeIds.length === 0) {
+              return null;
+            }
+            if (validNodeIds.length !== group.nodeIds.length) {
+              return {
+                ...group,
+                nodeIds: validNodeIds,
+                manuallyResized: false,
+              };
+            }
+            return group;
+          })
+          .filter((group): group is Group => group !== null);
+        
+        if (updatedGroups.length !== state.groups.length || 
+            updatedGroups.some((g, i) => g.nodeIds.length !== state.groups[i]?.nodeIds.length)) {
+          updates.groups = updatedGroups;
+          // Clear selected group if it was deleted
+          if (state.selectedGroupId && !updatedGroups.some(g => g.id === state.selectedGroupId)) {
+            updates.selectedGroupId = null;
+          }
+        }
+      }
+      if (Object.keys(updates).length > 0) {
+        set(updates);
         setTimeout(() => get().saveToHistory(), 100);
       }
       return;
@@ -520,6 +827,17 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
       return;
     }
     
+    // Update group bounds for groups containing moved nodes
+    // Skip groups that were manually resized (they maintain their custom size)
+    const positionChanges = filteredChanges.filter((change): change is NodeChange & { type: 'position'; id: string; position?: { x: number; y: number } } => change.type === 'position' && !!change.id);
+    if (positionChanges.length > 0) {
+      const movedNodeIds = new Set(positionChanges.map((c) => c.id));
+      const affectedGroups = state.groups.filter((g) => g.nodeIds.some((id: string) => movedNodeIds.has(id)) && !g.manuallyResized);
+      affectedGroups.forEach((group) => {
+        state.updateGroupBounds(group.id);
+      });
+    }
+    
     // Ensure explicit dimensions are preserved (in case any slipped through)
     // Only create new objects if dimensions actually need to be preserved
     let needsDimensionPreservation = false;
@@ -548,11 +866,44 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
       ? nodesToSet.find((node) => node.id === selectedNode.id) || null
       : null;
     
+    // Clean up groups: remove node IDs that no longer exist, and delete groups with no nodes
+    const finalNodeIds = new Set(nodesToSet.map(n => n.id));
+    const cleanedGroups = state.groups
+      .map((group) => {
+        // Remove node IDs that no longer exist
+        const validNodeIds = group.nodeIds.filter((id: string) => finalNodeIds.has(id));
+        
+        // If group has no valid nodes left, mark for deletion
+        if (validNodeIds.length === 0) {
+          return null;
+        }
+        
+        // If some nodes were removed but group still has nodes, update the group
+        if (validNodeIds.length !== group.nodeIds.length) {
+          return {
+            ...group,
+            nodeIds: validNodeIds,
+            manuallyResized: false, // Reset manual resize flag when nodes are removed
+          };
+        }
+        
+        return group;
+      })
+      .filter((group): group is Group => group !== null);
+    
+    // Clear selected group if it was deleted
+    const finalSelectedGroupId = state.selectedGroupId && 
+      !cleanedGroups.some(g => g.id === state.selectedGroupId)
+      ? null 
+      : state.selectedGroupId;
+    
     set({
       nodes: nodesToSet,
       hasUnsavedChanges: true,
       edges: edgesToUpdate,
       selectedNode: updatedSelectedNode,
+      groups: cleanedGroups,
+      selectedGroupId: finalSelectedGroupId,
     });
     
     // Check if this is a significant change (add/remove) or position/data change
@@ -1004,6 +1355,7 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
     const snapshot: WorkflowSnapshot = {
       nodes: JSON.parse(JSON.stringify(state.nodes)),
       edges: JSON.parse(JSON.stringify(state.edges)),
+      groups: JSON.parse(JSON.stringify(state.groups)),
     };
     
     // Remove any history after current index (if we're not at the end)
@@ -1013,7 +1365,8 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
     const lastSnapshot = newHistory[newHistory.length - 1];
     const isDifferent = !lastSnapshot || 
       JSON.stringify(lastSnapshot.nodes) !== JSON.stringify(snapshot.nodes) ||
-      JSON.stringify(lastSnapshot.edges) !== JSON.stringify(snapshot.edges);
+      JSON.stringify(lastSnapshot.edges) !== JSON.stringify(snapshot.edges) ||
+      JSON.stringify(lastSnapshot.groups) !== JSON.stringify(snapshot.groups);
     
     if (isDifferent) {
       newHistory.push(snapshot);
@@ -1045,10 +1398,12 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
       }
       const restoredNodes = JSON.parse(JSON.stringify(snapshot.nodes));
       const restoredEdges = JSON.parse(JSON.stringify(snapshot.edges));
+      const restoredGroups = snapshot.groups ? JSON.parse(JSON.stringify(snapshot.groups)) : [];
       
       set({
         nodes: restoredNodes,
         edges: restoredEdges,
+        groups: restoredGroups,
         historyIndex: newIndex,
         selectedNode: null,
       });
@@ -1070,10 +1425,12 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
       const snapshot = state.history[newIndex];
       const restoredNodes = JSON.parse(JSON.stringify(snapshot.nodes));
       const restoredEdges = JSON.parse(JSON.stringify(snapshot.edges));
+      const restoredGroups = snapshot.groups ? JSON.parse(JSON.stringify(snapshot.groups)) : [];
       
       set({
         nodes: restoredNodes,
         edges: restoredEdges,
+        groups: restoredGroups,
         historyIndex: newIndex,
         selectedNode: null,
       });
@@ -1164,18 +1521,16 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
   copyNode: (nodeId) => {
     const state = get();
     const nodeIds = Array.isArray(nodeId) ? nodeId : [nodeId];
-    // For multi-copy, store all nodes in clipboard (we'll handle paste separately)
-    if (nodeIds.length === 1) {
-      const node = state.nodes.find((n) => n.id === nodeIds[0]);
-      if (node) {
-        set({ clipboard: JSON.parse(JSON.stringify(node)) });
-      }
-    } else if (nodeIds.length > 1) {
-      // Store first node for now (multi-copy/paste can be enhanced later)
-      const node = state.nodes.find((n) => n.id === nodeIds[0]);
-      if (node) {
-        set({ clipboard: JSON.parse(JSON.stringify(node)) });
-      }
+    const nodesToCopy = state.nodes.filter((n) => nodeIds.includes(n.id));
+    
+    if (nodesToCopy.length === 0) return;
+    
+    if (nodesToCopy.length === 1) {
+      // Single node: store as single Node
+      set({ clipboard: JSON.parse(JSON.stringify(nodesToCopy[0])) });
+    } else {
+      // Multiple nodes: store as array, maintaining relative positions
+      set({ clipboard: JSON.parse(JSON.stringify(nodesToCopy)) });
     }
   },
 
@@ -1183,15 +1538,43 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
     const clipboard = get().clipboard;
     if (!clipboard) return;
     
-    const newNode: Node = {
-      ...JSON.parse(JSON.stringify(clipboard)),
-      id: `${clipboard.data.type}-${Date.now()}`,
-      position,
-    };
+    const state = get();
+    const timestamp = Date.now();
     
-    set({
-      nodes: [...get().nodes, newNode],
-    });
+    if (Array.isArray(clipboard)) {
+      // Multiple nodes: paste all maintaining relative positions
+      if (clipboard.length === 0) return;
+      
+      // Calculate offset from first node's original position to paste position
+      const firstNode = clipboard[0];
+      const offsetX = position.x - firstNode.position.x;
+      const offsetY = position.y - firstNode.position.y;
+      
+      const newNodes: Node[] = clipboard.map((node, index) => ({
+        ...JSON.parse(JSON.stringify(node)),
+        id: `${node.data.type}-${timestamp}-${index}`,
+        position: {
+          x: node.position.x + offsetX,
+          y: node.position.y + offsetY,
+        },
+      }));
+      
+      set({
+        nodes: [...state.nodes, ...newNodes],
+      });
+    } else {
+      // Single node: paste as before
+      const newNode: Node = {
+        ...JSON.parse(JSON.stringify(clipboard)),
+        id: `${clipboard.data.type}-${timestamp}`,
+        position,
+      };
+      
+      set({
+        nodes: [...state.nodes, newNode],
+      });
+    }
+    
     setTimeout(() => get().saveToHistory(), 100);
   },
 
@@ -1242,11 +1625,44 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
       Array.from(state.selectedNodeIds).filter((id) => !nodeIds.includes(id))
     );
     
+    // Clean up groups: remove deleted nodes from groups, and delete groups with no nodes
+    const removedNodeIdsSet = new Set(nodeIds);
+    const updatedGroups = state.groups
+      .map((group) => {
+        // Remove deleted node IDs from group
+        const validNodeIds = group.nodeIds.filter((id: string) => !removedNodeIdsSet.has(id));
+        
+        // If group has no valid nodes left, mark for deletion
+        if (validNodeIds.length === 0) {
+          return null;
+        }
+        
+        // If some nodes were removed but group still has nodes, update the group
+        if (validNodeIds.length !== group.nodeIds.length) {
+          return {
+            ...group,
+            nodeIds: validNodeIds,
+            manuallyResized: false, // Reset manual resize flag when nodes are removed
+          };
+        }
+        
+        return group;
+      })
+      .filter((group): group is Group => group !== null);
+    
+    // Clear selected group if it was deleted
+    const updatedSelectedGroupId = state.selectedGroupId && 
+      !updatedGroups.some(g => g.id === state.selectedGroupId)
+      ? null 
+      : state.selectedGroupId;
+    
     set({
       nodes: remainingNodes,
       edges: reconnectedEdges,
       selectedNode: updatedSelectedNode,
       selectedNodeIds: updatedSelectedNodeIds,
+      groups: updatedGroups,
+      selectedGroupId: updatedSelectedGroupId,
     });
     setTimeout(() => get().saveToHistory(), 100);
   },

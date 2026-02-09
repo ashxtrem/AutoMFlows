@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Copy, Trash2, Palette, SkipForward, ChevronRight, Settings, Plug, RotateCw, Plus, LayoutGrid } from 'lucide-react';
+import { Copy, Trash2, Palette, SkipForward, ChevronRight, Settings, Plug, RotateCw, Plus, LayoutGrid, FolderPlus } from 'lucide-react';
 import { useWorkflowStore } from '../store/workflowStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { getNodeProperties, isPropertyInputConnection } from '../utils/nodeProperties';
@@ -37,7 +37,7 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
   const [showColorSubmenu, setShowColorSubmenu] = useState(false);
   const [showConvertInputSubmenu, setShowConvertInputSubmenu] = useState(false);
   const [showArrangeSubmenu, setShowArrangeSubmenu] = useState(false);
-  const { copyNode, pasteNode, deleteNode, toggleBypass, clipboard, setNodeColor, nodes, setSelectedNode, convertPropertyToInput, convertInputToProperty, reloadNode, selectedNodeIds, arrangeSelectedNodes } = useWorkflowStore();
+  const { copyNode, pasteNode, deleteNode, toggleBypass, clipboard, setNodeColor, nodes, setSelectedNode, convertPropertyToInput, convertInputToProperty, reloadNode, selectedNodeIds, arrangeSelectedNodes, createGroup } = useWorkflowStore();
   const { canvas } = useSettingsStore();
   
   // Check if multiple nodes are selected (need 2+ for arrange)
@@ -229,7 +229,12 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
   }, [onClose]);
 
   const handleCopy = () => {
-    if (nodeId) {
+    // If multiple nodes are selected, copy all of them; otherwise copy the single node
+    if (selectedNodeIds.size > 1 && selectedNodeIds.has(nodeId || '')) {
+      // Multiple nodes selected: copy all selected nodes
+      copyNode(Array.from(selectedNodeIds));
+    } else if (nodeId) {
+      // Single node: copy just this node
       copyNode(nodeId);
     }
     onClose();
@@ -321,6 +326,14 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
       arrangeSelectedNodes(mode, canvas.nodesPerRowColumn);
     }
     setShowArrangeSubmenu(false);
+    onClose();
+  };
+
+  const handleCreateGroup = () => {
+    if (hasMultipleSelection) {
+      const nodeIds = Array.from(selectedNodeIds);
+      createGroup(nodeIds);
+    }
     onClose();
   };
 
@@ -486,52 +499,61 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
               )}
             </div>
             {hasMultipleSelection && (
-              <div
-                className="relative"
-                onMouseEnter={() => setShowArrangeSubmenu(true)}
-                onMouseLeave={(e) => {
-                  // Only close if mouse is not moving to submenu
-                  const relatedTarget = e.relatedTarget as HTMLElement;
-                  if (!relatedTarget || !arrangeSubmenuRef.current?.contains(relatedTarget)) {
-                    setShowArrangeSubmenu(false);
-                  }
-                }}
-              >
+              <>
                 <button
-                  className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center justify-between gap-2"
+                  onClick={handleCreateGroup}
+                  className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-2"
                 >
-                  <div className="flex items-center gap-2">
-                    <LayoutGrid size={16} />
-                    Arrange
-                  </div>
-                  <ChevronRight size={14} />
+                  <FolderPlus size={16} />
+                  Group
                 </button>
-                {showArrangeSubmenu && (
-                  <div
-                    ref={arrangeSubmenuRef}
-                    className="absolute top-0 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 py-2 min-w-[200px]"
-                    style={{ 
-                      [submenuOnRight ? 'left' : 'right']: '100%',
-                      transform: submenuY !== 0 ? `translateY(${submenuY}px)` : undefined
-                    }}
-                    onMouseEnter={() => setShowArrangeSubmenu(true)}
-                    onMouseLeave={() => setShowArrangeSubmenu(false)}
+                <div
+                  className="relative"
+                  onMouseEnter={() => setShowArrangeSubmenu(true)}
+                  onMouseLeave={(e) => {
+                    // Only close if mouse is not moving to submenu
+                    const relatedTarget = e.relatedTarget as HTMLElement;
+                    if (!relatedTarget || !arrangeSubmenuRef.current?.contains(relatedTarget)) {
+                      setShowArrangeSubmenu(false);
+                    }
+                  }}
+                >
+                  <button
+                    className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center justify-between gap-2"
                   >
-                    <button
-                      onClick={() => handleArrange('horizontal')}
-                      className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-2"
+                    <div className="flex items-center gap-2">
+                      <LayoutGrid size={16} />
+                      Arrange
+                    </div>
+                    <ChevronRight size={14} />
+                  </button>
+                  {showArrangeSubmenu && (
+                    <div
+                      ref={arrangeSubmenuRef}
+                      className="absolute top-0 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 py-2 min-w-[200px]"
+                      style={{ 
+                        [submenuOnRight ? 'left' : 'right']: '100%',
+                        transform: submenuY !== 0 ? `translateY(${submenuY}px)` : undefined
+                      }}
+                      onMouseEnter={() => setShowArrangeSubmenu(true)}
+                      onMouseLeave={() => setShowArrangeSubmenu(false)}
                     >
-                      Horizontal
-                    </button>
-                    <button
-                      onClick={() => handleArrange('vertical')}
-                      className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-2"
-                    >
-                      Vertical
-                    </button>
-                  </div>
-                )}
-              </div>
+                      <button
+                        onClick={() => handleArrange('horizontal')}
+                        className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-2"
+                      >
+                        Horizontal
+                      </button>
+                      <button
+                        onClick={() => handleArrange('vertical')}
+                        className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-2"
+                      >
+                        Vertical
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
             )}
             <div className="border-t border-gray-700 my-1" />
             <button

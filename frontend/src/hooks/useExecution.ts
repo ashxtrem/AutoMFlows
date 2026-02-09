@@ -110,6 +110,7 @@ export function useExecution() {
     builderModeEnabled,
     resetBuilderModeActions,
     workflowFileName,
+  groups,
   } = useWorkflowStore();
   const reportRetention = useSettingsStore((state) => state.reports.reportRetention);
   const [port, setPort] = useState<number | null>(null);
@@ -382,7 +383,7 @@ export function useExecution() {
       setValidationErrors([]);
       clearValidationErrors(); // Clear validation errors from store when validation passes
 
-      const workflow = serializeWorkflow(nodes, edges);
+      const workflow = serializeWorkflow(nodes, edges, groups);
 
       // Find Start node and extract configuration
       const startNode = nodes.find((node) => node.data.type === 'start');
@@ -721,7 +722,7 @@ export function useExecution() {
       }
       
       try {
-        const workflow = serializeWorkflow(nodes, edges);
+        const workflow = serializeWorkflow(nodes, edges, groups);
         await updateWorkflowDuringExecution(workflow);
       } catch (error) {
         // Error handling is done in updateWorkflowDuringExecution

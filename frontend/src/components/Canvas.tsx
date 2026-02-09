@@ -15,6 +15,7 @@ import CustomEdge from './CustomEdge';
 import ContextMenu from './ContextMenu';
 import CanvasSearchOverlay from './CanvasSearchOverlay';
 import NodeSearchOverlay from './NodeSearchOverlay';
+import GroupBoundary from './GroupBoundary';
 import { useShortcutNavigation } from '../hooks/useShortcutNavigation';
 import { searchNodes } from '../utils/nodeSearch';
 
@@ -72,7 +73,7 @@ interface CanvasInnerProps {
 }
 
 function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, hasRunInitialFitViewRef, hideSidebar }: CanvasInnerProps) {
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setSelectedNodeIds, clearSelection, selectAllNodes, deleteNode, duplicateNode, copyNode, pasteNode, onConnectStart, onConnectEnd, onEdgeUpdate, failedNodes, showErrorPopupForNode, canvasReloading, executingNodeId, executionStatus, followModeEnabled, setFollowModeEnabled, pausedNodeId, pauseReason, selectedNodeIds, workflowFileName, hasUnsavedChanges } = useWorkflowStore();
+  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setSelectedNodeIds, clearSelection, selectAllNodes, deleteNode, duplicateNode, copyNode, pasteNode, onConnectStart, onConnectEnd, onEdgeUpdate, failedNodes, showErrorPopupForNode, canvasReloading, executingNodeId, executionStatus, followModeEnabled, setFollowModeEnabled, pausedNodeId, pauseReason, selectedNodeIds, workflowFileName, hasUnsavedChanges, groups, addNodesToGroup, setSelectedGroupId } = useWorkflowStore();
   const addNotification = useNotificationStore((state) => state.addNotification);
   const { showGrid, gridSize, snapToGrid } = useSettingsStore((state) => ({
     showGrid: state.canvas.showGrid,
@@ -90,7 +91,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
   };
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useReactFlow();
-  const { screenToFlowPosition, getViewport, setViewport: originalSetViewport, fitView, setNodes } = reactFlowInstance;
+  const { screenToFlowPosition, getViewport, setViewport: originalSetViewport, fitView, setNodes, getNodes } = reactFlowInstance;
   
   // Enable shortcut navigation
   useShortcutNavigation();
@@ -112,6 +113,11 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     reactFlowInstanceRef.current = reactFlowInstance;
   }, [reactFlowInstance, reactFlowInstanceRef]);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId?: string; flowPosition?: { x: number; y: number }; screenPosition?: { x: number; y: number } } | null>(null);
+  // Ref to access setContextMenu in event handlers
+  const setContextMenuRef = useRef(setContextMenu);
+  useEffect(() => {
+    setContextMenuRef.current = setContextMenu;
+  }, [setContextMenu]);
   const [searchOverlay, setSearchOverlay] = useState<{ screen: { x: number; y: number }; flow: { x: number; y: number } } | null>(null);
   
   // Node search overlay state
@@ -124,6 +130,9 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
   // Double-click detection using timing
   const lastClickRef = useRef<{ time: number; x: number; y: number } | null>(null);
   const doubleClickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isClearingSelectionRef = useRef(false);
+  const lastSelectionChangeTimeRef = useRef<number>(0);
+  const mouseDownRef = useRef<{ time: number; x: number; y: number } | null>(null);
   
   // Edge visibility state from store
   const edgesHidden = useWorkflowStore((state) => state.edgesHidden);
@@ -328,7 +337,38 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     lastClickRef.current = { time: now, x: clickX, y: clickY };
     
     // Normal single-click behavior - clear selection
+    // #region agent log
+    const currentSelectedIds = Array.from(useWorkflowStore.getState().selectedNodeIds);
+    fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Canvas.tsx:337',message:'Pane click - clearing selection',data:{selectedNodeCount:currentSelectedIds.length,selectedNodeIds:currentSelectedIds},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    
+    // Set flag to prevent onSelectionChange from interfering
+    isClearingSelectionRef.current = true;
+    
+    // Clear store selection first
     clearSelection();
+    
+    // Also clear ReactFlow selection state - use getNodes() to get current ReactFlow state
+    const currentNodes = getNodes();
+    const nodesToUpdate = currentNodes.filter(n => n.selected);
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/9e444106-9553-445b-b71d-eeb363325ed2',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'Canvas.tsx:345',message:'Clearing ReactFlow selection state',data:{nodesWithSelectionCount:nodesToUpdate.length,nodeIds:nodesToUpdate.map(n=>n.id),totalNodes:currentNodes.length},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
+    
+    if (nodesToUpdate.length > 0) {
+      setNodes((nds) =>
+        nds.map((node) => ({
+          ...node,
+          selected: false,
+        }))
+      );
+    }
+    
+    // Clear flag after a short delay to allow ReactFlow to process
+    setTimeout(() => {
+      isClearingSelectionRef.current = false;
+    }, 50);
+    setSelectedGroupId(null);
     setContextMenu(null);
     setSearchOverlay(null);
     
@@ -336,7 +376,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     if (hideSidebar) {
       hideSidebar();
     }
-  }, [clearSelection, screenToFlowPosition, hideSidebar]);
+  }, [clearSelection, screenToFlowPosition, hideSidebar, setSelectedGroupId, setNodes, getNodes]);
 
 
   const handleNodeSelect = useCallback((nodeType: string, flowPosition: { x: number; y: number }) => {
@@ -347,6 +387,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
 
   const onNodeContextMenu = useCallback((e: React.MouseEvent, node: any) => {
     e.preventDefault();
+    e.stopPropagation();
     setContextMenu({
       x: e.clientX,
       y: e.clientY,
@@ -356,12 +397,38 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
 
   const onPaneContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     
     // Calculate flow position for node placement
     const flowPosition = screenToFlowPosition({
       x: e.clientX,
       y: e.clientY,
     });
+    
+    // If we have selected nodes, check if right-click is over one of them
+    // This handles right-click on selection box overlay or selected nodes
+    if (selectedNodeIds.size > 0) {
+      // Find the node under the cursor position (check all selected nodes)
+      const clickedNode = nodes.find(node => {
+        if (!selectedNodeIds.has(node.id)) return false;
+        const nodeX = node.position.x;
+        const nodeY = node.position.y;
+        const nodeWidth = node.width || node.data?.width || 200;
+        const nodeHeight = node.height || node.data?.height || 100;
+        
+        return flowPosition.x >= nodeX && flowPosition.x <= nodeX + nodeWidth &&
+               flowPosition.y >= nodeY && flowPosition.y <= nodeY + nodeHeight;
+      });
+      
+      if (clickedNode) {
+        setContextMenu({
+          x: e.clientX,
+          y: e.clientY,
+          nodeId: clickedNode.id,
+        });
+        return;
+      }
+    }
     
     // Calculate position relative to canvas container for overlay display
     let screenPosition = { x: e.clientX, y: e.clientY };
@@ -379,7 +446,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
       flowPosition,
       screenPosition,
     });
-  }, [screenToFlowPosition]);
+  }, [screenToFlowPosition, selectedNodeIds, nodes]);
 
   // Prevent ReactFlow from creating connections starting from input handles
   const isValidConnection = useCallback((connection: any) => {
@@ -916,8 +983,241 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     }
   }, [setViewport, getViewport]);
 
+  // Prevent system context menu - use both capture and bubble phases
+  // Capture phase prevents default early, bubble phase catches any that slip through
+  useEffect(() => {
+    const handleContextMenuCapture = (e: MouseEvent) => {
+      // Only prevent if clicking within the canvas wrapper
+      const target = e.target as HTMLElement;
+      if (target && reactFlowWrapper.current && reactFlowWrapper.current.contains(target)) {
+        // Check if it's the ReactFlow pane or a node
+        const isReactFlowPane = target.closest('.react-flow__pane');
+        const isNode = target.closest('.react-flow__node');
+        const isReactFlowElement = target.closest('.react-flow') !== null;
+        const isSelectionBox = target.closest('.react-flow__nodesselection') !== null;
+        
+        // If clicking on selection box and we have selected nodes, find node under cursor
+        if (isSelectionBox && selectedNodeIds.size > 0) {
+          // Convert click position to flow coordinates for accurate comparison
+          const flowPosition = screenToFlowPosition({
+            x: e.clientX,
+            y: e.clientY,
+          });
+          
+          // Find node under cursor - check all selected nodes
+          let clickedNode = null;
+          let closestNode = null;
+          let closestDistance = Infinity;
+          
+          for (const node of nodes) {
+            if (!selectedNodeIds.has(node.id)) continue;
+            
+            const nodeX = node.position.x;
+            const nodeY = node.position.y;
+            const nodeWidth = node.width || node.data?.width || 200;
+            const nodeHeight = node.height || node.data?.height || 100;
+            
+            // Check if click is within node bounds in flow coordinates
+            const isOverNode = flowPosition.x >= nodeX && flowPosition.x <= nodeX + nodeWidth &&
+                              flowPosition.y >= nodeY && flowPosition.y <= nodeY + nodeHeight;
+            
+            if (isOverNode) {
+              clickedNode = node;
+              break;
+            }
+            
+            // Also track closest node for fallback
+            const nodeCenterX = nodeX + nodeWidth / 2;
+            const nodeCenterY = nodeY + nodeHeight / 2;
+            const distance = Math.sqrt(
+              Math.pow(flowPosition.x - nodeCenterX, 2) + 
+              Math.pow(flowPosition.y - nodeCenterY, 2)
+            );
+            
+            if (distance < closestDistance) {
+              closestDistance = distance;
+              closestNode = node;
+            }
+          }
+          
+          // Use clicked node if found, otherwise use closest node as fallback
+          const targetNode = clickedNode || closestNode;
+          if (targetNode) {
+            e.preventDefault();
+            e.stopPropagation();
+            // Trigger context menu for the node
+            setTimeout(() => {
+              setContextMenuRef.current({
+                x: e.clientX,
+                y: e.clientY,
+                nodeId: targetNode.id,
+              });
+            }, 0);
+            return;
+          }
+        }
+        
+        if (isReactFlowPane || isNode || isReactFlowElement) {
+          // Prevent default to stop system menu, but DON'T stop propagation
+          // so ReactFlow's handlers can still fire to show our custom menu
+          e.preventDefault();
+        }
+      }
+    };
+
+    const handleContextMenuBubble = (e: MouseEvent) => {
+      // Catch any events that weren't prevented in capture phase
+      const target = e.target as HTMLElement;
+      if (target && reactFlowWrapper.current && reactFlowWrapper.current.contains(target)) {
+        const isReactFlowPane = target.closest('.react-flow__pane');
+        const isNode = target.closest('.react-flow__node');
+        const isReactFlowElement = target.closest('.react-flow') !== null;
+        if ((isReactFlowPane || isNode || isReactFlowElement) && !e.defaultPrevented) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+      }
+    };
+    
+    // Use capture phase on document to catch the event early and prevent system menu
+    // We don't stop propagation so ReactFlow's handlers can still fire
+    document.addEventListener('contextmenu', handleContextMenuCapture, true);
+    // Also add bubble phase handler as backup
+    document.addEventListener('contextmenu', handleContextMenuBubble, false);
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenuCapture, true);
+      document.removeEventListener('contextmenu', handleContextMenuBubble, false);
+    };
+  }, [selectedNodeIds, nodes, getViewport]);
+
+  // Also prevent contextmenu directly on ReactFlow viewport after it mounts
+  // This catches events at the source before they bubble up
+  useEffect(() => {
+    if (!reactFlowWrapper.current) return;
+    
+    const reactFlowViewport = reactFlowWrapper.current.querySelector('.react-flow__viewport');
+    if (!reactFlowViewport) return;
+    
+    const handleViewportContextMenu = (e: Event) => {
+      // Prevent default but don't stop propagation so ReactFlow's handlers can fire
+      const mouseEvent = e as MouseEvent;
+      mouseEvent.preventDefault();
+    };
+    
+    reactFlowViewport.addEventListener('contextmenu', handleViewportContextMenu, true);
+    return () => {
+      reactFlowViewport.removeEventListener('contextmenu', handleViewportContextMenu, true);
+    };
+  }, [nodes.length]); // Re-run when nodes change (ReactFlow might recreate viewport)
+
+  // Track mouse down to detect drag vs click
+  const handleWrapperMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    mouseDownRef.current = {
+      time: Date.now(),
+      x: e.clientX,
+      y: e.clientY,
+    };
+  }, []);
+
+  // Handle click on wrapper div to clear selection when clicking on pane
+  const handleWrapperClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    // Only handle if clicking directly on the wrapper or pane (not on nodes or other elements)
+    const target = e.target as HTMLElement;
+    const isNode = target.closest('.react-flow__node');
+    const isControl = target.closest('.react-flow__controls');
+    const isGroupBoundary = target.closest('.react-flow__group-boundary');
+    // Check for selection box - ReactFlow creates this during drag selection
+    // Only check for the actual selection box element, not just any element with "selection" in className
+    const isSelectionBox = target.closest('.react-flow__nodesselection');
+    
+    // If clicking on node, control, group boundary, or selection box, let ReactFlow handle it
+    if (isNode || isControl || isGroupBoundary || isSelectionBox) {
+      return;
+    }
+    
+    // Check if we have selected nodes
+    const currentSelectedIds = Array.from(useWorkflowStore.getState().selectedNodeIds);
+    if (currentSelectedIds.length === 0) {
+      return;
+    }
+    
+    // Check if this was a drag (mouse moved significantly) vs a click
+    const mouseDown = mouseDownRef.current;
+    if (mouseDown) {
+      const distance = Math.sqrt(
+        Math.pow(e.clientX - mouseDown.x, 2) + 
+        Math.pow(e.clientY - mouseDown.y, 2)
+      );
+      const timeDiff = Date.now() - mouseDown.time;
+      
+      // If mouse moved more than 5px or took more than 200ms, it was likely a drag
+      if (distance > 5 || timeDiff > 200) {
+        mouseDownRef.current = null;
+        return;
+      }
+    }
+    
+    // Also check if selection just changed (likely from drag selection completion)
+    // If selection changed within the last 500ms, this click is probably from drag selection release
+    const timeSinceLastSelectionChange = Date.now() - lastSelectionChangeTimeRef.current;
+    if (timeSinceLastSelectionChange < 500) {
+      mouseDownRef.current = null;
+      return;
+    }
+    
+    mouseDownRef.current = null;
+    
+    // Set flag to prevent onSelectionChange from interfering
+    isClearingSelectionRef.current = true;
+    
+    // Clear store selection
+    clearSelection();
+    
+    // Clear ReactFlow selection state
+    const currentNodes = getNodes();
+    const nodesToUpdate = currentNodes.filter(n => n.selected);
+    if (nodesToUpdate.length > 0) {
+      setNodes((nds) =>
+        nds.map((node) => ({
+          ...node,
+          selected: false,
+        }))
+      );
+    }
+    
+    // Clear flag after a short delay
+    setTimeout(() => {
+      isClearingSelectionRef.current = false;
+    }, 50);
+  }, [clearSelection, getNodes, setNodes]);
+
+  // Handle contextmenu directly on wrapper div using oncontextmenu attribute
+  // This fires early and prevents system menu, but doesn't stop propagation
+  // so ReactFlow's handlers can still fire to show our custom menu
+  const handleWrapperContextMenu = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement;
+    if (target) {
+      const isReactFlowPane = target.closest('.react-flow__pane');
+      const isNode = target.closest('.react-flow__node');
+      const isReactFlowElement = target.closest('.react-flow') !== null;
+      if (isReactFlowPane || isNode || isReactFlowElement) {
+        // Prevent default to stop system menu, but DON'T stop propagation
+        // so ReactFlow's handlers can still fire
+        e.preventDefault();
+      }
+    }
+    return false; // Additional prevention for older browsers
+  }, []);
+
   return (
-    <div className="flex-1 relative canvas-vignette" ref={reactFlowWrapper} data-tour="canvas">
+    <div 
+      className="flex-1 relative canvas-vignette" 
+      ref={reactFlowWrapper} 
+      data-tour="canvas"
+      onMouseDown={handleWrapperMouseDown}
+      onClick={handleWrapperClick}
+      onContextMenu={handleWrapperContextMenu}
+    >
       <ReactFlow
         nodes={mappedNodes}
         edges={mappedEdges}
@@ -958,9 +1258,25 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
           }
         }}
         onSelectionChange={(params) => {
+          // Track when selection changes (for detecting drag selection completion)
+          lastSelectionChangeTimeRef.current = Date.now();
+          
+          // If we're clearing selection from pane click, ignore this event
+          if (isClearingSelectionRef.current) {
+            return;
+          }
+          
           const selectedIds = params.nodes.map((n) => n.id);
           const newSelectedId = selectedIds.length > 0 ? selectedIds[0] : null;
           const lastReactFlowSelection = reactFlowSelectionRef.current;
+          
+          // If ReactFlow cleared selection (0 nodes) but store still has selection, clear store
+          // This handles the case where onPaneClick doesn't fire but ReactFlow clears selection
+          if (selectedIds.length === 0 && selectedNodeIds.size > 0) {
+            clearSelection();
+            reactFlowSelectionRef.current = null;
+            return;
+          }
           
           // Update ReactFlow's selection ref
           reactFlowSelectionRef.current = newSelectedId;
@@ -1011,13 +1327,69 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
           // ReactFlow: Use same key for drag selection (Ctrl/Cmd + Drag)
           return isMac ? 'Meta' : 'Control';
         })()}
-        selectionOnDrag={false}
+        selectionOnDrag={true}
+        panOnDrag={((event: MouseEvent | TouchEvent) => {
+          // Allow panning only when selection key (Cmd/Ctrl) is NOT pressed
+          // When selection key is pressed, ReactFlow will handle selection drag instead
+          const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPod|iPad/i.test(navigator.platform);
+          if (event instanceof MouseEvent) {
+            const selectionKeyPressed = isMac ? event.metaKey : event.ctrlKey;
+            return !selectionKeyPressed;
+          }
+          // For touch events, allow panning
+          return true;
+        }) as any}
         onDrop={onDrop}
         onDragOver={onDragOver}
         onNodeClick={onNodeClick}
         onPaneClick={onPaneClick}
         onNodeContextMenu={onNodeContextMenu}
         onPaneContextMenu={onPaneContextMenu}
+        onNodeDragStop={(_event, node) => {
+          const { removeNodesFromGroup } = useWorkflowStore.getState();
+          // Check if node overlaps with any group boundary
+          const nodeRect = {
+            x: node.position.x,
+            y: node.position.y,
+            width: node.width || node.data?.width || 200,
+            height: node.height || node.data?.height || 100,
+          };
+
+          // Calculate node center point for more accurate detection
+          const nodeCenterX = nodeRect.x + nodeRect.width / 2;
+          const nodeCenterY = nodeRect.y + nodeRect.height / 2;
+
+          groups.forEach((group) => {
+            const groupRect = {
+              x: group.position.x,
+              y: group.position.y,
+              width: group.width,
+              height: group.height,
+            };
+
+            // Check if node center is inside group boundary
+            const centerInside =
+              nodeCenterX >= groupRect.x &&
+              nodeCenterX <= groupRect.x + groupRect.width &&
+              nodeCenterY >= groupRect.y &&
+              nodeCenterY <= groupRect.y + groupRect.height;
+
+            // Also check if node overlaps with group (even partially) for adding
+            const overlaps =
+              nodeRect.x < groupRect.x + groupRect.width &&
+              nodeRect.x + nodeRect.width > groupRect.x &&
+              nodeRect.y < groupRect.y + groupRect.height &&
+              nodeRect.y + nodeRect.height > groupRect.y;
+
+            if (overlaps && !group.nodeIds.includes(node.id)) {
+              // Add node to group if it overlaps
+              addNodesToGroup(group.id, [node.id]);
+            } else if (!centerInside && group.nodeIds.includes(node.id)) {
+              // Remove node from group if center is outside (more lenient removal)
+              removeNodesFromGroup(group.id, [node.id]);
+            }
+          });
+        }}
         onMove={(_event, viewport) => {
           // Update lastKnownViewport on every move to persist across remounts
           // Only update if viewport is not default (0,0,1) to avoid overwriting with default during remounts
@@ -1043,6 +1415,10 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
           />
         )}
         <Controls className="bg-gray-800 border border-gray-700" />
+        {/* Render group boundaries inside ReactFlow so they follow pan/zoom */}
+        {groups.map((group) => (
+          <GroupBoundary key={group.id} group={group} />
+        ))}
       </ReactFlow>
       {/* Filename display - fixed position in top left */}
       <div className="fixed top-0 left-0 z-10 p-2 text-gray-100 text-sm font-mono flex items-center gap-2">
@@ -1053,22 +1429,22 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
       </div>
       {contextMenu && (
         <ContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          nodeId={contextMenu.nodeId}
-          flowPosition={contextMenu.flowPosition}
-          screenPosition={contextMenu.screenPosition}
-          onClose={() => setContextMenu(null)}
-          onAddNode={() => {
-            if (contextMenu.flowPosition && contextMenu.screenPosition) {
-              setSearchOverlay({
-                screen: contextMenu.screenPosition,
-                flow: contextMenu.flowPosition,
-              });
-              setContextMenu(null);
-            }
-          }}
-        />
+            x={contextMenu.x}
+            y={contextMenu.y}
+            nodeId={contextMenu.nodeId}
+            flowPosition={contextMenu.flowPosition}
+            screenPosition={contextMenu.screenPosition}
+            onClose={() => setContextMenu(null)}
+            onAddNode={() => {
+              if (contextMenu.flowPosition && contextMenu.screenPosition) {
+                setSearchOverlay({
+                  screen: contextMenu.screenPosition,
+                  flow: contextMenu.flowPosition,
+                });
+                setContextMenu(null);
+              }
+            }}
+          />
       )}
       {searchOverlay && (
         <CanvasSearchOverlay

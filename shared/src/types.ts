@@ -1068,10 +1068,22 @@ export interface Edge {
   targetHandle?: string; // Input port
 }
 
+// Group Interface
+export interface Group {
+  id: string;
+  name: string;
+  nodeIds: string[];
+  position: { x: number; y: number };
+  width: number;
+  height: number;
+  borderColor?: string; // Optional border color for the group boundary
+}
+
 // Workflow JSON Schema
 export interface Workflow {
   nodes: BaseNode[];
   edges: Edge[];
+  groups?: Group[];
 }
 
 // Execution Context

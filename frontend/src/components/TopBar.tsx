@@ -29,7 +29,7 @@ import Tooltip from './Tooltip';
 const STORAGE_KEY_TRACE_LOGS = 'automflows_trace_logs';
 
 export default function TopBar() {
-  const { nodes, edges, setNodes, setEdges, resetExecution, edgesHidden, setEdgesHidden, selectedNode, followModeEnabled, setFollowModeEnabled, workflowFileName, setWorkflowFileName, setHasUnsavedChanges } = useWorkflowStore();
+  const { nodes, edges, groups, setNodes, setEdges, setGroups, resetExecution, edgesHidden, setEdgesHidden, selectedNode, followModeEnabled, setFollowModeEnabled, workflowFileName, setWorkflowFileName, setHasUnsavedChanges } = useWorkflowStore();
   const { validationErrors, setValidationErrors } = useExecution();
   const addNotification = useNotificationStore((state) => state.addNotification);
   const { tourCompleted, startTour, resetTour } = useSettingsStore();
@@ -200,7 +200,7 @@ export default function TopBar() {
   }, [saveDropdownOpen]);
 
   const downloadWorkflow = (filename: string) => {
-    const workflow = serializeWorkflow(nodes, edges);
+    const workflow = serializeWorkflow(nodes, edges, groups);
     const blob = new Blob([JSON.stringify(workflow, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -215,7 +215,7 @@ export default function TopBar() {
     setIsMenuOpen(false);
     
     try {
-      const workflow = serializeWorkflow(nodes, edges);
+      const workflow = serializeWorkflow(nodes, edges, groups);
       const workflowJson = JSON.stringify(workflow, null, 2);
 
       if (supportsFileSystemAccess && currentFileHandle) {
@@ -271,7 +271,7 @@ export default function TopBar() {
     setIsMenuOpen(false);
     
     try {
-      const workflow = serializeWorkflow(nodes, edges);
+      const workflow = serializeWorkflow(nodes, edges, groups);
       const workflowJson = JSON.stringify(workflow, null, 2);
 
       // Determine filename to use: parameter > persisted filename (if not Untitled) > default
@@ -367,9 +367,12 @@ export default function TopBar() {
               reader.onload = (event) => {
                 try {
                   const workflow = JSON.parse(event.target?.result as string);
-                  const { nodes: loadedNodes, edges: loadedEdges } = deserializeWorkflow(workflow);
+                  const { nodes: loadedNodes, edges: loadedEdges, groups: loadedGroups } = deserializeWorkflow(workflow);
                   setNodes(loadedNodes);
                   setEdges(loadedEdges);
+                  if (loadedGroups) {
+                    setGroups(loadedGroups);
+                  }
                   setCurrentFileHandle(null); // Can't track file handle with file input
                   const fileName = file.name || 'Untitled Workflow';
                   setWorkflowFileName(fileName);
@@ -405,9 +408,14 @@ export default function TopBar() {
       reader.onload = (event) => {
         try {
           const workflow = JSON.parse(event.target?.result as string);
-          const { nodes: loadedNodes, edges: loadedEdges } = deserializeWorkflow(workflow);
+          const { nodes: loadedNodes, edges: loadedEdges, groups: loadedGroups } = deserializeWorkflow(workflow);
           setNodes(loadedNodes);
           setEdges(loadedEdges);
+          if (loadedGroups) {
+            setGroups(loadedGroups);
+          } else {
+            setGroups([]); // Clear groups if not present
+          }
           setCurrentFileHandle(fileHandle);
           // Extract filename from file handle or file name
           const fileName = fileHandle?.name || file.name || 'Untitled Workflow';
@@ -491,6 +499,7 @@ export default function TopBar() {
     resetExecution();
     setNodes([]);
     setEdges([]);
+    setGroups([]); // Clear groups when resetting template
     setCurrentFileHandle(null);
     setWorkflowFileName('Untitled Workflow');
     setHasUnsavedChanges(false);
