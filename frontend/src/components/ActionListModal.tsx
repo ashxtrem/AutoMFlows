@@ -22,6 +22,8 @@ interface ActionListModalProps {
   onMinimize: () => void;
   onClose: () => void;
   onClearActions: () => void;
+  showOverlayVisibilityMessage?: boolean;
+  onDismissOverlayMessage?: () => void;
 }
 
 const ACTION_TYPES: Array<{ value: string; label: string }> = [
@@ -52,6 +54,8 @@ export default function ActionListModal({
   onMinimize,
   onClose,
   onClearActions,
+  showOverlayVisibilityMessage = false,
+  onDismissOverlayMessage,
 }: ActionListModalProps) {
   const [expandedActions, setExpandedActions] = useState<Set<string>>(new Set());
   const [editingAction, setEditingAction] = useState<string | null>(null);
@@ -98,6 +102,16 @@ export default function ActionListModal({
       // Ignore errors
     }
   }, [typeFilters, sortBy, sortOrder, showInsertedActions]);
+
+  // Auto-dismiss overlay visibility message after 8 seconds
+  useEffect(() => {
+    if (showOverlayVisibilityMessage && onDismissOverlayMessage) {
+      const timer = setTimeout(() => {
+        onDismissOverlayMessage();
+      }, 8000);
+      return () => clearTimeout(timer);
+    }
+  }, [showOverlayVisibilityMessage, onDismissOverlayMessage]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -443,6 +457,26 @@ export default function ActionListModal({
             </button>
           </div>
         </div>
+
+        {/* Overlay Visibility Message */}
+        {showOverlayVisibilityMessage && (
+          <div className="mx-4 mt-4 p-3 bg-blue-900/30 border border-blue-600/50 rounded-lg flex items-start gap-2">
+            <div className="flex-1">
+              <div className="text-blue-300 text-sm">
+                If the overlay button is not visible, click the device toggle to re-render the viewport and the overlay will appear.
+              </div>
+            </div>
+            {onDismissOverlayMessage && (
+              <button
+                onClick={onDismissOverlayMessage}
+                className="text-blue-400 hover:text-blue-300 p-1"
+                aria-label="Dismiss"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Filter Bar */}
         <div className="p-4 border-b border-gray-700 bg-gray-750 space-y-3">

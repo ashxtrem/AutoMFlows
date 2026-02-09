@@ -288,6 +288,8 @@ function App() {
             onMinimize={builderMode.handleMinimize}
             onClose={builderMode.handleClose}
             onClearActions={builderMode.handleClearActions}
+            showOverlayVisibilityMessage={builderMode.showOverlayVisibilityMessage}
+            onDismissOverlayMessage={() => builderMode.setShowOverlayVisibilityMessage(false)}
           />
         )}
         {/* Unified Builder Icon - Shows when minimized OR paused at breakpoint (but not when modal is open) */}

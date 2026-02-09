@@ -295,15 +295,6 @@ export default function FloatingRunButton() {
             <ErrorIcon sx={{ fontSize: '24px', color: '#ffffff', pointerEvents: 'none', filter: 'drop-shadow(0 0 4px rgba(255, 255, 255, 0.8))' }} />
           </button>
           </Tooltip>
-          
-          {/* Workflow modification indicator */}
-          <div className="mt-2 px-3 py-1.5 rounded-lg bg-white/10 dark:bg-gray-800/20 backdrop-blur-md border border-white/20 dark:border-gray-700/50 text-xs text-white text-center max-w-xs">
-            {isBreakpointPause ? (
-              <span className="text-green-300">✓ Workflow changes will be applied when you continue</span>
-            ) : isWaitPause ? (
-              <span className="text-yellow-300">⚠ Workflow changes saved for next execution</span>
-            ) : null}
-          </div>
         </>
       )}
 

@@ -45,6 +45,7 @@ export function useBuilderMode() {
   const [isRecording, setIsRecording] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [backendPort, setBackendPort] = useState<number | null>(null);
+  const [showOverlayVisibilityMessage, setShowOverlayVisibilityMessage] = useState(false);
   
   // Show modal when builder mode becomes active
   useEffect(() => {
@@ -128,13 +129,8 @@ export function useBuilderMode() {
   const startRecording = useCallback(async () => {
     if (!backendPort) return;
     try {
-      // Show warning notification about overlay visibility
-      addNotification({
-        type: 'info',
-        title: 'Recording Started',
-        message: 'If the overlay button is not visible, click the device toggle to re-render the viewport and the overlay will appear.',
-        duration: 8000, // Show for 8 seconds
-      });
+      // Show overlay visibility message in modal
+      setShowOverlayVisibilityMessage(true);
 
       // Call backend to inject overlay (switch to browser and inject)
       const response = await fetch(`http://localhost:${backendPort}/api/workflows/builder-mode/start`, {
@@ -166,6 +162,7 @@ export function useBuilderMode() {
     try {
       await stopActionRecording(backendPort);
       setIsRecording(false);
+      setShowOverlayVisibilityMessage(false);
     } catch (error: any) {
       addNotification({
         type: 'error',
@@ -329,5 +326,7 @@ export function useBuilderMode() {
     handleMaximize,
     handleClose,
     handleClearActions,
+    showOverlayVisibilityMessage,
+    setShowOverlayVisibilityMessage,
   };
 }
