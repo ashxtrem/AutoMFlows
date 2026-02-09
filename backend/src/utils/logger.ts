@@ -43,19 +43,20 @@ export class Logger {
     // Sanitize workflow name for filesystem compatibility
     this.workflowName = this.sanitizeWorkflowName(workflowName);
     
-    // Format date as dd-mm-yy
+    // Format date as dd-mm-yy-HH-MM-SS
     const now = new Date();
     const dd = String(now.getDate()).padStart(2, '0');
     const mm = String(now.getMonth() + 1).padStart(2, '0');
     const yy = String(now.getFullYear()).slice(-2);
     const dateStr = `${dd}-${mm}-${yy}`;
     
-    // Add hour-minute suffix to ensure uniqueness for multiple executions on same day
+    // Add hour-minute-second suffix to ensure uniqueness for multiple executions
     const hh = String(now.getHours()).padStart(2, '0');
     const min = String(now.getMinutes()).padStart(2, '0');
-    const timeStr = `${hh}-${min}`;
+    const ss = String(now.getSeconds()).padStart(2, '0');
+    const timeStr = `${hh}-${min}-${ss}`;
 
-    // Create file paths with new format: {filename}-{dd}-{mm}-{yy}-{HH}-{MM}-terminal.log / console.txt
+    // Create file paths with new format: {filename}-{dd}-{mm}-{yy}-{HH}-{MM}-{SS}-terminal.log / console.txt
     this.terminalLogPath = path.join(this.logsDir, `${this.workflowName}-${dateStr}-${timeStr}-terminal.log`);
     this.consoleLogPath = path.join(this.logsDir, `${this.workflowName}-${dateStr}-${timeStr}-console.txt`);
 
@@ -170,28 +171,29 @@ export class Logger {
         .filter(fileName => fileName.endsWith('-terminal.log') || fileName.endsWith('-console.txt'));
 
       // Group files by execution ID and extract date for sorting
-      // File format: {workflowName}-{dd}-{mm}-{yy}-{HH}-{MM}-terminal.log or {workflowName}-{dd}-{mm}-{yy}-{HH}-{MM}-console.txt
+      // File format: {workflowName}-{dd}-{mm}-{yy}-{HH}-{MM}-{SS}-terminal.log or {workflowName}-{dd}-{mm}-{yy}-{HH}-{MM}-{SS}-console.txt
       const executionMap = new Map<string, { date: Date; files: string[] }>();
       
       for (const fileName of files) {
-        // Match new format: {workflowName}-{dd}-{mm}-{yy}-{HH}-{MM}-{type}.{ext}
-        const newFormatMatch = fileName.match(/^(.+)-(\d{2})-(\d{2})-(\d{2})-(\d{2})-(\d{2})-(terminal|console)\.(txt|log)$/);
+        // Match new format: {workflowName}-{dd}-{mm}-{yy}-{HH}-{MM}-{SS}-{type}.{ext}
+        const newFormatMatch = fileName.match(/^(.+)-(\d{2})-(\d{2})-(\d{2})-(\d{2})-(\d{2})-(\d{2})-(terminal|console)\.(txt|log)$/);
         // Match old format (timestamp only) for backward compatibility
         const oldFormatMatch = fileName.match(/^(.+)-(\d+)-(terminal|console)\.(txt|log)$/);
         
         if (newFormatMatch) {
-          // New format: {workflowName}-{dd}-{mm}-{yy}-{HH}-{MM}-{type}.{ext}
+          // New format: {workflowName}-{dd}-{mm}-{yy}-{HH}-{MM}-{SS}-{type}.{ext}
           const workflowName = newFormatMatch[1];
           const dd = parseInt(newFormatMatch[2], 10);
           const mm = parseInt(newFormatMatch[3], 10);
           const yy = parseInt(newFormatMatch[4], 10);
           const hh = parseInt(newFormatMatch[5], 10);
           const min = parseInt(newFormatMatch[6], 10);
+          const ss = parseInt(newFormatMatch[7], 10);
           // Convert yy to full year (assuming 20yy for years 00-99)
           const fullYear = yy < 50 ? 2000 + yy : 1900 + yy;
-          const date = new Date(fullYear, mm - 1, dd, hh, min);
+          const date = new Date(fullYear, mm - 1, dd, hh, min, ss);
           // Use date-time for execution ID to ensure uniqueness
-          const executionId = `${workflowName}-${newFormatMatch[2]}-${newFormatMatch[3]}-${newFormatMatch[4]}-${newFormatMatch[5]}-${newFormatMatch[6]}`;
+          const executionId = `${workflowName}-${newFormatMatch[2]}-${newFormatMatch[3]}-${newFormatMatch[4]}-${newFormatMatch[5]}-${newFormatMatch[6]}-${newFormatMatch[7]}`;
           
           if (!executionMap.has(executionId)) {
             executionMap.set(executionId, { date, files: [] });

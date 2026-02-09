@@ -1213,6 +1213,7 @@ export interface ExecuteWorkflowRequest {
   recordSession?: boolean; // Flag to enable video recording
   breakpointConfig?: BreakpointConfig;
   builderModeEnabled?: boolean; // Flag to enable builder mode
+  workflowFileName?: string; // Filename of the workflow file (without .json extension)
 }
 
 export interface ExecuteWorkflowResponse {

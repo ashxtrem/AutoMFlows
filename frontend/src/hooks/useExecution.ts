@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useWorkflowStore } from '../store/workflowStore';
 import { serializeWorkflow } from '../utils/serialization';
@@ -108,8 +108,8 @@ export function useExecution() {
     breakpointAt,
     breakpointFor,
     builderModeEnabled,
-    builderModeActions,
     resetBuilderModeActions,
+    workflowFileName,
   } = useWorkflowStore();
   const reportRetention = useSettingsStore((state) => state.reports.reportRetention);
   const [port, setPort] = useState<number | null>(null);
@@ -415,6 +415,12 @@ export function useExecution() {
         ? { enabled: true, breakpointAt, breakpointFor }
         : undefined;
 
+      // Extract base filename (without .json extension) for backend
+      let baseFileName: string | undefined;
+      if (workflowFileName && workflowFileName !== 'Untitled Workflow') {
+        baseFileName = workflowFileName.replace(/\.json$/i, '');
+      }
+
       const currentPort = port || await getBackendPortSync();
       const fetchController = new AbortController();
       const fetchTimeoutId = setTimeout(() => fetchController.abort(), 10000); // 10 second timeout for API call
@@ -432,6 +438,7 @@ export function useExecution() {
           recordSession,
           breakpointConfig,
           builderModeEnabled,
+          workflowFileName: baseFileName,
         }),
         signal: fetchController.signal,
       });

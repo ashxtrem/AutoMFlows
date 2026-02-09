@@ -174,6 +174,12 @@ interface WorkflowState {
   setBuilderModeModalMinimized: (minimized: boolean) => void;
   setBuilderModeModalPosition: (position: { x: number; y: number } | null) => void;
   resetBuilderModeActions: () => void;
+  
+  // File management state
+  workflowFileName: string;
+  hasUnsavedChanges: boolean;
+  setWorkflowFileName: (fileName: string) => void;
+  setHasUnsavedChanges: (hasChanges: boolean) => void;
 }
 
 // Helper function to reconnect edges when a node is deleted
@@ -345,23 +351,83 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
         return null;
       }
     })(),
+    
+    // File management state
+    workflowFileName: (() => {
+      try {
+        const saved = localStorage.getItem('automflows_workflow_filename');
+        return saved || 'Untitled Workflow';
+      } catch (error) {
+        return 'Untitled Workflow';
+      }
+    })(),
+    hasUnsavedChanges: (() => {
+      try {
+        const saved = localStorage.getItem('automflows_workflow_unsaved_changes');
+        return saved === 'true';
+      } catch (error) {
+        return false;
+      }
+    })(),
+
+  setWorkflowFileName: (fileName) => {
+    set({ workflowFileName: fileName });
+    try {
+      localStorage.setItem('automflows_workflow_filename', fileName);
+    } catch (error) {
+      console.warn('Failed to save workflow filename to localStorage:', error);
+    }
+  },
+  
+  setHasUnsavedChanges: (hasChanges) => {
+    set({ hasUnsavedChanges: hasChanges });
+    try {
+      localStorage.setItem('automflows_workflow_unsaved_changes', String(hasChanges));
+    } catch (error) {
+      console.warn('Failed to save unsaved changes flag to localStorage:', error);
+    }
+  },
 
   setNodes: (nodes) => {
     const state = get();
     // Clear validation errors when nodes are set directly (e.g., when loading a workflow)
     if (state.validationErrors.size > 0) {
-      set({ nodes, validationErrors: new Map() });
+      set({ nodes, validationErrors: new Map(), hasUnsavedChanges: true });
     } else {
-      set({ nodes });
+      set({ nodes, hasUnsavedChanges: true });
+    }
+    // If history[0] is empty and we're setting nodes (workflow load), replace history[0] with loaded state
+    // This prevents undo from going back to empty state
+    // Check if we're loading a workflow (history[0] is empty initial state and we're setting non-empty nodes)
+    if (state.history.length > 0 && state.history[0].nodes.length === 0 && nodes.length > 0) {
+      const newSnapshot: WorkflowSnapshot = {
+        nodes: JSON.parse(JSON.stringify(nodes)),
+        edges: JSON.parse(JSON.stringify(state.edges)),
+      };
+      // Replace history[0] with loaded state, reset historyIndex to 0
+      const newHistory = [newSnapshot];
+      set({ history: newHistory, historyIndex: 0 });
     }
   },
   setEdges: (edges) => {
     const state = get();
     // Clear validation errors when edges are set directly (e.g., when loading a workflow)
     if (state.validationErrors.size > 0) {
-      set({ edges, validationErrors: new Map() });
+      set({ edges, validationErrors: new Map(), hasUnsavedChanges: true });
     } else {
-      set({ edges });
+      set({ edges, hasUnsavedChanges: true });
+    }
+    // If history[0] is empty and we're setting edges (workflow load), replace history[0] with loaded state
+    // This prevents undo from going back to empty state
+    // Check if we're loading a workflow (history[0] is empty initial state and we're setting non-empty edges)
+    if (state.history.length > 0 && state.history[0].edges.length === 0 && edges.length > 0 && state.nodes.length > 0) {
+      const newSnapshot: WorkflowSnapshot = {
+        nodes: JSON.parse(JSON.stringify(state.nodes)),
+        edges: JSON.parse(JSON.stringify(edges)),
+      };
+      // Replace history[0] with loaded state, reset historyIndex to 0
+      const newHistory = [newSnapshot];
+      set({ history: newHistory, historyIndex: 0 });
     }
   },
 
@@ -484,18 +550,29 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
     
     set({
       nodes: nodesToSet,
+      hasUnsavedChanges: true,
       edges: edgesToUpdate,
       selectedNode: updatedSelectedNode,
     });
     
-    // Check if this is a significant change (not just position updates)
+    // Check if this is a significant change (add/remove) or position/data change
     const significantChange = changes.some(
       (change) => change.type === 'add' || change.type === 'remove'
     );
+    const hasPositionChange = changes.some(
+      (change) => change.type === 'position'
+    );
+    const hasDataChange = changes.some(
+      (change) => change.type !== 'select' && change.type !== 'dimensions' && change.type !== 'position' && change.type !== 'add' && change.type !== 'remove'
+    );
     
-    // Save to history for significant changes (debounced)
+    // Save to history for significant changes (add/remove) immediately
+    // Save position and data changes with debounce to avoid too many saves
     if (significantChange) {
       setTimeout(() => get().saveToHistory(), 100);
+    } else if (hasPositionChange || hasDataChange) {
+      // Debounce position/data changes to avoid saving on every drag event
+      setTimeout(() => get().saveToHistory(), 300);
     }
   },
 
@@ -510,6 +587,7 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
     const updatedEdges = applyEdgeChanges(changes, state.edges);
     set({
       edges: updatedEdges,
+      hasUnsavedChanges: true,
     });
     // Save to history for edge changes (debounced)
     setTimeout(() => get().saveToHistory(), 100);
@@ -582,6 +660,7 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
     set({
       edges: addEdge(connection, finalEdges),
       updatingEdgeId: null,
+      hasUnsavedChanges: true,
     });
     setTimeout(() => get().saveToHistory(), 100);
   },
@@ -724,6 +803,7 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
     set({ 
       edges: finalEdges,
       updatingEdgeId: null,
+      hasUnsavedChanges: true,
     });
     setTimeout(() => get().saveToHistory(), 100);
   },
@@ -808,6 +888,7 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
     set({
       nodes: [...state.nodes, newNode],
       edges: newEdges,
+      hasUnsavedChanges: true,
     });
     setTimeout(() => get().saveToHistory(), 100);
   },
@@ -836,6 +917,7 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
     set({
       nodes: updatedNodes,
       selectedNode: updatedSelectedNode,
+      hasUnsavedChanges: true,
     });
     
       // Hide loader after a short delay to allow ReactFlow to reload
@@ -843,7 +925,11 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
         set({ canvasReloading: false });
       }, 100);
     
-    // Don't auto-save to history - let calling code decide when to save
+    // Save to history for data changes (debounced to avoid too many saves)
+    setTimeout(() => get().saveToHistory(), 300);
+    
+    // Save to history for data changes (debounced to avoid too many saves)
+    setTimeout(() => get().saveToHistory(), 300);
   },
 
   updateNodeDimensions: (nodeId, width, height) => {
@@ -947,28 +1033,55 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowState>((set, get) =
   undo: () => {
     const state = get();
     if (state.historyIndex > 0) {
+      // Show global loader to trigger canvas reload (like updateNodeData does)
+      set({ canvasReloading: true });
+      
       const newIndex = state.historyIndex - 1;
       const snapshot = state.history[newIndex];
+      // Prevent restoring empty state if we currently have nodes (safety check)
+      if (snapshot.nodes.length === 0 && state.nodes.length > 0 && newIndex === 0) {
+        set({ canvasReloading: false });
+        return; // Don't restore empty state
+      }
+      const restoredNodes = JSON.parse(JSON.stringify(snapshot.nodes));
+      const restoredEdges = JSON.parse(JSON.stringify(snapshot.edges));
+      
       set({
-        nodes: JSON.parse(JSON.stringify(snapshot.nodes)),
-        edges: JSON.parse(JSON.stringify(snapshot.edges)),
+        nodes: restoredNodes,
+        edges: restoredEdges,
         historyIndex: newIndex,
         selectedNode: null,
       });
+      
+      // Hide loader after a short delay to allow ReactFlow to reload (like updateNodeData does)
+      setTimeout(() => {
+        set({ canvasReloading: false });
+      }, 100);
     }
   },
 
   redo: () => {
     const state = get();
     if (state.historyIndex < state.history.length - 1) {
+      // Show global loader to trigger canvas reload (like updateNodeData does)
+      set({ canvasReloading: true });
+      
       const newIndex = state.historyIndex + 1;
       const snapshot = state.history[newIndex];
+      const restoredNodes = JSON.parse(JSON.stringify(snapshot.nodes));
+      const restoredEdges = JSON.parse(JSON.stringify(snapshot.edges));
+      
       set({
-        nodes: JSON.parse(JSON.stringify(snapshot.nodes)),
-        edges: JSON.parse(JSON.stringify(snapshot.edges)),
+        nodes: restoredNodes,
+        edges: restoredEdges,
         historyIndex: newIndex,
         selectedNode: null,
       });
+      
+      // Hide loader after a short delay to allow ReactFlow to reload (like updateNodeData does)
+      setTimeout(() => {
+        set({ canvasReloading: false });
+      }, 100);
     }
   },
 

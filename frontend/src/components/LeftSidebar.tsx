@@ -1,7 +1,7 @@
 import { NodeType } from '@automflows/shared';
 import { useMemo, useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { frontendPluginRegistry } from '../plugins/registry';
-import { Search, X, Menu, Pin, PinOff, BookOpen, Layers } from 'lucide-react';
+import { Search, X, Pin, PinOff, BookOpen, Layers } from 'lucide-react';
 import Tooltip from './Tooltip';
 import PlayCircleFilledWhiteTwoToneIcon from '@mui/icons-material/PlayCircleFilledWhiteTwoTone';
 import LanguageIcon from '@mui/icons-material/Language';

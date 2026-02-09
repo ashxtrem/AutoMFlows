@@ -40,12 +40,13 @@ export class ExecutionTracker {
   constructor(
     executionId: string,
     workflow: Workflow,
-    outputPath: string = './output'
+    outputPath: string = './output',
+    workflowFileName?: string
   ) {
     this.workflow = workflow; // Store workflow for later use
     
-    // Get workflow name from workflow file or use default
-    const workflowName = this.extractWorkflowName(workflow);
+    // Get workflow name from provided filename or extract from workflow
+    const workflowName = this.extractWorkflowName(workflow, workflowFileName);
     const timestamp = Date.now();
     const folderName = `${workflowName}-${timestamp}`;
     
@@ -78,7 +79,12 @@ export class ExecutionTracker {
     };
   }
 
-  private extractWorkflowName(workflow: Workflow): string {
+  private extractWorkflowName(workflow: Workflow, workflowFileName?: string): string {
+    // Use provided filename if available (already sanitized from frontend)
+    if (workflowFileName) {
+      // Sanitize for filesystem compatibility (remove .json extension if present, replace invalid chars)
+      return workflowFileName.replace(/\.json$/i, '').replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase() || 'workflow';
+    }
     // Try to find a Start node and use its label, or use default
     const startNode = workflow.nodes.find(node => node.type === 'start');
     if (startNode && (startNode.data as any)?.label) {

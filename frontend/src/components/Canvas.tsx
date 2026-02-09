@@ -72,7 +72,7 @@ interface CanvasInnerProps {
 }
 
 function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, hasRunInitialFitViewRef, hideSidebar }: CanvasInnerProps) {
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setSelectedNodeIds, clearSelection, selectAllNodes, deleteNode, duplicateNode, copyNode, pasteNode, onConnectStart, onConnectEnd, onEdgeUpdate, failedNodes, showErrorPopupForNode, canvasReloading, executingNodeId, executionStatus, followModeEnabled, setFollowModeEnabled, pausedNodeId, pauseReason, selectedNodeIds } = useWorkflowStore();
+  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setSelectedNodeIds, clearSelection, selectAllNodes, deleteNode, duplicateNode, copyNode, pasteNode, onConnectStart, onConnectEnd, onEdgeUpdate, failedNodes, showErrorPopupForNode, canvasReloading, executingNodeId, executionStatus, followModeEnabled, setFollowModeEnabled, pausedNodeId, pauseReason, selectedNodeIds, workflowFileName, hasUnsavedChanges } = useWorkflowStore();
   const addNotification = useNotificationStore((state) => state.addNotification);
   const { showGrid, gridSize, snapToGrid } = useSettingsStore((state) => ({
     showGrid: state.canvas.showGrid,
@@ -1044,6 +1044,13 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
         )}
         <Controls className="bg-gray-800 border border-gray-700" />
       </ReactFlow>
+      {/* Filename display - fixed position in top left */}
+      <div className="fixed top-0 left-0 z-10 p-2 text-gray-100 text-sm font-mono flex items-center gap-2">
+        <span className="drop-shadow-lg">{workflowFileName}</span>
+        {hasUnsavedChanges && (
+          <span className="text-yellow-400 text-xs drop-shadow-lg" title="Unsaved changes">●</span>
+        )}
+      </div>
       {contextMenu && (
         <ContextMenu
           x={contextMenu.x}

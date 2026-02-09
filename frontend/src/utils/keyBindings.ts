@@ -190,6 +190,36 @@ export const KEY_BINDINGS: KeyBinding[] = [
       windows: ['Ctrl', 'V'],
     },
   },
+  {
+    id: 'save-workflow',
+    keys: ['Ctrl', 'S'],
+    description: 'Save workflow',
+    category: 'workflow',
+    platformSpecific: {
+      mac: ['Cmd', 'S'],
+      windows: ['Ctrl', 'S'],
+    },
+  },
+  {
+    id: 'save-workflow-as',
+    keys: ['Ctrl', 'Shift', 'S'],
+    description: 'Save workflow as...',
+    category: 'workflow',
+    platformSpecific: {
+      mac: ['Cmd', 'Shift', 'S'],
+      windows: ['Ctrl', 'Shift', 'S'],
+    },
+  },
+  {
+    id: 'open-workflow',
+    keys: ['Ctrl', 'O'],
+    description: 'Open workflow...',
+    category: 'workflow',
+    platformSpecific: {
+      mac: ['Cmd', 'O'],
+      windows: ['Ctrl', 'O'],
+    },
+  },
 ];
 
 /**

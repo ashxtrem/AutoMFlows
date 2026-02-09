@@ -39,6 +39,7 @@ export class Executor {
   private builderModeEnabled: boolean = false;
   private logger?: Logger;
   private slowMo: number = 0; // Delay in milliseconds between node executions
+  private workflowFileName?: string;
   // Pause state
   private isPaused: boolean = false;
   private pausedNodeId: string | null = null;
@@ -60,7 +61,8 @@ export class Executor {
     reportConfig?: ReportConfig,
     recordSession: boolean = false,
     breakpointConfig?: BreakpointConfig,
-    builderModeEnabled: boolean = false
+    builderModeEnabled: boolean = false,
+    workflowFileName?: string
   ) {
     this.executionId = uuidv4();
     
@@ -81,6 +83,7 @@ export class Executor {
     this.reportConfig = reportConfig;
     this.breakpointConfig = breakpointConfig;
     this.builderModeEnabled = builderModeEnabled;
+    this.workflowFileName = workflowFileName;
     this.parser = new WorkflowParser(this.workflow);
     this.context = new ContextManager();
     
@@ -114,7 +117,7 @@ export class Executor {
       // Use report config output path if available, otherwise default to './output'
       // Path will be resolved relative to project root in ExecutionTracker
       const outputPath = reportConfig?.outputPath || './output';
-      this.executionTracker = new ExecutionTracker(this.executionId, workflow, outputPath);
+      this.executionTracker = new ExecutionTracker(this.executionId, workflow, outputPath, this.workflowFileName);
       
       // Store directory paths in context for node handlers
       this.context.setData('outputDirectory', this.executionTracker.getOutputDirectory());
@@ -163,8 +166,13 @@ export class Executor {
 
   /**
    * Extract workflow name from workflow (similar to ExecutionTracker)
+   * Uses provided filename if available, otherwise falls back to Start node label
    */
   private extractWorkflowName(workflow: Workflow): string {
+    // Use provided filename if available
+    if (this.workflowFileName) {
+      return this.workflowFileName;
+    }
     // Try to find a Start node and use its label, or use default
     const startNode = workflow.nodes.find(node => node.type === NodeType.START);
     if (startNode && (startNode.data as any)?.label) {

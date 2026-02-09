@@ -14,7 +14,7 @@ export default function workflowRoutes(io: Server) {
 
   router.post('/execute', async (req: Request, res: Response) => {
     try {
-      const { workflow, traceLogs = false, screenshotConfig, reportConfig, recordSession = false, breakpointConfig, builderModeEnabled = false } = req.body as ExecuteWorkflowRequest;
+      const { workflow, traceLogs = false, screenshotConfig, reportConfig, recordSession = false, breakpointConfig, builderModeEnabled = false, workflowFileName } = req.body as ExecuteWorkflowRequest;
 
       if (!workflow || !workflow.nodes || !workflow.edges) {
         return res.status(400).json({ error: 'Invalid workflow format' });
@@ -25,8 +25,8 @@ export default function workflowRoutes(io: Server) {
         await currentExecutor.stop();
       }
 
-      // Create new executor with screenshot, report config, recording flag, breakpoint config, and builder mode
-      currentExecutor = new Executor(workflow, io, traceLogs, screenshotConfig, reportConfig, recordSession, breakpointConfig, builderModeEnabled);
+      // Create new executor with screenshot, report config, recording flag, breakpoint config, builder mode, and workflow filename
+      currentExecutor = new Executor(workflow, io, traceLogs, screenshotConfig, reportConfig, recordSession, breakpointConfig, builderModeEnabled, workflowFileName);
       const executionId = currentExecutor.getExecutionId();
 
       // Start execution asynchronously

@@ -29,7 +29,7 @@ import Tooltip from './Tooltip';
 const STORAGE_KEY_TRACE_LOGS = 'automflows_trace_logs';
 
 export default function TopBar() {
-  const { nodes, edges, setNodes, setEdges, resetExecution, edgesHidden, setEdgesHidden, selectedNode, followModeEnabled, setFollowModeEnabled } = useWorkflowStore();
+  const { nodes, edges, setNodes, setEdges, resetExecution, edgesHidden, setEdgesHidden, selectedNode, followModeEnabled, setFollowModeEnabled, workflowFileName, setWorkflowFileName, setHasUnsavedChanges } = useWorkflowStore();
   const { validationErrors, setValidationErrors } = useExecution();
   const addNotification = useNotificationStore((state) => state.addNotification);
   const { tourCompleted, startTour, resetTour } = useSettingsStore();
@@ -93,6 +93,7 @@ export default function TopBar() {
       prevFollowModeRef.current = followModeEnabled;
     }
   }, [followModeEnabled, addNotification]);
+
 
   // Handle click outside menu to close it
   useEffect(() => {
@@ -224,6 +225,9 @@ export default function TopBar() {
           await writable.write(workflowJson);
           await writable.close();
           
+          setWorkflowFileName(currentFileHandle.name);
+          setHasUnsavedChanges(false);
+          
           addNotification({
             type: 'info',
             title: 'Workflow Saved',
@@ -232,21 +236,25 @@ export default function TopBar() {
         } catch (error) {
           // If writing fails (e.g., permission denied), fall back to Save As
           console.warn('Failed to write to file handle:', error);
-          await handleSaveAs();
+          const fileName = workflowFileName !== 'Untitled Workflow' ? workflowFileName : undefined;
+          await handleSaveAs(fileName);
         }
       } else {
         // Fallback: use Save As behavior
         if (currentFileHandle) {
           // Try to use the filename from the handle
           downloadWorkflow(currentFileHandle.name);
+          setWorkflowFileName(currentFileHandle.name);
+          setHasUnsavedChanges(false);
           addNotification({
             type: 'info',
             title: 'Workflow Saved',
             message: `Saved as ${currentFileHandle.name}`,
           });
         } else {
-          // No file handle, use Save As
-          await handleSaveAs();
+          // No file handle, use Save As with persisted filename if available
+          const fileName = workflowFileName !== 'Untitled Workflow' ? workflowFileName : undefined;
+          await handleSaveAs(fileName);
         }
       }
     } catch (error) {
@@ -258,7 +266,7 @@ export default function TopBar() {
     }
   };
 
-  const handleSaveAs = async () => {
+  const handleSaveAs = async (suggestedFileName?: string) => {
     setSaveDropdownOpen(false);
     setIsMenuOpen(false);
     
@@ -266,10 +274,15 @@ export default function TopBar() {
       const workflow = serializeWorkflow(nodes, edges);
       const workflowJson = JSON.stringify(workflow, null, 2);
 
+      // Determine filename to use: parameter > persisted filename (if not Untitled) > default
+      const fileName = suggestedFileName || 
+                       (workflowFileName !== 'Untitled Workflow' ? workflowFileName : undefined) ||
+                       `workflow-${Date.now()}.json`;
+
       if (supportsFileSystemAccess) {
         try {
           const handle = await window.showSaveFilePicker!({
-            suggestedName: `workflow-${Date.now()}.json`,
+            suggestedName: fileName,
             types: [{
               description: 'JSON files',
               accept: { 'application/json': ['.json'] }
@@ -282,6 +295,8 @@ export default function TopBar() {
 
           // Update current file handle
           setCurrentFileHandle(handle);
+          setWorkflowFileName(handle.name);
+          setHasUnsavedChanges(false);
 
           addNotification({
             type: 'info',
@@ -297,12 +312,13 @@ export default function TopBar() {
         }
       } else {
         // Fallback: download file
-        const filename = `workflow-${Date.now()}.json`;
-        downloadWorkflow(filename);
+        downloadWorkflow(fileName);
+        setWorkflowFileName(fileName);
+        setHasUnsavedChanges(false);
         addNotification({
           type: 'info',
           title: 'Workflow Saved',
-          message: `Saved as ${filename}`,
+          message: `Saved as ${fileName}`,
         });
       }
     } catch (error) {
@@ -355,6 +371,9 @@ export default function TopBar() {
                   setNodes(loadedNodes);
                   setEdges(loadedEdges);
                   setCurrentFileHandle(null); // Can't track file handle with file input
+                  const fileName = file.name || 'Untitled Workflow';
+                  setWorkflowFileName(fileName);
+                  setHasUnsavedChanges(false);
                   addNotification({
                     type: 'info',
                     title: 'Workflow Loaded',
@@ -390,6 +409,10 @@ export default function TopBar() {
           setNodes(loadedNodes);
           setEdges(loadedEdges);
           setCurrentFileHandle(fileHandle);
+          // Extract filename from file handle or file name
+          const fileName = fileHandle?.name || file.name || 'Untitled Workflow';
+          setWorkflowFileName(fileName);
+          setHasUnsavedChanges(false);
           addNotification({
             type: 'info',
             title: 'Workflow Loaded',
@@ -427,12 +450,50 @@ export default function TopBar() {
     }
   };
 
+  // Handle keyboard shortcut events - use refs to access latest handlers
+  const handleSaveRef = useRef(handleSave);
+  const handleSaveAsRef = useRef(handleSaveAs);
+  const handleLoadRef = useRef(handleLoad);
+  
+  // Update refs when handlers change
+  useEffect(() => {
+    handleSaveRef.current = handleSave;
+    handleSaveAsRef.current = handleSaveAs;
+    handleLoadRef.current = handleLoad;
+  }, [handleSave, handleSaveAs, handleLoad]);
+  
+  useEffect(() => {
+    const handleSaveEvent = () => {
+      handleSaveRef.current();
+    };
+    
+    const handleSaveAsEvent = () => {
+      handleSaveAsRef.current();
+    };
+    
+    const handleOpenEvent = () => {
+      handleLoadRef.current();
+    };
+    
+    window.addEventListener('workflow-save', handleSaveEvent);
+    window.addEventListener('workflow-save-as', handleSaveAsEvent);
+    window.addEventListener('workflow-open', handleOpenEvent);
+    
+    return () => {
+      window.removeEventListener('workflow-save', handleSaveEvent);
+      window.removeEventListener('workflow-save-as', handleSaveAsEvent);
+      window.removeEventListener('workflow-open', handleOpenEvent);
+    };
+  }, []);
+
   const loadSampleTemplate = () => {
     // Clear existing workflow first
     resetExecution();
     setNodes([]);
     setEdges([]);
     setCurrentFileHandle(null);
+    setWorkflowFileName('Untitled Workflow');
+    setHasUnsavedChanges(false);
     
     // Use setTimeout to ensure ReactFlow processes the clearing before setting new nodes
     setTimeout(() => {
@@ -668,7 +729,7 @@ export default function TopBar() {
                 }`}>
                   <div className="p-1">
                     <button
-                      onClick={handleSaveAs}
+                      onClick={() => handleSaveAs()}
                       className="w-full px-3 py-2 text-sm text-white hover:bg-gray-700 rounded text-left flex items-center gap-2"
                     >
                       <SaveIcon sx={{ fontSize: '16px', color: '#ffffff' }} className="flex-shrink-0" />

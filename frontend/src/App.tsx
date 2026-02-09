@@ -17,8 +17,8 @@ import { useServerRestartWarning } from './hooks/useServerRestartWarning';
 import { useUndoRedo } from './hooks/useUndoRedo';
 import { useBreakpointShortcut } from './hooks/useBreakpointShortcut';
 import { useReportHistoryShortcut } from './hooks/useReportHistoryShortcut';
+import { useFileShortcuts } from './hooks/useFileShortcuts';
 import { useBuilderMode } from './hooks/useBuilderMode';
-import { useExecution } from './hooks/useExecution';
 import { loadPlugins } from './plugins/loader';
 import { getBackendPort } from './utils/getBackendPort';
 import { initTheme, applyTheme } from './utils/theme';
@@ -36,7 +36,6 @@ function App() {
   const builderModeActive = useWorkflowStore((state) => state.builderModeActive);
   const setBuilderModeActive = useWorkflowStore((state) => state.setBuilderModeActive);
   const resetBuilderModeActions = useWorkflowStore((state) => state.resetBuilderModeActions);
-  const builderModeActions = useWorkflowStore((state) => state.builderModeActions);
   const theme = useSettingsStore((state) => state.appearance.theme);
   const fontSize = useSettingsStore((state) => state.appearance.fontSize);
   const fontFamily = useSettingsStore((state) => state.appearance.fontFamily);
@@ -50,9 +49,6 @@ function App() {
   
   // Builder mode hook
   const builderMode = useBuilderMode();
-  
-  // Execution hook (for builder mode warning)
-  const execution = useExecution();
   
   // Show builder icon when paused at breakpoint or when builder mode is minimized
   const showBuilderIcon = (pauseReason === 'breakpoint' && pausedNodeId !== null) || builderMode.isMinimized;
@@ -144,9 +140,12 @@ function App() {
   
   // Breakpoint keyboard shortcut (Ctrl+B / Cmd+B)
   useBreakpointShortcut();
-  
+
   // Report history keyboard shortcut (Ctrl+H / Cmd+H)
   useReportHistoryShortcut();
+
+  // File shortcuts (Ctrl+S, Ctrl+Shift+S, Ctrl+O / Cmd+S, Cmd+Shift+S, Cmd+O)
+  useFileShortcuts();
 
   // Load plugins on mount
   useEffect(() => {
