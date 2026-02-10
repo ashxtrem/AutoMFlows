@@ -32,7 +32,9 @@ export default function GroupRenamePopup({
       inputRef.current.focus();
       inputRef.current.select();
     }
+  }, []); // Only run on mount
 
+  useEffect(() => {
     // Handle Escape key to close
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {

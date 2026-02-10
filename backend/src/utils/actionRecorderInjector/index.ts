@@ -1,0 +1,1 @@
+export { ActionRecorderInjector } from './core';

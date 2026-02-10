@@ -2,8 +2,7 @@ import { NodeType, BaseNode } from '@automflows/shared';
 import { NodeHandler, NodeHandlerMap } from './base';
 import { ContextManager } from '../engine/context';
 import { OpenBrowserHandler, NavigationHandler, ContextManipulateHandler } from './browser';
-import { TypeHandler, ActionHandler, FormInputHandler, KeyboardHandler, ScrollHandler } from './interaction';
-import { ElementQueryHandler, ScreenshotHandler, WaitHandler, IntValueHandler, StringValueHandler, BooleanValueHandler, InputValueHandler, VerifyHandler, StorageHandler, DialogHandler, DownloadHandler, IframeHandler } from './utility';
+import { TypeHandler, ActionHandler, FormInputHandler, KeyboardHandler, ScrollHandler, ElementQueryHandler, ScreenshotHandler, WaitHandler, IntValueHandler, StringValueHandler, BooleanValueHandler, InputValueHandler, VerifyHandler, StorageHandler, DialogHandler, DownloadHandler, IframeHandler } from './handlers';
 import { JavaScriptCodeHandler, LoopHandler } from './logic';
 import { ApiRequestHandler, ApiCurlHandler } from './api';
 import { LoadConfigFileHandler, SelectConfigFileHandler } from './config';
@@ -62,8 +61,9 @@ export function getNodeHandler(nodeType: NodeType | string): NodeHandler | undef
 
 export * from './base';
 export * from './browser';
-export * from './interaction';
-export * from './utility';
+export * from './interaction'; // Re-exports from handlers for backward compatibility
+export * from './utility'; // Re-exports from handlers for backward compatibility
+export * from './handlers';
 export * from './logic';
 export * from './api';
 export * from './config';

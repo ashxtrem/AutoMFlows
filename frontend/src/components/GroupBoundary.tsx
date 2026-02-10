@@ -72,14 +72,26 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
   // Close color picker when clicking outside
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (colorPickerRef.current && !colorPickerRef.current.contains(e.target as Node)) {
-        setShowColorPicker(false);
+      const target = e.target as Node;
+      
+      // Don't close if clicking inside the color picker
+      if (colorPickerRef.current && colorPickerRef.current.contains(target)) {
+        return;
       }
+      
+      // Don't close if clicking on the header that opened it (to allow reopening)
+      if (headerRef.current && headerRef.current.contains(target)) {
+        return;
+      }
+      
+      // Close for any other click (canvas, nodes, etc.)
+      setShowColorPicker(false);
     };
 
     if (showColorPicker) {
-      document.addEventListener('mousedown', handleClickOutside);
-      return () => document.removeEventListener('mousedown', handleClickOutside);
+      // Use capture phase to catch events before they're stopped
+      document.addEventListener('mousedown', handleClickOutside, true);
+      return () => document.removeEventListener('mousedown', handleClickOutside, true);
     }
   }, [showColorPicker]);
 
