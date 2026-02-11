@@ -24,6 +24,8 @@ import { takeNodeScreenshot } from './screenshots';
 import { generateReports } from './reporting';
 import { recordVideos } from './videos';
 import { resolvePropertyInputs } from './resolvePropertyInputs';
+import { ConditionEvaluator } from '../../utils/conditionEvaluator';
+import { JavaScriptCodeHandler } from '../../nodes/logic';
 
 /**
  * Core Executor class for workflow execution
@@ -209,6 +211,36 @@ export class Executor {
 
   isExecutionPaused(): boolean {
     return this.isPaused;
+  }
+
+  /**
+   * Dynamically enable or disable trace logging
+   * @param enabled - Whether trace logging should be enabled
+   */
+  setTraceLogs(enabled: boolean): void {
+    this.traceLogs = enabled;
+    
+    // Update context so node handlers can access the new state
+    this.context.setData('traceLogs', this.traceLogs);
+    
+    // Initialize logger if trace logs are being enabled and logger doesn't exist
+    if (enabled && !this.logger) {
+      const workflowName = extractWorkflowName(this.workflow, this.workflowFileName);
+      this.logger = new Logger();
+      this.logger.initialize(workflowName, this.traceLogs);
+      
+      // Set logger on PlaywrightManager for browser console log capture
+      if (this.playwright) {
+        this.playwright.setLogger(this.logger);
+      }
+    }
+    
+    // Log the change
+    if (enabled) {
+      console.log('[TRACE] Trace logging enabled');
+    } else {
+      console.log('[TRACE] Trace logging disabled');
+    }
   }
 
   async pauseExecution(nodeId: string, reason: 'wait-pause' | 'breakpoint'): Promise<void> {
@@ -701,6 +733,202 @@ export class Executor {
                     this.traceLog(`[TRACE] Marking node ${unreachableNodeId} as skipped (unreachable from handle ${handle})`);
                   }
                 }
+              }
+            }
+          }
+
+          // Check if this is a loop node and handle iteration
+          if (resolvedNode.type === NodeType.LOOP) {
+            const loopMode = this.context.getData('_loopMode') as 'forEach' | 'doWhile' | undefined;
+            
+            if (!loopMode) {
+              throw new Error('Loop mode not set. Loop handler must execute before executor iteration.');
+            }
+
+            // Get all child nodes of the loop node (nodes reachable from its output)
+            const childNodeIds = this.parser.getNodesReachableFromHandle(nodeId, 'output');
+            
+            if (childNodeIds.length === 0) {
+              this.traceLog(`[TRACE] Loop node ${nodeId} has no child nodes to iterate`);
+            } else if (loopMode === 'forEach') {
+              // Mode A: For Each (Array Iterator)
+              const loopArray = this.context.getData('_loopArray') as any[] | undefined;
+              
+              if (!loopArray || !Array.isArray(loopArray)) {
+                throw new Error('Loop array not found or is not an array');
+              }
+
+              this.traceLog(`[TRACE] Loop node ${nodeId} (forEach) iterating over ${loopArray.length} items`);
+              
+              // Iterate through array elements
+              for (let i = 0; i < loopArray.length; i++) {
+                const currentItem = loopArray[i];
+                
+                // Update loop context variables
+                this.context.setVariable('index', i);
+                this.context.setVariable('item', currentItem);
+                this.traceLog(`[TRACE] Loop iteration ${i + 1}/${loopArray.length}: processing item ${JSON.stringify(currentItem)}`);
+                
+                // Execute each child node for this iteration
+                for (const childNodeId of childNodeIds) {
+                  // Skip if marked as skipped
+                  if (skippedNodes.has(childNodeId)) {
+                    continue;
+                  }
+                  
+                  // Get the child node
+                  const childNode = this.parser.getNode(childNodeId);
+                  if (!childNode) {
+                    continue;
+                  }
+                  
+                  // Resolve property inputs
+                  const resolvedChildNode = resolvePropertyInputs(childNode, this.workflow, this.parser, this.context, (message: string) => this.traceLog(message));
+                  
+                  // Get handler
+                  const childHandler = nodeHandlers.getNodeHandler(resolvedChildNode.type);
+                  if (!childHandler) {
+                    this.traceLog(`[TRACE] Warning: No handler found for child node type: ${resolvedChildNode.type}`);
+                    continue;
+                  }
+                  
+                  // Execute child node
+                  this.traceLog(`[TRACE] Executing loop child node: ${childNodeId} (type: ${resolvedChildNode.type})`);
+                  await childHandler.execute(resolvedChildNode, this.context);
+                  this.traceLog(`[TRACE] Loop child node ${childNodeId} completed successfully`);
+                  
+                  // Apply slowmo delay if enabled
+                  if (this.slowMo > 0) {
+                    await new Promise(resolve => setTimeout(resolve, this.slowMo));
+                  }
+                }
+              }
+              
+              // Mark loop child nodes as executed so they don't execute again after the loop
+              for (const childNodeId of childNodeIds) {
+                this.executedNodeIds.add(childNodeId);
+              }
+              
+              this.traceLog(`[TRACE] Loop node ${nodeId} (forEach) completed all iterations`);
+            } else if (loopMode === 'doWhile') {
+              // Mode B: Do While (Condition Based)
+              const condition = this.context.getData('_loopCondition');
+              const maxIterations = this.context.getData('_loopMaxIterations') as number || 1000;
+              const updateStep = this.context.getData('_loopUpdateStep') as string | null;
+              const shouldStart = this.context.getData('_loopShouldStart') as boolean;
+              
+              if (!condition) {
+                throw new Error('Loop condition not found');
+              }
+
+              // Check if loop should start (initial condition evaluation)
+              if (!shouldStart) {
+                this.traceLog(`[TRACE] Loop node ${nodeId} (doWhile) initial condition failed, skipping loop`);
+                // Mark child nodes as executed since loop won't run
+                for (const childNodeId of childNodeIds) {
+                  this.executedNodeIds.add(childNodeId);
+                }
+              } else {
+                this.traceLog(`[TRACE] Loop node ${nodeId} (doWhile) starting iteration`);
+                
+                let iterationCount = 0;
+                let conditionPassed = true;
+                
+                // Continue while condition is true and maxIterations not exceeded
+                while (conditionPassed && iterationCount < maxIterations) {
+                  // Check maxIterations limit
+                  if (iterationCount >= maxIterations) {
+                    throw new Error(`Loop exceeded maximum iterations limit of ${maxIterations}`);
+                  }
+                  
+                  // Update loop context variables
+                  this.context.setVariable('index', iterationCount);
+                  this.traceLog(`[TRACE] Loop iteration ${iterationCount + 1}: condition passed`);
+                  
+                  // Execute each child node for this iteration
+                  for (const childNodeId of childNodeIds) {
+                    // Skip if marked as skipped
+                    if (skippedNodes.has(childNodeId)) {
+                      continue;
+                    }
+                    
+                    // Get the child node
+                    const childNode = this.parser.getNode(childNodeId);
+                    if (!childNode) {
+                      continue;
+                    }
+                    
+                    // Resolve property inputs
+                    const resolvedChildNode = resolvePropertyInputs(childNode, this.workflow, this.parser, this.context, (message: string) => this.traceLog(message));
+                    
+                    // Get handler
+                    const childHandler = nodeHandlers.getNodeHandler(resolvedChildNode.type);
+                    if (!childHandler) {
+                      this.traceLog(`[TRACE] Warning: No handler found for child node type: ${resolvedChildNode.type}`);
+                      continue;
+                    }
+                    
+                    // Execute child node
+                    this.traceLog(`[TRACE] Executing loop child node: ${childNodeId} (type: ${resolvedChildNode.type})`);
+                    await childHandler.execute(resolvedChildNode, this.context);
+                    this.traceLog(`[TRACE] Loop child node ${childNodeId} completed successfully`);
+                    
+                    // Apply slowmo delay if enabled
+                    if (this.slowMo > 0) {
+                      await new Promise(resolve => setTimeout(resolve, this.slowMo));
+                    }
+                  }
+                  
+                  // Execute updateStep JavaScript code if provided
+                  if (updateStep) {
+                    try {
+                      const contextData = {
+                        page: this.context.getPage(),
+                        data: this.context.getAllData(),
+                        variables: this.context.getAllVariables(),
+                        setData: (key: string, value: any) => this.context.setData(key, value),
+                        setVariable: (key: string, value: any) => this.context.setVariable(key, value),
+                        getData: (key: string) => this.context.getData(key),
+                        getVariable: (key: string) => this.context.getVariable(key),
+                      };
+                      
+                      // eslint-disable-next-line @typescript-eslint/no-implied-eval
+                      const fn = new Function('context', `return (async function(context) { ${updateStep} })(context);`);
+                      await fn(contextData);
+                      this.traceLog(`[TRACE] Loop updateStep executed successfully`);
+                    } catch (error: any) {
+                      this.traceLog(`[TRACE] Warning: Loop updateStep failed: ${error.message}`);
+                      // Continue execution even if updateStep fails
+                    }
+                  }
+                  
+                  // Increment iteration count
+                  iterationCount++;
+                  
+                  // Re-evaluate condition for next iteration
+                  try {
+                    const conditionResult = await ConditionEvaluator.evaluate(condition, this.context);
+                    conditionPassed = conditionResult.passed;
+                    if (!conditionPassed) {
+                      this.traceLog(`[TRACE] Loop condition failed after ${iterationCount} iterations, exiting loop`);
+                    }
+                  } catch (error: any) {
+                    this.traceLog(`[TRACE] Error evaluating loop condition: ${error.message}`);
+                    conditionPassed = false; // Exit loop on condition evaluation error
+                  }
+                }
+                
+                // Check if loop exited due to maxIterations
+                if (iterationCount >= maxIterations && conditionPassed) {
+                  throw new Error(`Loop exceeded maximum iterations limit of ${maxIterations}`);
+                }
+                
+                // Mark loop child nodes as executed so they don't execute again after the loop
+                for (const childNodeId of childNodeIds) {
+                  this.executedNodeIds.add(childNodeId);
+                }
+                
+                this.traceLog(`[TRACE] Loop node ${nodeId} (doWhile) completed after ${iterationCount} iterations`);
               }
             }
           }

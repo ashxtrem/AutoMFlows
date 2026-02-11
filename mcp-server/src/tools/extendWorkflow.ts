@@ -258,7 +258,6 @@ function createNodeFromConfig(
       (baseNode.data as any).waitUntil = 'networkidle';
       break;
     
-    case 'click':
     case 'action':
       (baseNode.data as any).action = 'click';
       (baseNode.data as any).selector = config.selector || 'button';

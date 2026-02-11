@@ -1,0 +1,511 @@
+{
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 600
+      },
+      "data": {
+        "type": "start",
+        "label": "Start"
+      }
+    },
+    {
+      "id": "reusable-visit-page",
+      "type": "reusable.reusable",
+      "position": {
+        "x": 100,
+        "y": 100
+      },
+      "data": {
+        "type": "reusable.reusable",
+        "label": "Reusable: visit_page",
+        "contextName": "visit_page"
+      }
+    },
+    {
+      "id": "openBrowser-visit",
+      "type": "openBrowser",
+      "position": {
+        "x": 350,
+        "y": 100
+      },
+      "data": {
+        "type": "openBrowser",
+        "label": "Open Browser",
+        "headless": false,
+        "viewportWidth": 1280,
+        "viewportHeight": 720
+      }
+    },
+    {
+      "id": "navigate-todolist",
+      "type": "navigation",
+      "position": {
+        "x": 600,
+        "y": 100
+      },
+      "data": {
+        "type": "navigation",
+        "label": "Navigate to Todo List",
+        "action": "navigate",
+        "url": "https://todolist.james.am",
+        "timeout": 30000,
+        "waitUntil": "networkidle"
+      }
+    },
+    {
+      "id": "verify-homepage",
+      "type": "verify",
+      "position": {
+        "x": 850,
+        "y": 100
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Home Page",
+        "domain": "browser",
+        "verificationType": "text",
+        "selector": "h1",
+        "selectorType": "css",
+        "expectedText": "To Do List",
+        "matchType": "equals",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "end-visit-page",
+      "type": "reusable.end",
+      "position": {
+        "x": 1100,
+        "y": 100
+      },
+      "data": {
+        "type": "reusable.end",
+        "label": "End"
+      }
+    },
+    {
+      "id": "reusable-add-todo",
+      "type": "reusable.reusable",
+      "position": {
+        "x": 100,
+        "y": 250
+      },
+      "data": {
+        "type": "reusable.reusable",
+        "label": "Reusable: add_todo",
+        "contextName": "add_todo"
+      }
+    },
+    {
+      "id": "wait-newtodo",
+      "type": "wait",
+      "position": {
+        "x": 350,
+        "y": 250
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for New Todo Input",
+        "waitType": "selector",
+        "value": "[ng-model=\"newTodo\"]",
+        "selectorType": "css",
+        "timeout": 30000
+      }
+    },
+    {
+      "id": "javascript-get-todo-text",
+      "type": "javascriptCode",
+      "position": {
+        "x": 600,
+        "y": 250
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Get Todo Text and Type",
+        "code": "const todoText = context.getData('todo_text');\nif (!todoText) {\n  throw new Error('todo_text variable not found in context');\n}\nconst page = context.page;\nif (!page) {\n  throw new Error('Page not available');\n}\nawait page.fill('[ng-model=\"newTodo\"]', todoText, { timeout: 30000 });\nawait page.press('[ng-model=\"newTodo\"]', 'Enter');\nconsole.log('Typed and submitted todo text:', todoText);"
+      }
+    },
+    {
+      "id": "end-add-todo",
+      "type": "reusable.end",
+      "position": {
+        "x": 850,
+        "y": 250
+      },
+      "data": {
+        "type": "reusable.end",
+        "label": "End"
+      }
+    },
+    {
+      "id": "run-visit-page",
+      "type": "reusable.runReusable",
+      "position": {
+        "x": 350,
+        "y": 600
+      },
+      "data": {
+        "type": "reusable.runReusable",
+        "label": "Run Reusable: visit_page",
+        "contextName": "visit_page"
+      }
+    },
+    {
+      "id": "javascript-set-add-multiple",
+      "type": "javascriptCode",
+      "position": {
+        "x": 600,
+        "y": 600
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set Add Multiple Flag",
+        "code": "// Set a flag to determine if we should add multiple todos\nconst shouldAddMultiple = Math.random() > 0.5;\ncontext.setData('add_multiple', shouldAddMultiple);\nconsole.log('Should add multiple todos:', shouldAddMultiple);"
+      }
+    },
+    {
+      "id": "switch-add-multiple",
+      "type": "switch.switch",
+      "position": {
+        "x": 850,
+        "y": 600
+      },
+      "data": {
+        "type": "switch.switch",
+        "label": "Switch: Loop Type?",
+        "cases": [
+          {
+            "id": "case-for-each",
+            "label": "For Each Loop",
+            "condition": {
+              "type": "javascript",
+              "javascriptExpression": "context.getData('add_multiple') === true"
+            }
+          },
+          {
+            "id": "case-do-while",
+            "label": "Do While Loop",
+            "condition": {
+              "type": "javascript",
+              "javascriptExpression": "context.getData('add_multiple') === false"
+            }
+          }
+        ],
+        "defaultCase": {
+          "label": "Add Single"
+        }
+      }
+    },
+    {
+      "id": "javascript-gen-todo-array",
+      "type": "javascriptCode",
+      "position": {
+        "x": 1100,
+        "y": 500
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Generate Todo Array",
+        "code": "// Generate an array of todo texts\nconst todoArray = [\n  'Loop Todo 1: ' + Math.random().toString(36).substring(2, 15),\n  'Loop Todo 2: ' + Math.random().toString(36).substring(2, 15),\n  'Loop Todo 3: ' + Math.random().toString(36).substring(2, 15)\n];\ncontext.setData('todo_items', todoArray);\nconsole.log('Generated todo_items array:', todoArray);"
+      }
+    },
+    {
+      "id": "loop-add-todos",
+      "type": "loop",
+      "position": {
+        "x": 1350,
+        "y": 500
+      },
+      "data": {
+        "type": "loop",
+        "label": "Loop: Add Todos (For Each)",
+        "mode": "forEach",
+        "arrayVariable": "todo_items"
+      }
+    },
+    {
+      "id": "javascript-set-current-todo",
+      "type": "javascriptCode",
+      "position": {
+        "x": 1600,
+        "y": 500
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set Current Todo Text",
+        "code": "// Get current item from loop context (forEach mode)\nconst currentTodo = context.getVariable('item');\nconst currentIndex = context.getVariable('index');\nif (!currentTodo) {\n  throw new Error('item not found in context');\n}\ncontext.setData('todo_text', currentTodo);\nconsole.log(`Set todo_text from loop [${currentIndex}]:`, currentTodo);"
+      }
+    },
+    {
+      "id": "run-add-todo-loop",
+      "type": "reusable.runReusable",
+      "position": {
+        "x": 1850,
+        "y": 500
+      },
+      "data": {
+        "type": "reusable.runReusable",
+        "label": "Run Reusable: add_todo (Loop)",
+        "contextName": "add_todo"
+      }
+    },
+    {
+      "id": "javascript-gen-todo-single",
+      "type": "javascriptCode",
+      "position": {
+        "x": 1100,
+        "y": 700
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Generate Single Todo Text",
+        "code": "const randomText = 'Single Todo ' + Math.random().toString(36).substring(2, 15);\ncontext.setData('todo_text', randomText);\nconsole.log('Generated single todo_text:', randomText);"
+      }
+    },
+    {
+      "id": "run-add-todo-single",
+      "type": "reusable.runReusable",
+      "position": {
+        "x": 1350,
+        "y": 700
+      },
+      "data": {
+        "type": "reusable.runReusable",
+        "label": "Run Reusable: add_todo (Single)",
+        "contextName": "add_todo"
+      }
+    },
+    {
+      "id": "javascript-init-counter",
+      "type": "javascriptCode",
+      "position": {
+        "x": 1100,
+        "y": 400
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Initialize Counter for Do While",
+        "code": "// Initialize counter for doWhile loop\ncontext.setVariable('todo_counter', 0);\ncontext.setVariable('max_todos', 3);\nconsole.log('Initialized counter for doWhile loop');"
+      }
+    },
+    {
+      "id": "loop-add-todos-dowhile",
+      "type": "loop",
+      "position": {
+        "x": 1350,
+        "y": 400
+      },
+      "data": {
+        "type": "loop",
+        "label": "Loop: Add Todos (Do While)",
+        "mode": "doWhile",
+        "condition": {
+          "type": "javascript",
+          "javascriptExpression": "context.getVariable('todo_counter') < context.getVariable('max_todos')"
+        },
+        "updateStep": "context.setVariable('todo_counter', context.getVariable('todo_counter') + 1);",
+        "maxIterations": 10
+      }
+    },
+    {
+      "id": "javascript-gen-todo-dowhile",
+      "type": "javascriptCode",
+      "position": {
+        "x": 1600,
+        "y": 400
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Generate Todo for Do While",
+        "code": "// Generate todo text for doWhile loop iteration\nconst counter = context.getVariable('todo_counter');\nconst index = context.getVariable('index');\nconst todoText = `DoWhile Todo ${counter + 1}: ${Math.random().toString(36).substring(2, 15)}`;\ncontext.setData('todo_text', todoText);\ncontext.setVariable('item', todoText);\nconsole.log(`Generated todo_text for doWhile iteration [${index}]:`, todoText);"
+      }
+    },
+    {
+      "id": "run-add-todo-dowhile",
+      "type": "reusable.runReusable",
+      "position": {
+        "x": 1850,
+        "y": 400
+      },
+      "data": {
+        "type": "reusable.runReusable",
+        "label": "Run Reusable: add_todo (Do While)",
+        "contextName": "add_todo"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-run-visit-page",
+      "source": "start-1",
+      "target": "run-visit-page",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-reusable-visit-openBrowser",
+      "source": "reusable-visit-page",
+      "target": "openBrowser-visit",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-openBrowser-navigate",
+      "source": "openBrowser-visit",
+      "target": "navigate-todolist",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-navigate-verify",
+      "source": "navigate-todolist",
+      "target": "verify-homepage",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-end-visit",
+      "source": "verify-homepage",
+      "target": "end-visit-page",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-reusable-add-wait",
+      "source": "reusable-add-todo",
+      "target": "wait-newtodo",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-javascript-todo",
+      "source": "wait-newtodo",
+      "target": "javascript-get-todo-text",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-todo-end-add",
+      "source": "javascript-get-todo-text",
+      "target": "end-add-todo",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-run-visit-javascript-set",
+      "source": "run-visit-page",
+      "target": "javascript-set-add-multiple",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-set-switch-input",
+      "source": "javascript-set-add-multiple",
+      "target": "switch-add-multiple",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-javascript-set-switch-driver",
+      "source": "run-visit-page",
+      "target": "switch-add-multiple",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-switch-javascript-array-case",
+      "source": "switch-add-multiple",
+      "target": "javascript-gen-todo-array",
+      "sourceHandle": "case-for-each",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-switch-javascript-array-driver",
+      "source": "run-visit-page",
+      "target": "javascript-gen-todo-array",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-array-loop",
+      "source": "javascript-gen-todo-array",
+      "target": "loop-add-todos",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-loop-javascript-set-current",
+      "source": "loop-add-todos",
+      "target": "javascript-set-current-todo",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-set-current-run-add",
+      "source": "javascript-set-current-todo",
+      "target": "run-add-todo-loop",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-switch-javascript-init-counter",
+      "source": "switch-add-multiple",
+      "target": "javascript-init-counter",
+      "sourceHandle": "case-do-while",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-switch-javascript-init-counter-driver",
+      "source": "run-visit-page",
+      "target": "javascript-init-counter",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-init-counter-loop-dowhile",
+      "source": "javascript-init-counter",
+      "target": "loop-add-todos-dowhile",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-loop-dowhile-javascript-gen",
+      "source": "loop-add-todos-dowhile",
+      "target": "javascript-gen-todo-dowhile",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-gen-dowhile-run-add",
+      "source": "javascript-gen-todo-dowhile",
+      "target": "run-add-todo-dowhile",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-switch-javascript-single-default",
+      "source": "switch-add-multiple",
+      "target": "javascript-gen-todo-single",
+      "sourceHandle": "default",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-switch-javascript-single-driver",
+      "source": "run-visit-page",
+      "target": "javascript-gen-todo-single",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-single-run-add-single",
+      "source": "javascript-gen-todo-single",
+      "target": "run-add-todo-single",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    }
+  ]
+}

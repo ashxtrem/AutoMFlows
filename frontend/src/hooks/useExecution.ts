@@ -245,10 +245,10 @@ export function useExecution() {
           }, 100); // Small delay to ensure all node errors are recorded
           executionStartTimeRef.current = null;
           
-          // Auto-open report if enabled - show notification with button instead of auto-opening
-          const autoOpenReports = localStorage.getItem('automflows_settings_reports_autoOpen') === 'true';
+          // Show notification when reports are generated (if reporting is enabled)
           const reportingEnabled = localStorage.getItem('automflows_reporting_enabled') === 'true';
-          if (autoOpenReports && reportingEnabled) {
+          const autoOpenReports = localStorage.getItem('automflows_settings_reports_autoOpen') === 'true';
+          if (reportingEnabled) {
             setTimeout(async () => {
               try {
                 const currentPort = port || await getBackendPortSync();
@@ -282,11 +282,18 @@ export function useExecution() {
                     reportUrl = `http://localhost:${currentPort}/reports/${latestReport.folderName}/${reportFile.type}/${reportFile.name}`;
                   }
                   
+                  // Auto-open report if enabled
+                  if (autoOpenReports) {
+                    window.open(reportUrl, '_blank');
+                  }
+                  
                   // Show notification with button to open report
                   addNotification({
                     type: 'success',
                     title: 'Report Generated',
-                    message: 'Click the button below to open the report in a new tab.',
+                    message: autoOpenReports 
+                      ? 'Report has been opened in a new tab.' 
+                      : 'Click the button below to open the report in a new tab.',
                     action: {
                       label: 'Open Report',
                       onClick: () => {
@@ -297,7 +304,7 @@ export function useExecution() {
                   });
                 }
               } catch (error) {
-                console.warn('Failed to fetch report for auto-open:', error);
+                console.warn('Failed to fetch report for notification:', error);
               }
             }, 500); // Small delay to ensure report is generated
           }

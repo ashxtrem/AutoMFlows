@@ -33,7 +33,6 @@ EXCLUDE_PATTERNS=(
     "dist/*"
     "build/*"
     "output/*"
-    ".git/*"
     ".vscode/*"
     ".idea/*"
     ".cache/*"
@@ -96,7 +95,6 @@ else
         ! -path "*/dist/*" \
         ! -path "*/build/*" \
         ! -path "*/output/*" \
-        ! -path "*/.git/*" \
         ! -path "*/.vscode/*" \
         ! -path "*/.idea/*" \
         ! -path "*/.cache/*" \

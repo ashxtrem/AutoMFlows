@@ -43,14 +43,15 @@
     },
     {
       "id": "navigate-home-1",
-      "type": "navigate",
+      "type": "navigation",
       "position": {
         "x": 600,
         "y": 200
       },
       "data": {
-        "type": "navigate",
+        "type": "navigation",
         "label": "Navigate to ParaBank",
+        "action": "navigate",
         "url": "https://parabank.parasoft.com",
         "timeout": 30000,
         "waitUntil": "networkidle"
@@ -58,14 +59,15 @@
     },
     {
       "id": "click-register-1",
-      "type": "click",
+      "type": "action",
       "position": {
         "x": 850,
         "y": 200
       },
       "data": {
-        "type": "click",
+        "type": "action",
         "label": "Click Register",
+        "action": "click",
         "selector": "a[href*='register.htm']",
         "selectorType": "css",
         "timeout": 30000
@@ -264,14 +266,15 @@
     },
     {
       "id": "click-register-button-1",
-      "type": "click",
+      "type": "action",
       "position": {
         "x": 1600,
         "y": 350
       },
       "data": {
-        "type": "click",
+        "type": "action",
         "label": "Click Register Button",
+        "action": "click",
         "selector": "input[value='Register']",
         "selectorType": "css",
         "timeout": 30000
@@ -294,14 +297,15 @@
     },
     {
       "id": "click-logout-1",
-      "type": "click",
+      "type": "action",
       "position": {
         "x": 2100,
         "y": 350
       },
       "data": {
-        "type": "click",
+        "type": "action",
         "label": "Click Logout",
+        "action": "click",
         "selector": "a[href*='logout']",
         "selectorType": "css",
         "timeout": 30000
@@ -309,14 +313,15 @@
     },
     {
       "id": "navigate-home-again-1",
-      "type": "navigate",
+      "type": "navigation",
       "position": {
         "x": 2350,
         "y": 350
       },
       "data": {
-        "type": "navigate",
+        "type": "navigation",
         "label": "Navigate to Home",
+        "action": "navigate",
         "url": "https://parabank.parasoft.com",
         "timeout": 30000,
         "waitUntil": "networkidle"
@@ -356,14 +361,15 @@
     },
     {
       "id": "click-login-button-1",
-      "type": "click",
+      "type": "action",
       "position": {
         "x": 2600,
         "y": 400
       },
       "data": {
-        "type": "click",
+        "type": "action",
         "label": "Click Login Button",
+        "action": "click",
         "selector": "input[value='Log In']",
         "selectorType": "css",
         "timeout": 30000

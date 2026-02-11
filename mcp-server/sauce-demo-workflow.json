@@ -30,14 +30,15 @@
     },
     {
       "id": "navigate-1770483184162-8r31zzhd2",
-      "type": "navigate",
+      "type": "navigation",
       "position": {
         "x": 700,
         "y": 200
       },
       "data": {
-        "type": "navigate",
+        "type": "navigation",
         "label": "Navigate to Sauce Demo",
+        "action": "navigate",
         "url": "https://sauce-demo.myshopify.com/",
         "waitUntil": "networkidle"
       }
@@ -57,14 +58,15 @@
     },
     {
       "id": "click-1770483184162-a72iynaf6",
-      "type": "click",
+      "type": "action",
       "position": {
         "x": 1300,
         "y": 200
       },
       "data": {
-        "type": "click",
+        "type": "action",
         "label": "Click Sign up",
+        "action": "click",
         "selector": "a:has-text(\"Sign up\"), a[href*=\"register\"], a[href*=\"sign\"]",
         "selectorType": "css"
       }
@@ -129,14 +131,15 @@
     },
     {
       "id": "click-1770483184162-of097ire0",
-      "type": "click",
+      "type": "action",
       "position": {
         "x": 2800,
         "y": 200
       },
       "data": {
-        "type": "click",
+        "type": "action",
         "label": "Click Create button",
+        "action": "click",
         "selector": "button[type=\"submit\"]:has-text(\"Create\"), button:has-text(\"Create\"), input[type=\"submit\"][value*=\"Create\"]",
         "selectorType": "css"
       }

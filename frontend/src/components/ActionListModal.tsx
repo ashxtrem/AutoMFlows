@@ -83,7 +83,7 @@ export default function ActionListModal({
   canRedo,
   onMinimize,
   onClose,
-  onClearActions,
+  onClearActions: _onClearActions, // TODO: Implement clear actions button in UI
   showOverlayVisibilityMessage = false,
   onDismissOverlayMessage,
 }: ActionListModalProps) {
@@ -295,23 +295,6 @@ export default function ActionListModal({
     });
   };
 
-  const selectAllTypes = () => {
-    setTypeFilters(new Set(ACTION_TYPES.map(t => t.value)));
-  };
-
-  const deselectAllTypes = () => {
-    setTypeFilters(new Set());
-  };
-
-  const expandAll = () => {
-    const allIds = new Set([...filteredAndSortedActions.map(a => a.id), ...filteredInsertedActions.map(a => a.id)]);
-    setExpandedActions(allIds);
-  };
-
-  const collapseAll = () => {
-    setExpandedActions(new Set());
-  };
-
   const clearFilters = () => {
     setSearchQuery('');
     setTypeFilters(new Set(ACTION_TYPES.map(t => t.value)));
@@ -330,42 +313,6 @@ export default function ActionListModal({
   const selectAllFiltered = () => {
     const allIds = new Set([...filteredAndSortedActions.map(a => a.id), ...filteredInsertedActions.map(a => a.id)]);
     setSelectedActions(allIds);
-  };
-
-  const deselectAll = () => {
-    setSelectedActions(new Set());
-  };
-
-  const bulkInsert = () => {
-    selectedActions.forEach(actionId => {
-      if (!insertedActions.find(a => a.id === actionId)) {
-        onInsertAction(actionId);
-      }
-    });
-    setSelectedActions(new Set());
-  };
-
-  const bulkDelete = () => {
-    if (window.confirm(`Delete ${selectedActions.size} selected action(s)?`)) {
-      // Note: This would require a delete action callback prop
-      // For now, we'll just clear selection
-      setSelectedActions(new Set());
-    }
-  };
-
-  const exportActions = () => {
-    const data = {
-      recorded: filteredAndSortedActions,
-      inserted: filteredInsertedActions,
-      exportedAt: new Date().toISOString(),
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `actions-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
   };
 
   const highlightText = (text: string, query: string) => {

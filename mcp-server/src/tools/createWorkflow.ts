@@ -108,8 +108,9 @@ function generateWorkflowRuleBased(
     const urlMatch = userRequest.match(/https?:\/\/[^\s]+/);
     let lastNodeId: string | undefined = browserId;
     if (urlMatch) {
-      const navId = builder.addNode('navigate', {
+      const navId = builder.addNode('navigation', {
         label: 'Navigate',
+        action: 'navigate',
         url: urlMatch[0],
         waitUntil: 'networkidle',
       });
@@ -126,8 +127,9 @@ function generateWorkflowRuleBased(
 
     // Add basic interaction nodes based on keywords
     if (requestLower.includes('click')) {
-      const clickId = builder.addNode('click', {
+      const clickId = builder.addNode('action', {
         label: 'Click',
+        action: 'click',
         selector: 'button', // Placeholder - should be extracted from request
       });
       if (lastNodeId) {
@@ -210,8 +212,9 @@ function generateWorkflowFromSteps(
     switch (step.action) {
       case 'navigate':
         if (step.target) {
-          currentNodeId = builder.addNode('navigate', {
+          currentNodeId = builder.addNode('navigation', {
             label: `Navigate to ${step.target}`,
+            action: 'navigate',
             url: step.target,
             waitUntil: 'networkidle',
           });
@@ -219,8 +222,9 @@ function generateWorkflowFromSteps(
         break;
 
       case 'click':
-        currentNodeId = builder.addNode('click', {
+        currentNodeId = builder.addNode('action', {
           label: `Click ${step.target || 'element'}`,
+          action: 'click',
           selector: inferSelector(step.target),
         });
         break;
@@ -252,8 +256,9 @@ function generateWorkflowFromSteps(
         break;
 
       case 'submit':
-        currentNodeId = builder.addNode('click', {
+        currentNodeId = builder.addNode('action', {
           label: 'Submit form',
+          action: 'click',
           selector: 'button[type="submit"], input[type="submit"]',
         });
         break;

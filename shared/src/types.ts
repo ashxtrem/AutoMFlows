@@ -756,9 +756,42 @@ export interface JavaScriptCodeNodeData {
   failSilently?: boolean;
 }
 
+/**
+ * Condition interface for switch nodes and loop nodes (doWhile mode)
+ * Supports multiple condition types: UI element, API status, API JSON path, JavaScript, and variable
+ */
+export interface SwitchCondition {
+  type: 'ui-element' | 'api-status' | 'api-json-path' | 'javascript' | 'variable';
+  // UI element condition fields
+  selector?: string;
+  selectorType?: 'css' | 'xpath';
+  elementCheck?: 'visible' | 'hidden' | 'exists';
+  // API condition fields
+  apiContextKey?: string;
+  statusCode?: number;
+  jsonPath?: string;
+  expectedValue?: any;
+  matchType?: 'equals' | 'contains' | 'greaterThan' | 'lessThan' | 'greaterThanOrEqual' | 'lessThanOrEqual' | 'startsWith' | 'endsWith' | 'regex';
+  // JavaScript condition fields
+  javascriptExpression?: string;
+  // Variable condition fields
+  variableName?: string;
+  comparisonOperator?: 'equals' | 'greaterThan' | 'lessThan' | 'greaterThanOrEqual' | 'lessThanOrEqual';
+  comparisonValue?: any;
+  timeout?: number;
+}
+
 export interface LoopNodeData {
-  arrayVariable: string; // Variable name from previous node output
+  mode: 'forEach' | 'doWhile'; // Loop mode selector (required)
   failSilently?: boolean;
+  
+  // Mode A: For Each (Array Iterator)
+  arrayVariable?: string; // Variable name containing array (required when mode = 'forEach')
+  
+  // Mode B: Do While (Condition Based)
+  condition?: SwitchCondition; // Condition to evaluate each iteration (required when mode = 'doWhile')
+  updateStep?: string; // Optional JavaScript code to execute at end of each iteration (e.g., increment counter)
+  maxIterations?: number; // Safety limit to prevent infinite loops (default: 1000)
 }
 
 export interface IntValueNodeData {

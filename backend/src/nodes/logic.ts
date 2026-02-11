@@ -1,6 +1,7 @@
 import { BaseNode, JavaScriptCodeNodeData, LoopNodeData } from '@automflows/shared';
 import { NodeHandler } from './base';
 import { ContextManager } from '../engine/context';
+import { ConditionEvaluator } from '../utils/conditionEvaluator';
 
 export class JavaScriptCodeHandler implements NodeHandler {
   async execute(node: BaseNode, context: ContextManager): Promise<void> {
@@ -46,24 +47,52 @@ export class LoopHandler implements NodeHandler {
   async execute(node: BaseNode, context: ContextManager): Promise<void> {
     const data = node.data as LoopNodeData;
 
-    if (!data.arrayVariable) {
-      throw new Error('Array variable is required for Loop node');
+    // Validate mode is provided
+    if (!data.mode) {
+      throw new Error('Loop mode is required. Must be either "forEach" or "doWhile"');
     }
 
     try {
-      const array = context.getData(data.arrayVariable);
+      if (data.mode === 'forEach') {
+        // Mode A: For Each (Array Iterator)
+        if (!data.arrayVariable) {
+          throw new Error('Array variable is required for forEach mode');
+        }
 
-      if (!Array.isArray(array)) {
-        throw new Error(`Variable ${data.arrayVariable} is not an array`);
+        const array = context.getData(data.arrayVariable);
+
+        if (!Array.isArray(array)) {
+          throw new Error(`Variable ${data.arrayVariable} is not an array`);
+        }
+
+        // Set initial loop variables
+        context.setVariable('index', 0);
+        context.setVariable('item', array[0] || null);
+        // Store array for executor to iterate over
+        context.setData('_loopArray', array);
+        context.setData('_loopMode', 'forEach');
+      } else if (data.mode === 'doWhile') {
+        // Mode B: Do While (Condition Based)
+        if (!data.condition) {
+          throw new Error('Condition is required for doWhile mode');
+        }
+
+        // Set initial loop variables
+        context.setVariable('index', 0);
+        context.setVariable('item', null);
+        
+        // Store configuration for executor
+        context.setData('_loopMode', 'doWhile');
+        context.setData('_loopCondition', data.condition);
+        context.setData('_loopMaxIterations', data.maxIterations || 1000);
+        context.setData('_loopUpdateStep', data.updateStep || null);
+
+        // Evaluate initial condition to determine if loop should start
+        const initialConditionResult = await ConditionEvaluator.evaluate(data.condition, context);
+        context.setData('_loopShouldStart', initialConditionResult.passed);
+      } else {
+        throw new Error(`Invalid loop mode: ${data.mode}. Must be either "forEach" or "doWhile"`);
       }
-
-      // Store loop items in context for child nodes
-      context.setVariable('loopItems', array);
-      context.setVariable('loopIndex', 0);
-      context.setVariable('loopCurrent', array[0] || null);
-
-      // Note: Actual iteration over child nodes would be handled by the executor
-      // This node just prepares the loop context
     } catch (error: any) {
       if (data.failSilently) {
         console.warn(`Loop failed silently: ${error.message}`);

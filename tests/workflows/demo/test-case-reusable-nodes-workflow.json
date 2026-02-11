@@ -42,14 +42,15 @@
     },
     {
       "id": "navigate-todolist",
-      "type": "navigate",
+      "type": "navigation",
       "position": {
         "x": 600,
         "y": 100
       },
       "data": {
-        "type": "navigate",
+        "type": "navigation",
         "label": "Navigate to Todo List",
+        "action": "navigate",
         "url": "https://todolist.james.am",
         "timeout": 30000,
         "waitUntil": "networkidle"

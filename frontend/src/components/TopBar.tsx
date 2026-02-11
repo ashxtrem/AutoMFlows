@@ -56,15 +56,20 @@ export default function TopBar() {
     'showSaveFilePicker' in window;
   
   // Load trace logs state from localStorage on mount
+  // Default to true (enabled) if not set, so trace logs are enabled by default
   const [traceLogs, setTraceLogs] = useState(() => {
     const saved = localStorage.getItem(STORAGE_KEY_TRACE_LOGS);
+    // If not set, default to true (enabled)
+    if (saved === null) {
+      return true;
+    }
     return saved === 'true';
   });
 
   // Track previous trace logs state to detect changes
   const prevTraceLogsRef = useRef(traceLogs);
 
-  // Save trace logs state to localStorage when it changes
+  // Save trace logs state to localStorage when it changes and update backend if execution is running
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY_TRACE_LOGS, String(traceLogs));
     
@@ -76,6 +81,41 @@ export default function TopBar() {
         details: [traceLogs ? 'Trace logs enabled' : 'Trace logs disabled'],
       });
       prevTraceLogsRef.current = traceLogs;
+      
+      // Dynamically update trace logs in running execution
+      const updateTraceLogs = async () => {
+        try {
+          // Get backend port
+          const portResponse = await fetch('/.automflows-port');
+          if (portResponse.ok) {
+            const portText = await portResponse.text();
+            const port = parseInt(portText.trim(), 10);
+            if (!isNaN(port) && port > 0) {
+              // Call API to toggle trace logs
+              const response = await fetch(`http://localhost:${port}/api/workflows/execution/trace-logs`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ enabled: traceLogs }),
+              });
+              
+              if (!response.ok) {
+                // If execution is not running, that's fine - just log it
+                const data = await response.json();
+                if (data.message !== 'No execution running') {
+                  console.warn('Failed to update trace logs:', data.message);
+                }
+              }
+            }
+          }
+        } catch (error) {
+          // Silently fail if backend is not available or execution is not running
+          // This is expected when no execution is active
+        }
+      };
+      
+      updateTraceLogs();
     }
   }, [traceLogs, addNotification]);
 

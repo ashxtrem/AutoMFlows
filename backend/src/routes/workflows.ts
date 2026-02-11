@@ -118,6 +118,31 @@ export default function workflowRoutes(io: Server) {
     }
   });
 
+  router.post('/execution/trace-logs', async (req: Request, res: Response) => {
+    try {
+      const { enabled } = req.body as { enabled: boolean };
+      
+      if (!currentExecutor) {
+        return res.status(400).json({
+          success: false,
+          message: 'No execution running',
+        });
+      }
+
+      currentExecutor.setTraceLogs(enabled);
+      res.json({
+        success: true,
+        message: `Trace logs ${enabled ? 'enabled' : 'disabled'}`,
+      });
+    } catch (error: any) {
+      console.error('Toggle trace logs error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  });
+
   router.post('/execution/pause-control', async (req: Request, res: Response) => {
     try {
       const { action } = req.body as { action: 'continue' | 'stop' | 'skip' | 'continueWithoutBreakpoint' };

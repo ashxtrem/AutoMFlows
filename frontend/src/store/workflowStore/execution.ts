@@ -13,6 +13,7 @@ export interface ExecutionSlice {
   showErrorPopupForNode: (nodeId: string | null) => void;
   setValidationErrors: (errors: ValidationError[]) => void;
   clearValidationErrors: () => void;
+  setNavigateToFailedNode: (fn: (() => void) | null) => void;
 }
 
 export const createExecutionSlice: StateCreator<
@@ -71,4 +72,6 @@ export const createExecutionSlice: StateCreator<
   },
   
   clearValidationErrors: () => set({ validationErrors: new Map() }),
+  
+  setNavigateToFailedNode: (fn) => set({ navigateToFailedNode: fn }),
 });

@@ -43,14 +43,15 @@
     },
     {
       "id": "navigate-1768565887286-2",
-      "type": "navigate",
+      "type": "navigation",
       "position": {
         "x": 600,
         "y": 200
       },
       "data": {
-        "type": "navigate",
+        "type": "navigation",
         "label": "Navigate",
+        "action": "navigate",
         "url": "https://example.com",
         "isTest": true,
         "timeout": 30000,

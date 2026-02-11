@@ -28,6 +28,11 @@ import { renderLoadConfigFileProperties } from './loadConfigFile';
 import { renderDbConnectProperties } from './dbConnect';
 import { renderDbDisconnectProperties } from './dbDisconnect';
 import { renderDbQueryProperties } from './dbQuery';
+import { renderShortcutProperties } from './shortcut';
+import { renderCommentBoxProperties } from './commentBox';
+import { renderSetConfigProperties } from './setConfig';
+import { renderSwitchProperties } from './switch';
+import { renderReusableProperties } from './reusable';
 import { renderPluginNodeProperties } from './pluginNode';
 
 export const propertyRendererRegistry: Record<string, PropertyRenderer> = {
@@ -67,6 +72,31 @@ export function getPropertyRenderer(nodeType: string): PropertyRenderer | null {
   // Check if it's a standard node type
   if (propertyRendererRegistry[nodeType]) {
     return propertyRendererRegistry[nodeType];
+  }
+  
+  // Special handling for shortcut plugin nodes
+  if (nodeType === 'shortcut.shortcut') {
+    return renderShortcutProperties;
+  }
+  
+  // Special handling for comment-box plugin nodes
+  if (nodeType === 'comment-box.comment') {
+    return renderCommentBoxProperties;
+  }
+  
+  // Special handling for setConfig plugin nodes
+  if (nodeType === 'setConfig.setConfig') {
+    return renderSetConfigProperties;
+  }
+  
+  // Special handling for switch plugin nodes
+  if (nodeType === 'switch.switch') {
+    return renderSwitchProperties;
+  }
+  
+  // Special handling for reusable plugin nodes
+  if (nodeType === 'reusable.reusable' || nodeType === 'reusable.end' || nodeType === 'reusable.runReusable') {
+    return renderReusableProperties;
   }
   
   // Check if it's a plugin node

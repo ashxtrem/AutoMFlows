@@ -30,14 +30,15 @@
     },
     {
       "id": "navigate-1770483178233-2c0h033qm",
-      "type": "navigate",
+      "type": "navigation",
       "position": {
         "x": 700,
         "y": 200
       },
       "data": {
-        "type": "navigate",
+        "type": "navigation",
         "label": "Navigate to https://sauce-demo.myshopify.com/,",
+        "action": "navigate",
         "url": "https://sauce-demo.myshopify.com/,",
         "waitUntil": "networkidle"
       }
@@ -57,14 +58,15 @@
     },
     {
       "id": "click-1770483178233-hft61j3rb",
-      "type": "click",
+      "type": "action",
       "position": {
         "x": 1300,
         "y": 200
       },
       "data": {
-        "type": "click",
+        "type": "action",
         "label": "Click create, verify user sees Log Out",
+        "action": "click",
         "selector": "create, verify user sees Log Out"
       }
     },

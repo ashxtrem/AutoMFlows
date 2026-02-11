@@ -16,7 +16,6 @@ import { X } from 'lucide-react';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import { getNodeProperties, isPropertyInputConnection, getPropertyInputHandleId } from '../utils/nodeProperties';
 import { getContrastTextColor } from '../utils/colorContrast';
-import { validateShortcut } from '../utils/shortcutValidator';
 import { isDeprecatedNodeType, getMigrationSuggestion } from '../utils/migration';
 // Import from extracted modules
 import { getNodeIcon, getNodeGlowColor, hexToRgba } from './CustomNode/icons';
@@ -43,9 +42,6 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   
   // State for markdown editor popup (for comment box)
   const [showMarkdownEditor, setShowMarkdownEditor] = useState(false);
-  
-  // State for shortcut validation error
-  const [shortcutError, setShortcutError] = useState<string | null>(null);
   
   // Get latest node data from store to avoid stale prop issues
   const storeNodes = useWorkflowStore((state) => state.nodes);
@@ -604,6 +600,11 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
         handleOpenPopup,
         renderPropertyRow,
         setShowCapabilitiesPopup,
+        setShowMarkdownEditor,
+        setShowSetConfigModal,
+        setSetConfigJsonValue,
+        setSetConfigOriginalJsonValue,
+        setSetConfigJsonError,
         id,
         storeNodes: nodesRaw,
         setSelectedNode,
@@ -613,171 +614,10 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     // All standard node types are now handled by the registry
     // Fallback switch statement removed - all cases extracted to propertyRenderers/
 
-    // Special handling for comment box plugin
-    if (isCommentBox) {
-      const content = renderData.content || '';
-      return (
-        <div className="mt-2">
-          <div
-            onClick={() => setShowMarkdownEditor(true)}
-            className="cursor-pointer min-h-[60px] p-2 rounded border border-gray-600 hover:border-gray-500 transition-colors"
-            style={{ color: textColor }}
-          >
-            <MarkdownRenderer content={content} />
-          </div>
-        </div>
-      );
-    }
-
-    // Special handling for shortcut plugin
-    if (isShortcut) {
-      const shortcut = renderData.shortcut || '';
-      const nodes = useWorkflowStore.getState().nodes;
-      
-      // Get existing shortcuts for validation
-      const existingShortcuts = nodes
-        .filter(n => n.data.type === 'shortcut.shortcut' && n.id !== id)
-        .map(n => (n.data.shortcut || '').toLowerCase())
-        .filter(s => s.length === 1);
-
-      const handleShortcutChange = (value: string) => {
-        // Only allow single character
-        const newShortcut = value.slice(-1).toLowerCase();
-        const validation = validateShortcut(newShortcut, existingShortcuts);
-        
-        if (validation.isValid) {
-          setShortcutError(null);
-          handlePropertyChange('shortcut', newShortcut);
-        } else {
-          setShortcutError(validation.error || 'Invalid shortcut');
-          // Still update the value so user can see what they typed
-          handlePropertyChange('shortcut', newShortcut);
-        }
-      };
-
-      return (
-        <div className="mt-2">
-          <div>
-            <label className="text-xs mb-1 block" style={{ color: textColor, opacity: 0.7 }}>
-              Shortcut Key
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={shortcut}
-                onChange={(e) => handleShortcutChange(e.target.value)}
-                maxLength={1}
-                placeholder="a-z, 0-9"
-                className={`w-full px-2 py-1.5 bg-gray-700 border rounded text-sm ${
-                  shortcutError ? 'border-red-500' : 'border-gray-600'
-                }`}
-                style={{ color: textColor }}
-              />
-              {shortcut && !shortcutError && (
-                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs font-mono bg-blue-600 px-2 py-0.5 rounded">
-                  {shortcut.toUpperCase()}
-                </div>
-              )}
-            </div>
-            {shortcutError && (
-              <div className="text-xs text-red-400 mt-1">{shortcutError}</div>
-            )}
-            {shortcut && !shortcutError && (
-              <div className="text-xs text-gray-400 mt-1">
-                Press "{shortcut.toUpperCase()}" to navigate to this node
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
-
     // Plugin nodes (generic handling)
     const pluginNode = frontendPluginRegistry.getPluginNode(nodeType);
     if (pluginNode && pluginNode.definition.defaultData) {
       const properties = Object.keys(pluginNode.definition.defaultData);
-      
-      // Special handling for setConfig.setConfig nodes
-      if (nodeType === 'setConfig.setConfig') {
-        return (
-          <div className="mt-2 space-y-1">
-            {properties.map((key) => {
-              const value = latestNodeData[key] ?? pluginNode.definition.defaultData![key];
-              const valueType = typeof value;
-              
-              // Special handling for 'config' property - show summary and open Monaco editor
-              if (key === 'config' && valueType === 'object' && value !== null && !Array.isArray(value)) {
-                const configKeys = Object.keys(value);
-                const configSummary = configKeys.length > 0 
-                  ? `{${configKeys.length} key${configKeys.length !== 1 ? 's' : ''}: ${configKeys.slice(0, 3).join(', ')}${configKeys.length > 3 ? '...' : ''}}`
-                  : '{empty}';
-                
-                return (
-                  <div 
-                    key={key}
-                    className="flex items-center gap-1 cursor-pointer hover:bg-gray-700/50 rounded px-1 py-0.5 min-w-0"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      e.preventDefault();
-                      // Initialize modal with current config
-                      try {
-                        const jsonString = JSON.stringify(value, null, 2);
-                        setSetConfigJsonValue(jsonString);
-                        setSetConfigOriginalJsonValue(jsonString);
-                        setSetConfigJsonError(null);
-                      } catch (error: any) {
-                        setSetConfigJsonError(error.message);
-                        setSetConfigJsonValue('{}');
-                        setSetConfigOriginalJsonValue('{}');
-                      }
-                      setShowSetConfigModal(true);
-                    }}
-                    onMouseDown={(e) => e.stopPropagation()}
-                  >
-                    <span className="text-xs text-gray-400 min-w-[60px] flex-shrink-0">{key}:</span>
-                    <span className="text-xs text-gray-200 flex-1 truncate min-w-0" title={configSummary}>
-                      {configSummary}
-                    </span>
-                  </div>
-                );
-              }
-              
-              if (valueType === 'boolean') {
-                return (
-                  <InlineCheckbox
-                    key={key}
-                    label={key}
-                    value={value}
-                    onChange={(val) => handlePropertyChange(key, val)}
-                  />
-                );
-              } else if (valueType === 'number') {
-                return (
-                  <InlineNumberInput
-                    key={key}
-                    label={key}
-                    value={value}
-                    onChange={(val) => handlePropertyChange(key, val)}
-                    field={key}
-                    onOpenPopup={handleOpenPopup}
-                  />
-                );
-              } else {
-                return (
-                  <InlineTextInput
-                    key={key}
-                    label={key}
-                    value={String(value || '')}
-                    onChange={(val) => handlePropertyChange(key, val)}
-                    field={key}
-                    onOpenPopup={handleOpenPopup}
-                  />
-                );
-              }
-            })}
-          </div>
-        );
-      }
       
       // Generic plugin node handling
       return (
@@ -819,85 +659,6 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
               );
             }
           })}
-        </div>
-      );
-    }
-
-    // Special handling for comment box plugin
-    if (isCommentBox) {
-      const content = renderData.content || '';
-      return (
-        <div className="mt-2">
-          <div
-            onClick={() => setShowMarkdownEditor(true)}
-            className="cursor-pointer min-h-[60px] p-2 rounded border border-gray-600 hover:border-gray-500 transition-colors"
-            style={{ color: textColor }}
-          >
-            <MarkdownRenderer content={content} />
-          </div>
-        </div>
-      );
-    }
-
-    // Special handling for shortcut plugin
-    if (isShortcut) {
-      const shortcut = renderData.shortcut || '';
-      const nodes = useWorkflowStore.getState().nodes;
-      
-      // Get existing shortcuts for validation
-      const existingShortcuts = nodes
-        .filter(n => n.data.type === 'shortcut.shortcut' && n.id !== id)
-        .map(n => (n.data.shortcut || '').toLowerCase())
-        .filter(s => s.length === 1);
-
-      const handleShortcutChange = (value: string) => {
-        // Only allow single character
-        const newShortcut = value.slice(-1).toLowerCase();
-        const validation = validateShortcut(newShortcut, existingShortcuts);
-        
-        if (validation.isValid) {
-          setShortcutError(null);
-          handlePropertyChange('shortcut', newShortcut);
-        } else {
-          setShortcutError(validation.error || 'Invalid shortcut');
-          // Still update the value so user can see what they typed
-          handlePropertyChange('shortcut', newShortcut);
-        }
-      };
-
-      return (
-        <div className="mt-2">
-          <div>
-            <label className="text-xs mb-1 block" style={{ color: textColor, opacity: 0.7 }}>
-              Shortcut Key
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={shortcut}
-                onChange={(e) => handleShortcutChange(e.target.value)}
-                maxLength={1}
-                placeholder="a-z, 0-9"
-                className={`w-full px-2 py-1.5 bg-gray-700 border rounded text-sm ${
-                  shortcutError ? 'border-red-500' : 'border-gray-600'
-                }`}
-                style={{ color: textColor }}
-              />
-              {shortcut && !shortcutError && (
-                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs font-mono bg-blue-600 px-2 py-0.5 rounded">
-                  {shortcut.toUpperCase()}
-                </div>
-              )}
-            </div>
-            {shortcutError && (
-              <div className="text-xs text-red-400 mt-1">{shortcutError}</div>
-            )}
-            {shortcut && !shortcutError && (
-              <div className="text-xs text-gray-400 mt-1">
-                Press "{shortcut.toUpperCase()}" to navigate to this node
-              </div>
-            )}
-          </div>
         </div>
       );
     }
