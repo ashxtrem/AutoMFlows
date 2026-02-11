@@ -31,6 +31,70 @@ function Cleanup {
 
 # Note: Ctrl+C will be handled by the try-finally block below
 
+# Function to stop processes on a port (Windows-compatible)
+function Stop-Port {
+    param([int]$Port)
+    
+    Write-Host "Checking for processes on port $Port..." -ForegroundColor Yellow
+    
+    # Method 1: Try Get-NetTCPConnection (PowerShell 3.0+, Windows 8+)
+    # This may require admin privileges, so we'll catch errors
+    try {
+        if (Get-Command Get-NetTCPConnection -ErrorAction SilentlyContinue) {
+            $connections = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
+            if ($connections) {
+                foreach ($conn in $connections) {
+                    try {
+                        $process = Get-Process -Id $conn.OwningProcess -ErrorAction SilentlyContinue
+                        if ($process) {
+                            Write-Host "Stopping process $($process.ProcessName) (PID: $($process.Id)) on port $Port" -ForegroundColor Yellow
+                            Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
+                        }
+                    } catch {
+                        # Ignore errors
+                    }
+                }
+                Start-Sleep -Seconds 1
+                return
+            }
+        }
+    } catch {
+        # Get-NetTCPConnection not available or requires admin - fall through to netstat
+    }
+    
+    # Method 2: Use netstat (works on all Windows versions, no admin required)
+    try {
+        $netstatOutput = netstat -ano | Select-String ":$Port.*LISTENING"
+        if ($netstatOutput) {
+            foreach ($line in $netstatOutput) {
+                # Parse netstat output: extract PID from last column
+                $parts = $line.ToString().Trim() -split '\s+'
+                $pid = $parts[-1]
+                if ($pid -match '^\d+$') {
+                    try {
+                        $process = Get-Process -Id $pid -ErrorAction SilentlyContinue
+                        if ($process) {
+                            Write-Host "Stopping process $($process.ProcessName) (PID: $pid) on port $Port" -ForegroundColor Yellow
+                            Stop-Process -Id $pid -Force -ErrorAction SilentlyContinue
+                        }
+                    } catch {
+                        # Process may have already exited or requires admin
+                    }
+                }
+            }
+        }
+    } catch {
+        Write-Host "Warning: Could not check for processes on port $Port" -ForegroundColor Yellow
+    }
+    
+    Start-Sleep -Seconds 1
+}
+
+# Stop any existing processes on backend and frontend ports
+Write-Host '🛑 Stopping any existing processes on ports 3003 and 5173...' -ForegroundColor Yellow
+Stop-Port -Port 3003
+Stop-Port -Port 5173
+
 # Step 1: Install dependencies
 Write-Host '📦 Installing dependencies...' -ForegroundColor Blue
 npm install

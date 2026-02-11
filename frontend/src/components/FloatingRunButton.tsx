@@ -36,19 +36,6 @@ export default function FloatingRunButton() {
     handleBreakpointWarningCancel,
     handleBreakpointWarningDontAskAgain,
   } = useExecution();
-  
-  // Load trace logs from localStorage (same as TopBar)
-  // Default to true (enabled) if not set, so trace logs are enabled by default
-  const traceLogs = typeof window !== 'undefined' 
-    ? (() => {
-        const saved = localStorage.getItem('automflows_trace_logs');
-        // If not set, default to true (enabled)
-        if (saved === null) {
-          return true;
-        }
-        return saved === 'true';
-      })()
-    : true;
 
   const [showStopWarning, setShowStopWarning] = useState(false);
   const [pendingStopAction, setPendingStopAction] = useState<(() => void | Promise<void>) | null>(null);

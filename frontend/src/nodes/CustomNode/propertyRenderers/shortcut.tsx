@@ -1,5 +1,6 @@
 import { PropertyRenderer } from './types';
 import { useWorkflowStore } from '../../../store/workflowStore';
+import { useSettingsStore } from '../../../store/settingsStore';
 import { validateShortcut } from '../../../utils/shortcutValidator';
 
 export const renderShortcutProperties: PropertyRenderer = ({ renderData, handlePropertyChange, id }) => {
@@ -23,7 +24,7 @@ export const renderShortcutProperties: PropertyRenderer = ({ renderData, handleP
   };
 
   // Get text color based on theme
-  const theme = useWorkflowStore.getState().theme;
+  const theme = useSettingsStore.getState().appearance.theme;
   const textColor = theme === 'light' ? '#1F2937' : '#e5e7eb';
 
   return (

@@ -29,6 +29,29 @@ cleanup() {
 # Trap Ctrl+C and cleanup
 trap cleanup SIGINT SIGTERM
 
+# Function to kill processes on a port
+kill_port() {
+    local port=$1
+    if command -v lsof >/dev/null 2>&1; then
+        local pids=$(lsof -ti :$port 2>/dev/null)
+        if [ ! -z "$pids" ]; then
+            echo -e "${YELLOW}Stopping processes on port $port...${NC}"
+            echo "$pids" | xargs kill -9 2>/dev/null || true
+            sleep 1
+        fi
+    elif command -v fuser >/dev/null 2>&1; then
+        fuser -k $port/tcp 2>/dev/null || true
+        sleep 1
+    else
+        echo -e "${YELLOW}Warning: Could not find lsof or fuser to stop processes on port $port${NC}"
+    fi
+}
+
+# Stop any existing processes on backend and frontend ports
+echo -e "${YELLOW}🛑 Stopping any existing processes on ports 3003 and 5173...${NC}"
+kill_port 3003
+kill_port 5173
+
 # Step 1: Install dependencies
 echo -e "${BLUE}📦 Installing dependencies...${NC}"
 npm install || echo -e "${YELLOW}Warning: npm install failed. Continuing anyway...${NC}"

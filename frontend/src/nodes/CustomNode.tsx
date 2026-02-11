@@ -13,7 +13,6 @@ import PropertyEditorPopup, { PropertyEditorType } from '../components/PropertyE
 import MarkdownEditorPopup from '../components/MarkdownEditorPopup';
 import Editor from '@monaco-editor/react';
 import { X } from 'lucide-react';
-import MarkdownRenderer from '../components/MarkdownRenderer';
 import { getNodeProperties, isPropertyInputConnection, getPropertyInputHandleId } from '../utils/nodeProperties';
 import { getContrastTextColor } from '../utils/colorContrast';
 import { isDeprecatedNodeType, getMigrationSuggestion } from '../utils/migration';

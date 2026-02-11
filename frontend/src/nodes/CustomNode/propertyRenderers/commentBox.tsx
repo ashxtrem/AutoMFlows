@@ -1,12 +1,12 @@
 import { PropertyRenderer } from './types';
 import MarkdownRenderer from '../../../components/MarkdownRenderer';
-import { useWorkflowStore } from '../../../store/workflowStore';
+import { useSettingsStore } from '../../../store/settingsStore';
 
-export const renderCommentBoxProperties: PropertyRenderer = ({ renderData, handlePropertyChange, setShowMarkdownEditor }) => {
+export const renderCommentBoxProperties: PropertyRenderer = ({ renderData, setShowMarkdownEditor }) => {
   const content = renderData.content || '';
   
   // Get text color based on theme
-  const theme = useWorkflowStore.getState().theme;
+  const theme = useSettingsStore.getState().appearance.theme;
   const textColor = theme === 'light' ? '#1F2937' : '#e5e7eb';
 
   return (
