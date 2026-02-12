@@ -12,6 +12,9 @@ describe('IntValueHandler', () => {
   beforeEach(() => {
     handler = new IntValueHandler();
     mockContext = createMockContextManager();
+    // Spy on setVariable and setData to verify they're called
+    jest.spyOn(mockContext, 'setVariable');
+    jest.spyOn(mockContext, 'setData');
     (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str.replace('${variables.test}', '42'));
   });
 
@@ -66,6 +69,9 @@ describe('StringValueHandler', () => {
   beforeEach(() => {
     handler = new StringValueHandler();
     mockContext = createMockContextManager();
+    // Spy on setVariable and setData to verify they're called
+    jest.spyOn(mockContext, 'setVariable');
+    jest.spyOn(mockContext, 'setData');
     (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str.replace('${variables.test}', 'interpolated'));
   });
 
@@ -99,6 +105,8 @@ describe('BooleanValueHandler', () => {
   beforeEach(() => {
     handler = new BooleanValueHandler();
     mockContext = createMockContextManager();
+    // Spy on setVariable to verify it's called
+    jest.spyOn(mockContext, 'setVariable');
     (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str.replace('${variables.test}', 'true'));
   });
 
@@ -140,6 +148,8 @@ describe('InputValueHandler', () => {
   beforeEach(() => {
     handler = new InputValueHandler();
     mockContext = createMockContextManager();
+    // Spy on setVariable to verify it's called
+    jest.spyOn(mockContext, 'setVariable');
   });
 
   it('should convert to int', async () => {

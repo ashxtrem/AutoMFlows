@@ -113,7 +113,35 @@ export function createMockPage(): any {
  */
 export function createMockContextManager(page?: any): ContextManager {
   const context = new ContextManager();
+  
+  // Don't mock setVariable and setData - use real implementation so data is actually stored
+  // Tests can spy on them using jest.spyOn(context, 'setData') if needed
+  
   if (page) {
+    // Ensure page has a proper context mock with pages() method
+    if (!page.context || typeof page.context !== 'function') {
+      const mockBrowserContext = {
+        pages: jest.fn().mockReturnValue([page]),
+        addInitScript: jest.fn().mockResolvedValue(undefined),
+        setGeolocation: jest.fn().mockResolvedValue(undefined),
+        setPermissions: jest.fn().mockResolvedValue(undefined),
+        grantPermissions: jest.fn().mockResolvedValue(undefined),
+        clearPermissions: jest.fn().mockResolvedValue(undefined),
+        setExtraHTTPHeaders: jest.fn().mockResolvedValue(undefined),
+        setOffline: jest.fn().mockResolvedValue(undefined),
+        addCookies: jest.fn().mockResolvedValue(undefined),
+        clearCookies: jest.fn().mockResolvedValue(undefined),
+        storageState: jest.fn().mockResolvedValue({}),
+        cookies: jest.fn().mockResolvedValue([]),
+      };
+      page.context = jest.fn().mockReturnValue(mockBrowserContext);
+    } else {
+      // If context already exists, ensure it has pages() method
+      const existingContext = page.context();
+      if (existingContext && typeof existingContext.pages !== 'function') {
+        existingContext.pages = jest.fn().mockReturnValue([page]);
+      }
+    }
     context.setPage(page);
   }
   return context;

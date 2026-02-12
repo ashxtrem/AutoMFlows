@@ -21,6 +21,8 @@ describe('ElementQueryHandler', () => {
     handler = new ElementQueryHandler();
     mockPage = createMockPage();
     mockContext = createMockContextManager(mockPage);
+    // Spy on setData to verify it's called
+    jest.spyOn(mockContext, 'setData');
     mockLocator = {
       textContent: jest.fn().mockResolvedValue('test text'),
       getAttribute: jest.fn().mockResolvedValue('value'),

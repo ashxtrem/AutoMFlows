@@ -1,3 +1,6 @@
+/**
+ * @jest-environment jsdom
+ */
 import { ActionRecorderInjector } from '../core';
 import { createMockPage } from '../../../__tests__/helpers/mocks';
 import { ActionRecorderSessionManager } from '../../actionRecorderSessionManager';
@@ -34,7 +37,19 @@ describe('ActionRecorderInjector', () => {
 
     mockPage.exposeFunction = jest.fn().mockResolvedValue(undefined);
     mockPage.addInitScript = jest.fn().mockResolvedValue(undefined);
-    mockPage.evaluate = jest.fn().mockResolvedValue(false);
+    // Mock evaluate to handle window object - window exists in jsdom
+    mockPage.evaluate = jest.fn().mockImplementation((fn: any, ...args: any[]) => {
+      if (typeof fn === 'function') {
+        try {
+          const result = fn.call(window, ...args);
+          return Promise.resolve(result);
+        } catch (e) {
+          return Promise.resolve(false);
+        }
+      }
+      // If it's a string (script), return false
+      return Promise.resolve(false);
+    });
   });
 
   describe('injectActionRecorderOverlay', () => {
@@ -94,13 +109,37 @@ describe('ActionRecorderInjector', () => {
     });
 
     it('should recreate overlay if injected but overlay missing', async () => {
-      mockPage.evaluate
-        .mockResolvedValueOnce(true) // Already injected
-        .mockResolvedValueOnce(false); // Overlay doesn't exist
+      // Set up window state
+      (window as any).__actionRecorderInjected = true;
+      let getElementByIdCallCount = 0;
+      document.getElementById = jest.fn().mockImplementation(() => {
+        getElementByIdCallCount++;
+        // First call returns null (overlay doesn't exist), subsequent calls return element
+        return getElementByIdCallCount === 1 ? null : {} as any;
+      });
+
+      // Reset the mock to return specific values
+      mockPage.evaluate = jest.fn().mockImplementation((fn: any, ...args: any[]) => {
+        if (typeof fn === 'function') {
+          try {
+            const result = fn.call(window, ...args);
+            return Promise.resolve(result !== undefined ? result : true);
+          } catch (e) {
+            return Promise.resolve(false);
+          }
+        }
+        return Promise.resolve(false);
+      });
 
       await ActionRecorderInjector.injectActionRecorderOverlay(mockPage, mockIo);
 
-      expect(mockPage.evaluate).toHaveBeenCalledWith(expect.stringContaining('__actionRecorderInjected = false'));
+      // Check that evaluate was called - the reset should have happened
+      expect(mockPage.evaluate).toHaveBeenCalled();
+      // Verify that __actionRecorderInjected was reset to false
+      expect((window as any).__actionRecorderInjected).toBe(false);
+      
+      // Cleanup
+      delete (window as any).__actionRecorderInjected;
     });
   });
 
@@ -144,13 +183,36 @@ describe('ActionRecorderInjector', () => {
     });
 
     it('should set actionRecorderActive to false', async () => {
+      // Set up window state
+      (window as any).__actionRecorderActive = true;
+      (window as any).__webhookListenersActive = true;
+      (window as any).__stopActionRecording = jest.fn();
+
+      // Reset mock to track the call properly
+      mockPage.evaluate = jest.fn().mockImplementation((fn: any, ...args: any[]) => {
+        if (typeof fn === 'function') {
+          try {
+            fn.call(window, ...args);
+            return Promise.resolve(undefined);
+          } catch (e) {
+            return Promise.resolve(undefined);
+          }
+        }
+        return Promise.resolve(undefined);
+      });
+
       await ActionRecorderInjector.stopWebhookListening(mockPage);
 
-      const evaluateCall = mockPage.evaluate.mock.calls[0][0];
-      const result = evaluateCall();
+      expect(mockPage.evaluate).toHaveBeenCalled();
       
       // Verify the script sets the flags
-      expect(typeof evaluateCall).toBe('function');
+      expect((window as any).__actionRecorderActive).toBe(false);
+      expect((window as any).__webhookListenersActive).toBe(false);
+      
+      // Cleanup
+      delete (window as any).__actionRecorderActive;
+      delete (window as any).__webhookListenersActive;
+      delete (window as any).__stopActionRecording;
     });
   });
 });

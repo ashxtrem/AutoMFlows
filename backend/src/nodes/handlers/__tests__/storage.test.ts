@@ -19,6 +19,7 @@ describe('StorageHandler', () => {
     handler = new StorageHandler();
     mockPage = createMockPage();
     mockBrowserContext = {
+      pages: jest.fn().mockReturnValue([mockPage]),
       cookies: jest.fn().mockResolvedValue([]),
       addCookies: jest.fn().mockResolvedValue(undefined),
       clearCookies: jest.fn().mockResolvedValue(undefined),
@@ -27,6 +28,8 @@ describe('StorageHandler', () => {
     mockPage.evaluate = jest.fn().mockResolvedValue(undefined);
     mockPage.url = jest.fn().mockReturnValue('https://example.com');
     mockContext = createMockContextManager(mockPage);
+    // Spy on setData to verify it's called
+    jest.spyOn(mockContext, 'setData');
 
     (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str);
     (WaitHelper.executeWaits as jest.Mock).mockResolvedValue(undefined);
