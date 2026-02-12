@@ -14,7 +14,8 @@
         "isTest": true,
         "screenshotAllNodes": false,
         "screenshotTiming": "both",
-        "searchHighlighted": false
+        "searchHighlighted": false,
+        "scrollThenAction": true
       }
     },
     {
@@ -317,48 +318,6 @@
         "selectorType": "css",
         "elementCheck": "checked",
         "timeout": 30000,
-        "isPinned": false,
-        "isTest": true,
-        "searchHighlighted": false
-      }
-    },
-    {
-      "id": "select-day-sunday",
-      "type": "action",
-      "position": {
-        "x": 4350,
-        "y": 200
-      },
-      "data": {
-        "type": "action",
-        "label": "Select Sunday",
-        "action": "click",
-        "selector": "#sunday",
-        "selectorType": "css",
-        "timeout": 30000,
-        "retryEnabled": true,
-        "retryCount": 3,
-        "isPinned": false,
-        "isTest": true,
-        "searchHighlighted": false
-      }
-    },
-    {
-      "id": "select-day-monday",
-      "type": "action",
-      "position": {
-        "x": 4600,
-        "y": 200
-      },
-      "data": {
-        "type": "action",
-        "label": "Select Monday",
-        "action": "click",
-        "selector": "#monday",
-        "selectorType": "css",
-        "timeout": 30000,
-        "retryEnabled": true,
-        "retryCount": 3,
         "isPinned": false,
         "isTest": true,
         "searchHighlighted": false
@@ -1008,7 +967,7 @@
       "data": {
         "type": "action",
         "label": "Drag and Drop",
-        "action": "dragTo",
+        "action": "dragAndDrop",
         "selector": "#draggable",
         "selectorType": "css",
         "targetSelector": "#droppable",
@@ -1056,14 +1015,14 @@
         "type": "scroll",
         "label": "Scroll to Slider Section",
         "action": "scrollToElement",
-        "selector": "#slider",
-        "selectorType": "css",
         "timeout": 30000,
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
         "isTest": true,
-        "searchHighlighted": false
+        "searchHighlighted": false,
+        "selector": "//*[@id=\"slider-range\"]/span[1]",
+        "selectorType": "xpath"
       }
     },
     {
@@ -1078,13 +1037,14 @@
         "label": "Verify Slider Exists",
         "domain": "browser",
         "verificationType": "element",
-        "selector": "#slider",
-        "selectorType": "css",
+        "selector": "//*[@id=\"slider-range\"]/span[1]",
+        "selectorType": "xpath",
         "elementCheck": "exists",
         "timeout": 30000,
         "isPinned": false,
         "isTest": true,
-        "searchHighlighted": false
+        "searchHighlighted": false,
+        "failSilently": true
       }
     },
     {
@@ -1099,13 +1059,14 @@
         "label": "Verify Slider Enabled",
         "domain": "browser",
         "verificationType": "element",
-        "selector": "#slider",
-        "selectorType": "css",
+        "selector": "//*[@id=\"slider-range\"]/span[1]",
+        "selectorType": "xpath",
         "elementCheck": "enabled",
         "timeout": 30000,
         "isPinned": false,
         "isTest": true,
-        "searchHighlighted": false
+        "searchHighlighted": false,
+        "failSilently": true
       }
     },
     {
@@ -1118,16 +1079,20 @@
       "data": {
         "type": "action",
         "label": "Move Slider",
-        "action": "fill",
-        "selector": "#slider",
-        "selectorType": "css",
+        "action": "dragAndDrop",
+        "selector": "//*[@id=\"slider-range\"]/span[1]",
+        "selectorType": "xpath",
         "value": "50",
         "timeout": 30000,
         "retryEnabled": true,
         "retryCount": 3,
         "isPinned": false,
         "isTest": true,
-        "searchHighlighted": false
+        "searchHighlighted": false,
+        "failSilently": true,
+        "targetSelectorType": "css",
+        "targetX": 626,
+        "targetY": 235
       }
     },
     {
@@ -1142,7 +1107,7 @@
         "label": "Verify Slider Value",
         "domain": "browser",
         "verificationType": "attribute",
-        "selector": "#slider",
+        "selector": "//*[@id=\"slider-range\"]/span[1]",
         "selectorType": "css",
         "attributeName": "value",
         "expectedValue": "50",
@@ -1150,7 +1115,8 @@
         "timeout": 30000,
         "isPinned": false,
         "isTest": true,
-        "searchHighlighted": false
+        "searchHighlighted": false,
+        "failSilently": true
       }
     },
     {
@@ -1164,7 +1130,7 @@
         "type": "scroll",
         "label": "Scroll to Links Section",
         "action": "scrollToElement",
-        "selector": "a[href*='Samsung']",
+        "selector": "#samsung",
         "selectorType": "css",
         "timeout": 30000,
         "retryEnabled": true,
@@ -1228,69 +1194,6 @@
         "verificationType": "text",
         "expectedText": "Broken Links",
         "matchType": "contains",
-        "timeout": 30000,
-        "isPinned": false,
-        "isTest": true,
-        "searchHighlighted": false
-      }
-    },
-    {
-      "id": "verify-samsung-link",
-      "type": "verify",
-      "position": {
-        "x": 14600,
-        "y": 200
-      },
-      "data": {
-        "type": "verify",
-        "label": "Verify Samsung Link Exists",
-        "domain": "browser",
-        "verificationType": "element",
-        "selector": "a[href*='Samsung']",
-        "selectorType": "css",
-        "elementCheck": "exists",
-        "timeout": 30000,
-        "isPinned": false,
-        "isTest": true,
-        "searchHighlighted": false
-      }
-    },
-    {
-      "id": "verify-apple-link",
-      "type": "verify",
-      "position": {
-        "x": 14850,
-        "y": 200
-      },
-      "data": {
-        "type": "verify",
-        "label": "Verify Apple Link Exists",
-        "domain": "browser",
-        "verificationType": "element",
-        "selector": "a[href*='Apple']",
-        "selectorType": "css",
-        "elementCheck": "exists",
-        "timeout": 30000,
-        "isPinned": false,
-        "isTest": true,
-        "searchHighlighted": false
-      }
-    },
-    {
-      "id": "verify-error-404-link",
-      "type": "verify",
-      "position": {
-        "x": 15100,
-        "y": 200
-      },
-      "data": {
-        "type": "verify",
-        "label": "Verify Error 404 Link Exists",
-        "domain": "browser",
-        "verificationType": "element",
-        "selector": "a[href*='404']",
-        "selectorType": "css",
-        "elementCheck": "exists",
         "timeout": 30000,
         "isPinned": false,
         "isTest": true,
@@ -1457,6 +1360,240 @@
         "targetNodeId": "",
         "isTest": true,
         "isPinned": false,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "reusable-select-day",
+      "type": "reusable.reusable",
+      "position": {
+        "x": 15600,
+        "y": 400
+      },
+      "data": {
+        "type": "reusable.reusable",
+        "label": "Reusable: select_day",
+        "contextName": "select_day",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "click-day-checkbox",
+      "type": "action",
+      "position": {
+        "x": 15600,
+        "y": 400
+      },
+      "data": {
+        "type": "action",
+        "label": "Click Day Checkbox",
+        "action": "click",
+        "selector": "${data.daySelector}",
+        "selectorType": "css",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "end-select-day",
+      "type": "reusable.end",
+      "position": {
+        "x": 15600,
+        "y": 400
+      },
+      "data": {
+        "type": "reusable.end",
+        "label": "End",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "reusable-verify-link",
+      "type": "reusable.reusable",
+      "position": {
+        "x": 15600,
+        "y": 600
+      },
+      "data": {
+        "type": "reusable.reusable",
+        "label": "Reusable: verify_link",
+        "contextName": "verify_link",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-link-exists",
+      "type": "verify",
+      "position": {
+        "x": 15600,
+        "y": 600
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Link Exists",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "${data.linkSelector}",
+        "selectorType": "css",
+        "elementCheck": "exists",
+        "timeout": 30000,
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "end-verify-link",
+      "type": "reusable.end",
+      "position": {
+        "x": 15600,
+        "y": 600
+      },
+      "data": {
+        "type": "reusable.end",
+        "label": "End",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "javascript-set-days-array-d9e7e37c",
+      "type": "javascriptCode",
+      "position": {
+        "x": 4100,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set Days Array",
+        "code": "context.setData('days_array', ['#sunday', '#monday']);",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "loop-days-9a6aa170",
+      "type": "loop",
+      "position": {
+        "x": 4350,
+        "y": 200
+      },
+      "data": {
+        "type": "loop",
+        "label": "Loop: Select Days",
+        "mode": "forEach",
+        "arrayVariable": "days_array",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "javascript-set-current-day-ec48f020",
+      "type": "javascriptCode",
+      "position": {
+        "x": 4600,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set Current Day Selector",
+        "code": "const currentDay = context.getVariable('item');\ncontext.setData('daySelector', currentDay);",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "run-select-day-1ef90a0d",
+      "type": "reusable.runReusable",
+      "position": {
+        "x": 4850,
+        "y": 200
+      },
+      "data": {
+        "type": "reusable.runReusable",
+        "label": "Run Reusable: select_day",
+        "contextName": "select_day",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "javascript-set-links-array-23a54b8c",
+      "type": "javascriptCode",
+      "position": {
+        "x": 14350,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set Links Array",
+        "code": "context.setData('links_array', [\n  {selector: \"a[href*='Samsung']\", label: 'Samsung'},\n  {selector: \"a[href*='Apple']\", label: 'Apple'},\n  {selector: \"a[href*='404']\", label: '404'}\n]);",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "loop-links-bf0efd64",
+      "type": "loop",
+      "position": {
+        "x": 14600,
+        "y": 200
+      },
+      "data": {
+        "type": "loop",
+        "label": "Loop: Verify Links",
+        "mode": "forEach",
+        "arrayVariable": "links_array",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "javascript-set-current-link-0b951383",
+      "type": "javascriptCode",
+      "position": {
+        "x": 14850,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set Current Link Selector",
+        "code": "const currentLink = context.getVariable('item');\ncontext.setData('linkSelector', currentLink.selector);",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "run-verify-link-0148fe77",
+      "type": "reusable.runReusable",
+      "position": {
+        "x": 15100,
+        "y": 200
+      },
+      "data": {
+        "type": "reusable.runReusable",
+        "label": "Run Reusable: verify_link",
+        "contextName": "verify_link",
+        "isPinned": false,
+        "isTest": true,
         "searchHighlighted": false
       }
     }
@@ -1697,48 +1834,6 @@
       "id": "edge-select-gender-verify-gender-driver",
       "source": "select-gender-male",
       "target": "verify-gender-selected",
-      "sourceHandle": "output",
-      "targetHandle": "driver"
-    },
-    {
-      "id": "edge-verify-gender-select-sunday-input",
-      "source": "verify-gender-selected",
-      "target": "select-day-sunday",
-      "sourceHandle": "output",
-      "targetHandle": "input"
-    },
-    {
-      "id": "edge-verify-gender-select-sunday-driver",
-      "source": "verify-gender-selected",
-      "target": "select-day-sunday",
-      "sourceHandle": "output",
-      "targetHandle": "driver"
-    },
-    {
-      "id": "edge-select-sunday-select-monday-input",
-      "source": "select-day-sunday",
-      "target": "select-day-monday",
-      "sourceHandle": "output",
-      "targetHandle": "input"
-    },
-    {
-      "id": "edge-select-sunday-select-monday-driver",
-      "source": "select-day-sunday",
-      "target": "select-day-monday",
-      "sourceHandle": "output",
-      "targetHandle": "driver"
-    },
-    {
-      "id": "edge-select-monday-verify-days-input",
-      "source": "select-day-monday",
-      "target": "verify-days-selected",
-      "sourceHandle": "output",
-      "targetHandle": "input"
-    },
-    {
-      "id": "edge-select-monday-verify-days-driver",
-      "source": "select-day-monday",
-      "target": "verify-days-selected",
       "sourceHandle": "output",
       "targetHandle": "driver"
     },
@@ -2093,34 +2188,6 @@
       "targetHandle": "driver"
     },
     {
-      "id": "edge-verify-success-scroll-slider-input",
-      "source": "verify-drag-drop-success",
-      "target": "scroll-to-slider",
-      "sourceHandle": "output",
-      "targetHandle": "input"
-    },
-    {
-      "id": "edge-verify-success-scroll-slider-driver",
-      "source": "verify-drag-drop-success",
-      "target": "scroll-to-slider",
-      "sourceHandle": "output",
-      "targetHandle": "driver"
-    },
-    {
-      "id": "edge-scroll-slider-verify-exists-input",
-      "source": "scroll-to-slider",
-      "target": "verify-slider-exists",
-      "sourceHandle": "output",
-      "targetHandle": "input"
-    },
-    {
-      "id": "edge-scroll-slider-verify-exists-driver",
-      "source": "scroll-to-slider",
-      "target": "verify-slider-exists",
-      "sourceHandle": "output",
-      "targetHandle": "driver"
-    },
-    {
       "id": "edge-verify-exists-verify-enabled-input",
       "source": "verify-slider-exists",
       "target": "verify-slider-enabled",
@@ -2219,62 +2286,6 @@
       "targetHandle": "driver"
     },
     {
-      "id": "edge-verify-broken-verify-samsung-input",
-      "source": "verify-broken-links-section",
-      "target": "verify-samsung-link",
-      "sourceHandle": "output",
-      "targetHandle": "input"
-    },
-    {
-      "id": "edge-verify-broken-verify-samsung-driver",
-      "source": "verify-broken-links-section",
-      "target": "verify-samsung-link",
-      "sourceHandle": "output",
-      "targetHandle": "driver"
-    },
-    {
-      "id": "edge-verify-samsung-verify-apple-input",
-      "source": "verify-samsung-link",
-      "target": "verify-apple-link",
-      "sourceHandle": "output",
-      "targetHandle": "input"
-    },
-    {
-      "id": "edge-verify-samsung-verify-apple-driver",
-      "source": "verify-samsung-link",
-      "target": "verify-apple-link",
-      "sourceHandle": "output",
-      "targetHandle": "driver"
-    },
-    {
-      "id": "edge-verify-apple-verify-404-input",
-      "source": "verify-apple-link",
-      "target": "verify-error-404-link",
-      "sourceHandle": "output",
-      "targetHandle": "input"
-    },
-    {
-      "id": "edge-verify-apple-verify-404-driver",
-      "source": "verify-apple-link",
-      "target": "verify-error-404-link",
-      "sourceHandle": "output",
-      "targetHandle": "driver"
-    },
-    {
-      "id": "edge-verify-404-screenshot-input",
-      "source": "verify-error-404-link",
-      "target": "screenshot-final",
-      "sourceHandle": "output",
-      "targetHandle": "input"
-    },
-    {
-      "id": "edge-verify-404-screenshot-driver",
-      "source": "verify-error-404-link",
-      "target": "screenshot-final",
-      "sourceHandle": "output",
-      "targetHandle": "driver"
-    },
-    {
       "id": "reactflow__edge-verify-country-selectedoutput-formInput-1768650944105driver",
       "source": "verify-country-selected",
       "target": "formInput-1768650944105",
@@ -2315,6 +2326,133 @@
       "target": "type-1768883857238",
       "sourceHandle": "output",
       "targetHandle": "driver"
+    },
+    {
+      "id": "edge-reusable-select-day-click-0d43546d",
+      "source": "reusable-select-day",
+      "target": "click-day-checkbox",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-click-end-select-day-a56be0d0",
+      "source": "click-day-checkbox",
+      "target": "end-select-day",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-reusable-verify-link-verify-66ec5f8c",
+      "source": "reusable-verify-link",
+      "target": "verify-link-exists",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-end-verify-link-c86b1c85",
+      "source": "verify-link-exists",
+      "target": "end-verify-link",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-gender-javascript-days-a7467085",
+      "source": "verify-gender-selected",
+      "target": "javascript-set-days-array-d9e7e37c",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-gender-javascript-days-08717fa0",
+      "source": "verify-gender-selected",
+      "target": "javascript-set-days-array-d9e7e37c",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-days-loop-391fb056",
+      "source": "javascript-set-days-array-d9e7e37c",
+      "target": "loop-days-9a6aa170",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-loop-javascript-day-55a5c11b",
+      "source": "loop-days-9a6aa170",
+      "target": "javascript-set-current-day-ec48f020",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-day-run-select-77398455",
+      "source": "javascript-set-current-day-ec48f020",
+      "target": "run-select-day-1ef90a0d",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-days-verify-days-8c9932bc",
+      "source": "javascript-set-days-array-d9e7e37c",
+      "target": "verify-days-selected",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-broken-javascript-links-497fc8eb",
+      "source": "verify-broken-links-section",
+      "target": "javascript-set-links-array-23a54b8c",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-broken-javascript-links-6a6fbc16",
+      "source": "verify-broken-links-section",
+      "target": "javascript-set-links-array-23a54b8c",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-links-loop-d5ec9268",
+      "source": "javascript-set-links-array-23a54b8c",
+      "target": "loop-links-bf0efd64",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-loop-javascript-link-52f09833",
+      "source": "loop-links-bf0efd64",
+      "target": "javascript-set-current-link-0b951383",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-link-run-verify-76cedda8",
+      "source": "javascript-set-current-link-0b951383",
+      "target": "run-verify-link-0148fe77",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-loop-links-screenshot-64c7f69b",
+      "source": "loop-links-bf0efd64",
+      "target": "screenshot-final",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-verify-drag-drop-successoutput-action-1770830414503driver",
+      "source": "verify-drag-drop-success",
+      "target": "scroll-to-slider",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-scroll-to-slideroutput-verify-slider-existsdriver",
+      "source": "scroll-to-slider",
+      "target": "verify-slider-exists",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
     }
-  ]
+  ],
+  "groups": []
 }

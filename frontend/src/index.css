@@ -415,6 +415,26 @@ a[href*="reactflow.dev"],
   opacity: 0 !important;
 }
 
+/* FPS Counter positioning - below filename in top left */
+.fps-counter-wrapper {
+  position: fixed;
+  top: 36px;
+  left: 8px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.fps-counter-display {
+  background-color: transparent;
+  padding: 0;
+  font-size: 10px;
+  font-family: 'Inter', monospace;
+  color: #f3f4f6;
+  filter: drop-shadow(0 10px 8px rgb(0 0 0 / 0.04)) drop-shadow(0 4px 3px rgb(0 0 0 / 0.1));
+  pointer-events: auto;
+  user-select: none;
+}
+
 /* Vignette effect for canvas */
 .canvas-vignette::before {
   content: '';

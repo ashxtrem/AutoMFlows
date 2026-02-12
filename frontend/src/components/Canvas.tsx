@@ -1,4 +1,4 @@
-import { useCallback, useRef, useEffect, useMemo } from 'react';
+import { useCallback, useRef, useEffect, useMemo, useState } from 'react';
 import ReactFlow, {
   Background,
   BackgroundVariant,
@@ -48,6 +48,49 @@ export const getReactFlowSetNodes = (): SetNodesFunction | null => {
   return reactFlowSetNodes;
 };
 
+// Custom FPS Counter Component - shows only current FPS
+function FPSCounterDisplay() {
+  const [fps, setFps] = useState(0);
+  const animationFrameRef = useRef<number>(0);
+
+  useEffect(() => {
+    let lastTime = performance.now();
+    let frameCount = 0;
+
+    const measureFPS = (currentTime: number) => {
+      frameCount++;
+      const elapsed = currentTime - lastTime;
+
+      // Update every 1 second for better stability/readability
+      if (elapsed >= 1000) {
+        const calculatedFps = Math.round((frameCount * 1000) / elapsed);
+        
+        // Remove the 75 cap to support 144Hz+ monitors
+        setFps(calculatedFps);
+        
+        frameCount = 0;
+        lastTime = currentTime;
+      }
+
+      animationFrameRef.current = requestAnimationFrame(measureFPS);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(measureFPS);
+
+    return () => cancelAnimationFrame(animationFrameRef.current);
+  }, []);
+
+  // Use memoization or a simple div to ensure the counter itself doesn't lag the UI
+  return (
+    <div 
+      className="fps-counter-wrapper"
+      title="FPS Counter - Disable in Settings > Canvas > Show FPS Counter"
+    >
+      <div className="fps-counter-display">FPS: {fps}</div>
+    </div>
+  );
+}
+
 function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, hasRunInitialFitViewRef, hideSidebar }: CanvasInnerProps) {
   const { 
     nodes, 
@@ -70,10 +113,11 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     addNodesToGroup,
   } = useWorkflowStore();
   
-  const { showGrid, gridSize, snapToGrid } = useSettingsStore((state) => ({
+  const { showGrid, gridSize, snapToGrid, showFPSCounter } = useSettingsStore((state) => ({
     showGrid: state.canvas.showGrid,
     gridSize: state.canvas.gridSize,
     snapToGrid: state.canvas.snapToGrid,
+    showFPSCounter: state.canvas.showFPSCounter,
   }));
   const theme = useSettingsStore((state) => state.appearance.theme);
   
@@ -767,6 +811,8 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
           <span className="text-yellow-400 text-xs drop-shadow-lg" title="Unsaved changes">●</span>
         )}
       </div>
+      {/* FPS Counter - positioned below filename in top left */}
+      {showFPSCounter && <FPSCounterDisplay />}
       {handlers.contextMenu && (
         <ContextMenu
             x={handlers.contextMenu.x}

@@ -46,6 +46,7 @@ interface CanvasSettings {
   connectionStyle: 'curved' | 'straight' | 'stepped';
   autoConnect: boolean;
   lazyLoading: boolean;
+  showFPSCounter: boolean;
 }
 
 interface AppearanceSettings {
@@ -113,6 +114,7 @@ const defaultCanvasSettings: CanvasSettings = {
   connectionStyle: 'curved',
   autoConnect: false,
   lazyLoading: false,
+  showFPSCounter: true,
 };
 
 const defaultAppearanceSettings: AppearanceSettings = {
@@ -167,6 +169,10 @@ export const useSettingsStore = createWithEqualityFn<SettingsState>((set, get) =
     lazyLoading: loadFromStorage(
       'automflows_settings_canvas_lazyLoading',
       defaultCanvasSettings.lazyLoading
+    ),
+    showFPSCounter: loadFromStorage(
+      'automflows_settings_canvas_showFPSCounter',
+      defaultCanvasSettings.showFPSCounter
     ),
   };
 
@@ -255,6 +261,7 @@ export const useSettingsStore = createWithEqualityFn<SettingsState>((set, get) =
         connectionStyle: 'automflows_settings_canvas_connectionStyle',
         autoConnect: 'automflows_settings_canvas_autoConnect',
         lazyLoading: 'automflows_settings_canvas_lazyLoading',
+        showFPSCounter: 'automflows_settings_canvas_showFPSCounter',
       };
       saveToStorage(keyMap[key], value);
       set((state) => ({

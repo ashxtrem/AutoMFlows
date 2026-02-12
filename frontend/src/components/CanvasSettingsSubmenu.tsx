@@ -79,13 +79,14 @@ export default function CanvasSettingsSubmenu({ onBack }: CanvasSettingsSubmenuP
     });
   };
 
-  const handleToggle = (key: 'showGrid' | 'snapToGrid' | 'autoConnect' | 'lazyLoading', value: boolean) => {
+  const handleToggle = (key: 'showGrid' | 'snapToGrid' | 'autoConnect' | 'lazyLoading' | 'showFPSCounter', value: boolean) => {
     setCanvasSetting(key, value);
     const labels: Record<string, string> = {
       showGrid: 'Grid',
       snapToGrid: 'Snap to Grid',
       autoConnect: 'Auto-connect',
       lazyLoading: 'Lazy Loading',
+      showFPSCounter: 'FPS Counter',
     };
     addNotification({
       type: 'settings',
@@ -280,6 +281,30 @@ export default function CanvasSettingsSubmenu({ onBack }: CanvasSettingsSubmenuP
             <div
               className={`w-5 h-5 rounded-md bg-white transition-transform duration-200 ${
                 canvas.lazyLoading ? 'translate-x-7' : 'translate-x-0'
+              }`}
+            />
+          </div>
+        </label>
+      </div>
+
+      {/* Show FPS Counter Toggle */}
+      <div className="flex items-center justify-between">
+        <span className="text-sm text-white font-medium">Show FPS Counter</span>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            checked={canvas.showFPSCounter}
+            onChange={(e) => handleToggle('showFPSCounter', e.target.checked)}
+            className="sr-only"
+          />
+          <div
+            className={`w-14 h-7 rounded-lg transition-colors flex items-center px-1 cursor-pointer ${
+              canvas.showFPSCounter ? 'bg-green-600' : 'bg-gray-700'
+            }`}
+          >
+            <div
+              className={`w-5 h-5 rounded-md bg-white transition-transform duration-200 ${
+                canvas.showFPSCounter ? 'translate-x-7' : 'translate-x-0'
               }`}
             />
           </div>
