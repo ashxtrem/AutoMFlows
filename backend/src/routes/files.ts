@@ -20,6 +20,46 @@ function resolveFilePath(filePath: string): string {
 export default function fileRoutes() {
   const router = Router();
 
+  /**
+   * @swagger
+   * /api/files/read:
+   *   get:
+   *     summary: Read file content
+   *     description: Read and parse file content from the filesystem. Supports both relative and absolute paths. Attempts to parse JSON files.
+   *     tags: [Files]
+   *     parameters:
+   *       - in: query
+   *         name: filePath
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Path to file (relative or absolute)
+   *     responses:
+   *       200:
+   *         description: File content read successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/FileReadResponse'
+   *       400:
+   *         description: Bad request - filePath parameter missing
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       404:
+   *         description: File not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   // Read file content endpoint
   router.get('/read', async (req: Request, res: Response) => {
     try {

@@ -219,6 +219,7 @@ Write-Host ''
 Write-Host '✅ AutoMFlows is running!' -ForegroundColor Green
 Write-Host ('Backend: http://localhost:' + $BACKEND_PORT) -ForegroundColor Blue
 Write-Host ('Frontend: http://localhost:' + $FRONTEND_PORT) -ForegroundColor Blue
+Write-Host ('Swagger API Docs: http://localhost:' + $BACKEND_PORT + '/api-docs') -ForegroundColor Blue
 Write-Host ''
 Write-Host 'Press Ctrl+C to stop all servers' -ForegroundColor Yellow
 

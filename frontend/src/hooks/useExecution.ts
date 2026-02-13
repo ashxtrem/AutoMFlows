@@ -323,7 +323,9 @@ export function useExecution() {
           
           // Check if this is a backend validation error and parse it
           if (event.message && event.message.includes('Workflow validation failed')) {
-            const backendValidationErrors = parseBackendValidationErrors(event.message, nodes);
+            // Access nodes dynamically from store to avoid closure issues
+            const currentNodes = useWorkflowStore.getState().nodes;
+            const backendValidationErrors = parseBackendValidationErrors(event.message, currentNodes);
             if (backendValidationErrors.length > 0) {
               setValidationErrors(backendValidationErrors);
               setStoreValidationErrors(backendValidationErrors);
@@ -366,7 +368,7 @@ export function useExecution() {
         socket = null;
       }
     };
-    }, [setExecutionStatus, setExecutingNodeId, resetExecution, setNodeError, clearAllNodeErrors, addNotification, builderModeEnabled, port, nodes, setValidationErrors, setStoreValidationErrors]);
+    }, [setExecutionStatus, setExecutingNodeId, resetExecution, setNodeError, clearAllNodeErrors, addNotification, builderModeEnabled, port, setValidationErrors, setStoreValidationErrors]);
 
   const executeWorkflowInternal = async (traceLogs: boolean = false, disableBreakpoints: boolean = false) => {
     try {

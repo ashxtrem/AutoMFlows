@@ -1165,6 +1165,7 @@ export interface PageDebugInfo {
   screenshotPaths?: {
     pre?: string;
     post?: string;
+    failure?: string;
   };
   executionFolderName?: string; // Folder name for constructing screenshot URLs
 }
@@ -1250,21 +1251,8 @@ export interface BreakpointConfig {
 }
 
 // API Request/Response Types
-export interface ExecuteWorkflowRequest {
-  workflow: Workflow;
-  traceLogs?: boolean; // Enable trace logging to terminal (default: false)
-  screenshotConfig?: ScreenshotConfig;
-  reportConfig?: ReportConfig;
-  recordSession?: boolean; // Flag to enable video recording
-  breakpointConfig?: BreakpointConfig;
-  builderModeEnabled?: boolean; // Flag to enable builder mode
-  workflowFileName?: string; // Filename of the workflow file (without .json extension)
-}
-
-export interface ExecuteWorkflowResponse {
-  executionId: string;
-  status: ExecutionStatus;
-}
+// Note: ExecuteWorkflowRequest and ExecuteWorkflowResponse are now defined below with parallel execution support
+// Old definitions removed - see new definitions below
 
 export interface ExecutionStatusResponse {
   executionId: string;
@@ -1340,5 +1328,184 @@ export interface PluginMetadata {
   path: string; // Absolute path to plugin directory
   loaded: boolean;
   error?: string;
+}
+
+// Parallel Execution Types
+export interface StartNodeOverrides {
+  recordSession?: boolean;                // Optional: override Start node recordSession
+  screenshotAllNodes?: boolean;            // Optional: override Start node screenshotAllNodes
+  screenshotTiming?: 'pre' | 'post' | 'both'; // Optional: override Start node screenshotTiming
+  slowMo?: number;                        // Optional: override Start node slowMo (milliseconds)
+  scrollThenAction?: boolean;             // Optional: override Start node scrollThenAction
+}
+
+export interface ExecuteWorkflowRequest {
+  // Single Mode: workflow object
+  workflow?: Workflow;                     // Required for single mode: single workflow object
+  
+  // Parallel Mode: one of these required
+  workflows?: Workflow[];                  // Optional: array of workflow objects (parallel mode)
+  folderPath?: string;                    // Optional: path to folder containing workflows (parallel mode)
+  // Note: files are handled via multer middleware for multipart/form-data (parallel mode)
+  
+  // Execution Mode Override
+  executionMode?: 'single' | 'parallel' | 'auto'; // Optional: explicit mode (default: 'auto' - auto-detect)
+  
+  // Common options (apply to both modes)
+  traceLogs?: boolean;                   // Optional: enable trace logs (default: false)
+  screenshotConfig?: ScreenshotConfig;    // Optional: screenshot config
+  reportConfig?: ReportConfig;           // Optional: report config
+  recordSession?: boolean;                // Optional: enable video recording (default: false)
+  workflowFileName?: string;             // Optional: workflow filename (single mode)
+  breakpointConfig?: BreakpointConfig;   // Optional: breakpoint config (single mode only, controlled via localStorage in frontend)
+  builderModeEnabled?: boolean;          // Optional: builder mode flag (single mode only, controlled via localStorage in frontend)
+  
+  // Parallel Mode Options
+  workers?: number;                       // Optional: max concurrent workers (default: 4, use 1 for MCP/API)
+  outputPath?: string;                   // Optional: output directory (default: './output')
+  recursive?: boolean;                    // Optional: scan subdirectories (default: false, folder mode only)
+  pattern?: string;                       // Optional: file pattern (default: "*.json", folder mode only)
+  startNodeOverrides?: StartNodeOverrides; // Optional: override Start node properties (parallel mode only)
+  batchPriority?: number;                 // Optional: batch priority (higher = processed first, default: FIFO order)
+  
+  // Note: breakpointConfig and builderModeEnabled are controlled via localStorage (frontend), not API parameters
+  // Note: Same folder/files can be executed multiple times concurrently - each call creates a new batch
+}
+
+export interface ExecuteWorkflowResponse {
+  // Single Mode Response
+  executionId?: string;                   // Present for single mode
+  status?: string;                        // Present for single mode: "running"
+  executionMode: 'single' | 'parallel';   // Execution mode used
+  
+  // Parallel Mode Response
+  batchId?: string;                       // Present for parallel mode
+  sourceType?: 'folder' | 'files' | 'workflows'; // Present for parallel mode
+  folderPath?: string;                    // Present if sourceType is 'folder'
+  totalWorkflows?: number;                 // Present for parallel mode
+  validWorkflows?: number;                 // Present for parallel mode
+  invalidWorkflows?: number;              // Present for parallel mode
+  validationErrors?: Array<{               // Present for parallel mode
+    fileName: string;
+    errors: string[];
+  }>;
+  executions?: Array<{                    // Present for parallel mode
+    executionId: string;
+    workflowFileName: string;
+    workflowPath?: string;                // Present for folder mode
+    status: ExecutionStatus;
+    workerId?: number;
+    validationErrors?: string[];
+  }>;
+}
+
+export interface BatchStatusResponse {
+  batchId: string;
+  status: 'running' | 'completed' | 'error' | 'stopped';
+  sourceType: 'folder' | 'files' | 'workflows';
+  folderPath?: string;  // Present if sourceType is 'folder'
+  totalWorkflows: number;
+  completed: number;
+  running: number;
+  queued: number;
+  failed: number;
+  startTime: number;
+  endTime?: number;  // NULL if still running
+  executions: Array<{
+    executionId: string;
+    workflowFileName: string;
+    status: ExecutionStatus;
+    error?: string;
+  }>;
+}
+
+export interface BatchHistoryResponse {
+  total: number;
+  limit: number;
+  offset: number;
+  batches: Array<{
+    batchId: string;
+    status: 'running' | 'completed' | 'error' | 'stopped';
+    sourceType: 'folder' | 'files' | 'workflows';
+    folderPath?: string;
+    totalWorkflows: number;
+    completed: number;
+    failed: number;
+    startTime: number;
+    endTime?: number;
+    duration?: number;  // milliseconds (endTime - startTime)
+  }>;
+}
+
+export interface BatchPersistenceMetadata {
+  batchId: string;
+  status: 'running' | 'completed' | 'error' | 'stopped';
+  sourceType: 'folder' | 'files' | 'workflows';
+  folderPath?: string;
+  totalWorkflows: number;
+  validWorkflows: number;
+  invalidWorkflows: number;
+  completed: number;
+  running: number;
+  queued: number;
+  failed: number;
+  workers: number;
+  priority: number;
+  startTime: number;
+  endTime?: number;
+  createdAt: number;
+  outputPath: string;
+  startNodeOverrides?: StartNodeOverrides;
+}
+
+export interface ExecutionPersistenceMetadata {
+  executionId: string;
+  batchId: string;
+  workflowFileName: string;
+  workflowPath?: string;
+  status: 'queued' | 'running' | 'completed' | 'error' | 'stopped' | 'cancelled';
+  workerId?: number;
+  startTime: number;
+  endTime?: number;
+  error?: string;
+  reportPath?: string;  // Path to execution report directory
+}
+
+export interface StopExecutionResponse {
+  success: boolean;
+  message: string;
+  executionId?: string;
+  wasRunning?: boolean;
+  wasQueued?: boolean;
+}
+
+export interface StopBatchResponse {
+  success: boolean;
+  message: string;
+  batchId: string;
+  stoppedExecutions: number;
+  runningStopped: number;
+  queuedCancelled: number;
+}
+
+export interface StopAllResponse {
+  success: boolean;
+  message: string;
+  totalBatches: number;
+  totalStopped: number;
+  runningStopped: number;
+  queuedCancelled: number;
+  batches: Array<{
+    batchId: string;
+    stopped: number;
+  }>;
+}
+
+export interface WorkflowFileInfo {
+  fileName: string;
+  filePath: string;
+  isValid: boolean;
+  validationErrors?: string[];
+  workflow?: Workflow;                    // Parsed workflow if valid
 }
 

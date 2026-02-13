@@ -130,6 +130,9 @@ mcp-server/config.json
 *.db-shm
 *.db-wal
 
+# Backend data directory (contains execution database)
+backend/src/data/
+
 # Backup files
 *.bak
 *.backup

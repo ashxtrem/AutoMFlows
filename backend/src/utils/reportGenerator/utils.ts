@@ -1,4 +1,4 @@
-import { NodeType, Workflow } from '@automflows/shared';
+import { NodeType, Workflow, BaseNode } from '@automflows/shared';
 import { ExecutionMetadata, NodeExecutionEvent } from '../executionTracker';
 
 /**
@@ -80,4 +80,74 @@ export function escapeXml(str: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+}
+
+/**
+ * Escape HTML special characters
+ */
+export function escapeHtml(str: string): string {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
+ * Get meaningful node properties for display in reports
+ * Filters out internal/system properties
+ */
+export function getNodePropertiesForDisplay(node: BaseNode): Array<{key: string, value: any}> {
+  if (!node || !node.data) {
+    return [];
+  }
+
+  const data = node.data as Record<string, any>;
+  const properties: Array<{key: string, value: any}> = [];
+  
+  // Properties to exclude (internal/system properties)
+  const excludeKeys = [
+    '_inputConnections',
+    '_outputConnections',
+    'isTest', // Already handled separately
+  ];
+  
+  for (const [key, value] of Object.entries(data)) {
+    // Skip excluded keys
+    if (excludeKeys.includes(key)) {
+      continue;
+    }
+    
+    // Skip undefined/null values
+    if (value === undefined || value === null) {
+      continue;
+    }
+    
+    // Skip empty strings
+    if (typeof value === 'string' && value.trim() === '') {
+      continue;
+    }
+    
+    // Skip empty objects/arrays
+    if (typeof value === 'object' && Object.keys(value).length === 0) {
+      continue;
+    }
+    
+    // Format the value for display
+    let displayValue: string;
+    if (typeof value === 'object') {
+      try {
+        displayValue = JSON.stringify(value, null, 2);
+      } catch {
+        displayValue = String(value);
+      }
+    } else {
+      displayValue = String(value);
+    }
+    
+    properties.push({ key, value: displayValue });
+  }
+  
+  return properties.sort((a, b) => a.key.localeCompare(b.key));
 }

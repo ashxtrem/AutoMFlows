@@ -7,11 +7,13 @@ import workflowRoutes from './routes/workflows';
 import pluginRoutes from './routes/plugins';
 import reportRoutes from './routes/reports';
 import fileRoutes from './routes/files';
+import swaggerRoutes from './routes/swagger';
 import { findAvailablePort } from './utils/portFinder';
 import { writePortFile, deletePortFile } from './utils/writePort';
 import { PluginLoader } from './plugins/loader';
 import { pluginRegistry } from './plugins/registry';
 import { resolveFromProjectRoot } from './utils/pathUtils';
+import { getBatchPersistence } from './utils/batchPersistence';
 
 const app = express();
 const httpServer = createServer(app);
@@ -39,6 +41,34 @@ app.use('/api/workflows', workflowRoutes(io));
 app.use('/api/plugins', pluginRoutes());
 app.use('/api/reports', reportRoutes());
 app.use('/api/files', fileRoutes());
+
+// Swagger API Documentation
+if (process.env.SWAGGER_ENABLED !== 'false') {
+  app.use('/api-docs', swaggerRoutes(httpServer));
+  // Also serve JSON spec at /api-docs.json with dynamic port
+  app.get('/api-docs.json', (req, res) => {
+    const { swaggerSpec } = require('./config/swagger');
+    const { readPortFile } = require('./utils/writePort');
+    
+    // Get port from server or port file
+    const address = httpServer.address();
+    const port = (address && typeof address === 'object' ? address.port : null) || readPortFile() || 3000;
+    const host = req.get('host')?.split(':')[0] || 'localhost';
+    const protocol = req.protocol || 'http';
+    
+    // Clone spec and update server URL
+    const dynamicSpec = JSON.parse(JSON.stringify(swaggerSpec));
+    dynamicSpec.servers = [
+      {
+        url: `${protocol}://${host}:${port}`,
+        description: 'Development server',
+      },
+    ];
+    
+    res.setHeader('Content-Type', 'application/json');
+    res.send(dynamicSpec);
+  });
+}
 
 // Serve static report files from output directory (project root)
 const outputDir = resolveFromProjectRoot('./output');
@@ -78,9 +108,13 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
 
 // Socket.IO connection handling
 io.on('connection', (socket) => {
+  // Connection/disconnection logs suppressed to reduce console noise
+  // Uncomment below for debugging if needed:
   console.log('Client connected:', socket.id);
 
   socket.on('disconnect', () => {
+    // Disconnection logs suppressed to reduce console noise
+    // Uncomment below for debugging if needed:
     console.log('Client disconnected:', socket.id);
   });
 });
@@ -91,6 +125,18 @@ io.on('connection', (socket) => {
 // Find available port and start server
 async function startServer() {
   try {
+    // Initialize batch persistence
+    const batchPersistence = getBatchPersistence();
+    
+    // Load active batches from database and mark as stopped (cannot resume after restart)
+    const activeBatches = batchPersistence.loadActiveBatches();
+    if (activeBatches.length > 0) {
+      console.warn(`[Server Startup] Server restarted. ${activeBatches.length} active batch(es) marked as stopped.`);
+      for (const batch of activeBatches) {
+        batchPersistence.markBatchStopped(batch.batchId);
+      }
+    }
+    
     // Load plugins
     const pluginsPath = path.join(__dirname, '../../plugins');
     const pluginLoader = new PluginLoader(pluginsPath);
@@ -109,6 +155,8 @@ async function startServer() {
     // Clean up port file on exit
     const cleanup = () => {
       deletePortFile();
+      // Close batch persistence database connection
+      batchPersistence.close();
     };
     
     process.on('exit', cleanup);

@@ -75,7 +75,8 @@ export class Executor {
     recordSession: boolean = false,
     breakpointConfig?: BreakpointConfig,
     builderModeEnabled: boolean = false,
-    workflowFileName?: string
+    workflowFileName?: string,
+    playwrightManager?: PlaywrightManager  // Optional: provide existing PlaywrightManager for isolation
   ) {
     this.executionId = uuidv4();
     
@@ -124,34 +125,50 @@ export class Executor {
       this.context.setData('scrollThenAction', false);
     }
     
-    // Initialize execution tracker if screenshots, reporting, or recording is enabled
-    const shouldCreateTracker = (this.screenshotConfig?.enabled) || (reportConfig?.enabled) || recordSession;
-    if (shouldCreateTracker) {
-      // Use report config output path if available, otherwise default to './output'
-      // Path will be resolved relative to project root in ExecutionTracker
-      const outputPath = reportConfig?.outputPath || './output';
-      this.executionTracker = new ExecutionTracker(this.executionId, workflow, outputPath, this.workflowFileName);
-      
-      // Store directory paths in context for node handlers
-      this.context.setData('outputDirectory', this.executionTracker.getOutputDirectory());
-      this.context.setData('screenshotsDirectory', this.executionTracker.getScreenshotsDirectory());
-      
-      // Initialize PlaywrightManager with screenshots directory, videos directory, and recording flag
-      this.playwright = new PlaywrightManager(
-        this.executionTracker.getScreenshotsDirectory(),
-        this.executionTracker.getVideosDirectory(),
-        this.recordSession
-      );
+    // Use provided PlaywrightManager or create new one
+    if (playwrightManager) {
+      this.playwright = playwrightManager;
     } else {
-      // If recording is enabled but no tracker, create videos directory
-      if (this.recordSession) {
-        const videosDir = resolveFromProjectRoot('./output/videos');
-        if (!fs.existsSync(videosDir)) {
-          fs.mkdirSync(videosDir, { recursive: true });
-        }
-        this.playwright = new PlaywrightManager(undefined, videosDir, this.recordSession);
+      // Initialize execution tracker if screenshots, reporting, or recording is enabled
+      const shouldCreateTracker = (this.screenshotConfig?.enabled) || (reportConfig?.enabled) || recordSession;
+      if (shouldCreateTracker) {
+        // Use report config output path if available, otherwise default to './output'
+        // Path will be resolved relative to project root in ExecutionTracker
+        const outputPath = reportConfig?.outputPath || './output';
+        this.executionTracker = new ExecutionTracker(this.executionId, workflow, outputPath, this.workflowFileName);
+        
+        // Store directory paths in context for node handlers
+        this.context.setData('outputDirectory', this.executionTracker.getOutputDirectory());
+        this.context.setData('screenshotsDirectory', this.executionTracker.getScreenshotsDirectory());
+        
+        // Initialize PlaywrightManager with screenshots directory, videos directory, and recording flag
+        this.playwright = new PlaywrightManager(
+          this.executionTracker.getScreenshotsDirectory(),
+          this.executionTracker.getVideosDirectory(),
+          this.recordSession
+        );
       } else {
-        this.playwright = new PlaywrightManager();
+        // If recording is enabled but no tracker, create videos directory
+        if (this.recordSession) {
+          const videosDir = resolveFromProjectRoot('./output/videos');
+          if (!fs.existsSync(videosDir)) {
+            fs.mkdirSync(videosDir, { recursive: true });
+          }
+          this.playwright = new PlaywrightManager(undefined, videosDir, this.recordSession);
+        } else {
+          this.playwright = new PlaywrightManager();
+        }
+      }
+    }
+
+    // If PlaywrightManager was provided, still create ExecutionTracker if needed for reports
+    if (playwrightManager) {
+      const shouldCreateTracker = (this.screenshotConfig?.enabled) || (reportConfig?.enabled) || recordSession;
+      if (shouldCreateTracker) {
+        const outputPath = reportConfig?.outputPath || './output';
+        this.executionTracker = new ExecutionTracker(this.executionId, workflow, outputPath, this.workflowFileName);
+        this.context.setData('outputDirectory', this.executionTracker.getOutputDirectory());
+        this.context.setData('screenshotsDirectory', this.executionTracker.getScreenshotsDirectory());
       }
     }
 
@@ -984,12 +1001,31 @@ export class Executor {
           // Get trace logs for this node
           const traceLogs = this.nodeTraceLogs.get(nodeId) || [];
           
+          // Take failure screenshot if browser is open (before context closes)
+          if (this.executionTracker) {
+            try {
+              const page = this.context.getPage();
+              if (page && (!page.isClosed || !page.isClosed())) {
+                await takeNodeScreenshot(
+                  nodeId,
+                  'failure',
+                  this.context,
+                  this.playwright,
+                  this.executionTracker
+                );
+              }
+            } catch (screenshotError: any) {
+              // Don't fail execution if screenshot fails
+              console.warn(`Failed to take failure screenshot for node ${nodeId}: ${screenshotError.message}`);
+            }
+          }
+          
           // Capture debug info for UI nodes
           let debugInfo;
           if (isUINode(node)) {
             try {
               const page = this.context.getPage();
-              if (page) {
+              if (page && (!page.isClosed || !page.isClosed())) {
                 const selectorInfo = extractSelectorInfo(node);
                 debugInfo = await PageDebugHelper.captureDebugInfo(
                   page,
@@ -1030,9 +1066,9 @@ export class Executor {
             timestamp: Date.now(),
           });
           
-          // Record node error in tracker
+          // Record node error in tracker with trace logs and debug info
           if (this.executionTracker) {
-            this.executionTracker.recordNodeError(nodeId, error.message);
+            this.executionTracker.recordNodeError(nodeId, error.message, traceLogs, debugInfo);
           }
           
           // If failSilently is enabled, continue execution instead of throwing

@@ -7,7 +7,7 @@ import { ExecutionTracker } from '../../utils/executionTracker';
  */
 export async function takeNodeScreenshot(
   nodeId: string,
-  timing: 'pre' | 'post',
+  timing: 'pre' | 'post' | 'failure',
   context: ContextManager,
   playwright: PlaywrightManager,
   executionTracker?: ExecutionTracker
@@ -16,6 +16,11 @@ export async function takeNodeScreenshot(
     const page = context.getPage();
     if (!page) {
       return; // No page available, skip screenshot
+    }
+
+    // Check if page is closed (especially important for failure screenshots)
+    if (page.isClosed && page.isClosed()) {
+      return; // Page is closed, skip screenshot
     }
 
     const fileName = `${nodeId}-${timing}-${Date.now()}.png`;

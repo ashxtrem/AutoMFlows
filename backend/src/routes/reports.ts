@@ -11,6 +11,29 @@ export default function reportRoutes() {
     return resolveFromProjectRoot('./output');
   };
 
+  /**
+   * @swagger
+   * /api/reports/list:
+   *   get:
+   *     summary: List all report folders
+   *     description: Retrieve list of all report folders with metadata including report types and files
+   *     tags: [Reports]
+   *     responses:
+   *       200:
+   *         description: Report folders retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/ReportFolder'
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   // List all report folders with metadata
   router.get('/list', (req: Request, res: Response) => {
     try {
@@ -81,6 +104,51 @@ export default function reportRoutes() {
     }
   });
 
+  /**
+   * @swagger
+   * /api/reports/{folderName}/files:
+   *   get:
+   *     summary: Get files in report folder
+   *     description: Retrieve list of all files in a specific report folder
+   *     tags: [Reports]
+   *     parameters:
+   *       - in: path
+   *         name: folderName
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Report folder name
+   *     responses:
+   *       200:
+   *         description: Files retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 type: object
+   *                 properties:
+   *                   name:
+   *                     type: string
+   *                   path:
+   *                     type: string
+   *                   type:
+   *                     type: string
+   *                   fullPath:
+   *                     type: string
+   *       404:
+   *         description: Report folder not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   // Get files in a specific report folder
   router.get('/:folderName/files', (req: Request, res: Response) => {
     try {
@@ -124,6 +192,65 @@ export default function reportRoutes() {
     }
   });
 
+  /**
+   * @swagger
+   * /api/reports/{folderName}/{reportType}/{filename}:
+   *   get:
+   *     summary: Serve report file
+   *     description: Serve a specific report file (HTML, JSON, XML, CSV, Markdown, etc.)
+   *     tags: [Reports]
+   *     parameters:
+   *       - in: path
+   *         name: folderName
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Report folder name
+   *       - in: path
+   *         name: reportType
+   *         required: true
+   *         schema:
+   *           type: string
+   *           enum: [html, allure, json, junit, csv, markdown]
+   *         description: Report type directory
+   *       - in: path
+   *         name: filename
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Report file name
+   *     responses:
+   *       200:
+   *         description: Report file served successfully
+   *         content:
+   *           text/html:
+   *             schema:
+   *               type: string
+   *           application/json:
+   *             schema:
+   *               type: object
+   *           application/xml:
+   *             schema:
+   *               type: string
+   *           text/csv:
+   *             schema:
+   *               type: string
+   *           text/markdown:
+   *             schema:
+   *               type: string
+   *       404:
+   *         description: Report file not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   // Serve report file
   router.get('/:folderName/:reportType/:filename', (req: Request, res: Response) => {
     try {
@@ -156,6 +283,47 @@ export default function reportRoutes() {
     }
   });
 
+  /**
+   * @swagger
+   * /api/reports/{folderName}/screenshots/{filename}:
+   *   get:
+   *     summary: Serve screenshot file
+   *     description: Serve a screenshot image file from a report folder
+   *     tags: [Reports]
+   *     parameters:
+   *       - in: path
+   *         name: folderName
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Report folder name
+   *       - in: path
+   *         name: filename
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Screenshot file name
+   *     responses:
+   *       200:
+   *         description: Screenshot served successfully
+   *         content:
+   *           image/png:
+   *             schema:
+   *               type: string
+   *               format: binary
+   *       404:
+   *         description: Screenshot not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   // Serve screenshot file
   router.get('/:folderName/screenshots/:filename', (req: Request, res: Response) => {
     try {
@@ -174,6 +342,45 @@ export default function reportRoutes() {
     }
   });
 
+  /**
+   * @swagger
+   * /api/reports/{folderName}:
+   *   delete:
+   *     summary: Delete report folder
+   *     description: Delete a specific report folder and all its contents
+   *     tags: [Reports]
+   *     parameters:
+   *       - in: path
+   *         name: folderName
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Report folder name to delete
+   *     responses:
+   *       200:
+   *         description: Report folder deleted successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 message:
+   *                   type: string
+   *       404:
+   *         description: Report folder not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   // Delete specific report folder
   router.delete('/:folderName', (req: Request, res: Response) => {
     try {
@@ -194,6 +401,32 @@ export default function reportRoutes() {
     }
   });
 
+  /**
+   * @swagger
+   * /api/reports:
+   *   delete:
+   *     summary: Delete all reports
+   *     description: Delete all report folders and their contents
+   *     tags: [Reports]
+   *     responses:
+   *       200:
+   *         description: All reports deleted successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 message:
+   *                   type: string
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
   // Delete all reports
   router.delete('/', (req: Request, res: Response) => {
     try {

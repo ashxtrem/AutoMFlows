@@ -128,6 +128,7 @@ echo ""
 echo -e "${GREEN}✅ AutoMFlows is running!${NC}"
 echo -e "${BLUE}Backend: http://localhost:$BACKEND_PORT${NC}"
 echo -e "${BLUE}Frontend: http://localhost:$FRONTEND_PORT${NC}"
+echo -e "${BLUE}Swagger API Docs: http://localhost:$BACKEND_PORT/api-docs${NC}"
 echo ""
 echo -e "${YELLOW}Press Ctrl+C to stop all servers${NC}"
 

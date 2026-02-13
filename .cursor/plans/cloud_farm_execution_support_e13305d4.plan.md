@@ -1,3 +1,10 @@
+---
+name: ""
+overview: ""
+todos: []
+isProject: false
+---
+
 # Cloud Farm Execution Support
 
 ## Overview
@@ -7,6 +14,7 @@ Enable AutoMFlows to execute workflows on cloud farms (BrowserStack, LambdaTest)
 ## Architecture
 
 Playwright supports connecting to remote browsers using:
+
 - **BrowserStack**: `chromium.connectOverCDP()` with WebSocket endpoint
 - **LambdaTest**: `chromium.connect({ wsEndpoint: 'wss://...' })` with WebSocket endpoint
 
@@ -71,6 +79,7 @@ export interface OpenBrowserNodeData {
 ```
 
 **Key design decisions**:
+
 - `cloudProviderEnabled` allows disabling cloud provider without deleting saved configuration
 - `cloudConfig` stores provider-specific configs separately, allowing switching providers without losing previous settings
 - Default is `cloudProvider: 'local'` and `cloudProviderEnabled: false`
@@ -82,6 +91,7 @@ export interface OpenBrowserNodeData {
 Create a modal component for configuring cloud providers:
 
 **Features**:
+
 - Provider selection (BrowserStack, LambdaTest) - modular design for easy extension
 - Form fields for credentials (username, accessKey)
 - Form fields for capabilities (browser, OS, version, etc.)
@@ -90,6 +100,7 @@ Create a modal component for configuring cloud providers:
 - Preserve previous provider configs when switching
 
 **Structure**:
+
 ```typescript
 interface CloudProviderModalProps {
   node: Node;
@@ -112,12 +123,13 @@ interface CloudProviderConfig {
 ```
 
 **UI Flow**:
+
 1. Modal opens with provider selection dropdown
 2. User selects provider (BrowserStack/LambdaTest)
 3. Form appears with:
-   - Enable/Disable toggle (default: disabled/local)
-   - Credentials section (username, accessKey)
-   - Capabilities section (browser, OS, version, etc.)
+  - Enable/Disable toggle (default: disabled/local)
+  - Credentials section (username, accessKey)
+  - Capabilities section (browser, OS, version, etc.)
 4. User can switch providers - previous provider's config is preserved
 5. User can disable cloud provider - config remains saved but disabled
 6. Save button updates node data
@@ -163,33 +175,39 @@ const [showCloudProviderModal, setShowCloudProviderModal] = useState(false);
 ```
 
 **Visual indicators**:
+
 - Show provider name and "Enabled" status if cloud provider is active
 - Button text changes based on current state
 
 ### 4. Frontend: Cloud Provider Modal Implementation Details
 
 **Provider Selection**:
+
 - Dropdown/radio buttons for provider selection
 - Options: "Local (Default)", "BrowserStack", "LambdaTest"
 - When switching providers, preserve previous provider's config
 
 **Enable/Disable Toggle**:
+
 - Checkbox/toggle at top of form
 - When disabled, form fields are grayed out but values preserved
 - Default: disabled (local execution)
 
 **Credentials Form**:
+
 - Username field
 - Access Key field (password type)
 - Optional: "Use environment variables" checkbox (for future enhancement)
 - Values saved to node data
 
 **Capabilities Form** (provider-specific):
+
 - BrowserStack: browserName, browserVersion, os, osVersion, resolution, device, buildName, projectName, sessionName
 - LambdaTest: browserName, browserVersion, platform, platformVersion, resolution, device, build, name
 - Use appropriate input types (dropdowns for browser/OS, text for versions)
 
 **Tunnel Configuration**:
+
 - Checkbox: "Enable Tunnel" (for localhost/internal network testing)
 - Tunnel Name field (optional, for identifying tunnel instances)
 - Info text explaining tunnel requirements:
@@ -198,6 +216,7 @@ const [showCloudProviderModal, setShowCloudProviderModal] = useState(false);
 - Warning if tunnel enabled but not running (detection in backend)
 
 **State Management**:
+
 - Load existing config from node data
 - Preserve all provider configs when switching
 - Only update the selected provider's config on save
@@ -207,17 +226,20 @@ const [showCloudProviderModal, setShowCloudProviderModal] = useState(false);
 **File**: `backend/src/utils/playwright.ts`
 
 Add methods to:
+
 - Connect to remote browsers via WebSocket
 - Generate WebSocket endpoints for BrowserStack/LambdaTest
 - Support both local launch and remote connection
 
 **Key changes**:
+
 - Add `connectToRemoteBrowser()` method
 - Modify `launch()` to check for `cloudProviderEnabled` and route accordingly
 - Add helper methods for generating WebSocket endpoints
 - Handle credential resolution from environment variables (prefer env vars, fallback to node data)
 
 **Implementation approach**:
+
 ```typescript
 async connectToRemoteBrowser(
   cloudProvider: 'browserstack' | 'lambdatest',
@@ -233,6 +255,7 @@ private resolveCredentials(provider: string, config: any): { username: string; a
 ```
 
 **Launch logic update**:
+
 ```typescript
 async launch(...) {
   // Check if cloud provider is enabled
@@ -250,11 +273,13 @@ async launch(...) {
 **File**: `backend/src/nodes/browser.ts`
 
 Modify `OpenBrowserHandler.execute()` to:
+
 - Extract `cloudProvider`, `cloudProviderEnabled`, and `cloudConfig` from node data
 - Pass cloud configuration to PlaywrightManager
 - Handle credential resolution (prefer env vars, fallback to node data)
 
 **Implementation**:
+
 ```typescript
 const cloudProvider = data.cloudProvider || 'local';
 const cloudProviderEnabled = data.cloudProviderEnabled === true;
@@ -278,17 +303,20 @@ const page = await playwright.launch(
 ### 7. Credential Management
 
 **Approach**: 
+
 - Primary: Environment variables (`BROWSERSTACK_USERNAME`, `BROWSERSTACK_ACCESS_KEY`, etc.)
 - Fallback: Node configuration (for flexibility, but less secure)
 - Document security best practices
 
 **Environment variables to support**:
+
 - `BROWSERSTACK_USERNAME`
 - `BROWSERSTACK_ACCESS_KEY`
 - `LAMBDATEST_USERNAME`
 - `LAMBDATEST_ACCESS_KEY`
 
 **Credential resolution logic**:
+
 ```typescript
 private resolveCredentials(provider: 'browserstack' | 'lambdatest', config: any): { username: string; accessKey: string } {
   if (provider === 'browserstack') {
@@ -312,47 +340,52 @@ private resolveCredentials(provider: 'browserstack' | 'lambdatest', config: any)
 Tunnels allow cloud browsers to access localhost/internal URLs. Both providers require separate tunnel processes to be running.
 
 **BrowserStack Tunnel**:
+
 - Requires `browserstack-local` npm package
 - Set `browserstackLocal: true` in capabilities
 - Tunnel must be started separately: `browserstack-local --key <accessKey>`
 - Or programmatically via `BrowserStackLocal` class from `browserstack-local` package
 
 **LambdaTest Tunnel**:
+
 - Requires LambdaTest tunnel binary (LT) downloaded separately
 - Set `tunnel: true` in capabilities
 - Tunnel must be started separately: `./LT --user <username> --key <accessKey> --tunnelName <name>`
 - Or programmatically via LambdaTest tunnel API
 
 **Implementation Approach**:
-1. **Option A (Recommended)**: Document tunnel setup, require user to start tunnel manually
-   - Add tunnel configuration to capabilities
-   - Validate tunnel is running (optional check)
-   - Document setup instructions
 
+1. **Option A (Recommended)**: Document tunnel setup, require user to start tunnel manually
+  - Add tunnel configuration to capabilities
+  - Validate tunnel is running (optional check)
+  - Document setup instructions
 2. **Option B (Advanced)**: Auto-start tunnel process
-   - Install `browserstack-local` package for BrowserStack
-   - For LambdaTest, require tunnel binary path
-   - Start tunnel process before connecting
-   - Stop tunnel after execution completes
-   - Handle tunnel lifecycle management
+  - Install `browserstack-local` package for BrowserStack
+  - For LambdaTest, require tunnel binary path
+  - Start tunnel process before connecting
+  - Stop tunnel after execution completes
+  - Handle tunnel lifecycle management
 
 **Recommendation**: Start with Option A (manual tunnel setup) for simplicity, add Option B as future enhancement.
 
 ### 9. WebSocket Endpoint Generation
 
 **BrowserStack**:
+
 - Format: `wss://cdp.browserstack.com/playwright?capabilities=...`
 - Requires capabilities object with browser/OS info
 - Auto-generate if not provided in config
 - Include `browserstackLocal: true` if tunnel is enabled
 
 **LambdaTest**:
+
 - Format: `wss://cdp.lambdatest.com/playwright?capabilities=...`
 - Requires capabilities object with browser/OS info
 - Auto-generate if not provided in config
 - Include `tunnel: true` if tunnel is enabled
 
 **Endpoint generation**:
+
 ```typescript
 private generateBrowserStackEndpoint(config: any, credentials: { username: string; accessKey: string }): string {
   const bstackOptions: any = {
@@ -414,6 +447,7 @@ private generateLambdaTestEndpoint(config: any, credentials: { username: string;
 ### 10. Tunnel Validation (Optional Enhancement)
 
 **Tunnel Status Check**:
+
 - Before connecting, optionally verify tunnel is running
 - BrowserStack: Check if `browserstack-local` process is active
 - LambdaTest: Check if tunnel binary process is active
@@ -421,6 +455,7 @@ private generateLambdaTestEndpoint(config: any, credentials: { username: string;
 - Allow user to proceed anyway (tunnel might be running externally)
 
 **Implementation** (Future Enhancement):
+
 ```typescript
 private async validateTunnel(provider: 'browserstack' | 'lambdatest', config: any): Promise<boolean> {
   if (!config.tunnelEnabled) {
@@ -492,18 +527,18 @@ private async validateTunnel(provider: 'browserstack' | 'lambdatest', config: an
 **When Tunnel is Enabled**:
 
 1. **BrowserStack**:
-   - Add `local: true` to `bstack:options` in capabilities
-   - If `tunnelName` is provided, add `localIdentifier: tunnelName`
-   - User must have `browserstack-local` tunnel process running separately
-   - Tunnel allows cloud browsers to access `localhost` URLs from user's machine
-
+  - Add `local: true` to `bstack:options` in capabilities
+  - If `tunnelName` is provided, add `localIdentifier: tunnelName`
+  - User must have `browserstack-local` tunnel process running separately
+  - Tunnel allows cloud browsers to access `localhost` URLs from user's machine
 2. **LambdaTest**:
-   - Add `tunnel: true` to `LT:Options` in capabilities
-   - If `tunnelName` is provided, add `tunnelName` to `LT:Options`
-   - User must have LambdaTest tunnel binary (LT) running separately
-   - Tunnel allows cloud browsers to access `localhost` URLs from user's machine
+  - Add `tunnel: true` to `LT:Options` in capabilities
+  - If `tunnelName` is provided, add `tunnelName` to `LT:Options`
+  - User must have LambdaTest tunnel binary (LT) running separately
+  - Tunnel allows cloud browsers to access `localhost` URLs from user's machine
 
 **Tunnel Requirements**:
+
 - Tunnels must be started **before** workflow execution
 - Tunnels run as separate processes (not managed by AutoMFlows initially)
 - Tunnels use secure protocols (WebSocket, HTTPS, SSH) to connect local network to cloud
@@ -513,11 +548,13 @@ private async validateTunnel(provider: 'browserstack' | 'lambdatest', config: an
   - Applications behind firewalls
 
 **Error Handling**:
+
 - If tunnel is enabled but not running, connection will fail
 - Provide clear error message: "Tunnel is required but not detected. Please start the tunnel process."
 - Document tunnel setup in error message or link to setup guide
 
 **Future Enhancement** (Optional):
+
 - Auto-detect if tunnel is running
 - Auto-start tunnel process before execution
 - Auto-stop tunnel after execution completes
@@ -544,3 +581,4 @@ private async validateTunnel(provider: 'browserstack' | 'lambdatest', config: an
 - **Auto-start tunnel processes** (Option B from tunnel section)
 - **Tunnel status validation** before connecting
 - **Tunnel lifecycle management** (start/stop tunnels automatically)
+

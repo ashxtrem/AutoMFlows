@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { Workflow, BaseNode } from '@automflows/shared';
+import { Workflow, BaseNode, PageDebugInfo } from '@automflows/shared';
 import { resolveFromProjectRoot } from './pathUtils';
 
 export interface NodeExecutionEvent {
@@ -14,8 +14,11 @@ export interface NodeExecutionEvent {
   screenshotPaths?: {
     pre?: string;
     post?: string;
+    failure?: string;
   };
   videoPath?: string;
+  traceLogs?: string[];
+  debugInfo?: PageDebugInfo;
 }
 
 export interface ExecutionMetadata {
@@ -125,12 +128,18 @@ export class ExecutionTracker {
     }
   }
 
-  recordNodeError(nodeId: string, error: string): void {
+  recordNodeError(nodeId: string, error: string, traceLogs?: string[], debugInfo?: PageDebugInfo): void {
     const nodeEvent = this.metadata.nodes.find(n => n.nodeId === nodeId);
     if (nodeEvent) {
       nodeEvent.endTime = Date.now();
       nodeEvent.status = 'error';
       nodeEvent.error = error;
+      if (traceLogs) {
+        nodeEvent.traceLogs = traceLogs;
+      }
+      if (debugInfo) {
+        nodeEvent.debugInfo = debugInfo;
+      }
     }
   }
 
@@ -142,7 +151,7 @@ export class ExecutionTracker {
     }
   }
 
-  recordScreenshot(nodeId: string, screenshotPath: string, timing: 'pre' | 'post'): void {
+  recordScreenshot(nodeId: string, screenshotPath: string, timing: 'pre' | 'post' | 'failure'): void {
     const nodeEvent = this.metadata.nodes.find(n => n.nodeId === nodeId);
     if (nodeEvent) {
       if (!nodeEvent.screenshotPaths) {

@@ -7,22 +7,38 @@ import { VariableInterpolator } from '../../utils/variableInterpolator';
 import { LocatorHelper } from '../../utils/locatorHelper';
 
 export class WaitHandler implements NodeHandler {
+  private static pauseWarningLogged = new Set<string>(); // Track warnings per execution
+
   async execute(node: BaseNode, context: ContextManager): Promise<void> {
     const data = node.data as WaitNodeData;
     const page = context.getPage();
 
+    // Check if this is parallel execution mode
+    const isParallelExecution = context.getData('isParallelExecution') === true;
+    const executionId = context.getData('executionId') as string | undefined;
+
     // If pause is enabled, pause execution indefinitely until user clicks continue or stop
     if (data.pause === true) {
-      // Get pauseExecution function from context
-      const pauseExecution = context.getData('pauseExecution') as ((nodeId: string, reason: 'wait-pause' | 'breakpoint') => Promise<void>) | undefined;
-      const getCurrentNodeId = context.getData('getCurrentNodeId') as (() => string | null) | undefined;
-      
-      if (pauseExecution && getCurrentNodeId) {
-        const nodeId = getCurrentNodeId();
-        if (nodeId) {
-          // Pause execution indefinitely - wait for user to click continue or stop
-          await pauseExecution(nodeId, 'wait-pause');
-          // If we reach here, user clicked continue - proceed with actual wait timeout
+      // In parallel mode, skip pause and log warning (once per execution)
+      if (isParallelExecution) {
+        if (executionId && !WaitHandler.pauseWarningLogged.has(executionId)) {
+          console.warn(`[WARN] Wait node pause is not supported in parallel execution. Execution will proceed normally without pausing. Use single workflow execution (/api/workflows/execute) for wait node pause debugging.`);
+          WaitHandler.pauseWarningLogged.add(executionId);
+        }
+        // Skip pause step, proceed directly to wait operation
+      } else {
+        // Single mode: normal pause behavior
+        // Get pauseExecution function from context
+        const pauseExecution = context.getData('pauseExecution') as ((nodeId: string, reason: 'wait-pause' | 'breakpoint') => Promise<void>) | undefined;
+        const getCurrentNodeId = context.getData('getCurrentNodeId') as (() => string | null) | undefined;
+        
+        if (pauseExecution && getCurrentNodeId) {
+          const nodeId = getCurrentNodeId();
+          if (nodeId) {
+            // Pause execution indefinitely - wait for user to click continue or stop
+            await pauseExecution(nodeId, 'wait-pause');
+            // If we reach here, user clicked continue - proceed with actual wait timeout
+          }
         }
       }
     }
