@@ -16,20 +16,106 @@ export interface PropertySchema {
  * Returns array of property schemas with their metadata
  */
 export function getNodeProperties(nodeType: NodeType | string): PropertySchema[] {
+  // Normalize nodeType to handle both enum and string values
+  const normalizedType = typeof nodeType === 'string' 
+    ? (Object.values(NodeType).find(v => v === nodeType) || nodeType)
+    : nodeType;
 
-  if (Object.values(NodeType).includes(nodeType as NodeType)) {
-    switch (nodeType as NodeType) {
-      case NodeType.NAVIGATE:
+  if (Object.values(NodeType).includes(normalizedType as NodeType)) {
+    switch (normalizedType as NodeType) {
+      case NodeType.NAVIGATION:
         return [
-          { name: 'url', label: 'URL', dataType: PropertyDataType.STRING, required: true },
+          { name: 'action', label: 'Action', dataType: PropertyDataType.STRING, required: true, defaultValue: 'navigate' },
+          { name: 'url', label: 'URL', dataType: PropertyDataType.STRING, required: false },
           { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
           { name: 'waitUntil', label: 'Wait Until', dataType: PropertyDataType.STRING, required: false, defaultValue: 'networkidle' },
           { name: 'referer', label: 'Referer', dataType: PropertyDataType.STRING, required: false },
+          { name: 'tabIndex', label: 'Tab Index', dataType: PropertyDataType.INT, required: false },
+          { name: 'urlPattern', label: 'URL Pattern', dataType: PropertyDataType.STRING, required: false },
+          { name: 'contextKey', label: 'Context Key', dataType: PropertyDataType.STRING, required: false },
           { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
         ];
       
-      case NodeType.CLICK:
+      case NodeType.KEYBOARD:
         return [
+          { name: 'action', label: 'Action', dataType: PropertyDataType.STRING, required: true, defaultValue: 'press' },
+          { name: 'key', label: 'Key', dataType: PropertyDataType.STRING, required: false },
+          { name: 'text', label: 'Text', dataType: PropertyDataType.STRING, required: false },
+          { name: 'shortcut', label: 'Shortcut', dataType: PropertyDataType.STRING, required: false },
+          { name: 'selector', label: 'Selector', dataType: PropertyDataType.STRING, required: false },
+          { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'css' },
+          { name: 'delay', label: 'Delay', dataType: PropertyDataType.INT, required: false },
+          { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+      
+      case NodeType.SCROLL:
+        return [
+          { name: 'action', label: 'Action', dataType: PropertyDataType.STRING, required: true, defaultValue: 'scrollToElement' },
+          { name: 'selector', label: 'Selector', dataType: PropertyDataType.STRING, required: false },
+          { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'css' },
+          { name: 'x', label: 'X', dataType: PropertyDataType.INT, required: false },
+          { name: 'y', label: 'Y', dataType: PropertyDataType.INT, required: false },
+          { name: 'deltaX', label: 'Delta X', dataType: PropertyDataType.INT, required: false },
+          { name: 'deltaY', label: 'Delta Y', dataType: PropertyDataType.INT, required: false },
+          { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+      
+      case NodeType.STORAGE:
+        return [
+          { name: 'action', label: 'Action', dataType: PropertyDataType.STRING, required: true, defaultValue: 'getCookie' },
+          { name: 'contextKey', label: 'Context Key', dataType: PropertyDataType.STRING, required: false, defaultValue: 'storageResult' },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+      
+      case NodeType.DIALOG:
+        return [
+          { name: 'action', label: 'Action', dataType: PropertyDataType.STRING, required: true, defaultValue: 'accept' },
+          { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+      
+      case NodeType.DOWNLOAD:
+        return [
+          { name: 'action', label: 'Action', dataType: PropertyDataType.STRING, required: true, defaultValue: 'waitForDownload' },
+          { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+      
+      case NodeType.IFRAME:
+        return [
+          { name: 'action', label: 'Action', dataType: PropertyDataType.STRING, required: true, defaultValue: 'switchToIframe' },
+          { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+      
+      case NodeType.ACTION:
+        return [
+          { name: 'action', label: 'Action', dataType: PropertyDataType.STRING, required: true, defaultValue: 'click' },
+          { name: 'selector', label: 'Selector', dataType: PropertyDataType.STRING, required: true },
+          { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'css' },
+          { name: 'targetSelector', label: 'Target Selector', dataType: PropertyDataType.STRING, required: false },
+          { name: 'targetSelectorType', label: 'Target Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'css' },
+          { name: 'targetX', label: 'Target X', dataType: PropertyDataType.INT, required: false },
+          { name: 'targetY', label: 'Target Y', dataType: PropertyDataType.INT, required: false },
+          { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+      
+      case NodeType.ELEMENT_QUERY:
+        return [
+          { name: 'action', label: 'Action', dataType: PropertyDataType.STRING, required: true, defaultValue: 'getText' },
+          { name: 'selector', label: 'Selector', dataType: PropertyDataType.STRING, required: true },
+          { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'css' },
+          { name: 'outputVariable', label: 'Output Variable', dataType: PropertyDataType.STRING, required: false, defaultValue: 'text' },
+          { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+      
+      case NodeType.FORM_INPUT:
+        return [
+          { name: 'action', label: 'Action', dataType: PropertyDataType.STRING, required: true, defaultValue: 'select' },
           { name: 'selector', label: 'Selector', dataType: PropertyDataType.STRING, required: true },
           { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'css' },
           { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
@@ -40,16 +126,9 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
         return [
           { name: 'selector', label: 'Selector', dataType: PropertyDataType.STRING, required: true },
           { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'css' },
+          { name: 'inputMethod', label: 'Input Method', dataType: PropertyDataType.STRING, required: false, defaultValue: 'fill' },
           { name: 'text', label: 'Text', dataType: PropertyDataType.STRING, required: true },
-          { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
-          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
-        ];
-      
-      case NodeType.GET_TEXT:
-        return [
-          { name: 'selector', label: 'Selector', dataType: PropertyDataType.STRING, required: true },
-          { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'css' },
-          { name: 'outputVariable', label: 'Output Variable', dataType: PropertyDataType.STRING, required: false, defaultValue: 'text' },
+          { name: 'delay', label: 'Delay', dataType: PropertyDataType.INT, required: false, defaultValue: 0 },
           { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
           { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
         ];
@@ -122,11 +201,60 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
           { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
         ];
       
+      case NodeType.DB_CONNECT:
+        return [
+          { name: 'dbType', label: 'DB Type', dataType: PropertyDataType.STRING, required: true, defaultValue: 'postgres' },
+          { name: 'connectionKey', label: 'Connection Key', dataType: PropertyDataType.STRING, required: false, defaultValue: 'dbConnection' },
+          { name: 'configKey', label: 'Config Key', dataType: PropertyDataType.STRING, required: false },
+          { name: 'host', label: 'Host', dataType: PropertyDataType.STRING, required: false },
+          { name: 'port', label: 'Port', dataType: PropertyDataType.INT, required: false },
+          { name: 'user', label: 'User', dataType: PropertyDataType.STRING, required: false },
+          { name: 'password', label: 'Password', dataType: PropertyDataType.STRING, required: false },
+          { name: 'database', label: 'Database', dataType: PropertyDataType.STRING, required: false },
+          { name: 'connectionString', label: 'Connection String', dataType: PropertyDataType.STRING, required: false },
+          { name: 'filePath', label: 'File Path', dataType: PropertyDataType.STRING, required: false },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+      
+      case NodeType.DB_DISCONNECT:
+        return [
+          { name: 'connectionKey', label: 'Connection Key', dataType: PropertyDataType.STRING, required: false, defaultValue: 'dbConnection' },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+      
+      case NodeType.DB_QUERY:
+        return [
+          { name: 'connectionKey', label: 'Connection Key', dataType: PropertyDataType.STRING, required: false, defaultValue: 'dbConnection' },
+          { name: 'queryType', label: 'Query Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'sql' },
+          { name: 'query', label: 'Query', dataType: PropertyDataType.STRING, required: false },
+          { name: 'queryKey', label: 'Query Key', dataType: PropertyDataType.STRING, required: false },
+          { name: 'contextKey', label: 'Context Key', dataType: PropertyDataType.STRING, required: false, defaultValue: 'dbResult' },
+          { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+      
       case NodeType.START:
         return [
           { name: 'recordSession', label: 'Record Session', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
           { name: 'screenshotAllNodes', label: 'Screenshot All Nodes', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
           { name: 'screenshotTiming', label: 'Screenshot Timing', dataType: PropertyDataType.STRING, required: false, defaultValue: 'post' },
+        ];
+      
+      case NodeType.CONTEXT_MANIPULATE:
+        return [
+          { name: 'action', label: 'Action', dataType: PropertyDataType.STRING, required: true, defaultValue: 'setGeolocation' },
+          { name: 'contextKey', label: 'Context Key', dataType: PropertyDataType.STRING, required: false },
+          { name: 'stateFilePath', label: 'State File Path', dataType: PropertyDataType.STRING, required: false },
+          { name: 'device', label: 'Device', dataType: PropertyDataType.STRING, required: false },
+          { name: 'viewportWidth', label: 'Viewport Width', dataType: PropertyDataType.INT, required: false },
+          { name: 'viewportHeight', label: 'Viewport Height', dataType: PropertyDataType.INT, required: false },
+          { name: 'userAgent', label: 'User Agent', dataType: PropertyDataType.STRING, required: false },
+          { name: 'locale', label: 'Locale', dataType: PropertyDataType.STRING, required: false },
+          { name: 'timezoneId', label: 'Timezone ID', dataType: PropertyDataType.STRING, required: false },
+          { name: 'colorScheme', label: 'Color Scheme', dataType: PropertyDataType.STRING, required: false },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+          // Note: Complex properties like geolocation, permissions, extraHTTPHeaders, contextOptions, initScript
+          // are NOT included here as they're JSON objects/arrays managed via textarea editors
         ];
       
       case NodeType.INT_VALUE:
@@ -138,6 +266,24 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
       default:
         return [];
     }
+  }
+  
+  // Fallback: Check if it's a string match for CONTEXT_MANIPULATE
+  // This handles cases where the node type might be stored as a string
+  if (nodeType === 'contextManipulate' || nodeType === NodeType.CONTEXT_MANIPULATE) {
+    return [
+      { name: 'action', label: 'Action', dataType: PropertyDataType.STRING, required: true, defaultValue: 'setGeolocation' },
+      { name: 'contextKey', label: 'Context Key', dataType: PropertyDataType.STRING, required: false },
+      { name: 'stateFilePath', label: 'State File Path', dataType: PropertyDataType.STRING, required: false },
+      { name: 'device', label: 'Device', dataType: PropertyDataType.STRING, required: false },
+      { name: 'viewportWidth', label: 'Viewport Width', dataType: PropertyDataType.INT, required: false },
+      { name: 'viewportHeight', label: 'Viewport Height', dataType: PropertyDataType.INT, required: false },
+      { name: 'userAgent', label: 'User Agent', dataType: PropertyDataType.STRING, required: false },
+      { name: 'locale', label: 'Locale', dataType: PropertyDataType.STRING, required: false },
+      { name: 'timezoneId', label: 'Timezone ID', dataType: PropertyDataType.STRING, required: false },
+      { name: 'colorScheme', label: 'Color Scheme', dataType: PropertyDataType.STRING, required: false },
+      { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+    ];
   }
   
   // For plugin nodes, we'd need to check plugin registry

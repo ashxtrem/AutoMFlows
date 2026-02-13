@@ -12,8 +12,7 @@
       "description": "Add markdown comments to document your workflow",
       "handlerPath": "handler.js",
       "defaultData": {
-        "content": "",
-        "label": "Comment"
+        "content": ""
       }
     }
   ]

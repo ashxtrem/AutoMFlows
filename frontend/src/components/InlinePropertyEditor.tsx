@@ -24,12 +24,12 @@ export function InlineTextInput({ label, value, onChange, placeholder, onOpenPop
 
   return (
     <div 
-      className="flex items-center gap-1 cursor-text hover:bg-gray-700/50 rounded px-1 py-0.5"
+      className="flex items-center gap-1 cursor-text hover:bg-gray-700/50 rounded px-1 py-0.5 min-w-0"
       onClick={handleClick}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      <span className="text-xs text-gray-400 min-w-[60px]">{label}:</span>
-      <span className="text-xs text-gray-200 flex-1 truncate" title={value || placeholder || 'empty'}>{value || <span className="text-gray-500 italic">{placeholder || 'empty'}</span>}</span>
+      <span className="text-xs text-gray-400 min-w-[60px] flex-shrink-0">{label}:</span>
+      <span className="text-xs text-gray-200 flex-1 truncate min-w-0" title={value || placeholder || 'empty'}>{value || <span className="text-gray-500 italic">{placeholder || 'empty'}</span>}</span>
     </div>
   );
 }
@@ -44,12 +44,12 @@ export function InlineNumberInput({ label, value, onChange, placeholder, min, ma
 
   return (
     <div 
-      className="flex items-center gap-1 cursor-text hover:bg-gray-700/50 rounded px-1 py-0.5"
+      className="flex items-center gap-1 cursor-text hover:bg-gray-700/50 rounded px-1 py-0.5 min-w-0"
       onClick={handleClick}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      <span className="text-xs text-gray-400 min-w-[60px]">{label}:</span>
-      <span className="text-xs text-gray-200 flex-1">{value ?? <span className="text-gray-500 italic">{placeholder || '0'}</span>}</span>
+      <span className="text-xs text-gray-400 min-w-[60px] flex-shrink-0">{label}:</span>
+      <span className="text-xs text-gray-200 flex-1 truncate min-w-0">{value ?? <span className="text-gray-500 italic">{placeholder || '0'}</span>}</span>
     </div>
   );
 }
@@ -100,15 +100,15 @@ export function InlineSelect({ label, value, onChange, options = [] }: Omit<Inli
 
   return (
     <div 
-      className="flex items-center gap-1 cursor-pointer hover:bg-gray-700/50 rounded px-1 py-0.5"
+      className="flex items-center gap-1 cursor-pointer hover:bg-gray-700/50 rounded px-1 py-0.5 min-w-0"
       onClick={(e) => {
         e.stopPropagation();
         setIsEditing(true);
       }}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      <span className="text-xs text-gray-400 min-w-[60px]">{label}:</span>
-      <span className="text-xs text-gray-200 flex-1">{selectedOption?.label || value || <span className="text-gray-500 italic">select</span>}</span>
+      <span className="text-xs text-gray-400 min-w-[60px] flex-shrink-0">{label}:</span>
+      <span className="text-xs text-gray-200 flex-1 truncate min-w-0" title={selectedOption?.label || value || 'select'}>{selectedOption?.label || value || <span className="text-gray-500 italic">select</span>}</span>
     </div>
   );
 }
@@ -122,16 +122,15 @@ export function InlineTextarea({ label, value, onChange, placeholder, onOpenPopu
   };
 
   const displayValue = value || '';
-  const truncatedValue = displayValue.length > 50 ? displayValue.substring(0, 50) + '...' : displayValue;
 
   return (
     <div 
-      className="flex flex-col gap-1 cursor-text hover:bg-gray-700/50 rounded px-1 py-0.5"
+      className="flex flex-col gap-1 cursor-text hover:bg-gray-700/50 rounded px-1 py-0.5 min-w-0"
       onClick={handleClick}
       onMouseDown={(e) => e.stopPropagation()}
     >
       <span className="text-xs text-gray-400">{label}:</span>
-      <span className="text-xs text-gray-200 break-words" title={value || placeholder || 'empty'}>{truncatedValue || <span className="text-gray-500 italic">{placeholder || 'empty'}</span>}</span>
+      <span className="text-xs text-gray-200 line-clamp-2 min-w-0" title={displayValue || placeholder || 'empty'}>{displayValue || <span className="text-gray-500 italic">{placeholder || 'empty'}</span>}</span>
     </div>
   );
 }
@@ -139,24 +138,26 @@ export function InlineTextarea({ label, value, onChange, placeholder, onOpenPopu
 export function InlineCheckbox({ label, value, onChange }: Omit<InlinePropertyEditorProps, 'type'>) {
   return (
     <div 
-      className="flex items-center gap-1 cursor-pointer hover:bg-gray-700/50 rounded px-1 py-0.5"
+      className="flex items-center gap-2 cursor-pointer hover:bg-gray-700/50 rounded px-1 py-0.5"
       onClick={(e) => {
         e.stopPropagation();
         onChange(!value);
       }}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      <input
-        type="checkbox"
-        checked={value || false}
-        onChange={(e) => {
-          e.stopPropagation();
-          onChange(e.target.checked);
-        }}
-        onClick={(e) => e.stopPropagation()}
-        onMouseDown={(e) => e.stopPropagation()}
-        className="w-3 h-3 rounded"
-      />
+      <div className="relative">
+        <input
+          type="checkbox"
+          checked={value || false}
+          onChange={(e) => {
+            e.stopPropagation();
+            onChange(e.target.checked);
+          }}
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+          className="custom-checkbox"
+        />
+      </div>
       <span className="text-xs text-gray-400">{label}</span>
     </div>
   );

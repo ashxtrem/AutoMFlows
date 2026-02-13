@@ -1,0 +1,1351 @@
+{
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 200
+      },
+      "data": {
+        "type": "start",
+        "label": "Start",
+        "isTest": false,
+        "recordSession": false,
+        "screenshotAllNodes": false,
+        "screenshotTiming": "post",
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 284,
+        "slowMo": 2000
+      }
+    },
+    {
+      "id": "openBrowser-1",
+      "type": "openBrowser",
+      "position": {
+        "x": 505,
+        "y": 200
+      },
+      "data": {
+        "headless": false,
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "maxWindow": false,
+        "browser": "chromium",
+        "stealthMode": true,
+        "capabilities": {
+          "isMobile": true,
+          "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "hasTouch": true
+        },
+        "isTest": false,
+        "type": "openBrowser",
+        "label": "Open Browser",
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 228,
+        "searchHighlighted": false,
+        "jsScript": "// Mobile Viewport Emulation Script\n// This script emulates a mobile device viewport and capabilities\n// Compatible with iPhone 12/13 dimensions (390x844) or iPhone SE (375x667)\n\n(function() {\n  'use strict';\n\n  // Mobile viewport dimensions - iPhone 12/13 Pro dimensions\n  const MOBILE_WIDTH = 390;\n  const MOBILE_HEIGHT = 844;\n\n  // iPhone 12/13 Pro user agent\n  const MOBILE_USER_AGENT = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1';\n\n  // Override window.innerWidth to return mobile width\n  Object.defineProperty(window, 'innerWidth', {\n    get: () => MOBILE_WIDTH, // Mobile width\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override window.innerHeight to return mobile height\n  Object.defineProperty(window, 'innerHeight', {\n    get: () => MOBILE_HEIGHT, // Mobile height\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override window.outerWidth\n  Object.defineProperty(window, 'outerWidth', {\n    get: () => MOBILE_WIDTH,\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override window.outerHeight\n  Object.defineProperty(window, 'outerHeight', {\n    get: () => MOBILE_HEIGHT,\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override screen.width\n  Object.defineProperty(screen, 'width', {\n    get: () => MOBILE_WIDTH,\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override screen.height\n  Object.defineProperty(screen, 'height', {\n    get: () => MOBILE_HEIGHT,\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override screen.availWidth\n  Object.defineProperty(screen, 'availWidth', {\n    get: () => MOBILE_WIDTH,\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override screen.availHeight\n  Object.defineProperty(screen, 'availHeight', {\n    get: () => MOBILE_HEIGHT - 44, // Account for status bar\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override navigator.userAgent with mobile user agent\n  Object.defineProperty(navigator, 'userAgent', {\n    get: () => MOBILE_USER_AGENT,\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override navigator.platform\n  Object.defineProperty(navigator, 'platform', {\n    get: () => 'iPhone',\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override navigator.maxTouchPoints to indicate touch support\n  Object.defineProperty(navigator, 'maxTouchPoints', {\n    get: () => 5,\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override navigator.hardwareConcurrency (mobile devices typically have fewer cores)\n  Object.defineProperty(navigator, 'hardwareConcurrency', {\n    get: () => 6,\n    configurable: true,\n    enumerable: true\n  });\n\n  // Override navigator.deviceMemory (if available)\n  if ('deviceMemory' in navigator) {\n    Object.defineProperty(navigator, 'deviceMemory', {\n      get: () => 4, // 4GB typical for modern iPhone\n      configurable: true,\n      enumerable: true\n    });\n  }\n\n  // Override connection type for mobile\n  if ('connection' in navigator) {\n    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;\n    if (connection) {\n      Object.defineProperty(connection, 'effectiveType', {\n        get: () => '4g',\n        configurable: true,\n        enumerable: true\n      });\n    }\n  }\n\n  // Add touch event support\n  if (!('ontouchstart' in window)) {\n    Object.defineProperty(window, 'ontouchstart', {\n      get: () => null,\n      set: () => {},\n      configurable: true,\n      enumerable: true\n    });\n  }\n\n  // Override matchMedia to return mobile viewport\n  const originalMatchMedia = window.matchMedia;\n  window.matchMedia = function(query) {\n    if (query.includes('max-width')) {\n      // Return a mock MediaQueryList that matches mobile viewport\n      const match = query.match(/max-width:\\s*(\\d+)px/);\n      if (match && parseInt(match[1]) >= MOBILE_WIDTH) {\n        return {\n          matches: true,\n          media: query,\n          onchange: null,\n          addListener: function() {},\n          removeListener: function() {},\n          addEventListener: function() {},\n          removeEventListener: function() {},\n          dispatchEvent: function() { return true; }\n        };\n      }\n    }\n    return originalMatchMedia.call(window, query);\n  };\n\n  // Set viewport meta tag if it doesn't exist\n  if (document.documentElement) {\n    let viewportMeta = document.querySelector('meta[name=\"viewport\"]');\n    if (!viewportMeta) {\n      viewportMeta = document.createElement('meta');\n      viewportMeta.setAttribute('name', 'viewport');\n      document.head.appendChild(viewportMeta);\n    }\n    viewportMeta.setAttribute('content', `width=${MOBILE_WIDTH}, initial-scale=1.0, maximum-scale=1.0, user-scalable=no`);\n  }\n\n  // Log mobile emulation activation (for debugging)\n  console.log(`[Mobile Emulation] Viewport set to ${MOBILE_WIDTH}x${MOBILE_HEIGHT}`);\n})();\n"
+      }
+    },
+    {
+      "id": "navigate-1",
+      "type": "navigation",
+      "position": {
+        "x": 910,
+        "y": 200
+      },
+      "data": {
+        "type": "navigation",
+        "label": "Navigate to Amazon.in",
+        "action": "navigate",
+        "url": "https://www.amazon.in",
+        "timeout": 60000,
+        "waitUntil": "load",
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "width": 252,
+        "isMinimized": false
+      }
+    },
+    {
+      "id": "wait-1",
+      "type": "wait",
+      "position": {
+        "x": 1315,
+        "y": 200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for page load",
+        "waitType": "timeout",
+        "value": 3000,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212
+      }
+    },
+    {
+      "id": "type-search-1",
+      "type": "type",
+      "position": {
+        "x": 1720,
+        "y": 200
+      },
+      "data": {
+        "type": "type",
+        "label": "Type 'toys' in search",
+        "selector": "#twotabsearchtextbox, #nav-search-text, input[type='text'][name='field-keywords'], input[name='field-keywords']",
+        "selectorType": "css",
+        "inputMethod": "fill",
+        "text": "toys",
+        "delay": 0,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 400,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "action-search-click-1",
+      "type": "action",
+      "position": {
+        "x": 2125,
+        "y": 200
+      },
+      "data": {
+        "type": "action",
+        "label": "Click search button",
+        "action": "click",
+        "selector": "#nav-search-submit-button, input[type='submit'][value='Go'], button[type='submit'][aria-label*='Go'], .nav-search-submit",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 296.9765625,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "wait-search-results-1",
+      "type": "wait",
+      "position": {
+        "x": 2530,
+        "y": 200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for search results",
+        "waitType": "timeout",
+        "value": 3000,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212
+      }
+    },
+    {
+      "id": "action-add-toy-1",
+      "type": "action",
+      "position": {
+        "x": 2935,
+        "y": 200
+      },
+      "data": {
+        "type": "action",
+        "label": "Click first toy (Add to cart)",
+        "action": "click",
+        "selector": "[data-component-type='s-search-result']:nth-of-type(1) h2 a",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 296.9765625,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "wait-toy-page-1",
+      "type": "wait",
+      "position": {
+        "x": 100,
+        "y": 450
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for toy page",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212
+      }
+    },
+    {
+      "id": "action-add-to-cart-1",
+      "type": "action",
+      "position": {
+        "x": 505,
+        "y": 450
+      },
+      "data": {
+        "type": "action",
+        "label": "Add first toy to cart",
+        "action": "click",
+        "selector": "#add-to-cart-button, input[name='submit.add-to-cart']",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 296.9765625,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "wait-cart-added-1",
+      "type": "wait",
+      "position": {
+        "x": 910,
+        "y": 450
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for cart confirmation",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212
+      }
+    },
+    {
+      "id": "navigate-back-search-1",
+      "type": "navigation",
+      "position": {
+        "x": 1315,
+        "y": 450
+      },
+      "data": {
+        "type": "navigation",
+        "label": "Go back to search results",
+        "action": "navigate",
+        "url": "https://www.amazon.in/s?k=toys",
+        "timeout": 30000,
+        "waitUntil": "load",
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "width": 252,
+        "isMinimized": false
+      }
+    },
+    {
+      "id": "wait-search-again-1",
+      "type": "wait",
+      "position": {
+        "x": 1720,
+        "y": 450
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for search page",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212
+      }
+    },
+    {
+      "id": "action-add-toy-2",
+      "type": "action",
+      "position": {
+        "x": 2125,
+        "y": 450
+      },
+      "data": {
+        "type": "action",
+        "label": "Click second toy",
+        "action": "click",
+        "selector": "[data-component-type='s-search-result']:nth-of-type(2) h2 a",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 296.9765625,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "wait-toy-page-2",
+      "type": "wait",
+      "position": {
+        "x": 2530,
+        "y": 450
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for toy page 2",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212
+      }
+    },
+    {
+      "id": "action-add-to-cart-2",
+      "type": "action",
+      "position": {
+        "x": 2935,
+        "y": 450
+      },
+      "data": {
+        "type": "action",
+        "label": "Add second toy to cart",
+        "action": "click",
+        "selector": "#add-to-cart-button, input[name='submit.add-to-cart']",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 296.9765625,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "wait-cart-added-2",
+      "type": "wait",
+      "position": {
+        "x": 100,
+        "y": 700
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for cart confirmation 2",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212
+      }
+    },
+    {
+      "id": "navigate-back-search-2",
+      "type": "navigation",
+      "position": {
+        "x": 505,
+        "y": 700
+      },
+      "data": {
+        "type": "navigation",
+        "label": "Go back to search results 2",
+        "action": "navigate",
+        "url": "https://www.amazon.in/s?k=toys",
+        "timeout": 30000,
+        "waitUntil": "load",
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "width": 252,
+        "isMinimized": false
+      }
+    },
+    {
+      "id": "wait-search-again-2",
+      "type": "wait",
+      "position": {
+        "x": 910,
+        "y": 700
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for search page 2",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212
+      }
+    },
+    {
+      "id": "action-add-toy-3",
+      "type": "action",
+      "position": {
+        "x": 1315,
+        "y": 700
+      },
+      "data": {
+        "type": "action",
+        "label": "Click third toy",
+        "action": "click",
+        "selector": "[data-component-type='s-search-result']:nth-of-type(3) h2 a",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 296.9765625,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "wait-toy-page-3",
+      "type": "wait",
+      "position": {
+        "x": 1720,
+        "y": 700
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for toy page 3",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212
+      }
+    },
+    {
+      "id": "action-add-to-cart-3",
+      "type": "action",
+      "position": {
+        "x": 2125,
+        "y": 700
+      },
+      "data": {
+        "type": "action",
+        "label": "Add third toy to cart",
+        "action": "click",
+        "selector": "#add-to-cart-button, input[name='submit.add-to-cart']",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 296.9765625,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "wait-cart-added-3",
+      "type": "wait",
+      "position": {
+        "x": 2530,
+        "y": 700
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for cart confirmation 3",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212
+      }
+    },
+    {
+      "id": "navigate-back-search-3",
+      "type": "navigation",
+      "position": {
+        "x": 2935,
+        "y": 700
+      },
+      "data": {
+        "type": "navigation",
+        "label": "Go back to search results 3",
+        "action": "navigate",
+        "url": "https://www.amazon.in/s?k=toys",
+        "timeout": 30000,
+        "waitUntil": "load",
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "width": 252,
+        "isMinimized": false
+      }
+    },
+    {
+      "id": "wait-search-again-3",
+      "type": "wait",
+      "position": {
+        "x": 100,
+        "y": 950
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for search page 3",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212
+      }
+    },
+    {
+      "id": "action-add-toy-4",
+      "type": "action",
+      "position": {
+        "x": 505,
+        "y": 950
+      },
+      "data": {
+        "type": "action",
+        "label": "Click fourth toy",
+        "action": "click",
+        "selector": "[data-component-type='s-search-result']:nth-of-type(4) h2 a",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 296.9765625,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "wait-toy-page-4",
+      "type": "wait",
+      "position": {
+        "x": 910,
+        "y": 950
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for toy page 4",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212
+      }
+    },
+    {
+      "id": "action-add-to-cart-4",
+      "type": "action",
+      "position": {
+        "x": 1315,
+        "y": 950
+      },
+      "data": {
+        "type": "action",
+        "label": "Add fourth toy to cart",
+        "action": "click",
+        "selector": "#add-to-cart-button, input[name='submit.add-to-cart']",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 296.9765625,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "wait-cart-added-4",
+      "type": "wait",
+      "position": {
+        "x": 1720,
+        "y": 950
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for cart confirmation 4",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212
+      }
+    },
+    {
+      "id": "navigate-back-search-4",
+      "type": "navigation",
+      "position": {
+        "x": 2125,
+        "y": 950
+      },
+      "data": {
+        "type": "navigation",
+        "label": "Go back to search results 4",
+        "action": "navigate",
+        "url": "https://www.amazon.in/s?k=toys",
+        "timeout": 30000,
+        "waitUntil": "load",
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "width": 252,
+        "isMinimized": false
+      }
+    },
+    {
+      "id": "wait-search-again-4",
+      "type": "wait",
+      "position": {
+        "x": 2530,
+        "y": 950
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for search page 4",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212
+      }
+    },
+    {
+      "id": "action-add-toy-5",
+      "type": "action",
+      "position": {
+        "x": 2935,
+        "y": 950
+      },
+      "data": {
+        "type": "action",
+        "label": "Click fifth toy",
+        "action": "click",
+        "selector": "[data-component-type='s-search-result']:nth-of-type(5) h2 a",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 296.9765625,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "wait-toy-page-5",
+      "type": "wait",
+      "position": {
+        "x": 100,
+        "y": 1200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for toy page 5",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212
+      }
+    },
+    {
+      "id": "action-add-to-cart-5",
+      "type": "action",
+      "position": {
+        "x": 505,
+        "y": 1200
+      },
+      "data": {
+        "type": "action",
+        "label": "Add fifth toy to cart",
+        "action": "click",
+        "selector": "#add-to-cart-button, input[name='submit.add-to-cart']",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 296.9765625,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "wait-cart-added-5",
+      "type": "wait",
+      "position": {
+        "x": 910,
+        "y": 1200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for cart confirmation 5",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212
+      }
+    },
+    {
+      "id": "action-click-cart",
+      "type": "action",
+      "position": {
+        "x": 1315,
+        "y": 1200
+      },
+      "data": {
+        "type": "action",
+        "label": "Click on cart icon",
+        "action": "click",
+        "selector": "#nav-cart, #nav-cart-count, #nav-cart-text-container, a[href*='/cart'], #nav-cart-count-container",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 296.9765625,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "wait-cart-page",
+      "type": "wait",
+      "position": {
+        "x": 1720,
+        "y": 1200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for cart page",
+        "waitType": "timeout",
+        "value": 3000,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212
+      }
+    },
+    {
+      "id": "verify-cart-count",
+      "type": "verify",
+      "position": {
+        "x": 2125,
+        "y": 1200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify 5 items in cart",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "[data-name='Active Items'] .sc-list-item, .sc-list-item",
+        "selectorType": "css",
+        "check": "count",
+        "expectedValue": "5",
+        "matchType": "equals",
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 296.9765625,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "action-proceed-payment",
+      "type": "action",
+      "position": {
+        "x": 2530,
+        "y": 1200
+      },
+      "data": {
+        "type": "action",
+        "label": "Proceed to payment",
+        "action": "click",
+        "selector": "input[name='proceedToRetailCheckout'], input[name='proceedToCheckout'], [name='proceedToCheckout']",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 296.9765625,
+        "searchHighlighted": false
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-1-openBrowser-1-output-input",
+      "source": "start-1",
+      "target": "openBrowser-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-openBrowser-1-navigate-1-output-input",
+      "source": "openBrowser-1",
+      "target": "navigate-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-openBrowser-1-navigate-1-output-driver",
+      "source": "openBrowser-1",
+      "target": "navigate-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-navigate-1-wait-1-output-input",
+      "source": "navigate-1",
+      "target": "wait-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-navigate-1-wait-1-output-driver",
+      "source": "navigate-1",
+      "target": "wait-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-1-type-search-1-output-input",
+      "source": "wait-1",
+      "target": "type-search-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-1-type-search-1-output-driver",
+      "source": "wait-1",
+      "target": "type-search-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-search-1-action-search-click-1-output-input",
+      "source": "type-search-1",
+      "target": "action-search-click-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-type-search-1-action-search-click-1-output-driver",
+      "source": "type-search-1",
+      "target": "action-search-click-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-action-search-click-1-wait-search-results-1-output-input",
+      "source": "action-search-click-1",
+      "target": "wait-search-results-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-action-search-click-1-wait-search-results-1-output-driver",
+      "source": "action-search-click-1",
+      "target": "wait-search-results-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-search-results-1-action-add-toy-1-output-input",
+      "source": "wait-search-results-1",
+      "target": "action-add-toy-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-search-results-1-action-add-toy-1-output-driver",
+      "source": "wait-search-results-1",
+      "target": "action-add-toy-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-action-add-toy-1-wait-toy-page-1-output-input",
+      "source": "action-add-toy-1",
+      "target": "wait-toy-page-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-action-add-toy-1-wait-toy-page-1-output-driver",
+      "source": "action-add-toy-1",
+      "target": "wait-toy-page-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-toy-page-1-action-add-to-cart-1-output-input",
+      "source": "wait-toy-page-1",
+      "target": "action-add-to-cart-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-toy-page-1-action-add-to-cart-1-output-driver",
+      "source": "wait-toy-page-1",
+      "target": "action-add-to-cart-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-action-add-to-cart-1-wait-cart-added-1-output-input",
+      "source": "action-add-to-cart-1",
+      "target": "wait-cart-added-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-action-add-to-cart-1-wait-cart-added-1-output-driver",
+      "source": "action-add-to-cart-1",
+      "target": "wait-cart-added-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-cart-added-1-navigate-back-search-1-output-input",
+      "source": "wait-cart-added-1",
+      "target": "navigate-back-search-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-cart-added-1-navigate-back-search-1-output-driver",
+      "source": "wait-cart-added-1",
+      "target": "navigate-back-search-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-navigate-back-search-1-wait-search-again-1-output-input",
+      "source": "navigate-back-search-1",
+      "target": "wait-search-again-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-navigate-back-search-1-wait-search-again-1-output-driver",
+      "source": "navigate-back-search-1",
+      "target": "wait-search-again-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-search-again-1-action-add-toy-2-output-input",
+      "source": "wait-search-again-1",
+      "target": "action-add-toy-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-search-again-1-action-add-toy-2-output-driver",
+      "source": "wait-search-again-1",
+      "target": "action-add-toy-2",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-action-add-toy-2-wait-toy-page-2-output-input",
+      "source": "action-add-toy-2",
+      "target": "wait-toy-page-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-action-add-toy-2-wait-toy-page-2-output-driver",
+      "source": "action-add-toy-2",
+      "target": "wait-toy-page-2",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-toy-page-2-action-add-to-cart-2-output-input",
+      "source": "wait-toy-page-2",
+      "target": "action-add-to-cart-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-toy-page-2-action-add-to-cart-2-output-driver",
+      "source": "wait-toy-page-2",
+      "target": "action-add-to-cart-2",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-action-add-to-cart-2-wait-cart-added-2-output-input",
+      "source": "action-add-to-cart-2",
+      "target": "wait-cart-added-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-action-add-to-cart-2-wait-cart-added-2-output-driver",
+      "source": "action-add-to-cart-2",
+      "target": "wait-cart-added-2",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-cart-added-2-navigate-back-search-2-output-input",
+      "source": "wait-cart-added-2",
+      "target": "navigate-back-search-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-cart-added-2-navigate-back-search-2-output-driver",
+      "source": "wait-cart-added-2",
+      "target": "navigate-back-search-2",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-navigate-back-search-2-wait-search-again-2-output-input",
+      "source": "navigate-back-search-2",
+      "target": "wait-search-again-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-navigate-back-search-2-wait-search-again-2-output-driver",
+      "source": "navigate-back-search-2",
+      "target": "wait-search-again-2",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-search-again-2-action-add-toy-3-output-input",
+      "source": "wait-search-again-2",
+      "target": "action-add-toy-3",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-search-again-2-action-add-toy-3-output-driver",
+      "source": "wait-search-again-2",
+      "target": "action-add-toy-3",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-action-add-toy-3-wait-toy-page-3-output-input",
+      "source": "action-add-toy-3",
+      "target": "wait-toy-page-3",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-action-add-toy-3-wait-toy-page-3-output-driver",
+      "source": "action-add-toy-3",
+      "target": "wait-toy-page-3",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-toy-page-3-action-add-to-cart-3-output-input",
+      "source": "wait-toy-page-3",
+      "target": "action-add-to-cart-3",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-toy-page-3-action-add-to-cart-3-output-driver",
+      "source": "wait-toy-page-3",
+      "target": "action-add-to-cart-3",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-action-add-to-cart-3-wait-cart-added-3-output-input",
+      "source": "action-add-to-cart-3",
+      "target": "wait-cart-added-3",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-action-add-to-cart-3-wait-cart-added-3-output-driver",
+      "source": "action-add-to-cart-3",
+      "target": "wait-cart-added-3",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-cart-added-3-navigate-back-search-3-output-input",
+      "source": "wait-cart-added-3",
+      "target": "navigate-back-search-3",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-cart-added-3-navigate-back-search-3-output-driver",
+      "source": "wait-cart-added-3",
+      "target": "navigate-back-search-3",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-navigate-back-search-3-wait-search-again-3-output-input",
+      "source": "navigate-back-search-3",
+      "target": "wait-search-again-3",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-navigate-back-search-3-wait-search-again-3-output-driver",
+      "source": "navigate-back-search-3",
+      "target": "wait-search-again-3",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-search-again-3-action-add-toy-4-output-input",
+      "source": "wait-search-again-3",
+      "target": "action-add-toy-4",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-search-again-3-action-add-toy-4-output-driver",
+      "source": "wait-search-again-3",
+      "target": "action-add-toy-4",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-action-add-toy-4-wait-toy-page-4-output-input",
+      "source": "action-add-toy-4",
+      "target": "wait-toy-page-4",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-action-add-toy-4-wait-toy-page-4-output-driver",
+      "source": "action-add-toy-4",
+      "target": "wait-toy-page-4",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-toy-page-4-action-add-to-cart-4-output-input",
+      "source": "wait-toy-page-4",
+      "target": "action-add-to-cart-4",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-toy-page-4-action-add-to-cart-4-output-driver",
+      "source": "wait-toy-page-4",
+      "target": "action-add-to-cart-4",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-action-add-to-cart-4-wait-cart-added-4-output-input",
+      "source": "action-add-to-cart-4",
+      "target": "wait-cart-added-4",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-action-add-to-cart-4-wait-cart-added-4-output-driver",
+      "source": "action-add-to-cart-4",
+      "target": "wait-cart-added-4",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-cart-added-4-navigate-back-search-4-output-input",
+      "source": "wait-cart-added-4",
+      "target": "navigate-back-search-4",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-cart-added-4-navigate-back-search-4-output-driver",
+      "source": "wait-cart-added-4",
+      "target": "navigate-back-search-4",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-navigate-back-search-4-wait-search-again-4-output-input",
+      "source": "navigate-back-search-4",
+      "target": "wait-search-again-4",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-navigate-back-search-4-wait-search-again-4-output-driver",
+      "source": "navigate-back-search-4",
+      "target": "wait-search-again-4",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-search-again-4-action-add-toy-5-output-input",
+      "source": "wait-search-again-4",
+      "target": "action-add-toy-5",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-search-again-4-action-add-toy-5-output-driver",
+      "source": "wait-search-again-4",
+      "target": "action-add-toy-5",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-action-add-toy-5-wait-toy-page-5-output-input",
+      "source": "action-add-toy-5",
+      "target": "wait-toy-page-5",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-action-add-toy-5-wait-toy-page-5-output-driver",
+      "source": "action-add-toy-5",
+      "target": "wait-toy-page-5",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-toy-page-5-action-add-to-cart-5-output-input",
+      "source": "wait-toy-page-5",
+      "target": "action-add-to-cart-5",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-toy-page-5-action-add-to-cart-5-output-driver",
+      "source": "wait-toy-page-5",
+      "target": "action-add-to-cart-5",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-action-add-to-cart-5-wait-cart-added-5-output-input",
+      "source": "action-add-to-cart-5",
+      "target": "wait-cart-added-5",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-action-add-to-cart-5-wait-cart-added-5-output-driver",
+      "source": "action-add-to-cart-5",
+      "target": "wait-cart-added-5",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-cart-added-5-action-click-cart-output-input",
+      "source": "wait-cart-added-5",
+      "target": "action-click-cart",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-cart-added-5-action-click-cart-output-driver",
+      "source": "wait-cart-added-5",
+      "target": "action-click-cart",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-action-click-cart-wait-cart-page-output-input",
+      "source": "action-click-cart",
+      "target": "wait-cart-page",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-action-click-cart-wait-cart-page-output-driver",
+      "source": "action-click-cart",
+      "target": "wait-cart-page",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-cart-page-verify-cart-count-output-input",
+      "source": "wait-cart-page",
+      "target": "verify-cart-count",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-cart-page-verify-cart-count-output-driver",
+      "source": "wait-cart-page",
+      "target": "verify-cart-count",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-cart-count-action-proceed-payment-output-input",
+      "source": "verify-cart-count",
+      "target": "action-proceed-payment",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-cart-count-action-proceed-payment-output-driver",
+      "source": "verify-cart-count",
+      "target": "action-proceed-payment",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    }
+  ]
+}

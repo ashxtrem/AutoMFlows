@@ -1,21 +1,17 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import { useNotificationStore } from '../store/notificationStore';
 
 interface SettingsDropdownProps {
   traceLogs: boolean;
   onTraceLogsChange: (value: boolean) => void;
   onReportSettingsClick: () => void;
-  menuFixed: boolean;
-  onMenuFixedChange: (value: boolean) => void;
 }
 
 export default function SettingsDropdown({
   traceLogs,
   onTraceLogsChange,
   onReportSettingsClick,
-  menuFixed,
-  onMenuFixedChange,
 }: SettingsDropdownProps) {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -24,7 +20,6 @@ export default function SettingsDropdown({
   // Track previous settings to detect changes
   const prevSettingsRef = useRef({
     traceLogs,
-    menuFixed,
   });
 
   // Track trace logs changes
@@ -39,19 +34,6 @@ export default function SettingsDropdown({
       prevSettingsRef.current.traceLogs = traceLogs;
     }
   }, [traceLogs, addNotification]);
-  
-  // Track menu fixed changes (handled by parent, but we can show notification here)
-  useEffect(() => {
-    if (prevSettingsRef.current.menuFixed !== menuFixed) {
-      addNotification({
-        type: 'settings',
-        title: 'Settings Applied',
-        details: [menuFixed ? 'Menu fixed' : 'Menu auto-hide enabled'],
-      });
-      
-      prevSettingsRef.current.menuFixed = menuFixed;
-    }
-  }, [menuFixed, addNotification]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent | TouchEvent) => {
@@ -90,73 +72,33 @@ export default function SettingsDropdown({
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-2 text-sm"
+        className="px-2 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center justify-center"
+        title="Settings"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        >
-          <circle cx="12" cy="12" r="3" />
-          <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" />
-        </svg>
-        Settings
-        <ChevronDown size={14} className={isOpen ? 'rotate-180' : ''} />
+        <Settings size={18} />
       </button>
 
       {isOpen && (
         <div className="absolute right-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50">
-          <div className="p-2 space-y-1">
+          <div className="p-3 space-y-3">
             {/* Trace Logs Toggle */}
-            <div className="px-3 py-2 hover:bg-gray-700 rounded">
-              <label className="flex items-center justify-between cursor-pointer">
-                <span className="text-sm text-white">Trace Logs</span>
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={traceLogs}
-                    onChange={(e) => onTraceLogsChange(e.target.checked)}
-                    className="sr-only"
-                  />
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-white font-medium">Trace Logs</span>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={traceLogs}
+                  onChange={(e) => onTraceLogsChange(e.target.checked)}
+                  className="sr-only"
+                />
+                <div
+                  className={`w-14 h-7 rounded-lg transition-colors flex items-center px-1 ${
+                    traceLogs ? 'bg-green-600' : 'bg-gray-700'
+                  }`}
+                >
                   <div
-                    className={`block h-6 w-11 rounded-full transition-colors ${
-                      traceLogs ? 'bg-green-600' : 'bg-gray-600'
-                    }`}
-                  />
-                  <div
-                    className={`dot absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${
-                      traceLogs ? 'translate-x-5' : 'translate-x-0'
-                    }`}
-                  />
-                </div>
-              </label>
-            </div>
-
-            {/* Fixed Menu Toggle */}
-            <div className="px-3 py-2 hover:bg-gray-700 rounded">
-              <label className="flex items-center justify-between cursor-pointer">
-                <span className="text-sm text-white">Fixed Menu</span>
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={menuFixed}
-                    onChange={(e) => onMenuFixedChange(e.target.checked)}
-                    className="sr-only"
-                  />
-                  <div
-                    className={`block h-6 w-11 rounded-full transition-colors ${
-                      menuFixed ? 'bg-green-600' : 'bg-gray-600'
-                    }`}
-                  />
-                  <div
-                    className={`dot absolute left-1 top-1 h-4 w-4 rounded-full bg-white transition-transform ${
-                      menuFixed ? 'translate-x-5' : 'translate-x-0'
+                    className={`w-5 h-5 rounded-md bg-white transition-transform ${
+                      traceLogs ? 'translate-x-7' : 'translate-x-0'
                     }`}
                   />
                 </div>
@@ -164,13 +106,13 @@ export default function SettingsDropdown({
             </div>
 
             {/* Report Settings Button */}
-            <div className="px-3 py-2 border-t border-gray-700 mt-2 pt-2">
+            <div className="border-t border-gray-700 pt-3 mt-2">
               <button
                 onClick={() => {
                   onReportSettingsClick();
                   setIsOpen(false);
                 }}
-                className="w-full px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                className="w-full px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
               >
                 Report Settings
               </button>

@@ -2,13 +2,16 @@ import { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useWorkflowStore } from '../store/workflowStore';
 import { serializeWorkflow } from '../utils/serialization';
-import { ExecutionEventType, ScreenshotConfig, ReportConfig } from '@automflows/shared';
+import { ExecutionEventType, ScreenshotConfig, ReportConfig, BreakpointConfig } from '@automflows/shared';
 import { validateInputConnections, ValidationError } from '../utils/validation';
 import { useNotificationStore } from '../store/notificationStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { Node } from 'reactflow';
+import { hasHeadlessBrowser } from '../utils/workflowChecks';
 
 let socket: Socket | null = null;
 let backendPort: number | null = null;
+let listenersRegistered: boolean = false; // Track if listeners are already registered
 
 /**
  * Parse backend validation error messages to extract node IDs and create ValidationError objects
@@ -88,11 +91,35 @@ async function getBackendPortSync(): Promise<number> {
 }
 
 export function useExecution() {
-  const { nodes, edges, setExecutionStatus, setExecutingNodeId, resetExecution, setNodeError, clearAllNodeErrors, setValidationErrors: setStoreValidationErrors, clearValidationErrors } = useWorkflowStore();
+  const { 
+    nodes, 
+    edges, 
+    setExecutionStatus, 
+    setExecutingNodeId, 
+    resetExecution, 
+    setNodeError, 
+    clearAllNodeErrors, 
+    setValidationErrors: setStoreValidationErrors, 
+    clearValidationErrors,
+    setPausedNode,
+    pausedNodeId,
+    pauseReason,
+    breakpointEnabled,
+    breakpointAt,
+    breakpointFor,
+    builderModeEnabled,
+    resetBuilderModeActions,
+    workflowFileName,
+  groups,
+  } = useWorkflowStore();
+  const reportRetention = useSettingsStore((state) => state.reports.reportRetention);
   const [port, setPort] = useState<number | null>(null);
   const [validationErrors, setValidationErrors] = useState<any[]>([]);
   const addNotification = useNotificationStore((state) => state.addNotification);
   const executionStartTimeRef = useRef<number | null>(null);
+  const [showBreakpointWarning, setShowBreakpointWarning] = useState(false);
+  const [pendingExecution, setPendingExecution] = useState<{ traceLogs: boolean; disableBreakpoints: boolean } | null>(null);
+  const justContinuedRef = useRef<boolean>(false); // Track if execution just continued to prevent immediate breakpoint re-trigger
 
   useEffect(() => {
     let mounted = true;
@@ -102,18 +129,33 @@ export function useExecution() {
       if (!mounted) return;
       setPort(p);
       
-      // Initialize socket connection
-      socket = io(`http://localhost:${p}`, {
-        transports: ['websocket'],
-      });
+      // Initialize socket connection (only if not already exists and connected)
+      if (!socket || !socket.connected) {
+        // Disconnect old socket if it exists but not connected
+        if (socket) {
+          socket.disconnect();
+        }
+        socket = io(`http://localhost:${p}`, {
+          transports: ['websocket'],
+        });
+        // Reset listenersRegistered when creating new socket so listeners are re-registered
+        listenersRegistered = false;
+      }
 
-    socket.on('connect', () => {
-      console.log('Connected to server');
-    });
+      // Register listeners on current socket (always re-register if socket was recreated)
+      if (!listenersRegistered) {
+        // Remove any existing listeners to prevent duplicates
+        socket.off('connect');
+        socket.off('execution-event');
+        socket.off('disconnect');
 
-    socket.on('execution-event', (event: any) => {
-      console.log('Execution event:', event);
+        socket.on('connect', () => {
+          console.log('Connected to server');
+        });
 
+        socket.on('execution-event', async (event: any) => {
+          console.log('Execution event:', event);
+      
       switch (event.type) {
         case ExecutionEventType.EXECUTION_START:
           setExecutionStatus('running');
@@ -147,9 +189,39 @@ export function useExecution() {
           }
           // If failSilently is enabled, execution continues, so don't change status
           break;
+        case ExecutionEventType.EXECUTION_PAUSED:
+          if (event.nodeId) {
+            const reason = event.data?.reason || 'wait-pause';
+            setPausedNode(event.nodeId, reason);
+            // Only show notification for wait-pause, breakpoint notifications are handled by BREAKPOINT_TRIGGERED
+            if (reason === 'wait-pause') {
+              addNotification({
+                type: 'info',
+                title: 'Execution Paused',
+                message: `Execution paused at node: ${event.nodeId}`,
+              });
+            }
+          }
+          break;
+        case ExecutionEventType.BREAKPOINT_TRIGGERED:
+          // Ignore BREAKPOINT_TRIGGERED if execution just continued (to prevent buttons from reappearing immediately)
+          if (justContinuedRef.current) {
+            break;
+          }
+          
+          if (event.nodeId) {
+            setPausedNode(event.nodeId, 'breakpoint', event.data?.breakpointAt);
+            addNotification({
+              type: 'info',
+              title: 'Breakpoint Triggered',
+              message: `Breakpoint triggered at node: ${event.nodeId}`,
+            });
+          }
+          break;
         case ExecutionEventType.EXECUTION_COMPLETE:
           setExecutionStatus('completed');
           setExecutingNodeId(null);
+          setPausedNode(null, null, null); // Clear pause state
           // Check if there were any failures - get current state from store
           setTimeout(() => {
             const currentFailedNodes = useWorkflowStore.getState().failedNodes;
@@ -172,6 +244,71 @@ export function useExecution() {
             }
           }, 100); // Small delay to ensure all node errors are recorded
           executionStartTimeRef.current = null;
+          
+          // Show notification when reports are generated (if reporting is enabled)
+          const reportingEnabled = localStorage.getItem('automflows_reporting_enabled') === 'true';
+          const autoOpenReports = localStorage.getItem('automflows_settings_reports_autoOpen') === 'true';
+          if (reportingEnabled) {
+            setTimeout(async () => {
+              try {
+                const currentPort = port || await getBackendPortSync();
+                if (!currentPort) return;
+                
+                // Fetch latest reports
+                const response = await fetch(`http://localhost:${currentPort}/api/reports/list`);
+                if (!response.ok) return;
+                
+                const reports = await response.json();
+                if (reports.length === 0) return;
+                
+                // Get the latest report (first in sorted list)
+                const latestReport = reports[0];
+                const defaultFormat = localStorage.getItem('automflows_settings_reports_defaultFormat') || 'html';
+                
+                // Find the report file for the default format
+                let reportFile = latestReport.files.find((f: any) => f.type === defaultFormat);
+                
+                // If default format not found, try HTML
+                if (!reportFile) {
+                  reportFile = latestReport.files.find((f: any) => f.type === 'html');
+                }
+                
+                if (reportFile) {
+                  // Build report URL
+                  let reportUrl: string;
+                  if (defaultFormat === 'allure') {
+                    reportUrl = `http://localhost:${currentPort}/reports/${latestReport.folderName}/allure/index.html`;
+                  } else {
+                    reportUrl = `http://localhost:${currentPort}/reports/${latestReport.folderName}/${reportFile.type}/${reportFile.name}`;
+                  }
+                  
+                  // Auto-open report if enabled
+                  if (autoOpenReports) {
+                    window.open(reportUrl, '_blank');
+                  }
+                  
+                  // Show notification with button to open report
+                  addNotification({
+                    type: 'success',
+                    title: 'Report Generated',
+                    message: autoOpenReports 
+                      ? 'Report has been opened in a new tab.' 
+                      : 'Click the button below to open the report in a new tab.',
+                    action: {
+                      label: 'Open Report',
+                      onClick: () => {
+                        window.open(reportUrl, '_blank');
+                      },
+                    },
+                    duration: 10000, // Show for 10 seconds
+                  });
+                }
+              } catch (error) {
+                console.warn('Failed to fetch report for notification:', error);
+              }
+            }, 500); // Small delay to ensure report is generated
+          }
+          
           // Don't clear failedNodes here - let user see errors until they dismiss or start new execution
           setTimeout(() => {
             // Only reset execution status, keep failed nodes visible
@@ -182,10 +319,13 @@ export function useExecution() {
         case ExecutionEventType.EXECUTION_ERROR:
           setExecutionStatus('error');
           setExecutingNodeId(null);
+          setPausedNode(null, null, null); // Clear pause state
           
           // Check if this is a backend validation error and parse it
           if (event.message && event.message.includes('Workflow validation failed')) {
-            const backendValidationErrors = parseBackendValidationErrors(event.message, nodes);
+            // Access nodes dynamically from store to avoid closure issues
+            const currentNodes = useWorkflowStore.getState().nodes;
+            const backendValidationErrors = parseBackendValidationErrors(event.message, currentNodes);
             if (backendValidationErrors.length > 0) {
               setValidationErrors(backendValidationErrors);
               setStoreValidationErrors(backendValidationErrors);
@@ -208,15 +348,16 @@ export function useExecution() {
       }
     });
 
-    socket.on('disconnect', () => {
-      console.log('Disconnected from server');
-    });
+        socket.on('disconnect', () => {
+          console.log('Disconnected from server');
+        });
+
+        listenersRegistered = true;
+      }
 
       return () => {
-        if (socket) {
-          socket.disconnect();
-          socket = null;
-        }
+        // Don't disconnect socket here - it's shared across hook instances
+        // Only disconnect in outer cleanup when component unmounts
       };
     });
 
@@ -227,10 +368,20 @@ export function useExecution() {
         socket = null;
       }
     };
-  }, [setExecutionStatus, setExecutingNodeId, resetExecution, setNodeError, clearAllNodeErrors, addNotification]);
+    }, [setExecutionStatus, setExecutingNodeId, resetExecution, setNodeError, clearAllNodeErrors, addNotification, builderModeEnabled, port, setValidationErrors, setStoreValidationErrors]);
 
-  const executeWorkflow = async (traceLogs: boolean = false) => {
+  const executeWorkflowInternal = async (traceLogs: boolean = false, disableBreakpoints: boolean = false) => {
     try {
+      // Check if builder mode is enabled and headless browser is detected
+      if (builderModeEnabled && hasHeadlessBrowser(nodes)) {
+        addNotification({
+          type: 'error',
+          title: 'Builder Mode Requires Non-Headless Browser',
+          message: 'Builder Mode requires a non-headless browser. Please disable headless mode in the Open Browser node.',
+        });
+        return; // Prevent execution
+      }
+      
       // Validate input connections before execution
       const errors = validateInputConnections(nodes, edges);
       if (errors.length > 0) {
@@ -241,7 +392,7 @@ export function useExecution() {
       setValidationErrors([]);
       clearValidationErrors(); // Clear validation errors from store when validation passes
 
-      const workflow = serializeWorkflow(nodes, edges);
+      const workflow = serializeWorkflow(nodes, edges, groups);
 
       // Find Start node and extract configuration
       const startNode = nodes.find((node) => node.data.type === 'start');
@@ -266,8 +417,19 @@ export function useExecution() {
         : undefined;
 
       const reportConfig: ReportConfig | undefined = reportingEnabled
-        ? { enabled: true, outputPath: reportPath, reportTypes }
+        ? { enabled: true, outputPath: reportPath, reportTypes, reportRetention }
         : undefined;
+
+      // Read breakpoint config from store (or disable if requested)
+      const breakpointConfig: BreakpointConfig | undefined = (breakpointEnabled && !disableBreakpoints)
+        ? { enabled: true, breakpointAt, breakpointFor }
+        : undefined;
+
+      // Extract base filename (without .json extension) for backend
+      let baseFileName: string | undefined;
+      if (workflowFileName && workflowFileName !== 'Untitled Workflow') {
+        baseFileName = workflowFileName.replace(/\.json$/i, '');
+      }
 
       const currentPort = port || await getBackendPortSync();
       const fetchController = new AbortController();
@@ -284,9 +446,13 @@ export function useExecution() {
           screenshotConfig,
           reportConfig,
           recordSession,
+          breakpointConfig,
+          builderModeEnabled,
+          workflowFileName: baseFileName,
         }),
         signal: fetchController.signal,
       });
+      
       clearTimeout(fetchTimeoutId);
 
       if (!response.ok) {
@@ -336,6 +502,81 @@ export function useExecution() {
     }
   };
 
+  const executeWorkflow = async (traceLogs: boolean = false) => {
+    // Clear builder mode actions if workflow is being rerun
+    const currentBuilderModeActions = useWorkflowStore.getState().builderModeActions;
+    if (currentBuilderModeActions && currentBuilderModeActions.length > 0) {
+      // Clear builder mode actions
+      resetBuilderModeActions();
+      
+      // Also reset backend actions if port is available
+      if (port) {
+        try {
+          await fetch(`http://localhost:${port}/api/workflows/builder-mode/actions/reset`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+          }).catch(() => {
+            // Ignore errors
+          });
+        } catch (error) {
+          // Ignore errors
+        }
+      }
+    }
+    
+    // Check if breakpoints are enabled and browser is headless
+    if (breakpointEnabled && hasHeadlessBrowser(nodes)) {
+      // Check localStorage for global preference (not workflow-specific)
+      const preferenceKey = 'automflows_breakpoint_headless_warning_preference';
+      const preference = localStorage.getItem(preferenceKey);
+      
+      // If preference exists, use it
+      if (preference === 'continue') {
+        await executeWorkflowInternal(traceLogs, false);
+        return;
+      } else if (preference === 'disable') {
+        await executeWorkflowInternal(traceLogs, true);
+        return;
+      }
+      
+      // No preference found - show warning dialog
+      setPendingExecution({ traceLogs, disableBreakpoints: false });
+      setShowBreakpointWarning(true);
+      return;
+    }
+    
+    // No warning needed, proceed with execution
+    await executeWorkflowInternal(traceLogs, false);
+  };
+
+  const handleBreakpointWarningContinue = () => {
+    setShowBreakpointWarning(false);
+    if (pendingExecution) {
+      executeWorkflowInternal(pendingExecution.traceLogs, false);
+      setPendingExecution(null);
+    }
+  };
+
+  const handleBreakpointWarningDisable = () => {
+    setShowBreakpointWarning(false);
+    if (pendingExecution) {
+      executeWorkflowInternal(pendingExecution.traceLogs, true);
+      setPendingExecution(null);
+    }
+  };
+
+  const handleBreakpointWarningCancel = () => {
+    setShowBreakpointWarning(false);
+    setPendingExecution(null);
+  };
+
+
+  const handleBreakpointWarningDontAskAgain = (choice: 'continue' | 'disable') => {
+    // Store global preference (not workflow-specific)
+    const preferenceKey = 'automflows_breakpoint_headless_warning_preference';
+    localStorage.setItem(preferenceKey, choice);
+  };
+
   const stopExecution = async () => {
     try {
       const currentPort = port || await getBackendPortSync();
@@ -346,17 +587,177 @@ export function useExecution() {
       if (!response.ok) {
         throw new Error('Failed to stop execution');
       }
+      setPausedNode(null, null); // Clear pause state
     } catch (error: any) {
       console.error('Stop execution error:', error);
       alert('Failed to stop execution: ' + error.message);
     }
   };
 
+  const continueExecution = async () => {
+    try {
+      const currentPort = port || await getBackendPortSync();
+      const response = await fetch(`http://localhost:${currentPort}/api/workflows/execution/continue`, {
+        method: 'POST',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to continue execution');
+      }
+      setPausedNode(null, null); // Clear pause state
+    } catch (error: any) {
+      console.error('Continue execution error:', error);
+      alert('Failed to continue execution: ' + error.message);
+    }
+  };
+
+  const updateWorkflowDuringExecution = async (workflow: any) => {
+    try {
+      const currentPort = port || await getBackendPortSync();
+      const response = await fetch(`http://localhost:${currentPort}/api/workflows/execution/update-workflow`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ workflow }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update workflow');
+      }
+
+      const result = await response.json();
+      console.log('Workflow updated during execution:', result);
+
+      return result;
+    } catch (error: any) {
+      // Don't show error notification if execution resumed (this is expected behavior)
+      // The error "Execution is not paused" means execution resumed between check and API call
+      const errorMessage = error?.message || '';
+      const isExecutionResumedError = errorMessage.includes('Execution is not paused') || 
+                                     errorMessage.includes('not paused');
+      
+      if (!isExecutionResumedError) {
+        console.error('Update workflow error:', error);
+        addNotification({
+          type: 'error',
+          title: 'Update Failed',
+          message: errorMessage || 'Failed to update workflow during execution',
+        });
+      } else {
+        // Silently ignore - execution resumed, which is expected
+      }
+      throw error;
+    }
+  };
+
+  const pauseControl = async (action: 'continue' | 'stop' | 'skip' | 'continueWithoutBreakpoint') => {
+    // Check if execution is paused (not if it's running - when paused, status is still 'running')
+    const isCurrentlyPaused = useWorkflowStore.getState().pausedNodeId !== null;
+    
+    if (!isCurrentlyPaused) {
+      addNotification({
+        type: 'error',
+        title: 'Action Not Available',
+        message: 'Execution is not paused. This action is only available when execution is paused at a breakpoint.',
+      });
+      return;
+    }
+
+    try {
+      const currentPort = port || await getBackendPortSync();
+      const response = await fetch(`http://localhost:${currentPort}/api/workflows/execution/pause-control`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ action }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({ message: 'Failed to execute pause control' }));
+        const errorMessage = errorData.message || 'Failed to execute pause control';
+        
+        // Handle "Execution is not paused" error gracefully
+        if (errorMessage.includes('Execution is not paused')) {
+          addNotification({
+            type: 'info',
+            title: 'Execution Already Running',
+            message: 'Execution has already resumed. The action was not applied.',
+          });
+          return;
+        }
+        
+        throw new Error(errorMessage);
+      }
+      
+      // Clear pause state for continue actions
+      if (action === 'continue' || action === 'skip' || action === 'continueWithoutBreakpoint') {
+        setPausedNode(null, null);
+        // Set flag to ignore immediate BREAKPOINT_TRIGGERED events
+        justContinuedRef.current = true;
+        // Clear flag after a short delay to allow execution to actually start
+        setTimeout(() => {
+          justContinuedRef.current = false;
+        }, 500); // 500ms should be enough for execution to start
+      }
+    } catch (error: any) {
+      console.error('Pause control error:', error);
+      addNotification({
+        type: 'error',
+        title: 'Action Failed',
+        message: error.message || 'Failed to execute pause control. Please try again.',
+      });
+    }
+  };
+
+  // Auto-sync workflow changes during breakpoint pause (debounced)
+  useEffect(() => {
+    // Only sync during breakpoint pause, not wait-pause
+    if (pauseReason !== 'breakpoint' || !pausedNodeId) {
+      return;
+    }
+
+    // Debounce workflow sync to avoid too many API calls
+    const syncTimeout = setTimeout(async () => {
+      // CRITICAL FIX: Check pause state again before making API call
+      // Execution may have resumed between timeout setup and execution
+      const currentPauseReason = useWorkflowStore.getState().pauseReason;
+      const currentPausedNodeId = useWorkflowStore.getState().pausedNodeId;
+      
+      if (currentPauseReason !== 'breakpoint' || !currentPausedNodeId) {
+        return; // Execution resumed, don't update
+      }
+      
+      try {
+        const workflow = serializeWorkflow(nodes, edges, groups);
+        await updateWorkflowDuringExecution(workflow);
+      } catch (error) {
+        // Error handling is done in updateWorkflowDuringExecution
+        // It will suppress notifications for "Execution is not paused" errors
+      }
+    }, 1000); // 1 second debounce
+
+    return () => {
+      clearTimeout(syncTimeout);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nodes, edges, pauseReason, pausedNodeId]); // Only sync when nodes/edges change during breakpoint pause
+
   return {
     executeWorkflow,
     stopExecution,
+    continueExecution,
+    pauseControl,
+    updateWorkflowDuringExecution,
     validationErrors,
     setValidationErrors,
+    showBreakpointWarning,
+    handleBreakpointWarningContinue,
+    handleBreakpointWarningDisable,
+    handleBreakpointWarningCancel,
+    handleBreakpointWarningDontAskAgain,
   };
 }
 

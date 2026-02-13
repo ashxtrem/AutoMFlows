@@ -1,4 +1,4 @@
-import { Copy, Trash2, SkipForward, AlertCircle, Minimize2, Maximize2, Files, CheckSquare, Wrench, Pin } from 'lucide-react';
+import { Copy, Trash2, SkipForward, AlertCircle, Minimize2, Maximize2, Files, CheckSquare, Wrench, Pin, CircleDot } from 'lucide-react';
 import { useWorkflowStore } from '../store/workflowStore';
 import Tooltip from './Tooltip';
 
@@ -9,11 +9,13 @@ interface NodeMenuBarProps {
   isMinimized?: boolean;
   isTest?: boolean;
   isPinned?: boolean;
+  breakpoint?: boolean;
 }
 
-export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized, isTest, isPinned }: NodeMenuBarProps) {
+export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized, isTest, isPinned, breakpoint }: NodeMenuBarProps) {
   // Ensure isPinned is always a boolean
   const pinned = isPinned ?? false;
+  const hasBreakpoint = breakpoint ?? false;
   const {
     copyNode,
     duplicateNode,
@@ -21,55 +23,98 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized,
     toggleBypass,
     toggleMinimize,
     togglePin,
+    toggleBreakpoint,
     updateNodeData,
+    selectedNodeIds,
   } = useWorkflowStore();
+
+  // Check if multiple nodes are selected
+  const hasMultipleSelection = selectedNodeIds.size > 1;
+  const isNodeSelected = selectedNodeIds.has(nodeId);
+  
+  // If multiple nodes are selected, use all selected node IDs; otherwise use just this node
+  const getTargetNodeIds = (): string[] => {
+    if (hasMultipleSelection && isNodeSelected) {
+      return Array.from(selectedNodeIds);
+    }
+    return [nodeId];
+  };
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    copyNode(nodeId);
+    const targetIds = getTargetNodeIds();
+    copyNode(targetIds.length > 1 ? targetIds : targetIds[0]);
   };
 
   const handleDuplicate = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    duplicateNode(nodeId);
+    const targetIds = getTargetNodeIds();
+    duplicateNode(targetIds.length > 1 ? targetIds : targetIds[0]);
   };
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    deleteNode(nodeId);
+    const targetIds = getTargetNodeIds();
+    deleteNode(targetIds.length > 1 ? targetIds : targetIds[0]);
   };
 
   const handleBypass = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    toggleBypass(nodeId);
+    const targetIds = getTargetNodeIds();
+    toggleBypass(targetIds.length > 1 ? targetIds : targetIds[0]);
   };
 
   const handleFailSilently = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    updateNodeData(nodeId, { failSilently: !failSilently });
+    const targetIds = getTargetNodeIds();
+    // For bulk operations, toggle based on current node's state
+    targetIds.forEach((id) => {
+      const node = useWorkflowStore.getState().nodes.find((n) => n.id === id);
+      if (node) {
+        const currentFailSilently = node.data.failSilently || false;
+        updateNodeData(id, { failSilently: !currentFailSilently });
+      }
+    });
   };
 
   const handleMinMax = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    toggleMinimize(nodeId);
+    const targetIds = getTargetNodeIds();
+    toggleMinimize(targetIds.length > 1 ? targetIds : targetIds[0]);
   };
 
   const handleToggleIsTest = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    updateNodeData(nodeId, { isTest: !isTest });
+    const targetIds = getTargetNodeIds();
+    // For bulk operations, toggle based on current node's state
+    targetIds.forEach((id) => {
+      const node = useWorkflowStore.getState().nodes.find((n) => n.id === id);
+      if (node) {
+        const currentIsTest = node.data.isTest || false;
+        updateNodeData(id, { isTest: !currentIsTest });
+      }
+    });
   };
 
   const handlePin = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
-    togglePin(nodeId);
+    const targetIds = getTargetNodeIds();
+    togglePin(targetIds.length > 1 ? targetIds : targetIds[0]);
+  };
+
+  const handleBreakpoint = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    const targetIds = getTargetNodeIds();
+    toggleBreakpoint(targetIds.length > 1 ? targetIds : targetIds[0]);
   };
 
   return (
@@ -117,6 +162,16 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized,
           }`}
         >
           <Pin size={14} />
+        </button>
+      </Tooltip>
+      <Tooltip content={hasBreakpoint ? 'Remove Breakpoint' : 'Add Breakpoint'}>
+        <button
+          onClick={handleBreakpoint}
+          className={`p-1.5 rounded hover:bg-gray-700 transition-colors ${
+            hasBreakpoint ? 'text-orange-500' : 'text-gray-400'
+          }`}
+        >
+          <CircleDot size={14} />
         </button>
       </Tooltip>
       <div className="w-px h-4 bg-gray-700 mx-0.5" />

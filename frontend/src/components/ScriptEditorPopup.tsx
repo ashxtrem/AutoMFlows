@@ -88,6 +88,8 @@ export default function ScriptEditorPopup({ node, onSave, onClose }: ScriptEdito
 
           <div className="mt-4 p-3 bg-blue-900 border border-blue-700 rounded text-xs text-blue-200">
             <strong>Info:</strong> This script will be injected into all pages before they load. It runs automatically on every page navigation.
+            <br />
+            <strong>Variable Interpolation:</strong> You can use variables from previous nodes using <code className="bg-blue-800 px-1 rounded">${'{'}data.nodeId.property{'}'}</code> or <code className="bg-blue-800 px-1 rounded">${'{'}variables.variableName{'}'}</code> syntax.
           </div>
 
           <div className="mt-3 p-3 bg-gray-900 border border-gray-700 rounded text-xs text-gray-300">
@@ -98,9 +100,9 @@ Object.defineProperty(navigator, 'userAgent', {
   get: () => 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1'
 });
 
-// Set custom properties
-window.sso = 'your-sso-token';
-window.token = 'your-token';
+// Set custom properties with variable interpolation
+window.ssoToken = "\${data.ssoToken}";  // Uses ssoToken from previous node
+window.token = "\${variables.authToken}";  // Uses variable from context
 
 // Set cookies
 document.cookie = 'sessionId=abc123; path=/';

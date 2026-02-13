@@ -38,14 +38,15 @@
     },
     {
       "id": "navigate-1",
-      "type": "navigate",
+      "type": "navigation",
       "position": {
         "x": 596.2796009086089,
         "y": 37.542573009253374
       },
       "data": {
-        "type": "navigate",
+        "type": "navigation",
         "label": "Navigate to Bot Detection Site",
+        "action": "navigate",
         "url": "https://bot.sannysoft.com/",
         "timeout": 30000,
         "waitUntil": "load",
@@ -72,14 +73,15 @@
     },
     {
       "id": "getText-1",
-      "type": "getText",
+      "type": "elementQuery",
       "position": {
         "x": 1100,
         "y": 200
       },
       "data": {
-        "type": "getText",
+        "type": "elementQuery",
         "label": "Get WebDriver Result",
+        "action": "getText",
         "selector": "#webdriver-result",
         "selectorType": "css",
         "outputVariable": "webdriverResult",

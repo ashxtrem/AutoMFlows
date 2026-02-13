@@ -1,6 +1,12 @@
-import { create } from 'zustand';
+import { createWithEqualityFn } from 'zustand/traditional';
+import { playNotificationSound } from '../utils/audioNotifications';
 
 export type NotificationType = 'success' | 'error' | 'info' | 'settings';
+
+export interface NotificationAction {
+  label: string;
+  onClick: () => void;
+}
 
 export interface Notification {
   id: string;
@@ -9,6 +15,7 @@ export interface Notification {
   message?: string;
   details?: string[];
   duration?: number; // Auto-dismiss duration in milliseconds (optional, defaults based on type)
+  action?: NotificationAction;
 }
 
 interface NotificationState {
@@ -33,7 +40,7 @@ const getDefaultDuration = (type: NotificationType): number => {
   }
 };
 
-export const useNotificationStore = create<NotificationState>((set) => ({
+export const useNotificationStore = createWithEqualityFn<NotificationState>((set) => ({
   notifications: [],
 
   addNotification: (notification) => {
@@ -47,6 +54,18 @@ export const useNotificationStore = create<NotificationState>((set) => ({
     set((state) => ({
       notifications: [...state.notifications, newNotification],
     }));
+
+    // Play audio notification if enabled
+    try {
+      const audioNotifications = localStorage.getItem('automflows_settings_notifications_audioNotifications');
+      if (audioNotifications !== 'false') { // Default to true
+        playNotificationSound().catch(() => {
+          // Silently fail if audio can't play
+        });
+      }
+    } catch (error) {
+      // Silently fail if localStorage not available
+    }
 
     return id;
   },

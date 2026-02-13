@@ -1,4 +1,4 @@
-import { BaseNode, Workflow } from '@automflows/shared';
+import { BaseNode, Workflow, ExecutionEventType } from '@automflows/shared';
 import { NodeHandler } from '../../backend/src/nodes/base';
 import { ContextManager } from '../../backend/src/engine/context';
 import { WorkflowParser } from '../../backend/src/engine/parser';
@@ -139,8 +139,16 @@ export class RunReusableHandler implements NodeHandler {
       executionOrder = result;
     }
     
-    // Get property input resolver from context
+    // Get property input resolver and trace logging functions from context
     const resolvePropertyInputs = context.getData('resolvePropertyInputs') as ((node: BaseNode) => BaseNode) | undefined;
+    const traceLog = context.getData('traceLog') as ((message: string) => void) | undefined;
+    const emitEvent = context.getData('emitEvent') as ((event: any) => void) | undefined;
+    const setCurrentNodeId = context.getData('setCurrentNodeId') as ((nodeId: string | null) => void) | undefined;
+    const getCurrentNodeId = context.getData('getCurrentNodeId') as (() => string | null) | undefined;
+    const traceLogsEnabled = context.getData('traceLogs') as boolean | undefined;
+    
+    // Store original node ID to restore after reusable flow execution
+    const originalNodeId = getCurrentNodeId ? getCurrentNodeId() : null;
     
     // Execute nodes in order
     for (const nodeId of executionOrder) {
@@ -155,6 +163,45 @@ export class RunReusableHandler implements NodeHandler {
         continue;
       }
       
+      // Check if node is bypassed
+      const nodeDataInReusable = node.data as any;
+      if (nodeDataInReusable?.bypass === true) {
+        if (traceLog) {
+          traceLog(`[TRACE] Skipping bypassed node in reusable flow: ${nodeId} (type: ${node.type})`);
+        }
+        if (emitEvent) {
+          emitEvent({
+            type: ExecutionEventType.NODE_COMPLETE,
+            nodeId,
+            message: 'Node bypassed',
+            timestamp: Date.now(),
+          });
+        }
+        continue;
+      }
+      
+      // Set current node ID for trace logging
+      if (setCurrentNodeId) {
+        setCurrentNodeId(nodeId);
+      }
+      
+      // Trace log node start
+      if (traceLog) {
+        traceLog(`[TRACE] Starting node in reusable flow "${data.contextName}": ${nodeId} (type: ${node.type})`);
+        if (traceLogsEnabled && node.data) {
+          traceLog(`[TRACE] Node config: ${JSON.stringify(node.data, null, 2)}`);
+        }
+      }
+      
+      // Emit node start event
+      if (emitEvent) {
+        emitEvent({
+          type: ExecutionEventType.NODE_START,
+          nodeId,
+          timestamp: Date.now(),
+        });
+      }
+      
       // Resolve property input connections if resolver is available
       let nodeToExecute = node;
       if (resolvePropertyInputs) {
@@ -167,8 +214,64 @@ export class RunReusableHandler implements NodeHandler {
         throw new Error(`No handler found for node type: ${nodeToExecute.type} in reusable flow`);
       }
       
-      // Execute node with the same context
-      await handler.execute(nodeToExecute, context);
+      try {
+        // Execute node with the same context
+        if (traceLog) {
+          traceLog(`[TRACE] Executing node handler for: ${nodeToExecute.type}`);
+        }
+        await handler.execute(nodeToExecute, context);
+        
+        // Trace log node completion
+        if (traceLog) {
+          traceLog(`[TRACE] Node ${nodeId} completed successfully`);
+        }
+        
+        // Emit node complete event
+        if (emitEvent) {
+          emitEvent({
+            type: ExecutionEventType.NODE_COMPLETE,
+            nodeId,
+            timestamp: Date.now(),
+          });
+        }
+      } catch (error: any) {
+        // Trace log node error
+        if (traceLog) {
+          traceLog(`[TRACE] Node ${nodeId} failed: ${error.message}`);
+        }
+        
+        // Check if node has failSilently enabled
+        const nodeDataInReusable = nodeToExecute.data as any;
+        const failSilently = nodeDataInReusable?.failSilently === true;
+        
+        // Emit node error event
+        if (emitEvent) {
+          emitEvent({
+            type: ExecutionEventType.NODE_ERROR,
+            nodeId,
+            message: error.message,
+            failSilently: failSilently,
+            timestamp: Date.now(),
+          });
+        }
+        
+        // If failSilently is enabled, continue execution instead of throwing
+        if (failSilently) {
+          if (traceLog) {
+            traceLog(`[TRACE] Node ${nodeId} failed silently in reusable flow, continuing execution`);
+          }
+          // Continue to next node instead of throwing
+          continue;
+        }
+        
+        // Re-throw error to propagate it
+        throw error;
+      }
+    }
+    
+    // Restore original node ID
+    if (setCurrentNodeId) {
+      setCurrentNodeId(originalNodeId);
     }
   }
 }

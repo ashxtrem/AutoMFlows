@@ -1,13 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { Copy, Trash2, Palette, SkipForward, ChevronRight, Settings, Plug, RotateCw } from 'lucide-react';
+import { Copy, Trash2, Palette, SkipForward, ChevronRight, Settings, Plug, RotateCw, Plus, LayoutGrid, FolderPlus } from 'lucide-react';
 import { useWorkflowStore } from '../store/workflowStore';
+import { useSettingsStore } from '../store/settingsStore';
 import { getNodeProperties, isPropertyInputConnection } from '../utils/nodeProperties';
 
 interface ContextMenuProps {
   x: number;
   y: number;
   nodeId?: string;
+  flowPosition?: { x: number; y: number };
+  screenPosition?: { x: number; y: number };
   onClose: () => void;
+  onAddNode?: () => void;
 }
 
 const PRESET_COLORS = [
@@ -25,13 +29,19 @@ const PRESET_COLORS = [
   { name: 'Default', value: '#1f2937' },
 ];
 
-export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps) {
+export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition: _screenPosition, onClose, onAddNode }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const colorSubmenuRef = useRef<HTMLDivElement>(null);
   const convertInputSubmenuRef = useRef<HTMLDivElement>(null);
+  const arrangeSubmenuRef = useRef<HTMLDivElement>(null);
   const [showColorSubmenu, setShowColorSubmenu] = useState(false);
   const [showConvertInputSubmenu, setShowConvertInputSubmenu] = useState(false);
-  const { copyNode, pasteNode, deleteNode, toggleBypass, clipboard, setNodeColor, nodes, setSelectedNode, convertPropertyToInput, convertInputToProperty, reloadNode } = useWorkflowStore();
+  const [showArrangeSubmenu, setShowArrangeSubmenu] = useState(false);
+  const { copyNode, pasteNode, deleteNode, toggleBypass, clipboard, setNodeColor, nodes, setSelectedNode, convertPropertyToInput, convertInputToProperty, reloadNode, selectedNodeIds, arrangeSelectedNodes, createGroup } = useWorkflowStore();
+  const { canvas } = useSettingsStore();
+  
+  // Check if multiple nodes are selected (need 2+ for arrange)
+  const hasMultipleSelection = selectedNodeIds.size >= 2;
   
   // Get current node background color if nodeId exists
   const currentNode = nodeId ? nodes.find(n => n.id === nodeId) : null;
@@ -159,10 +169,47 @@ export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps)
   }, [showConvertInputSubmenu, submenuOnRight]);
 
   useEffect(() => {
+    if (showArrangeSubmenu && arrangeSubmenuRef.current) {
+      requestAnimationFrame(() => {
+        if (arrangeSubmenuRef.current) {
+          const rect = arrangeSubmenuRef.current.getBoundingClientRect();
+          const viewportHeight = window.innerHeight;
+          const viewportWidth = window.innerWidth;
+          let offsetY = 0;
+          
+          // Check if submenu goes below viewport
+          if (rect.bottom > viewportHeight) {
+            offsetY = viewportHeight - rect.bottom - 10;
+          }
+          
+          // Check if submenu goes above viewport
+          if (rect.top < 0) {
+            offsetY = -rect.top + 10;
+          }
+          
+          // Also check if submenu goes off right/left edge
+          if (submenuOnRight && rect.right > viewportWidth) {
+            // Switch to left side if needed
+            setSubmenuOnRight(false);
+          } else if (!submenuOnRight && rect.left < 0) {
+            // Switch to right side if needed
+            setSubmenuOnRight(true);
+          }
+          
+          setSubmenuY(offsetY);
+        }
+      });
+    }
+  }, [showArrangeSubmenu, submenuOnRight]);
+
+  useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        onClose();
-      }
+      // Use a small delay to allow button clicks to process first
+      setTimeout(() => {
+        if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+          onClose();
+        }
+      }, 0);
     };
 
     const handleEscape = (e: KeyboardEvent) => {
@@ -171,17 +218,23 @@ export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps)
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
+    // Use 'click' instead of 'mousedown' to allow button clicks to process first
+    document.addEventListener('click', handleClickOutside, true);
     document.addEventListener('keydown', handleEscape);
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('click', handleClickOutside, true);
       document.removeEventListener('keydown', handleEscape);
     };
   }, [onClose]);
 
   const handleCopy = () => {
-    if (nodeId) {
+    // If multiple nodes are selected, copy all of them; otherwise copy the single node
+    if (selectedNodeIds.size > 1 && selectedNodeIds.has(nodeId || '')) {
+      // Multiple nodes selected: copy all selected nodes
+      copyNode(Array.from(selectedNodeIds));
+    } else if (nodeId) {
+      // Single node: copy just this node
       copyNode(nodeId);
     }
     onClose();
@@ -189,9 +242,19 @@ export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps)
 
   const handlePaste = () => {
     if (clipboard) {
-      pasteNode({ x, y });
+      // Use flow position if available (for empty canvas), otherwise use screen coordinates
+      // Note: For node context menu, flowPosition won't be set, so it falls back to x,y
+      // which should be converted by the caller, but for now we'll use flowPosition when available
+      const position = flowPosition || { x, y };
+      pasteNode(position);
     }
     onClose();
+  };
+
+  const handleAddNode = () => {
+    if (onAddNode) {
+      onAddNode();
+    }
   };
 
   const handleDelete = () => {
@@ -216,14 +279,24 @@ export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps)
     onClose();
   };
 
-  const handleProperties = () => {
+  const handleProperties = (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     if (nodeId) {
       const node = nodes.find(n => n.id === nodeId);
       if (node) {
+        console.log('[ContextMenu] Opening properties for node:', node.id, node.data.type);
         setSelectedNode(node);
+      } else {
+        console.warn('[ContextMenu] Node not found:', nodeId);
       }
     }
-    onClose();
+    // Delay closing to ensure state update completes
+    setTimeout(() => {
+      onClose();
+    }, 10);
   };
 
   const handlePropertyConversion = (propertyName: string) => {
@@ -248,6 +321,22 @@ export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps)
     onClose();
   };
 
+  const handleArrange = (mode: 'horizontal' | 'vertical') => {
+    if (hasMultipleSelection) {
+      arrangeSelectedNodes(mode, canvas.nodesPerRowColumn);
+    }
+    setShowArrangeSubmenu(false);
+    onClose();
+  };
+
+  const handleCreateGroup = () => {
+    if (hasMultipleSelection) {
+      const nodeIds = Array.from(selectedNodeIds);
+      createGroup(nodeIds);
+    }
+    onClose();
+  };
+
   // Get available properties for the node
   const availableProperties = nodeId ? (() => {
     const node = nodes.find(n => n.id === nodeId);
@@ -267,9 +356,11 @@ export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps)
         const relatedTarget = e.relatedTarget as HTMLElement;
         if (!relatedTarget || (!menuRef.current?.contains(relatedTarget) && 
             !colorSubmenuRef.current?.contains(relatedTarget) && 
-            !convertInputSubmenuRef.current?.contains(relatedTarget))) {
+            !convertInputSubmenuRef.current?.contains(relatedTarget) &&
+            !arrangeSubmenuRef.current?.contains(relatedTarget))) {
           setShowColorSubmenu(false);
           setShowConvertInputSubmenu(false);
+          setShowArrangeSubmenu(false);
         }
       }}
     >
@@ -407,6 +498,63 @@ export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps)
                 </div>
               )}
             </div>
+            {hasMultipleSelection && (
+              <>
+                <button
+                  onClick={handleCreateGroup}
+                  className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-2"
+                >
+                  <FolderPlus size={16} />
+                  Group
+                </button>
+                <div
+                  className="relative"
+                  onMouseEnter={() => setShowArrangeSubmenu(true)}
+                  onMouseLeave={(e) => {
+                    // Only close if mouse is not moving to submenu
+                    const relatedTarget = e.relatedTarget as HTMLElement;
+                    if (!relatedTarget || !arrangeSubmenuRef.current?.contains(relatedTarget)) {
+                      setShowArrangeSubmenu(false);
+                    }
+                  }}
+                >
+                  <button
+                    className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center justify-between gap-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <LayoutGrid size={16} />
+                      Arrange
+                    </div>
+                    <ChevronRight size={14} />
+                  </button>
+                  {showArrangeSubmenu && (
+                    <div
+                      ref={arrangeSubmenuRef}
+                      className="absolute top-0 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 py-2 min-w-[200px]"
+                      style={{ 
+                        [submenuOnRight ? 'left' : 'right']: '100%',
+                        transform: submenuY !== 0 ? `translateY(${submenuY}px)` : undefined
+                      }}
+                      onMouseEnter={() => setShowArrangeSubmenu(true)}
+                      onMouseLeave={() => setShowArrangeSubmenu(false)}
+                    >
+                      <button
+                        onClick={() => handleArrange('horizontal')}
+                        className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-2"
+                      >
+                        Horizontal
+                      </button>
+                      <button
+                        onClick={() => handleArrange('vertical')}
+                        className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-2"
+                      >
+                        Vertical
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
             <div className="border-t border-gray-700 my-1" />
             <button
               onClick={handleDelete}
@@ -418,6 +566,13 @@ export default function ContextMenu({ x, y, nodeId, onClose }: ContextMenuProps)
           </>
         ) : (
           <>
+            <button
+              onClick={handleAddNode}
+              className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-2"
+            >
+              <Plus size={16} />
+              Add Node
+            </button>
             {clipboard && (
               <button
                 onClick={handlePaste}

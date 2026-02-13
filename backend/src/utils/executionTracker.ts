@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { Workflow, BaseNode } from '@automflows/shared';
+import { Workflow, BaseNode, PageDebugInfo } from '@automflows/shared';
 import { resolveFromProjectRoot } from './pathUtils';
 
 export interface NodeExecutionEvent {
@@ -14,8 +14,11 @@ export interface NodeExecutionEvent {
   screenshotPaths?: {
     pre?: string;
     post?: string;
+    failure?: string;
   };
   videoPath?: string;
+  traceLogs?: string[];
+  debugInfo?: PageDebugInfo;
 }
 
 export interface ExecutionMetadata {
@@ -40,12 +43,13 @@ export class ExecutionTracker {
   constructor(
     executionId: string,
     workflow: Workflow,
-    outputPath: string = './output'
+    outputPath: string = './output',
+    workflowFileName?: string
   ) {
     this.workflow = workflow; // Store workflow for later use
     
-    // Get workflow name from workflow file or use default
-    const workflowName = this.extractWorkflowName(workflow);
+    // Get workflow name from provided filename or extract from workflow
+    const workflowName = this.extractWorkflowName(workflow, workflowFileName);
     const timestamp = Date.now();
     const folderName = `${workflowName}-${timestamp}`;
     
@@ -78,7 +82,12 @@ export class ExecutionTracker {
     };
   }
 
-  private extractWorkflowName(workflow: Workflow): string {
+  private extractWorkflowName(workflow: Workflow, workflowFileName?: string): string {
+    // Use provided filename if available (already sanitized from frontend)
+    if (workflowFileName) {
+      // Sanitize for filesystem compatibility (remove .json extension if present, replace invalid chars)
+      return workflowFileName.replace(/\.json$/i, '').replace(/[^a-zA-Z0-9-_]/g, '-').toLowerCase() || 'workflow';
+    }
     // Try to find a Start node and use its label, or use default
     const startNode = workflow.nodes.find(node => node.type === 'start');
     if (startNode && (startNode.data as any)?.label) {
@@ -119,12 +128,18 @@ export class ExecutionTracker {
     }
   }
 
-  recordNodeError(nodeId: string, error: string): void {
+  recordNodeError(nodeId: string, error: string, traceLogs?: string[], debugInfo?: PageDebugInfo): void {
     const nodeEvent = this.metadata.nodes.find(n => n.nodeId === nodeId);
     if (nodeEvent) {
       nodeEvent.endTime = Date.now();
       nodeEvent.status = 'error';
       nodeEvent.error = error;
+      if (traceLogs) {
+        nodeEvent.traceLogs = traceLogs;
+      }
+      if (debugInfo) {
+        nodeEvent.debugInfo = debugInfo;
+      }
     }
   }
 
@@ -136,7 +151,7 @@ export class ExecutionTracker {
     }
   }
 
-  recordScreenshot(nodeId: string, screenshotPath: string, timing: 'pre' | 'post'): void {
+  recordScreenshot(nodeId: string, screenshotPath: string, timing: 'pre' | 'post' | 'failure'): void {
     const nodeEvent = this.metadata.nodes.find(n => n.nodeId === nodeId);
     if (nodeEvent) {
       if (!nodeEvent.screenshotPaths) {

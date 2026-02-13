@@ -29,14 +29,15 @@
     },
     {
       "id": "navigate-2",
-      "type": "navigate",
+      "type": "navigation",
       "position": {
         "x": 600,
         "y": 200
       },
       "data": {
-        "type": "navigate",
+        "type": "navigation",
         "label": "Navigate to Login Page",
+        "action": "navigate",
         "url": "https://practicetestautomation.com/practice-test-login/",
         "timeout": 30000,
         "waitUntil": "networkidle"
@@ -76,14 +77,15 @@
     },
     {
       "id": "click-submit-2",
-      "type": "click",
+      "type": "action",
       "position": {
         "x": 1350,
         "y": 200
       },
       "data": {
-        "type": "click",
+        "type": "action",
         "label": "Click Submit",
+        "action": "click",
         "selector": "#submit",
         "selectorType": "css",
         "timeout": 30000

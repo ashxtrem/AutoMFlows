@@ -1,0 +1,948 @@
+{
+	"info": {
+		"_postman_id": "automflows-api-collection",
+		"name": "AutoMFlows API Collection",
+		"description": "Complete API collection for AutoMFlows workflow automation platform",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Workflow Execution",
+			"item": [
+				{
+					"name": "Execute - Single Mode",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"workflow\": {\n    \"nodes\": [\n      {\n        \"id\": \"start-1\",\n        \"type\": \"start\",\n        \"position\": { \"x\": 0, \"y\": 0 },\n        \"data\": {}\n      }\n    ],\n    \"edges\": []\n  },\n  \"executionMode\": \"single\",\n  \"workflowFileName\": \"my-workflow.json\",\n  \"traceLogs\": false,\n  \"recordSession\": false,\n  \"screenshotConfig\": {\n    \"enabled\": false\n  },\n  \"reportConfig\": {\n    \"enabled\": false,\n    \"reportTypes\": [\"html\"]\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/execute",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "execute"]
+						},
+						"description": "Execute a single workflow"
+					}
+				},
+				{
+					"name": "Execute - Parallel Mode (Folder)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"folderPath\": \"./tests/workflows/sample\",\n  \"executionMode\": \"parallel\",\n  \"workers\": 4,\n  \"recursive\": true,\n  \"pattern\": \"*.json\",\n  \"outputPath\": \"./output\",\n  \"traceLogs\": false,\n  \"recordSession\": false,\n  \"startNodeOverrides\": {\n    \"recordSession\": false,\n    \"screenshotAllNodes\": false\n  }\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/execute",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "execute"]
+						},
+						"description": "Execute multiple workflows from a folder in parallel"
+					}
+				},
+				{
+					"name": "Execute - Parallel Mode (Workflows Array)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"workflows\": [\n    {\n      \"nodes\": [\n        {\n          \"id\": \"start-1\",\n          \"type\": \"start\",\n          \"position\": { \"x\": 0, \"y\": 0 },\n          \"data\": {}\n        }\n      ],\n      \"edges\": []\n    },\n    {\n      \"nodes\": [\n        {\n          \"id\": \"start-2\",\n          \"type\": \"start\",\n          \"position\": { \"x\": 0, \"y\": 0 },\n          \"data\": {}\n        }\n      ],\n      \"edges\": []\n    }\n  ],\n  \"executionMode\": \"parallel\",\n  \"workers\": 2\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/execute",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "execute"]
+						},
+						"description": "Execute multiple workflows from an array in parallel"
+					}
+				},
+				{
+					"name": "Execute - Parallel Mode (Multipart Files)",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "files",
+									"type": "file",
+									"src": []
+								},
+								{
+									"key": "workers",
+									"value": "4",
+									"type": "text"
+								},
+								{
+									"key": "traceLogs",
+									"value": "false",
+									"type": "text"
+								},
+								{
+									"key": "recordSession",
+									"value": "false",
+									"type": "text"
+								},
+								{
+									"key": "outputPath",
+									"value": "./output",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/execute",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "execute"]
+						},
+						"description": "Execute multiple workflows by uploading files via multipart/form-data"
+					}
+				}
+			]
+		},
+		{
+			"name": "Batch Management",
+			"item": [
+				{
+					"name": "Get Batch Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/execution/batch/{{batchId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "execution", "batch", "{{batchId}}"]
+						},
+						"description": "Get the status of a batch execution"
+					}
+				},
+				{
+					"name": "Get Batch History",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/executions/batches?limit=20&offset=0",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "executions", "batches"],
+							"query": [
+								{
+									"key": "status",
+									"value": "completed",
+									"description": "Filter by status: running, completed, error, stopped"
+								},
+								{
+									"key": "limit",
+									"value": "20",
+									"description": "Maximum number of batches to return"
+								},
+								{
+									"key": "offset",
+									"value": "0",
+									"description": "Number of batches to skip"
+								}
+							]
+						},
+						"description": "Get paginated list of batch executions with optional status filter"
+					}
+				},
+				{
+					"name": "Stop Batch",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/execution/batch/{{batchId}}/stop",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "execution", "batch", "{{batchId}}", "stop"]
+						},
+						"description": "Stop a running batch execution"
+					}
+				},
+				{
+					"name": "Clear All Batches",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/executions/batches/clear",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "executions", "batches", "clear"]
+						},
+						"description": "Delete all batches and executions from the database. Warning: This action cannot be undone."
+					}
+				}
+			]
+		},
+		{
+			"name": "Execution Control",
+			"item": [
+				{
+					"name": "Get Execution Status by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/execution/{{executionId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "execution", "{{executionId}}"]
+						},
+						"description": "Get status of a specific execution by ID"
+					}
+				},
+				{
+					"name": "Get Execution Status (Most Recent)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/execution/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "execution", "status"]
+						},
+						"description": "Get status of most recent execution (backward compatibility)"
+					}
+				},
+				{
+					"name": "Get Execution Status by Query Param",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/execution/status?executionId={{executionId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "execution", "status"],
+							"query": [
+								{
+									"key": "executionId",
+									"value": "{{executionId}}"
+								}
+							]
+						},
+						"description": "Get execution status by ID via query parameter"
+					}
+				},
+				{
+					"name": "List Active Executions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/executions/active",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "executions", "active"]
+						},
+						"description": "Get list of all currently active workflow executions"
+					}
+				},
+				{
+					"name": "Stop Execution",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"executionId\": \"{{executionId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/execution/stop",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "execution", "stop"]
+						},
+						"description": "Stop a specific execution by ID or most recent execution if executionId not provided"
+					}
+				},
+				{
+					"name": "Stop All Executions",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/execution/stop-all",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "execution", "stop-all"]
+						},
+						"description": "Stop all running batches and cancel all queued workflows"
+					}
+				},
+				{
+					"name": "Continue Execution",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"executionId\": \"{{executionId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/execution/continue",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "execution", "continue"]
+						},
+						"description": "Continue a paused execution"
+					}
+				},
+				{
+					"name": "Toggle Trace Logs",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"enabled\": true,\n  \"executionId\": \"{{executionId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/execution/trace-logs",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "execution", "trace-logs"]
+						},
+						"description": "Enable or disable trace logs for an execution"
+					}
+				},
+				{
+					"name": "Pause Control",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"action\": \"continue\",\n  \"executionId\": \"{{executionId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/execution/pause-control",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "execution", "pause-control"]
+						},
+						"description": "Control a paused execution. Actions: continue, stop, skip, continueWithoutBreakpoint"
+					}
+				},
+				{
+					"name": "Update Workflow During Execution",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"workflow\": {\n    \"nodes\": [],\n    \"edges\": []\n  },\n  \"executionId\": \"{{executionId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/execution/update-workflow",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "execution", "update-workflow"]
+						},
+						"description": "Update workflow definition while execution is paused at a breakpoint"
+					}
+				},
+				{
+					"name": "Capture DOM at Breakpoint",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"executionId\": \"{{executionId}}\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/execution/capture-dom",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "execution", "capture-dom"]
+						},
+						"description": "Capture DOM debug information when execution is paused at a breakpoint"
+					}
+				}
+			]
+		},
+		{
+			"name": "Selector Finder",
+			"item": [
+				{
+					"name": "Start Selector Finder",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nodeId\": \"click-1\",\n  \"fieldName\": \"selector\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/selector-finder/start",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "selector-finder", "start"]
+						},
+						"description": "Start a selector finder session to help identify selectors for workflow nodes"
+					}
+				},
+				{
+					"name": "Stop Selector Finder",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/selector-finder/stop",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "selector-finder", "stop"]
+						},
+						"description": "Close the active selector finder session and browser"
+					}
+				},
+				{
+					"name": "Get Selector Finder Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/selector-finder/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "selector-finder", "status"]
+						},
+						"description": "Check if selector finder session is active"
+					}
+				},
+				{
+					"name": "Submit Selected Selector",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"selectors\": [\n    {\n      \"selector\": \"button.submit\",\n      \"selectorType\": \"css\",\n      \"confidence\": 0.95,\n      \"reason\": \"High confidence CSS selector\"\n    }\n  ],\n  \"selectedIndex\": 0,\n  \"nodeId\": \"click-1\",\n  \"fieldName\": \"selector\"\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/selector-finder/selectors",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "selector-finder", "selectors"]
+						},
+						"description": "Submit the selected selector option to update the node field"
+					}
+				},
+				{
+					"name": "Generate Selectors",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json"
+							},
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"nodeId\": \"click-1\",\n  \"fieldName\": \"selector\",\n  \"elementInfo\": {}\n}"
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/selector-finder/generate",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "selector-finder", "generate"]
+						},
+						"description": "Initiate selector generation for clicked element (called from browser context)"
+					}
+				}
+			]
+		},
+		{
+			"name": "Builder Mode",
+			"item": [
+				{
+					"name": "Start Builder Mode",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/builder-mode/start",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "builder-mode", "start"]
+						},
+						"description": "Start builder mode to record user actions and generate workflow nodes"
+					}
+				},
+				{
+					"name": "Stop Builder Mode",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/builder-mode/stop",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "builder-mode", "stop"]
+						},
+						"description": "Stop builder mode and stop recording actions"
+					}
+				},
+				{
+					"name": "Get Builder Mode Status",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/builder-mode/status",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "builder-mode", "status"]
+						},
+						"description": "Check if builder mode is active and if recording is in progress"
+					}
+				},
+				{
+					"name": "Get Recorded Actions",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/builder-mode/actions",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "builder-mode", "actions"]
+						},
+						"description": "Retrieve all actions recorded during builder mode session"
+					}
+				},
+				{
+					"name": "Reset Recorded Actions",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/builder-mode/actions/reset",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "builder-mode", "actions", "reset"]
+						},
+						"description": "Clear all recorded actions from builder mode session"
+					}
+				},
+				{
+					"name": "Start Webhook Listening",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/builder-mode/webhook/start",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "builder-mode", "webhook", "start"]
+						},
+						"description": "Start listening for webhook events to record actions in builder mode"
+					}
+				},
+				{
+					"name": "Stop Webhook Listening",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/workflows/builder-mode/webhook/stop",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "workflows", "builder-mode", "webhook", "stop"]
+						},
+						"description": "Stop listening for webhook events and stop recording actions"
+					}
+				}
+			]
+		},
+		{
+			"name": "Reports",
+			"item": [
+				{
+					"name": "List Report Folders",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/list",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reports", "list"]
+						},
+						"description": "Retrieve list of all report folders with metadata"
+					}
+				},
+				{
+					"name": "Get Report Folder Files",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/{{folderName}}/files",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reports", "{{folderName}}", "files"]
+						},
+						"description": "Get list of files in a specific report folder"
+					}
+				},
+				{
+					"name": "Get Report File",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/{{folderName}}/{{reportType}}/{{filename}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reports", "{{folderName}}", "{{reportType}}", "{{filename}}"]
+						},
+						"description": "Get a specific report file (html, json, etc.)"
+					}
+				},
+				{
+					"name": "Get Screenshot",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/{{folderName}}/screenshots/{{filename}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reports", "{{folderName}}", "screenshots", "{{filename}}"]
+						},
+						"description": "Get a screenshot file from a report folder"
+					}
+				},
+				{
+					"name": "Delete Report Folder",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/{{folderName}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reports", "{{folderName}}"]
+						},
+						"description": "Delete a specific report folder"
+					}
+				},
+				{
+					"name": "Delete All Reports",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/reports/",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "reports", ""]
+						},
+						"description": "Delete all report folders"
+					}
+				}
+			]
+		},
+		{
+			"name": "Plugins",
+			"item": [
+				{
+					"name": "List All Plugins",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/plugins",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "plugins"]
+						},
+						"description": "Retrieve metadata for all loaded plugins"
+					}
+				},
+				{
+					"name": "Get Plugin Details",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/plugins/{{pluginId}}",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "plugins", "{{pluginId}}"]
+						},
+						"description": "Retrieve metadata for a specific plugin by ID"
+					}
+				}
+			]
+		},
+		{
+			"name": "Files",
+			"item": [
+				{
+					"name": "Read File",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "accept",
+								"value": "application/json"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/files/read?filePath=./tests/workflows/sample/allnodeusage.json",
+							"host": ["{{baseUrl}}"],
+							"path": ["api", "files", "read"],
+							"query": [
+								{
+									"key": "filePath",
+									"value": "./tests/workflows/sample/allnodeusage.json",
+									"description": "Path to file (relative or absolute)"
+								}
+							]
+						},
+						"description": "Read and parse file content from the filesystem"
+					}
+				}
+			]
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:3003",
+			"type": "string"
+		},
+		{
+			"key": "batchId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "executionId",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "folderName",
+			"value": "",
+			"type": "string"
+		},
+		{
+			"key": "pluginId",
+			"value": "",
+			"type": "string"
+		}
+	]
+}

@@ -1,12 +1,12 @@
 import { NodeType, BaseNode } from '@automflows/shared';
 import { NodeHandler, NodeHandlerMap } from './base';
 import { ContextManager } from '../engine/context';
-import { OpenBrowserHandler, NavigateHandler } from './browser';
-import { ClickHandler, TypeHandler } from './interaction';
-import { GetTextHandler, ScreenshotHandler, WaitHandler, IntValueHandler, StringValueHandler, BooleanValueHandler, InputValueHandler, VerifyHandler } from './utility';
+import { OpenBrowserHandler, NavigationHandler, ContextManipulateHandler } from './browser';
+import { TypeHandler, ActionHandler, FormInputHandler, KeyboardHandler, ScrollHandler, ElementQueryHandler, ScreenshotHandler, WaitHandler, IntValueHandler, StringValueHandler, BooleanValueHandler, InputValueHandler, VerifyHandler, StorageHandler, DialogHandler, DownloadHandler, IframeHandler } from './handlers';
 import { JavaScriptCodeHandler, LoopHandler } from './logic';
 import { ApiRequestHandler, ApiCurlHandler } from './api';
 import { LoadConfigFileHandler, SelectConfigFileHandler } from './config';
+import { DbConnectHandler, DbDisconnectHandler, DbQueryHandler } from './database';
 import { pluginRegistry } from '../plugins/registry';
 
 // Start node handler (no-op)
@@ -19,11 +19,19 @@ class StartHandler implements NodeHandler {
 const handlers: NodeHandlerMap = {
   [NodeType.START]: new StartHandler(),
   [NodeType.OPEN_BROWSER]: new OpenBrowserHandler(),
-  [NodeType.NAVIGATE]: new NavigateHandler(),
-  [NodeType.CLICK]: new ClickHandler(),
+  [NodeType.NAVIGATION]: new NavigationHandler(),
+  [NodeType.CONTEXT_MANIPULATE]: new ContextManipulateHandler(),
   [NodeType.TYPE]: new TypeHandler(),
-  [NodeType.GET_TEXT]: new GetTextHandler(),
+  [NodeType.ACTION]: new ActionHandler(),
+  [NodeType.ELEMENT_QUERY]: new ElementQueryHandler(),
+  [NodeType.FORM_INPUT]: new FormInputHandler(),
+  [NodeType.KEYBOARD]: new KeyboardHandler(),
+  [NodeType.SCROLL]: new ScrollHandler(),
   [NodeType.SCREENSHOT]: new ScreenshotHandler(),
+  [NodeType.STORAGE]: new StorageHandler(),
+  [NodeType.DIALOG]: new DialogHandler(),
+  [NodeType.DOWNLOAD]: new DownloadHandler(),
+  [NodeType.IFRAME]: new IframeHandler(),
   [NodeType.WAIT]: new WaitHandler(),
   [NodeType.JAVASCRIPT_CODE]: new JavaScriptCodeHandler(),
   [NodeType.LOOP]: new LoopHandler(),
@@ -36,6 +44,9 @@ const handlers: NodeHandlerMap = {
   [NodeType.API_CURL]: new ApiCurlHandler(),
   [NodeType.LOAD_CONFIG_FILE]: new LoadConfigFileHandler(),
   [NodeType.SELECT_CONFIG_FILE]: new SelectConfigFileHandler(),
+  [NodeType.DB_CONNECT]: new DbConnectHandler(),
+  [NodeType.DB_DISCONNECT]: new DbDisconnectHandler(),
+  [NodeType.DB_QUERY]: new DbQueryHandler(),
 };
 
 export function getNodeHandler(nodeType: NodeType | string): NodeHandler | undefined {
@@ -50,9 +61,11 @@ export function getNodeHandler(nodeType: NodeType | string): NodeHandler | undef
 
 export * from './base';
 export * from './browser';
-export * from './interaction';
-export * from './utility';
+export * from './interaction'; // Re-exports from handlers for backward compatibility
+export * from './utility'; // Re-exports from handlers for backward compatibility
+export * from './handlers';
 export * from './logic';
 export * from './api';
 export * from './config';
+export * from './database';
 

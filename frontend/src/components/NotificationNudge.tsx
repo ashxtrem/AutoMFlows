@@ -150,6 +150,18 @@ export default function NotificationNudge({ notification }: NotificationNudgePro
                     ))}
                   </ul>
                 )}
+                {notification.action && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      notification.action?.onClick();
+                      handleDismiss();
+                    }}
+                    className="mt-2 px-3 py-1.5 text-xs font-medium bg-white/20 hover:bg-white/30 text-white rounded transition-colors"
+                  >
+                    {notification.action.label}
+                  </button>
+                )}
               </div>
               <button
                 onClick={handleDismiss}

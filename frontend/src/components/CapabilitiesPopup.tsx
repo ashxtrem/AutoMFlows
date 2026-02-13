@@ -111,7 +111,13 @@ export default function CapabilitiesPopup({ node, onSave, onClose }: Capabilitie
     });
 
     // Save both capabilities and launchOptions
-    onSave({ capabilities: capabilitiesObj, launchOptions: launchOptionsObj });
+    // Include launchOptions even if empty so we can remove it from node if it was previously set
+    const saveData: { capabilities?: Record<string, any>, launchOptions?: Record<string, any> } = {
+      capabilities: capabilitiesObj,
+      launchOptions: launchOptionsObj
+    };
+    
+    onSave(saveData);
     onClose();
   };
 

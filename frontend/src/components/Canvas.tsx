@@ -1,16 +1,34 @@
-import { useCallback, useRef, useState, useEffect, useMemo } from 'react';
+import { useCallback, useRef, useEffect, useMemo, useState } from 'react';
 import ReactFlow, {
   Background,
+  BackgroundVariant,
   Controls,
   useReactFlow,
   Node,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { useWorkflowStore } from '../store/workflowStore';
+import { useSettingsStore } from '../store/settingsStore';
 import CustomNode from '../nodes/CustomNode';
 import CustomEdge from './CustomEdge';
 import ContextMenu from './ContextMenu';
+import CanvasSearchOverlay from './CanvasSearchOverlay';
+import NodeSearchOverlay from './NodeSearchOverlay';
+import GroupBoundary from './GroupBoundary';
 import { useShortcutNavigation } from '../hooks/useShortcutNavigation';
+import { filterValidEdges, suppressReactFlowWarnings } from '../utils/edgeValidation';
+import { useCanvasHandlers } from './Canvas/handlers';
+import { useNavigation } from './Canvas/navigation';
+import { useNodeSearch } from './Canvas/nodeSearch';
+import { useShortcuts } from './Canvas/shortcuts';
+import {
+  saveViewportToStorage,
+  getLastKnownViewport,
+  setLastKnownViewport,
+  getHasRunInitialFitView,
+  setHasRunInitialFitView,
+} from './Canvas/viewport';
+import { CanvasInnerProps } from './Canvas/types';
 
 const nodeTypes = {
   custom: CustomNode,
@@ -20,55 +38,100 @@ const edgeTypes = {
   default: CustomEdge,
 };
 
-// Module-level variable to track if initial fitView has run (persists across component remounts)
-// This is necessary because React.StrictMode in development causes remounts which reset refs
-let hasRunInitialFitViewGlobal = false;
-// Module-level variable to store the last known viewport (persists across StrictMode remounts)
-// This prevents viewport reset when React.StrictMode causes unexpected remounts
-let lastKnownViewport: { x: number; y: number; zoom: number } | null = null;
+// Module-level variable to store ReactFlow's setNodes function so workflowStore can use it
+// ReactFlow's setNodes accepts either Node[] or a function (nodes: Node[]) => Node[]
+type SetNodesFunction = (nodes: Node[] | ((nodes: Node[]) => Node[])) => void;
+let reactFlowSetNodes: SetNodesFunction | null = null;
 
-// LocalStorage key for persisting viewport across page refreshes
-const VIEWPORT_STORAGE_KEY = 'reactflow-viewport';
-
-// Helper functions for localStorage persistence
-const saveViewportToStorage = (viewport: { x: number; y: number; zoom: number }) => {
-  try {
-    localStorage.setItem(VIEWPORT_STORAGE_KEY, JSON.stringify(viewport));
-  } catch (error) {
-    // Ignore localStorage errors (e.g., quota exceeded, private browsing)
-    console.warn('Failed to save viewport to localStorage:', error);
-  }
+// Export getter function for workflowStore to access ReactFlow's setNodes
+export const getReactFlowSetNodes = (): SetNodesFunction | null => {
+  return reactFlowSetNodes;
 };
 
-const loadViewportFromStorage = (): { x: number; y: number; zoom: number } | null => {
-  try {
-    const stored = localStorage.getItem(VIEWPORT_STORAGE_KEY);
-    if (stored) {
-      const viewport = JSON.parse(stored);
-      // Validate viewport structure
-      if (viewport && typeof viewport.x === 'number' && typeof viewport.y === 'number' && typeof viewport.zoom === 'number') {
-        return viewport;
+// Custom FPS Counter Component - shows only current FPS
+function FPSCounterDisplay() {
+  const [fps, setFps] = useState(0);
+  const animationFrameRef = useRef<number>(0);
+
+  useEffect(() => {
+    let lastTime = performance.now();
+    let frameCount = 0;
+
+    const measureFPS = (currentTime: number) => {
+      frameCount++;
+      const elapsed = currentTime - lastTime;
+
+      // Update every 1 second for better stability/readability
+      if (elapsed >= 1000) {
+        const calculatedFps = Math.round((frameCount * 1000) / elapsed);
+        
+        // Remove the 75 cap to support 144Hz+ monitors
+        setFps(calculatedFps);
+        
+        frameCount = 0;
+        lastTime = currentTime;
       }
-    }
-  } catch (error) {
-    // Ignore localStorage errors
-    console.warn('Failed to load viewport from localStorage:', error);
-  }
-  return null;
-};
 
-interface CanvasInnerProps {
-  savedViewportRef: React.MutableRefObject<{ x: number; y: number; zoom: number } | null>;
-  reactFlowInstanceRef: React.MutableRefObject<ReturnType<typeof useReactFlow> | null>;
-  isFirstMountRef: React.MutableRefObject<boolean>;
-  hasRunInitialFitViewRef: React.MutableRefObject<boolean>;
+      animationFrameRef.current = requestAnimationFrame(measureFPS);
+    };
+
+    animationFrameRef.current = requestAnimationFrame(measureFPS);
+
+    return () => cancelAnimationFrame(animationFrameRef.current);
+  }, []);
+
+  // Use memoization or a simple div to ensure the counter itself doesn't lag the UI
+  return (
+    <div 
+      className="fps-counter-wrapper"
+      title="FPS Counter - Disable in Settings > Canvas > Show FPS Counter"
+    >
+      <div className="fps-counter-display">FPS: {fps}</div>
+    </div>
+  );
 }
 
-function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, hasRunInitialFitViewRef }: CanvasInnerProps) {
-  const { nodes, edges, onNodesChange, onEdgesChange, onConnect, setSelectedNode, onConnectStart, onConnectEnd, onEdgeUpdate, failedNodes, showErrorPopupForNode, canvasReloading } = useWorkflowStore();
+function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, hasRunInitialFitViewRef, hideSidebar }: CanvasInnerProps) {
+  const { 
+    nodes, 
+    edges, 
+    onNodesChange, 
+    onEdgesChange, 
+    onConnect, 
+    onConnectStart, 
+    onConnectEnd, 
+    onEdgeUpdate, 
+    canvasReloading, 
+    executingNodeId, 
+    executionStatus, 
+    followModeEnabled, 
+    pausedNodeId, 
+    pauseReason, 
+    workflowFileName, 
+    hasUnsavedChanges, 
+    groups, 
+    addNodesToGroup,
+  } = useWorkflowStore();
+  
+  const { showGrid, gridSize, snapToGrid, showFPSCounter } = useSettingsStore((state) => ({
+    showGrid: state.canvas.showGrid,
+    gridSize: state.canvas.gridSize,
+    snapToGrid: state.canvas.snapToGrid,
+    showFPSCounter: state.canvas.showFPSCounter,
+  }));
+  const theme = useSettingsStore((state) => state.appearance.theme);
+  
+  // Get grid color based on theme
+  const getGridColor = () => {
+    if (theme === 'light') {
+      return '#E5E7EB'; // Light theme grid color with opacity handled by CSS
+    }
+    return '#4a4a4a'; // Dark theme default
+  };
+  
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useReactFlow();
-  const { screenToFlowPosition, getViewport, setViewport: originalSetViewport, fitView } = reactFlowInstance;
+  const { screenToFlowPosition, getViewport, setViewport: originalSetViewport, fitView, setNodes, getNodes } = reactFlowInstance;
   
   // Enable shortcut navigation
   useShortcutNavigation();
@@ -78,18 +141,48 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     // Update module-level lastKnownViewport to persist across remounts
     // Only update if viewport is not default (0,0,1) to avoid overwriting with default during remounts
     if (!(viewport.x === 0 && viewport.y === 0 && viewport.zoom === 1)) {
-      lastKnownViewport = viewport;
+      setLastKnownViewport(viewport);
       // Save to localStorage for page refresh persistence
       saveViewportToStorage(viewport);
     }
     originalSetViewport(viewport, options);
-  }, [originalSetViewport, getViewport]);
+  }, [originalSetViewport]);
   
   // Store ReactFlow instance in parent's ref so it can save viewport before remount
   useEffect(() => {
     reactFlowInstanceRef.current = reactFlowInstance;
-  }, [reactFlowInstance, reactFlowInstanceRef]);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; nodeId?: string } | null>(null);
+    // Store setNodes globally so workflowStore can use it
+    reactFlowSetNodes = setNodes;
+  }, [reactFlowInstance, reactFlowInstanceRef, setNodes]);
+  
+  // Use extracted hooks
+  const handlers = useCanvasHandlers({
+    screenToFlowPosition,
+    setNodes,
+    getNodes,
+    reactFlowWrapper,
+    hideSidebar,
+  });
+  
+  const navigation = useNavigation({
+    fitView,
+    nodes,
+  });
+  
+  const nodeSearch = useNodeSearch({
+    fitView,
+    nodes,
+  });
+  
+  // Use shortcuts hook
+  useShortcuts({
+    screenToFlowPosition,
+    setNodes,
+    reactFlowWrapper,
+    nodeSearchOverlayOpen: nodeSearch.nodeSearchOverlayOpen,
+    setNodeSearchOverlayOpen: nodeSearch.setNodeSearchOverlayOpen,
+    navigateToFailedNode: navigation.navigateToFailedNode,
+  });
   
   // Edge visibility state from store
   const edgesHidden = useWorkflowStore((state) => state.edgesHidden);
@@ -105,6 +198,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
       const isDefaultViewport = currentViewport.x === 0 && currentViewport.y === 0 && currentViewport.zoom === 1;
       
       // If viewport is default but we have a lastKnownViewport that's not default, restore it
+      const lastKnownViewport = getLastKnownViewport();
       if (isDefaultViewport && lastKnownViewport && 
           !(lastKnownViewport.x === 0 && lastKnownViewport.y === 0 && lastKnownViewport.zoom === 1)) {
         setViewport(lastKnownViewport, { duration: 0 });
@@ -152,9 +246,11 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     // Also skip fitView if we have a lastKnownViewport (from localStorage or previous session)
     // Check both ref and module-level variable to prevent re-running
     // Only run if nodes.length changed from 0 to >0 (true initial load, not a remount or update)
-    if (!savedViewportRef.current && !hasRunInitialFitViewGlobal && !lastKnownViewport && 
+    const lastKnownViewport = getLastKnownViewport();
+    const hasRunInitialFitView = getHasRunInitialFitView();
+    if (!savedViewportRef.current && !hasRunInitialFitView && !lastKnownViewport && 
         nodesLengthChanged && previousNodesLength === 0 && nodes.length > 0) {
-      hasRunInitialFitViewGlobal = true;
+      setHasRunInitialFitView(true);
       isFirstMountRef.current = false;
       hasRunInitialFitViewRef.current = true;
       // Small delay to ensure ReactFlow is ready
@@ -162,75 +258,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
         fitView({ duration: 0 });
       }, 100);
     }
-  }, [nodes.length]); // Removed fitView and getViewport from dependencies to prevent re-runs
-
-  const onDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-  }, []);
-
-  const onDrop = useCallback(
-    (e: React.DragEvent) => {
-      e.preventDefault();
-
-      const type = e.dataTransfer.getData('application/reactflow') as any;
-      if (!type || !reactFlowWrapper.current) {
-        return;
-      }
-
-      const position = screenToFlowPosition({
-        x: e.clientX,
-        y: e.clientY,
-      });
-
-      const addNode = useWorkflowStore.getState().addNode;
-      addNode(type, position);
-    },
-    [screenToFlowPosition]
-  );
-
-  const onNodeClick = useCallback((_e: React.MouseEvent, node: any) => {
-    // If node has failed, show error popup
-    if (failedNodes.has(node.id)) {
-      showErrorPopupForNode(node.id);
-    }
-    // Node click no longer opens property panel - use context menu instead
-  }, [failedNodes, showErrorPopupForNode]);
-
-  const onPaneClick = useCallback(() => {
-    setSelectedNode(null);
-    setContextMenu(null);
-  }, [setSelectedNode]);
-
-  const onNodeContextMenu = useCallback((e: React.MouseEvent, node: any) => {
-    e.preventDefault();
-    setContextMenu({
-      x: e.clientX,
-      y: e.clientY,
-      nodeId: node.id,
-    });
-  }, []);
-
-  const onPaneContextMenu = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setContextMenu({
-      x: e.clientX,
-      y: e.clientY,
-    });
-  }, []);
-
-  // Prevent ReactFlow from creating connections starting from input handles
-  const isValidConnection = useCallback((connection: any) => {
-    // Only allow connections starting from source handles (outputs)
-    return connection.source && connection.sourceHandle;
-  }, []);
-
-
-  // Track ReactFlow's current selection
-  const reactFlowSelectionRef = useRef<string | null>(null);
-  
-  // Track if we're currently processing a nodes change to prevent loops
-  const isProcessingNodesChangeRef = useRef(false);
+  }, [nodes.length, fitView]);
   
   // Save viewport BEFORE remount happens (when canvasReloading becomes true)
   // CRITICAL: Only save if we don't already have a saved viewport (prevents new instance from overwriting)
@@ -247,46 +275,211 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     }
   }, [canvasReloading, getViewport]);
   
-  // Navigate to failed node function
-  const navigateToFailedNode = useCallback(() => {
-    if (failedNodes.size === 0) {
+  // Follow mode: automatically navigate to executing node when it changes
+  // Also navigate when breakpoint is triggered (paused node)
+  useEffect(() => {
+    if (!followModeEnabled) {
       return;
     }
     
-    // Get the first failed node ID
-    const firstFailedNodeId = Array.from(failedNodes.keys())[0];
-    const failedNode = nodes.find(n => n.id === firstFailedNodeId);
+    // Navigate to executing node during normal execution
+    if (executionStatus === 'running' && executingNodeId) {
+      navigation.navigateToExecutingNode();
+    }
     
-    if (failedNode) {
-      // Use fitView to focus on the failed node
-      fitView({
-        nodes: [{ id: firstFailedNodeId }],
-        padding: 0.2,
-        duration: 300,
+    // Navigate to paused node when breakpoint is triggered
+    if (pausedNodeId && pauseReason === 'breakpoint') {
+      const pausedNode = nodes.find(n => n.id === pausedNodeId);
+      if (pausedNode) {
+        fitView({
+          nodes: [{ id: pausedNodeId }],
+          padding: 0.2,
+          duration: 300,
+        });
+      }
+    }
+  }, [followModeEnabled, executionStatus, executingNodeId, pausedNodeId, pauseReason, nodes, fitView, navigation]);
+  
+  // Load viewport from localStorage on mount
+  useEffect(() => {
+    const storedViewport = localStorage.getItem('reactflow-viewport');
+    if (storedViewport) {
+      try {
+        const parsed = JSON.parse(storedViewport);
+        if (parsed && typeof parsed.x === 'number' && typeof parsed.y === 'number' && typeof parsed.zoom === 'number') {
+          setLastKnownViewport(parsed);
+        }
+      } catch (error) {
+        // Ignore parse errors
+      }
+    }
+  }, []);
+
+  // Handle ReactFlow initialization - restore viewport if we have one saved
+  const onInit = useCallback(() => {
+    // Priority 1: Restore from savedViewportRef (from canvasReloading remount)
+    if (savedViewportRef.current && !hasRestoredViewportRef.current) {
+      const viewportToRestore = savedViewportRef.current;
+      savedViewportRef.current = null;
+      hasRestoredViewportRef.current = true;
+      setLastKnownViewport(viewportToRestore); // Update module-level variable
+      // Use requestAnimationFrame to ensure ReactFlow is fully ready
+      requestAnimationFrame(() => {
+        setViewport(viewportToRestore, { duration: 0 });
       });
     }
-  }, [failedNodes, nodes, fitView]);
-  
-  // Expose navigation function to store for TopBar access
+    // Priority 2: If no savedViewportRef but we have lastKnownViewport (StrictMode remount or page refresh), restore it
+    else if (!savedViewportRef.current && !hasRestoredViewportRef.current) {
+      const lastKnownViewport = getLastKnownViewport();
+      if (lastKnownViewport && 
+          !(lastKnownViewport.x === 0 && lastKnownViewport.y === 0 && lastKnownViewport.zoom === 1)) {
+        const currentViewport = getViewport();
+        // Only restore if current viewport is default (0,0,1) - don't overwrite if already restored
+        if (currentViewport.x === 0 && currentViewport.y === 0 && currentViewport.zoom === 1) {
+          hasRestoredViewportRef.current = true;
+          const viewportToRestore = lastKnownViewport;
+          // Use requestAnimationFrame to ensure ReactFlow is fully ready
+          requestAnimationFrame(() => {
+            setViewport(viewportToRestore, { duration: 0 });
+          });
+        }
+      }
+    }
+  }, [setViewport, getViewport]);
+
+  // Prevent system context menu - use both capture and bubble phases
+  // Capture phase prevents default early, bubble phase catches any that slip through
   useEffect(() => {
-    useWorkflowStore.getState().setNavigateToFailedNode(navigateToFailedNode);
-  }, [navigateToFailedNode]);
-  
-  // Keyboard shortcut for failed node navigation (Ctrl/Cmd + Shift + F)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const isModifierPressed = e.metaKey || e.ctrlKey;
-      if (isModifierPressed && e.shiftKey && e.key === 'F') {
-        e.preventDefault();
-        navigateToFailedNode();
+    const handleContextMenuCapture = (e: MouseEvent) => {
+      // Only prevent if clicking within the canvas wrapper
+      const target = e.target as HTMLElement;
+      if (target && reactFlowWrapper.current && reactFlowWrapper.current.contains(target)) {
+        // Check if it's the ReactFlow pane or a node
+        const isReactFlowPane = target.closest('.react-flow__pane');
+        const isNode = target.closest('.react-flow__node');
+        const isReactFlowElement = target.closest('.react-flow') !== null;
+        const isSelectionBox = target.closest('.react-flow__nodesselection') !== null;
+        
+        // If clicking on selection box and we have selected nodes, find node under cursor
+        const selectedNodeIds = useWorkflowStore.getState().selectedNodeIds;
+        if (isSelectionBox && selectedNodeIds.size > 0) {
+          // Convert click position to flow coordinates for accurate comparison
+          const flowPosition = screenToFlowPosition({
+            x: e.clientX,
+            y: e.clientY,
+          });
+          
+          // Find node under cursor - check all selected nodes
+          let clickedNode = null;
+          let closestNode = null;
+          let closestDistance = Infinity;
+          
+          for (const node of nodes) {
+            if (!selectedNodeIds.has(node.id)) continue;
+            
+            const nodeX = node.position.x;
+            const nodeY = node.position.y;
+            const nodeWidth = node.width || node.data?.width || 200;
+            const nodeHeight = node.height || node.data?.height || 100;
+            
+            // Check if click is within node bounds in flow coordinates
+            const isOverNode = flowPosition.x >= nodeX && flowPosition.x <= nodeX + nodeWidth &&
+                              flowPosition.y >= nodeY && flowPosition.y <= nodeY + nodeHeight;
+            
+            if (isOverNode) {
+              clickedNode = node;
+              break;
+            }
+            
+            // Also track closest node for fallback
+            const nodeCenterX = nodeX + nodeWidth / 2;
+            const nodeCenterY = nodeY + nodeHeight / 2;
+            const distance = Math.sqrt(
+              Math.pow(flowPosition.x - nodeCenterX, 2) + 
+              Math.pow(flowPosition.y - nodeCenterY, 2)
+            );
+            
+            if (distance < closestDistance) {
+              closestDistance = distance;
+              closestNode = node;
+            }
+          }
+          
+          // Use clicked node if found, otherwise use closest node as fallback
+          const targetNode = clickedNode || closestNode;
+          if (targetNode) {
+            e.preventDefault();
+            e.stopPropagation();
+            // Trigger context menu for the node
+            setTimeout(() => {
+              handlers.setContextMenu({
+                x: e.clientX,
+                y: e.clientY,
+                nodeId: targetNode.id,
+              });
+            }, 0);
+            return;
+          }
+        }
+        
+        if (isReactFlowPane || isNode || isReactFlowElement) {
+          // Prevent default to stop system menu, but DON'T stop propagation
+          // so ReactFlow's handlers can still fire to show our custom menu
+          e.preventDefault();
+        }
+      }
+    };
+
+    const handleContextMenuBubble = (e: MouseEvent) => {
+      // Catch any events that weren't prevented in capture phase
+      const target = e.target as HTMLElement;
+      if (target && reactFlowWrapper.current && reactFlowWrapper.current.contains(target)) {
+        const isReactFlowPane = target.closest('.react-flow__pane');
+        const isNode = target.closest('.react-flow__node');
+        const isReactFlowElement = target.closest('.react-flow') !== null;
+        if ((isReactFlowPane || isNode || isReactFlowElement) && !e.defaultPrevented) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
       }
     };
     
-    window.addEventListener('keydown', handleKeyDown);
+    // Use capture phase on document to catch the event early and prevent system menu
+    // We don't stop propagation so ReactFlow's handlers can still fire
+    document.addEventListener('contextmenu', handleContextMenuCapture, true);
+    // Also add bubble phase handler as backup
+    document.addEventListener('contextmenu', handleContextMenuBubble, false);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('contextmenu', handleContextMenuCapture, true);
+      document.removeEventListener('contextmenu', handleContextMenuBubble, false);
     };
-  }, [navigateToFailedNode]);
+  }, [nodes, screenToFlowPosition, handlers]);
+
+  // Also prevent contextmenu directly on ReactFlow viewport after it mounts
+  // This catches events at the source before they bubble up
+  useEffect(() => {
+    if (!reactFlowWrapper.current) return;
+    
+    const reactFlowViewport = reactFlowWrapper.current.querySelector('.react-flow__viewport');
+    if (!reactFlowViewport) return;
+    
+    const handleViewportContextMenu = (e: Event) => {
+      // Prevent default but don't stop propagation so ReactFlow's handlers can fire
+      const mouseEvent = e as MouseEvent;
+      mouseEvent.preventDefault();
+    };
+    
+    reactFlowViewport.addEventListener('contextmenu', handleViewportContextMenu, true);
+    return () => {
+      reactFlowViewport.removeEventListener('contextmenu', handleViewportContextMenu, true);
+    };
+  }, [nodes.length]); // Re-run when nodes change (ReactFlow might recreate viewport)
+
+  // Track ReactFlow's current selection
+  const reactFlowSelectionRef = useRef<string | null>(null);
+  
+  // Track if we're currently processing a nodes change to prevent loops
+  const isProcessingNodesChangeRef = useRef(false);
   
   // Use a ref to track the last nodes array to prevent unnecessary re-renders
   const lastNodesRef = useRef<Node[]>(nodes);
@@ -350,75 +543,65 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     }
   }
   
+  // Track last matchingNodeIds to detect changes
+  const lastMatchingNodeIdsRef = useRef<string[]>([]);
+  const matchingNodeIdsChanged = JSON.stringify(lastMatchingNodeIdsRef.current.sort()) !== JSON.stringify(nodeSearch.matchingNodeIds.slice().sort());
+  if (matchingNodeIdsChanged) {
+    lastMatchingNodeIdsRef.current = nodeSearch.matchingNodeIds.slice();
+  }
+  
+  // Only update nodes if content actually changed (not just reference)
+  // This prevents ReactFlow from re-rendering when nodes array is recreated with same content
   const mappedNodes = useMemo(() => {
-    // If content hasn't changed AND node references are stable, return the previous array reference
-    // This prevents ReactFlow from detecting false changes
-    if (!nodesContentChanged && !nodesRefsChanged && lastNodesRef.current.length === nodes.length) {
+    const matchingIdsSet = new Set(nodeSearch.matchingNodeIds);
+    
+    // If content hasn't changed AND node references are stable AND matchingNodeIds haven't changed,
+    // return the previous array reference to prevent ReactFlow from detecting false changes
+    if (!nodesContentChanged && !nodesRefsChanged && !matchingNodeIdsChanged && lastNodesRef.current.length === nodes.length) {
       return lastNodesRef.current;
     }
     
-    // Content or references changed, update refs and return new nodes with draggable property
+    // Content, references, or matchingNodeIds changed - update nodes
     const nodesWithDraggable = nodes.map(node => ({
       ...node,
       draggable: !node.data.isPinned,
+      data: {
+        ...node.data,
+        searchHighlighted: matchingIdsSet.has(node.id),
+      },
     }));
     lastNodesRef.current = nodesWithDraggable;
     nodesContentKeyRef.current = currentNodesContentKey;
     nodesMapRef.current = new Map(nodes.map(n => [n.id, n]));
     return nodesWithDraggable;
-  }, [nodes, nodesContentChanged, nodesRefsChanged, currentNodesContentKey]);
-
-  // Map edges with hidden property based on edgesHidden state
+  }, [nodes, nodesContentChanged, nodesRefsChanged, currentNodesContentKey, nodeSearch.matchingNodeIds, matchingNodeIdsChanged]);
+  
+  // Filter edges based on visibility setting
   const mappedEdges = useMemo(() => {
-    return edges.map(edge => ({
+    if (edgesHidden) {
+      return [];
+    }
+    const validEdges = filterValidEdges(edges, nodes);
+    return validEdges.map(edge => ({
       ...edge,
       hidden: edgesHidden,
+      animated: true, // Enable animation for all edges
     }));
-  }, [edges, edgesHidden]);
-
-  // Load viewport from localStorage on mount (for page refresh persistence)
-  useEffect(() => {
-    // Only load from localStorage if we don't have a saved viewport from remount
-    // and if lastKnownViewport is not already set (first mount after page refresh)
-    if (!savedViewportRef.current && !lastKnownViewport) {
-      const storedViewport = loadViewportFromStorage();
-      if (storedViewport && !(storedViewport.x === 0 && storedViewport.y === 0 && storedViewport.zoom === 1)) {
-        lastKnownViewport = storedViewport;
-      }
-    }
-  }, []);
-
-  // Handle ReactFlow initialization - restore viewport if we have one saved
-  const onInit = useCallback(() => {
-    // Priority 1: Restore from savedViewportRef (from canvasReloading remount)
-    if (savedViewportRef.current && !hasRestoredViewportRef.current) {
-      const viewportToRestore = savedViewportRef.current;
-      savedViewportRef.current = null;
-      hasRestoredViewportRef.current = true;
-      lastKnownViewport = viewportToRestore; // Update module-level variable
-      // Use requestAnimationFrame to ensure ReactFlow is fully ready
-      requestAnimationFrame(() => {
-        setViewport(viewportToRestore, { duration: 0 });
-      });
-    }
-    // Priority 2: If no savedViewportRef but we have lastKnownViewport (StrictMode remount or page refresh), restore it
-    else if (!savedViewportRef.current && !hasRestoredViewportRef.current && lastKnownViewport && 
-             !(lastKnownViewport.x === 0 && lastKnownViewport.y === 0 && lastKnownViewport.zoom === 1)) {
-      const currentViewport = getViewport();
-      // Only restore if current viewport is default (0,0,1) - don't overwrite if already restored
-      if (currentViewport.x === 0 && currentViewport.y === 0 && currentViewport.zoom === 1) {
-        hasRestoredViewportRef.current = true;
-        const viewportToRestore = lastKnownViewport;
-        // Use requestAnimationFrame to ensure ReactFlow is fully ready
-        requestAnimationFrame(() => {
-          setViewport(viewportToRestore, { duration: 0 });
-        });
-      }
-    }
-  }, [setViewport, getViewport]);
+  }, [edges, nodes, edgesHidden]);
+  
+  // Suppress ReactFlow warnings in console
+  suppressReactFlowWarnings();
 
   return (
-    <div className="flex-1 relative" ref={reactFlowWrapper}>
+    <div 
+      className="flex-1 relative canvas-vignette" 
+      ref={reactFlowWrapper} 
+      data-tour="canvas"
+      onMouseDown={handlers.handleWrapperMouseDown}
+      onClick={handlers.handleWrapperClick}
+      onDoubleClick={handlers.handleWrapperDoubleClick}
+      onContextMenu={handlers.handleWrapperContextMenu}
+    >
       <ReactFlow
         nodes={mappedNodes}
         edges={mappedEdges}
@@ -433,7 +616,24 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
           isProcessingNodesChangeRef.current = true;
           
           try {
-            onNodesChange(changes);
+            // Apply snap-to-grid if enabled
+            if (snapToGrid && gridSize > 0) {
+              const processedChanges = changes.map((change) => {
+                if (change.type === 'position' && change.position) {
+                  return {
+                    ...change,
+                    position: {
+                      x: Math.round(change.position.x / gridSize) * gridSize,
+                      y: Math.round(change.position.y / gridSize) * gridSize,
+                    },
+                  };
+                }
+                return change;
+              });
+              onNodesChange(processedChanges);
+            } else {
+              onNodesChange(changes);
+            }
           } finally {
             // Clear flag after a short delay to allow ReactFlow to finish processing
             setTimeout(() => {
@@ -442,16 +642,37 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
           }
         }}
         onSelectionChange={(params) => {
-          const newSelectedId = params.nodes.length > 0 ? params.nodes[0].id : null;
+          // Track when selection changes (for detecting drag selection completion)
+          handlers.lastSelectionChangeTimeRef.current = Date.now();
+          
+          // If we're clearing selection from pane click, ignore this event
+          if (handlers.isClearingSelectionRef.current) {
+            return;
+          }
+          
+          const selectedIds = params.nodes.map((n) => n.id);
+          const newSelectedId = selectedIds.length > 0 ? selectedIds[0] : null;
           const lastReactFlowSelection = reactFlowSelectionRef.current;
+          
+          // If ReactFlow cleared selection (0 nodes) but store still has selection, clear selectedNodeIds only
+          // Preserve selectedNode (Properties panel) - it should only be cleared when explicitly closing the sidebar
+          const selectedNodeIds = useWorkflowStore.getState().selectedNodeIds;
+          if (selectedIds.length === 0 && selectedNodeIds.size > 0) {
+            useWorkflowStore.getState().setSelectedNodeIds([]);
+            reactFlowSelectionRef.current = null;
+            return;
+          }
           
           // Update ReactFlow's selection ref
           reactFlowSelectionRef.current = newSelectedId;
           
           // Ignore if ReactFlow's selection hasn't actually changed (prevents duplicate events)
-          if (newSelectedId === lastReactFlowSelection) {
+          if (newSelectedId === lastReactFlowSelection && selectedIds.length === selectedNodeIds.size) {
             return;
           }
+          
+          // Sync ReactFlow selection with store
+          useWorkflowStore.getState().setSelectedNodeIds(selectedIds);
           
           // Don't automatically open properties panel on node click
           // Properties panel should only open via context menu "Properties" option
@@ -462,21 +683,102 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
         onConnectStart={onConnectStart}
         onConnectEnd={onConnectEnd}
         onEdgeUpdate={onEdgeUpdate}
-        isValidConnection={isValidConnection}
+        onEdgeUpdateStart={(_event, edge, handleType) => {
+          // Track edge update start - ReactFlow v11+ might support this
+          // If not supported, onConnectStart will handle it
+          if (handleType === 'target') {
+            const { updatingEdgeId } = useWorkflowStore.getState();
+            if (!updatingEdgeId) {
+              useWorkflowStore.setState({ updatingEdgeId: edge.id });
+            }
+          }
+        }}
+        onEdgeUpdateEnd={(_event, _edge, _handleType) => {
+          // Edge update ended - ReactFlow v11+ might support this
+          // Clear tracking if update didn't complete (handled by onEdgeUpdate or onConnectEnd)
+          // This handler is optional and may not be called in all cases
+        }}
+        isValidConnection={handlers.isValidConnection}
         edgesUpdatable={true}
         edgesFocusable={true}
         deleteKeyCode="Delete"
-        onDrop={onDrop}
-        onDragOver={onDragOver}
-        onNodeClick={onNodeClick}
-        onPaneClick={onPaneClick}
-        onNodeContextMenu={onNodeContextMenu}
-        onPaneContextMenu={onPaneContextMenu}
+        multiSelectionKeyCode={(() => {
+          const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPod|iPad/i.test(navigator.platform);
+          // ReactFlow: 'Meta' for Mac, 'Control' for Windows/Linux
+          return isMac ? 'Meta' : 'Control';
+        })()}
+        selectionKeyCode={(() => {
+          const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPod|iPad/i.test(navigator.platform);
+          // ReactFlow: Use same key for drag selection (Ctrl/Cmd + Drag)
+          return isMac ? 'Meta' : 'Control';
+        })()}
+        selectionOnDrag={true}
+        panOnDrag={((event: MouseEvent | TouchEvent) => {
+          // Allow panning only when selection key (Cmd/Ctrl) is NOT pressed
+          // When selection key is pressed, ReactFlow will handle selection drag instead
+          const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPod|iPad/i.test(navigator.platform);
+          if (event instanceof MouseEvent) {
+            const selectionKeyPressed = isMac ? event.metaKey : event.ctrlKey;
+            return !selectionKeyPressed;
+          }
+          // For touch events, allow panning
+          return true;
+        }) as any}
+        onDrop={handlers.onDrop}
+        onDragOver={handlers.onDragOver}
+        onNodeClick={handlers.onNodeClick}
+        onPaneClick={handlers.onPaneClick}
+        onNodeContextMenu={handlers.onNodeContextMenu}
+        onPaneContextMenu={handlers.onPaneContextMenu}
+        onNodeDragStop={(_event, node) => {
+          // Check if node overlaps with any group boundary
+          const nodeRect = {
+            x: node.position.x,
+            y: node.position.y,
+            width: node.width || node.data?.width || 200,
+            height: node.height || node.data?.height || 100,
+          };
+
+          // Calculate node center point for more accurate detection
+          const nodeCenterX = nodeRect.x + nodeRect.width / 2;
+          const nodeCenterY = nodeRect.y + nodeRect.height / 2;
+
+          groups.forEach((group) => {
+            const groupRect = {
+              x: group.position.x,
+              y: group.position.y,
+              width: group.width,
+              height: group.height,
+            };
+
+            // Check if node center is inside group boundary
+            const centerInside =
+              nodeCenterX >= groupRect.x &&
+              nodeCenterX <= groupRect.x + groupRect.width &&
+              nodeCenterY >= groupRect.y &&
+              nodeCenterY <= groupRect.y + groupRect.height;
+
+            // Also check if node overlaps with group (even partially) for adding
+            const overlaps =
+              nodeRect.x < groupRect.x + groupRect.width &&
+              nodeRect.x + nodeRect.width > groupRect.x &&
+              nodeRect.y < groupRect.y + groupRect.height &&
+              nodeRect.y + nodeRect.height > groupRect.y;
+
+            if (overlaps && !group.nodeIds.includes(node.id)) {
+              // Add node to group if it overlaps
+              addNodesToGroup(group.id, [node.id]);
+            } else if (!centerInside && group.nodeIds.includes(node.id)) {
+              // Remove node from group if center is outside (more lenient removal)
+              useWorkflowStore.getState().removeNodesFromGroup(group.id, [node.id]);
+            }
+          });
+        }}
         onMove={(_event, viewport) => {
           // Update lastKnownViewport on every move to persist across remounts
           // Only update if viewport is not default (0,0,1) to avoid overwriting with default during remounts
           if (!(viewport.x === 0 && viewport.y === 0 && viewport.zoom === 1)) {
-            lastKnownViewport = viewport;
+            setLastKnownViewport(viewport);
             // Save to localStorage for page refresh persistence
             saveViewportToStorage(viewport);
           }
@@ -485,25 +787,80 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
         edgeTypes={edgeTypes}
         minZoom={0.1}
         maxZoom={2}
-        className="bg-gray-900"
+        zoomOnDoubleClick={false}
+        className="bg-gray-900 react-flow-canvas"
         proOptions={{ hideAttribution: true }}
       >
-        <Background color="#4a4a4a" gap={16} />
+        {showGrid && (
+          <Background 
+            color={getGridColor()} 
+            gap={gridSize} 
+            variant={BackgroundVariant.Lines}
+          />
+        )}
         <Controls className="bg-gray-800 border border-gray-700" />
+        {/* Render group boundaries inside ReactFlow so they follow pan/zoom */}
+        {groups.map((group) => (
+          <GroupBoundary key={group.id} group={group} />
+        ))}
       </ReactFlow>
-      {contextMenu && (
+      {/* Filename display - fixed position in top left */}
+      <div className="fixed top-0 left-0 z-10 p-2 text-gray-100 text-sm font-mono flex items-center gap-2">
+        <span className="drop-shadow-lg">{workflowFileName}</span>
+        {hasUnsavedChanges && (
+          <span className="text-yellow-400 text-xs drop-shadow-lg" title="Unsaved changes">●</span>
+        )}
+      </div>
+      {/* FPS Counter - positioned below filename in top left */}
+      {showFPSCounter && <FPSCounterDisplay />}
+      {handlers.contextMenu && (
         <ContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          nodeId={contextMenu.nodeId}
-          onClose={() => setContextMenu(null)}
+            x={handlers.contextMenu.x}
+            y={handlers.contextMenu.y}
+            nodeId={handlers.contextMenu.nodeId}
+            flowPosition={handlers.contextMenu.flowPosition}
+            screenPosition={handlers.contextMenu.screenPosition}
+            onClose={() => handlers.setContextMenu(null)}
+            onAddNode={() => {
+              if (handlers.contextMenu?.flowPosition && handlers.contextMenu?.screenPosition) {
+                handlers.setSearchOverlay({
+                  screen: handlers.contextMenu.screenPosition,
+                  flow: handlers.contextMenu.flowPosition,
+                });
+                handlers.setContextMenu(null);
+              }
+            }}
+          />
+      )}
+      {handlers.searchOverlay && (
+        <CanvasSearchOverlay
+          position={handlers.searchOverlay.screen}
+          flowPosition={handlers.searchOverlay.flow}
+          onClose={() => handlers.setSearchOverlay(null)}
+          onNodeSelect={handlers.handleNodeSelect}
+        />
+      )}
+      {nodeSearch.nodeSearchOverlayOpen && (
+        <NodeSearchOverlay
+          searchQuery={nodeSearch.nodeSearchQuery}
+          matchingNodeIds={nodeSearch.matchingNodeIds}
+          currentMatchIndex={nodeSearch.currentMatchIndex}
+          searchExecuted={nodeSearch.searchExecuted}
+          onSearchQueryChange={nodeSearch.setNodeSearchQuery}
+          onSearch={nodeSearch.handleNodeSearch}
+          onNavigate={nodeSearch.handleNodeSearchNavigate}
+          onClose={nodeSearch.handleNodeSearchClose}
         />
       )}
     </div>
   );
 }
 
-export default function Canvas() {
+interface CanvasProps {
+  hideSidebar?: () => void;
+}
+
+export default function Canvas({ hideSidebar }: CanvasProps) {
   const canvasReloading = useWorkflowStore((state) => state.canvasReloading);
   // Use a ref to track the reload key to ensure it changes when reloading starts
   const reloadKeyRef = useRef(0);
@@ -521,6 +878,5 @@ export default function Canvas() {
     }
   }, [canvasReloading]);
   
-  return <CanvasInner key={`canvas-${reloadKeyRef.current}`} savedViewportRef={savedViewportRef} reactFlowInstanceRef={reactFlowInstanceRef} isFirstMountRef={isFirstMountRef} hasRunInitialFitViewRef={hasRunInitialFitViewRef} />;
+  return <CanvasInner key={`canvas-${reloadKeyRef.current}`} savedViewportRef={savedViewportRef} reactFlowInstanceRef={reactFlowInstanceRef} isFirstMountRef={isFirstMountRef} hasRunInitialFitViewRef={hasRunInitialFitViewRef} hideSidebar={hideSidebar} />;
 }
-

@@ -1,6 +1,8 @@
 import { Node } from 'reactflow';
 import { useState } from 'react';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
+import SelectorFinderButton from '../SelectorFinderButton';
+import { getSelectorPlaceholder, getSelectorHelpText, SELECTOR_TYPE_OPTIONS } from '../../utils/selectorHelpers';
 
 interface TypeConfigProps {
   node: Node;
@@ -40,8 +42,9 @@ export default function TypeConfig({ node, onChange }: TypeConfigProps) {
           disabled={isPropertyDisabled('selectorType')}
           className={getInputClassName('selectorType', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
         >
-          <option value="css">CSS Selector</option>
-          <option value="xpath">XPath</option>
+          {SELECTOR_TYPE_OPTIONS.map(option => (
+            <option key={option.value} value={option.value}>{option.label}</option>
+          ))}
         </select>
         {isPropertyDisabled('selectorType') && (
           <div className="mt-1 text-xs text-gray-500 italic">
@@ -51,19 +54,58 @@ export default function TypeConfig({ node, onChange }: TypeConfigProps) {
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Selector</label>
-        <input
-          type="text"
-          value={getPropertyValue('selector', '')}
-          onChange={(e) => onChange('selector', e.target.value)}
-          placeholder="#input or //input[@id='input']"
-          disabled={isPropertyDisabled('selector')}
-          className={getInputClassName('selector', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
-        />
+        <div className="flex items-center gap-2">
+          <input
+            type="text"
+            value={getPropertyValue('selector', '')}
+            onChange={(e) => onChange('selector', e.target.value)}
+            placeholder={getSelectorPlaceholder(getPropertyValue('selectorType', 'css'))}
+            disabled={isPropertyDisabled('selector')}
+            className={getInputClassName('selector', 'flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+          />
+          {!isPropertyDisabled('selector') && (
+            <SelectorFinderButton nodeId={node.id} fieldName="selector" />
+          )}
+        </div>
         {isPropertyDisabled('selector') && (
           <div className="mt-1 text-xs text-gray-500 italic">
             This property is converted to input. Connect a node to provide the value.
           </div>
         )}
+        {getSelectorHelpText(getPropertyValue('selectorType', 'css')) && (
+          <div className="mt-1 text-xs text-gray-400">
+            {getSelectorHelpText(getPropertyValue('selectorType', 'css'))}
+          </div>
+        )}
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Input Method</label>
+        <select
+          value={getPropertyValue('inputMethod', 'fill')}
+          onChange={(e) => onChange('inputMethod', e.target.value)}
+          disabled={isPropertyDisabled('inputMethod')}
+          className={getInputClassName('inputMethod', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+        >
+          <option value="fill">Fill - Clear and fill instantly (default)</option>
+          <option value="type">Type - Type character by character with delays</option>
+          <option value="pressSequentially">Press Sequentially - Type with configurable delays</option>
+          <option value="append">Append - Append to existing value</option>
+          <option value="prepend">Prepend - Prepend to existing value</option>
+          <option value="direct">Direct - Set value directly via DOM</option>
+        </select>
+        {isPropertyDisabled('inputMethod') && (
+          <div className="mt-1 text-xs text-gray-500 italic">
+            This property is converted to input. Connect a node to provide the value.
+          </div>
+        )}
+        <div className="mt-1 text-xs text-gray-400">
+          {data.inputMethod === 'fill' && 'Clears the field and fills text instantly. Fastest method.'}
+          {data.inputMethod === 'type' && 'Types character by character, triggering keyboard events. Good for autocomplete and validation.'}
+          {data.inputMethod === 'pressSequentially' && 'Same as type but more explicit. Types with delays between keystrokes.'}
+          {data.inputMethod === 'append' && 'Appends text to the existing value in the field.'}
+          {data.inputMethod === 'prepend' && 'Prepends text to the existing value in the field.'}
+          {data.inputMethod === 'direct' && 'Sets value directly via DOM without triggering events. Fastest but may not trigger validation.'}
+        </div>
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Text</label>
@@ -81,6 +123,44 @@ export default function TypeConfig({ node, onChange }: TypeConfigProps) {
           </div>
         )}
       </div>
+      {(data.inputMethod === 'type' || data.inputMethod === 'pressSequentially') && (
+        <>
+          <div>
+            <label className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={data.clearFirst || false}
+                onChange={(e) => onChange('clearFirst', e.target.checked)}
+                className="rounded"
+              />
+              <span className="text-sm text-gray-300">Clear First</span>
+            </label>
+            <div className="mt-1 text-xs text-gray-400">
+              Clear the field before typing
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Delay Between Keystrokes (ms)</label>
+            <input
+              type="number"
+              value={getPropertyValue('delay', 0)}
+              onChange={(e) => onChange('delay', parseInt(e.target.value, 10) || 0)}
+              disabled={isPropertyDisabled('delay')}
+              min="0"
+              placeholder="0"
+              className={getInputClassName('delay', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+            />
+            {isPropertyDisabled('delay') && (
+              <div className="mt-1 text-xs text-gray-500 italic">
+                This property is converted to input. Connect a node to provide the value.
+              </div>
+            )}
+            <div className="mt-1 text-xs text-gray-400">
+              Delay in milliseconds between each keystroke. 0 = no delay (fast typing), higher values = slower typing (simulates human typing).
+            </div>
+          </div>
+        </>
+      )}
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
         <input
@@ -162,8 +242,9 @@ export default function TypeConfig({ node, onChange }: TypeConfigProps) {
                   onChange={(e) => onChange('waitForSelectorType', e.target.value)}
                   className="px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
                 >
-                  <option value="css">CSS</option>
-                  <option value="xpath">XPath</option>
+                  {SELECTOR_TYPE_OPTIONS.map(option => (
+                    <option key={option.value} value={option.value}>{option.label}</option>
+                  ))}
                 </select>
               </div>
               <div className="mt-1 flex items-center gap-2">
@@ -310,17 +391,39 @@ export default function TypeConfig({ node, onChange }: TypeConfigProps) {
 
                 {data.retryStrategy === 'count' ? (
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Retry Count</label>
-                    <input
-                      type="number"
-                      value={data.retryCount || 3}
-                      onChange={(e) => onChange('retryCount', parseInt(e.target.value, 10) || 3)}
-                      min="1"
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-                    />
-                    <div className="mt-1 text-xs text-gray-400">
-                      Number of times to retry on failure (excluding initial attempt)
-                    </div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Retry Count
+                      <span className="ml-2 text-xs text-gray-400">(supports ${'{variables.key}'})</span>
+                    </label>
+                    {(() => {
+                      const valueStr = typeof data.retryCount === 'string' ? data.retryCount : (data.retryCount?.toString() ?? '');
+                      const containsInterpolation = typeof data.retryCount === 'string' && valueStr.includes('${');
+                      return (
+                        <>
+                          <input
+                            type={containsInterpolation ? "text" : "number"}
+                            value={valueStr || '3'}
+                            onChange={(e) => {
+                              const inputValue = e.target.value;
+                              if (inputValue.includes('${')) {
+                                onChange('retryCount', inputValue);
+                              } else if (inputValue === '') {
+                                onChange('retryCount', 3);
+                              } else {
+                                const numValue = parseInt(inputValue, 10);
+                                onChange('retryCount', isNaN(numValue) ? 3 : numValue);
+                              }
+                            }}
+                            min="1"
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                            placeholder="3 or ${variables.key}"
+                          />
+                          <div className="mt-1 text-xs text-gray-400">
+                            Number of times to retry on failure (excluding initial attempt). Supports variable interpolation: ${'{variables.key}'} or ${'{data.key.path}'}
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 ) : (
                   <>
@@ -369,51 +472,125 @@ export default function TypeConfig({ node, onChange }: TypeConfigProps) {
                       )}
                     </div>
                     {data.retryUntilCondition?.type === 'selector' && (
-                      <div>
-                        <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
-                        <select
-                          value={data.retryUntilCondition?.selectorType || 'css'}
-                          onChange={(e) => onChange('retryUntilCondition', {
-                            ...data.retryUntilCondition,
-                            selectorType: e.target.value,
-                          })}
-                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-                        >
-                          <option value="css">CSS</option>
-                          <option value="xpath">XPath</option>
-                        </select>
-                      </div>
+                      <>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
+                          <select
+                            value={data.retryUntilCondition?.selectorType || 'css'}
+                            onChange={(e) => onChange('retryUntilCondition', {
+                              ...data.retryUntilCondition,
+                              selectorType: e.target.value,
+                            })}
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                          >
+                            {SELECTOR_TYPE_OPTIONS.map(option => (
+                              <option key={option.value} value={option.value}>{option.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-1">Visibility</label>
+                          <select
+                            value={data.retryUntilCondition?.visibility || 'visible'}
+                            onChange={(e) => onChange('retryUntilCondition', {
+                              ...data.retryUntilCondition,
+                              visibility: e.target.value,
+                            })}
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                          >
+                            <option value="visible">Visible - Retry until element becomes visible</option>
+                            <option value="invisible">Invisible - Retry until element becomes invisible</option>
+                          </select>
+                          <div className="mt-1 text-xs text-gray-400">
+                            {data.retryUntilCondition?.visibility === 'invisible'
+                              ? 'Retry until the element disappears or becomes hidden'
+                              : 'Retry until the element appears and becomes visible'}
+                          </div>
+                        </div>
+                      </>
                     )}
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Max Retry Timeout (ms)</label>
-                      <input
-                        type="number"
-                        value={data.retryUntilCondition?.timeout || 30000}
-                        onChange={(e) => onChange('retryUntilCondition', {
-                          ...data.retryUntilCondition,
-                          timeout: parseInt(e.target.value, 10) || 30000,
-                        })}
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-                      />
-                      <div className="mt-1 text-xs text-gray-400">
-                        Maximum time to keep retrying before giving up
-                      </div>
+                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                        Max Retry Timeout (ms)
+                        <span className="ml-2 text-xs text-gray-400">(supports ${'{variables.key}'})</span>
+                      </label>
+                      {(() => {
+                        const valueStr = typeof data.retryUntilCondition?.timeout === 'string' 
+                          ? data.retryUntilCondition.timeout 
+                          : (data.retryUntilCondition?.timeout?.toString() ?? '');
+                        const containsInterpolation = typeof data.retryUntilCondition?.timeout === 'string' && valueStr.includes('${');
+                        return (
+                          <>
+                            <input
+                              type={containsInterpolation ? "text" : "number"}
+                              value={valueStr || '30000'}
+                              onChange={(e) => {
+                                const inputValue = e.target.value;
+                                if (inputValue.includes('${')) {
+                                  onChange('retryUntilCondition', {
+                                    ...data.retryUntilCondition,
+                                    timeout: inputValue,
+                                  });
+                                } else if (inputValue === '') {
+                                  onChange('retryUntilCondition', {
+                                    ...data.retryUntilCondition,
+                                    timeout: 30000,
+                                  });
+                                } else {
+                                  const numValue = parseInt(inputValue, 10);
+                                  onChange('retryUntilCondition', {
+                                    ...data.retryUntilCondition,
+                                    timeout: isNaN(numValue) ? 30000 : numValue,
+                                  });
+                                }
+                              }}
+                              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                              placeholder="30000 or ${variables.key}"
+                            />
+                            <div className="mt-1 text-xs text-gray-400">
+                              Maximum time to keep retrying before giving up. Supports variable interpolation: ${'{variables.key}'} or ${'{data.key.path}'}
+                            </div>
+                          </>
+                        );
+                      })()}
                     </div>
                   </>
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Retry Delay (ms)</label>
-                  <input
-                    type="number"
-                    value={data.retryDelay || 1000}
-                    onChange={(e) => onChange('retryDelay', parseInt(e.target.value, 10) || 1000)}
-                    min="0"
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-                  />
-                  <div className="mt-1 text-xs text-gray-400">
-                    Base delay between retries
-                  </div>
+                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                    Retry Delay (ms)
+                    <span className="ml-2 text-xs text-gray-400">(supports ${'{variables.key}'})</span>
+                  </label>
+                  {(() => {
+                    const valueStr = typeof data.retryDelay === 'string' ? data.retryDelay : (data.retryDelay?.toString() ?? '');
+                    const containsInterpolation = typeof data.retryDelay === 'string' && valueStr.includes('${');
+                    return (
+                      <>
+                        <input
+                          type={containsInterpolation ? "text" : "number"}
+                          value={valueStr || '1000'}
+                          onChange={(e) => {
+                            const inputValue = e.target.value;
+                            if (inputValue.includes('${')) {
+                              onChange('retryDelay', inputValue);
+                            } else if (inputValue === '') {
+                              onChange('retryDelay', 1000);
+                            } else {
+                              const numValue = parseInt(inputValue, 10);
+                              onChange('retryDelay', isNaN(numValue) ? 1000 : numValue);
+                            }
+                          }}
+                          min="0"
+                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                          placeholder="1000 or ${variables.key}"
+                        />
+                        <div className="mt-1 text-xs text-gray-400">
+                          Base delay between retries. Supports variable interpolation: ${'{variables.key}'} or ${'{data.key.path}'}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
 
                 <div>
@@ -430,18 +607,39 @@ export default function TypeConfig({ node, onChange }: TypeConfigProps) {
 
                 {data.retryDelayStrategy === 'exponential' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">Max Delay (ms) - Optional</label>
-                    <input
-                      type="number"
-                      value={data.retryMaxDelay || ''}
-                      onChange={(e) => onChange('retryMaxDelay', e.target.value ? parseInt(e.target.value, 10) : undefined)}
-                      placeholder="No limit"
-                      min="0"
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-                    />
-                    <div className="mt-1 text-xs text-gray-400">
-                      Maximum delay cap for exponential backoff (leave empty for no limit)
-                    </div>
+                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                      Max Delay (ms) - Optional
+                      <span className="ml-2 text-xs text-gray-400">(supports ${'{variables.key}'})</span>
+                    </label>
+                    {(() => {
+                      const valueStr = typeof data.retryMaxDelay === 'string' ? data.retryMaxDelay : (data.retryMaxDelay?.toString() ?? '');
+                      const containsInterpolation = typeof data.retryMaxDelay === 'string' && valueStr.includes('${');
+                      return (
+                        <>
+                          <input
+                            type={containsInterpolation ? "text" : "number"}
+                            value={valueStr}
+                            onChange={(e) => {
+                              const inputValue = e.target.value;
+                              if (inputValue.includes('${')) {
+                                onChange('retryMaxDelay', inputValue);
+                              } else if (inputValue === '') {
+                                onChange('retryMaxDelay', undefined);
+                              } else {
+                                const numValue = parseInt(inputValue, 10);
+                                onChange('retryMaxDelay', isNaN(numValue) ? undefined : numValue);
+                              }
+                            }}
+                            placeholder="No limit or ${variables.key}"
+                            min="0"
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                          />
+                          <div className="mt-1 text-xs text-gray-400">
+                            Maximum delay cap for exponential backoff (leave empty for no limit). Supports variable interpolation: ${'{variables.key}'} or ${'{data.key.path}'}
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 )}
               </>

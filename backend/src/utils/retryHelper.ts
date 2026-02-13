@@ -3,9 +3,37 @@
  * Provides retry logic with count-based and condition-based strategies
  */
 
-import { MatchType } from '@automflows/shared';
+import { MatchType, SelectorType } from '@automflows/shared';
 import { ContextManager } from '../engine/context';
+import { LocatorHelper } from './locatorHelper';
+import { VariableInterpolator } from './variableInterpolator';
 
+// Input type that accepts string | number for numeric fields (before interpolation)
+export interface RetryOptionsInput {
+  enabled: boolean;
+  strategy: 'count' | 'untilCondition';
+  count?: number | string; // For count strategy (can be string for interpolation)
+  untilCondition?: {
+    type: 'selector' | 'url' | 'javascript' | 'api-status' | 'api-json-path' | 'api-javascript';
+    value?: string; // Optional, used for javascript and api-javascript
+    selectorType?: SelectorType;
+    visibility?: 'visible' | 'invisible';
+    timeout?: number | string; // Max time to retry (can be string for interpolation)
+    // API-specific fields
+    expectedStatus?: number | string; // For api-status (can be string for interpolation)
+    jsonPath?: string; // For api-json-path
+    expectedValue?: any; // For api-json-path
+    matchType?: MatchType; // For api-json-path
+    contextKey?: string; // For api-javascript (which API response to check)
+  };
+  delay?: number | string; // Base delay in ms (can be string for interpolation)
+  delayStrategy?: 'fixed' | 'exponential';
+  maxDelay?: number | string; // Max delay for exponential (optional, can be string for interpolation)
+  failSilently?: boolean;
+  context?: ContextManager; // Context for API condition checking and traceLog access
+}
+
+// Final type after interpolation (all numeric fields are numbers)
 export interface RetryOptions {
   enabled: boolean;
   strategy: 'count' | 'untilCondition';
@@ -13,7 +41,8 @@ export interface RetryOptions {
   untilCondition?: {
     type: 'selector' | 'url' | 'javascript' | 'api-status' | 'api-json-path' | 'api-javascript';
     value?: string; // Optional, used for javascript and api-javascript
-    selectorType?: 'css' | 'xpath';
+    selectorType?: SelectorType;
+    visibility?: 'visible' | 'invisible';
     timeout?: number; // Max time to retry
     // API-specific fields
     expectedStatus?: number; // For api-status
@@ -26,10 +55,121 @@ export interface RetryOptions {
   delayStrategy?: 'fixed' | 'exponential';
   maxDelay?: number; // Max delay for exponential (optional)
   failSilently?: boolean;
-  context?: ContextManager; // Context for API condition checking
+  context?: ContextManager; // Context for API condition checking and traceLog access
 }
 
 export class RetryHelper {
+  /**
+   * Interpolate a numeric value from string or number
+   * Supports variable interpolation: ${variables.key} or ${data.key}
+   * 
+   * @param value - Value to interpolate (number | string | undefined)
+   * @param context - ContextManager instance for variable resolution
+   * @param defaultValue - Default value if undefined or invalid
+   * @returns Interpolated and parsed number
+   */
+  static interpolateNumericValue(
+    value: number | string | undefined,
+    context: ContextManager,
+    defaultValue: number
+  ): number {
+    if (value === undefined || value === null) {
+      return defaultValue;
+    }
+
+    // If it's already a number, return as-is
+    if (typeof value === 'number') {
+      return value;
+    }
+
+    // If it's a string, check for interpolation
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      if (trimmed === '') {
+        return defaultValue;
+      }
+
+      // Check if it contains interpolation pattern
+      if (trimmed.includes('${')) {
+        // Interpolate the string
+        const interpolated = VariableInterpolator.interpolateString(trimmed, context);
+        // Parse as integer (for retryCount) or float (for delays/timeouts)
+        const parsed = parseFloat(interpolated);
+        return isNaN(parsed) ? defaultValue : parsed;
+      } else {
+        // No interpolation, parse directly
+        const parsed = parseFloat(trimmed);
+        return isNaN(parsed) ? defaultValue : parsed;
+      }
+    }
+
+    return defaultValue;
+  }
+
+  /**
+   * Interpolate retry options, converting string values with interpolation to numbers
+   * 
+   * @param options - RetryOptionsInput with potentially string values for numeric fields
+   * @param context - ContextManager instance for variable resolution
+   * @returns RetryOptions with all numeric fields interpolated and converted to numbers
+   */
+  static interpolateRetryOptions(
+    options: RetryOptionsInput,
+    context: ContextManager
+  ): RetryOptions {
+    // Interpolate top-level numeric fields
+    const interpolatedCount = options.count !== undefined
+      ? this.interpolateNumericValue(options.count as any, context, 3)
+      : undefined;
+
+    const interpolatedDelay = options.delay !== undefined
+      ? this.interpolateNumericValue(options.delay as any, context, 1000)
+      : undefined;
+
+    const interpolatedMaxDelay = options.maxDelay !== undefined
+      ? this.interpolateNumericValue(options.maxDelay as any, context, undefined as any)
+      : undefined;
+
+    // Interpolate untilCondition fields if present
+    let interpolatedUntilCondition: RetryOptions['untilCondition'] = undefined;
+    if (options.untilCondition) {
+      // Interpolate expectedValue if it's a string (for api-json-path conditions)
+      let interpolatedExpectedValue = options.untilCondition.expectedValue;
+      if (typeof interpolatedExpectedValue === 'string' && interpolatedExpectedValue.includes('${')) {
+        interpolatedExpectedValue = VariableInterpolator.interpolateString(interpolatedExpectedValue, context);
+      }
+
+      interpolatedUntilCondition = {
+        type: options.untilCondition.type,
+        value: options.untilCondition.value,
+        selectorType: options.untilCondition.selectorType,
+        visibility: options.untilCondition.visibility,
+        timeout: options.untilCondition.timeout !== undefined
+          ? this.interpolateNumericValue(options.untilCondition.timeout as any, context, 30000)
+          : undefined,
+        expectedStatus: options.untilCondition.expectedStatus !== undefined
+          ? this.interpolateNumericValue(options.untilCondition.expectedStatus as any, context, undefined as any)
+          : undefined,
+        jsonPath: options.untilCondition.jsonPath,
+        expectedValue: interpolatedExpectedValue,
+        matchType: options.untilCondition.matchType,
+        contextKey: options.untilCondition.contextKey,
+      };
+    }
+
+    return {
+      enabled: options.enabled,
+      strategy: options.strategy,
+      count: interpolatedCount,
+      delay: interpolatedDelay,
+      delayStrategy: options.delayStrategy,
+      maxDelay: interpolatedMaxDelay,
+      failSilently: options.failSilently,
+      context: options.context,
+      untilCondition: interpolatedUntilCondition,
+    };
+  }
+
   /**
    * Execute an operation with retry logic
    */
@@ -148,16 +288,20 @@ export class RetryHelper {
 
         // Check if condition is met
         const isApiCondition = condition.type?.startsWith('api-');
-        const conditionMet = isApiCondition 
-          ? await this.checkApiCondition(options.context!, condition as any)
-          : await this.checkCondition(page, condition as any);
-        if (conditionMet) {
+        const conditionResult = isApiCondition 
+          ? await this.checkApiConditionWithDetails(options.context!, condition as any)
+          : await this.checkConditionWithDetails(page, condition as any);
+        
+        if (conditionResult.met) {
           return result;
         }
 
-        // Condition not met, retry
+        // Condition not met, retry with detailed logging
         const retryDelay = this.calculateDelay(attempt, delay, delayStrategy, maxDelay);
-        console.log(`Retry attempt ${attempt}: Condition not met. Retrying in ${retryDelay}ms...`);
+        const conditionDetails = conditionResult.details || 'Condition not met';
+        const traceLog = options.context?.getData('traceLog') as ((message: string) => void) | undefined;
+        const log = traceLog || console.log;
+        log(`Retry [${attempt}]: ${conditionDetails} | Retrying in ${retryDelay}ms...`);
 
         // Check if we have enough time left
         if (elapsed + retryDelay >= timeout) {
@@ -176,10 +320,10 @@ export class RetryHelper {
         // Check if condition is met despite error
         try {
           const isApiCondition = condition.type?.startsWith('api-');
-          const conditionMet = isApiCondition 
-            ? await this.checkApiCondition(options.context!, condition as any)
-            : await this.checkCondition(page, condition as any);
-          if (conditionMet) {
+          const conditionResult = isApiCondition 
+            ? await this.checkApiConditionWithDetails(options.context!, condition as any)
+            : await this.checkConditionWithDetails(page, condition as any);
+          if (conditionResult.met) {
             return undefined as T; // Condition met but operation failed
           }
         } catch (conditionError) {
@@ -206,24 +350,28 @@ export class RetryHelper {
   }
 
   /**
-   * Check if condition is met (browser-based conditions)
+   * Check if condition is met (browser-based conditions) and return details for logging
    */
-  private static async checkCondition(
+  private static async checkConditionWithDetails(
     page: any,
-    condition: { type: 'selector' | 'url' | 'javascript'; value: string; selectorType?: 'css' | 'xpath' }
-  ): Promise<boolean> {
+    condition: { type: 'selector' | 'url' | 'javascript'; value: string; selectorType?: SelectorType; visibility?: 'visible' | 'invisible' }
+  ): Promise<{ met: boolean; details?: string }> {
     try {
       if (condition.type === 'selector') {
         const selectorType = condition.selectorType || 'css';
-        if (selectorType === 'xpath') {
-          const element = await page.locator(`xpath=${condition.value}`).first();
-          return await element.isVisible().catch(() => false);
-        } else {
-          const element = await page.locator(condition.value).first();
-          return await element.isVisible().catch(() => false);
-        }
+        const visibility = condition.visibility || 'visible';
+        const isInvisible = visibility === 'invisible';
+        
+        const locator = LocatorHelper.createLocator(page, condition.value, selectorType);
+        const element = locator.first();
+        const isVisible = await element.isVisible().catch(() => false);
+        const met = isInvisible ? !isVisible : isVisible;
+        const actualState = isVisible ? 'visible' : 'invisible';
+        const details = `${condition.type} | selector: ${condition.value} | expected: ${visibility} | got: ${actualState}`;
+        return { met, details };
       } else if (condition.type === 'url') {
         const currentUrl = page.url();
+        let met = false;
         // Try to compile as regex first, fallback to string match
         try {
           let regex: RegExp;
@@ -233,24 +381,29 @@ export class RetryHelper {
           } else {
             regex = new RegExp(condition.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
           }
-          return regex.test(currentUrl);
+          met = regex.test(currentUrl);
         } catch {
-          return currentUrl.includes(condition.value);
+          met = currentUrl.includes(condition.value);
         }
+        const details = `${condition.type} | pattern: ${condition.value} | got: ${this.truncateString(currentUrl, 100)}`;
+        return { met, details };
       } else if (condition.type === 'javascript') {
         const result = await page.evaluate(condition.value);
-        return !!result;
+        const boolResult = !!result;
+        const details = `${condition.type} | expression: ${this.truncateString(condition.value, 100)} | result: ${boolResult}`;
+        return { met: boolResult, details };
       }
-      return false;
-    } catch {
-      return false;
+      return { met: false, details: 'Unknown condition type' };
+    } catch (error: any) {
+      return { met: false, details: `Error: ${error.message}` };
     }
   }
 
+
   /**
-   * Check if API condition is met
+   * Check if API condition is met and return details for logging
    */
-  private static async checkApiCondition(
+  private static async checkApiConditionWithDetails(
     context: ContextManager,
     condition: {
       type: 'api-status' | 'api-json-path' | 'api-javascript';
@@ -261,7 +414,7 @@ export class RetryHelper {
       matchType?: MatchType;
       contextKey?: string;
     }
-  ): Promise<boolean> {
+  ): Promise<{ met: boolean; details?: string }> {
     try {
       // Get the API response from context
       // For api-javascript, use the specified contextKey, otherwise use default
@@ -270,32 +423,41 @@ export class RetryHelper {
 
       if (!apiResponse) {
         // API response not found, condition not met
-        return false;
+        return { met: false, details: 'API response not found' };
       }
 
       if (condition.type === 'api-status') {
         // Check if status code matches expected status
         if (condition.expectedStatus === undefined || condition.expectedStatus === null) {
-          return false;
+          return { met: false, details: 'Expected status not specified' };
         }
-        return apiResponse.status === condition.expectedStatus;
+        const actualStatus = apiResponse.status;
+        const met = actualStatus === condition.expectedStatus;
+        const details = `${condition.type} | expected: ${condition.expectedStatus} | equals | got: ${actualStatus}`;
+        return { met, details };
       } else if (condition.type === 'api-json-path') {
         // Check if JSON path matches expected value
         if (!condition.jsonPath || condition.expectedValue === undefined) {
-          return false;
+          return { met: false, details: 'JSON path or expected value not specified' };
         }
 
         const actualValue = this.getNestedValue(apiResponse.body, condition.jsonPath);
         if (actualValue === undefined) {
-          return false;
+          const expectedStr = this.formatValue(condition.expectedValue);
+          const details = `${condition.type} | jsonPath: ${condition.jsonPath} | expected: ${expectedStr} | got: undefined`;
+          return { met: false, details };
         }
 
         const matchType = condition.matchType || 'equals';
-        return this.matchValue(actualValue, condition.expectedValue, matchType);
+        const met = this.matchValue(actualValue, condition.expectedValue, matchType);
+        const expectedStr = this.formatValue(condition.expectedValue);
+        const actualStr = this.formatValue(actualValue);
+        const details = `${condition.type} | expected: ${expectedStr} | ${matchType} | got: ${actualStr}`;
+        return { met, details };
       } else if (condition.type === 'api-javascript') {
         // Execute JavaScript with API response context
         if (!condition.value) {
-          return false;
+          return { met: false, details: 'JavaScript expression not specified' };
         }
 
         try {
@@ -327,19 +489,22 @@ export class RetryHelper {
             return (${condition.value});
           `);
           const result = fn(contextData);
-          return !!result;
+          const boolResult = !!result;
+          const details = `${condition.type} | expression: ${this.truncateString(condition.value, 100)} | result: ${boolResult}`;
+          return { met: boolResult, details };
         } catch (error: any) {
           console.warn(`[RetryHelper] API JavaScript condition error: ${error.message}`);
-          return false;
+          return { met: false, details: `JavaScript error: ${error.message}` };
         }
       }
 
-      return false;
+      return { met: false, details: 'Unknown condition type' };
     } catch (error: any) {
       console.warn(`[RetryHelper] API condition check error: ${error.message}`);
-      return false;
+      return { met: false, details: `Error: ${error.message}` };
     }
   }
+
 
   /**
    * Get nested value from object using dot notation path
@@ -412,6 +577,30 @@ export class RetryHelper {
    */
   private static sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Format value for logging (handles strings, numbers, objects, etc.)
+   */
+  private static formatValue(value: any): string {
+    if (value === undefined) return 'undefined';
+    if (value === null) return 'null';
+    if (typeof value === 'string') {
+      // Remove quotes for simple strings in logs for readability
+      return value;
+    }
+    if (typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+    return String(value);
+  }
+
+  /**
+   * Truncate string if too long
+   */
+  private static truncateString(str: string, maxLength: number): string {
+    if (str.length <= maxLength) return str;
+    return str.substring(0, maxLength - 3) + '...';
   }
 }
 

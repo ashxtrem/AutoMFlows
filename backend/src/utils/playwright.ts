@@ -2,6 +2,7 @@ import { chromium, firefox, webkit, Browser, Page, BrowserContext } from 'playwr
 import * as fs from 'fs';
 import * as path from 'path';
 import { resolveFromProjectRoot } from './pathUtils';
+import { Logger } from './logger';
 
 type BrowserType = 'chromium' | 'firefox' | 'webkit';
 
@@ -12,6 +13,8 @@ export class PlaywrightManager {
   private screenshotsDir: string;
   private videosDir: string | null = null;
   private recordSession: boolean = false;
+  private logger?: Logger;
+  // private contexts: Map<string, BrowserContext> = new Map(); // Store multiple contexts - reserved for future use
 
   constructor(screenshotsDirectory?: string, videosDirectory?: string, recordSession: boolean = false) {
     // Use provided directory or fallback to default
@@ -41,6 +44,14 @@ export class PlaywrightManager {
     if (!fs.existsSync(this.screenshotsDir)) {
       fs.mkdirSync(this.screenshotsDir, { recursive: true });
     }
+  }
+
+  /**
+   * Set logger for capturing browser console logs
+   * @param logger - Logger instance
+   */
+  setLogger(logger: Logger): void {
+    this.logger = logger;
   }
 
   /**
@@ -158,6 +169,29 @@ export class PlaywrightManager {
         headless,
         ...launchOptions, // User-provided launch options override defaults
       };
+      
+      // Ensure headless is false when devtools is enabled (devtools only works in non-headless mode)
+      if (launchOpts.devtools === true) {
+        launchOpts.headless = false;
+        console.log('[PlaywrightManager] DevTools enabled - forcing headless to false');
+        
+        // For Chromium, also add the Chrome flag to ensure DevTools opens
+        if (browserType === 'chromium') {
+          if (!launchOpts.args) {
+            launchOpts.args = [];
+          }
+          // Add flag to auto-open DevTools for tabs
+          if (!launchOpts.args.includes('--auto-open-devtools-for-tabs')) {
+            launchOpts.args.push('--auto-open-devtools-for-tabs');
+            console.log('[PlaywrightManager] Added --auto-open-devtools-for-tabs Chrome flag');
+          }
+        }
+      }
+      
+      // Log final launch options for debugging
+      if (launchOpts.devtools || Object.keys(launchOptions || {}).length > 0) {
+        console.log('[PlaywrightManager] Final launch options:', JSON.stringify(launchOpts, null, 2));
+      }
       
       // Add stealth mode launch args for Chromium
       if (stealthMode && browserType === 'chromium') {
@@ -296,7 +330,17 @@ export class PlaywrightManager {
 
     // Apply capabilities to context options
     if (capabilities && Object.keys(capabilities).length > 0) {
-      Object.assign(browserContextOptions, capabilities);
+      // Normalize numeric capabilities to ensure they're numbers, not strings
+      const normalizedCapabilities = { ...capabilities };
+      if (normalizedCapabilities.deviceScaleFactor !== undefined) {
+        normalizedCapabilities.deviceScaleFactor = typeof normalizedCapabilities.deviceScaleFactor === 'string' 
+          ? parseFloat(normalizedCapabilities.deviceScaleFactor) 
+          : normalizedCapabilities.deviceScaleFactor;
+      }
+      
+      Object.assign(browserContextOptions, normalizedCapabilities);
+      // Log capabilities being applied for debugging
+      console.log(`[PlaywrightManager] Applying capabilities:`, JSON.stringify(normalizedCapabilities, null, 2));
     }
 
     // Add video recording if enabled
@@ -306,6 +350,16 @@ export class PlaywrightManager {
       };
     }
 
+    // Log final browser context options being passed to Playwright (for debugging)
+    console.log(`[PlaywrightManager] Creating browser context with options:`, JSON.stringify({
+      viewport: browserContextOptions.viewport,
+      isMobile: browserContextOptions.isMobile,
+      deviceScaleFactor: browserContextOptions.deviceScaleFactor,
+      colorScheme: browserContextOptions.colorScheme,
+      hasTouch: browserContextOptions.hasTouch,
+      userAgent: browserContextOptions.userAgent ? '...' : undefined,
+    }, null, 2));
+
     this.context = await this.browser.newContext(browserContextOptions);
 
     // Apply stealth mode if enabled
@@ -314,16 +368,37 @@ export class PlaywrightManager {
     }
 
     // Inject custom JavaScript script if provided
+    // IMPORTANT: Scripts added via addInitScript run BEFORE page scripts load
+    // This ensures mocks (like navigator.geolocation, window.AlipayJSBridge) are in place
+    // before the page's JavaScript executes and tries to use them
     if (jsScript && jsScript.trim().length > 0) {
       try {
+        // The script is already an IIFE, so we can inject it directly
+        // addInitScript ensures it runs synchronously before any page scripts
         await this.context.addInitScript(jsScript);
       } catch (error: any) {
         // Log warning but don't fail browser launch
-        console.warn('Failed to inject JavaScript script:', error.message);
+        console.warn('Failed to inject JavaScript script via context.addInitScript:', error.message);
       }
     }
 
     this.page = await this.context.newPage();
+
+    // Also add init script to the page itself for future navigations
+    // This ensures the script runs before page scripts on every navigation
+    if (jsScript && jsScript.trim().length > 0) {
+      try {
+        await this.page.addInitScript(jsScript);
+      } catch (error: any) {
+        // Log warning but don't fail browser launch
+        console.warn('Failed to add init script to page:', error.message);
+      }
+    }
+
+    // Capture browser console logs if logger is set
+    if (this.logger) {
+      this.attachConsoleLogCapture(this.page);
+    }
 
     // Note: When maxWindow is true, we don't set viewport in browserContextOptions
     // This allows the browser to use its default/full screen size
@@ -354,6 +429,50 @@ export class PlaywrightManager {
 
   getBrowser(): Browser | null {
     return this.browser;
+  }
+
+  getContext(): BrowserContext | null {
+    return this.context;
+  }
+
+  async createContext(options: any): Promise<BrowserContext> {
+    if (!this.browser) {
+      throw new Error('Browser must be launched before creating a context');
+    }
+    const browserContext = await this.browser.newContext(options);
+    
+    // Attach console log capture to pages created from this context
+    if (this.logger) {
+      browserContext.on('page', (page) => {
+        this.attachConsoleLogCapture(page);
+      });
+      
+      // Also attach to any existing pages in the context
+      const existingPages = browserContext.pages();
+      for (const page of existingPages) {
+        this.attachConsoleLogCapture(page);
+      }
+    }
+    
+    return browserContext;
+  }
+
+  /**
+   * Attach console log capture to a page
+   * @param page - Page to attach console log capture to
+   */
+  private attachConsoleLogCapture(page: Page): void {
+    if (this.logger) {
+      page.on('console', (msg) => {
+        const level = msg.type();
+        const text = msg.text();
+        const location = msg.location();
+        const url = location?.url;
+        
+        // Write to console log file (async, non-blocking)
+        this.logger?.writeConsoleLog(level, text, url);
+      });
+    }
   }
 
   async close(): Promise<string[]> {

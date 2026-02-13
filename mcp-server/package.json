@@ -1,0 +1,30 @@
+{
+  "name": "@automflows/mcp-server",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/server.js",
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@automflows/shared": "*",
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "axios": "^1.13.4",
+    "openai": "^4.104.0",
+    "socket.io-client": "^4.5.4",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.0",
+    "@types/uuid": "^9.0.8",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "appName": "TestAppV3",
+  "feature": {
+    "enabled": false,
+    "name": "Disabled Feature"
+  },
+  "newFeature": {
+    "active": true,
+    "description": "This config is disabled"
+  },
+  "disabledConfigValue": "This should not be available"
+}

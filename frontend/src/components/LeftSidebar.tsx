@@ -1,7 +1,8 @@
 import { NodeType } from '@automflows/shared';
-import { useMemo, useState, useRef, useEffect } from 'react';
+import { useMemo, useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { frontendPluginRegistry } from '../plugins/registry';
-import { ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
+import { Search, X, Pin, PinOff, BookOpen, Layers } from 'lucide-react';
+import Tooltip from './Tooltip';
 import PlayCircleFilledWhiteTwoToneIcon from '@mui/icons-material/PlayCircleFilledWhiteTwoTone';
 import LanguageIcon from '@mui/icons-material/Language';
 import LinkIcon from '@mui/icons-material/Link';
@@ -22,6 +23,9 @@ import TerminalIcon from '@mui/icons-material/Terminal';
 import InventoryIcon from '@mui/icons-material/Inventory';
 import FolderIcon from '@mui/icons-material/Folder';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import StorageIcon from '@mui/icons-material/Storage';
+import SettingsIcon from '@mui/icons-material/Settings';
+import EditIcon from '@mui/icons-material/Edit';
 
 interface IconConfig {
   icon: React.ComponentType<{ sx?: any }>;
@@ -31,10 +35,18 @@ interface IconConfig {
 const nodeIconMap: Record<NodeType, IconConfig> = {
   [NodeType.START]: { icon: PlayCircleFilledWhiteTwoToneIcon, color: '#4CAF50' },
   [NodeType.OPEN_BROWSER]: { icon: LanguageIcon, color: '#2196F3' },
-  [NodeType.NAVIGATE]: { icon: LinkIcon, color: '#2196F3' },
-  [NodeType.CLICK]: { icon: TouchAppIcon, color: '#9C27B0' },
+  [NodeType.CONTEXT_MANIPULATE]: { icon: SettingsIcon, color: '#9C27B0' },
+  [NodeType.NAVIGATION]: { icon: LinkIcon, color: '#2196F3' },
+  [NodeType.KEYBOARD]: { icon: KeyboardIcon, color: '#FF9800' },
+  [NodeType.SCROLL]: { icon: ScheduleIcon, color: '#9C27B0' },
+  [NodeType.STORAGE]: { icon: InventoryIcon, color: '#2196F3' },
+  [NodeType.DIALOG]: { icon: VerifiedIcon, color: '#4CAF50' },
+  [NodeType.DOWNLOAD]: { icon: FolderOpenIcon, color: '#FF9800' },
+  [NodeType.IFRAME]: { icon: LanguageIcon, color: '#2196F3' },
+  [NodeType.ACTION]: { icon: TouchAppIcon, color: '#9C27B0' },
+  [NodeType.ELEMENT_QUERY]: { icon: TextFieldsIcon, color: '#4CAF50' },
+  [NodeType.FORM_INPUT]: { icon: CheckCircleIcon, color: '#FF9800' },
   [NodeType.TYPE]: { icon: KeyboardIcon, color: '#FF9800' },
-  [NodeType.GET_TEXT]: { icon: TextFieldsIcon, color: '#4CAF50' },
   [NodeType.SCREENSHOT]: { icon: CameraAltIcon, color: '#F44336' },
   [NodeType.WAIT]: { icon: ScheduleIcon, color: '#FFC107' },
   [NodeType.JAVASCRIPT_CODE]: { icon: CodeIcon, color: '#2196F3' },
@@ -48,6 +60,9 @@ const nodeIconMap: Record<NodeType, IconConfig> = {
   [NodeType.API_CURL]: { icon: TerminalIcon, color: '#9C27B0' },
   [NodeType.LOAD_CONFIG_FILE]: { icon: FolderIcon, color: '#FF9800' },
   [NodeType.SELECT_CONFIG_FILE]: { icon: FolderOpenIcon, color: '#FF9800' },
+  [NodeType.DB_CONNECT]: { icon: StorageIcon, color: '#4CAF50' },
+  [NodeType.DB_DISCONNECT]: { icon: StorageIcon, color: '#F44336' },
+  [NodeType.DB_QUERY]: { icon: StorageIcon, color: '#2196F3' },
 };
 
 function getNodeIconConfig(nodeType: NodeType | string): IconConfig | null {
@@ -68,20 +83,33 @@ const NODE_CATEGORIES = [
     label: 'Browser',
     nodes: [
       { type: NodeType.OPEN_BROWSER, label: 'Open Browser' },
-      { type: NodeType.NAVIGATE, label: 'Navigate' },
+      { type: NodeType.CONTEXT_MANIPULATE, label: 'Context Manipulate' },
+      { type: NodeType.NAVIGATION, label: 'Navigation' },
+      { type: NodeType.KEYBOARD, label: 'Keyboard' },
+      { type: NodeType.SCROLL, label: 'Scroll' },
+      { type: NodeType.DIALOG, label: 'Dialog' },
+      { type: NodeType.DOWNLOAD, label: 'Download' },
+      { type: NodeType.IFRAME, label: 'Iframe' },
     ],
   },
   {
     label: 'Interaction',
     nodes: [
-      { type: NodeType.CLICK, label: 'Click' },
+      { type: NodeType.ACTION, label: 'Action' },
+      { type: NodeType.FORM_INPUT, label: 'Form Input' },
       { type: NodeType.TYPE, label: 'Type' },
+    ],
+  },
+  {
+    label: 'Storage',
+    nodes: [
+      { type: NodeType.STORAGE, label: 'Storage' },
     ],
   },
   {
     label: 'Data',
     nodes: [
-      { type: NodeType.GET_TEXT, label: 'Get Text' },
+      { type: NodeType.ELEMENT_QUERY, label: 'Element Query' },
       { type: NodeType.SCREENSHOT, label: 'Screenshot' },
     ],
   },
@@ -96,6 +124,14 @@ const NODE_CATEGORIES = [
     nodes: [
       { type: NodeType.API_REQUEST, label: 'API Request' },
       { type: NodeType.API_CURL, label: 'API cURL' },
+    ],
+  },
+  {
+    label: 'Database',
+    nodes: [
+      { type: NodeType.DB_CONNECT, label: 'DB Connect' },
+      { type: NodeType.DB_DISCONNECT, label: 'DB Disconnect' },
+      { type: NodeType.DB_QUERY, label: 'DB Query' },
     ],
   },
   {
@@ -124,31 +160,146 @@ const NODE_CATEGORIES = [
     label: 'Configuration',
     nodes: [
       { type: NodeType.LOAD_CONFIG_FILE, label: 'Load Config File' },
-      { type: NodeType.SELECT_CONFIG_FILE, label: 'Select Config File' },
     ],
   },
 ];
 
-const STORAGE_KEY = 'leftSidebarCollapsed';
+const STORAGE_KEY_PINNED = 'leftSidebarPinned';
+const STORAGE_KEY_TAB = 'leftSidebarActiveTab';
+const STORAGE_KEY_EXPANDED = 'leftSidebarExpanded';
 
-export default function LeftSidebar() {
-  // Initialize collapsed state from localStorage
-  const [isCollapsed, setIsCollapsed] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
+const DEFAULT_WIDTH = 256;
+
+type TabType = 'all' | 'browser' | 'api' | 'db' | 'utils';
+
+export interface LeftSidebarHandle {
+  hide: () => void;
+  isPinned: () => boolean;
+  isExpanded: () => boolean;
+}
+
+// Helper function to determine node's primary category
+function getNodeCategory(nodeType: NodeType | string, _nodeLabel?: string): 'browser' | 'api' | 'db' | 'utils' {
+  // Check if it's a plugin node
+  const pluginNode = frontendPluginRegistry.getNodeDefinition(nodeType);
+  if (pluginNode) {
+    const category = (pluginNode.category || '').toLowerCase();
+    if (category.includes('browser') || category.includes('ui') || category.includes('interaction')) {
+      return 'browser';
+    }
+    if (category.includes('api') || category.includes('http') || category.includes('request')) {
+      return 'api';
+    }
+    return 'utils';
+  }
+
+  // Built-in node categorization
+  switch (nodeType) {
+    case NodeType.OPEN_BROWSER:
+    case NodeType.ACTION:
+    case NodeType.TYPE:
+    case NodeType.FORM_INPUT:
+    case NodeType.ELEMENT_QUERY:
+    case NodeType.SCREENSHOT:
+      return 'browser';
+    case NodeType.VERIFY:
+      // Verify can be browser or API depending on domain, default to utils
+      return 'utils';
+    case NodeType.API_REQUEST:
+    case NodeType.API_CURL:
+      return 'api';
+    case NodeType.DB_CONNECT:
+    case NodeType.DB_DISCONNECT:
+    case NodeType.DB_QUERY:
+      return 'db';
+    case NodeType.JAVASCRIPT_CODE:
+    case NodeType.WAIT:
+    case NodeType.LOOP:
+    case NodeType.INT_VALUE:
+    case NodeType.STRING_VALUE:
+    case NodeType.BOOLEAN_VALUE:
+    case NodeType.INPUT_VALUE:
+    case NodeType.LOAD_CONFIG_FILE:
+    case NodeType.START:
+    default:
+      return 'utils';
+  }
+}
+
+const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
+  // Initialize states from localStorage
+  const [isExpanded, setIsExpanded] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_EXPANDED);
     return saved === 'true';
+  });
+  const [isPinned, setIsPinned] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_PINNED);
+    return saved === 'true';
+  });
+  const [activeTab, setActiveTab] = useState<TabType>(() => {
+    const saved = localStorage.getItem(STORAGE_KEY_TAB);
+    return (saved as TabType) || 'all';
   });
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [activeNode, setActiveNode] = useState<string | null>(null);
-  const [showTooltip, setShowTooltip] = useState<string | null>(null);
-  const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  // Track plugin count to trigger re-render when plugins load
   const [pluginCount, setPluginCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Save collapsed state to localStorage whenever it changes
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Expose methods via ref
+  useImperativeHandle(ref, () => ({
+    hide: () => {
+      if (!isPinned) {
+        setIsExpanded(false);
+      }
+    },
+    isPinned: () => isPinned,
+    isExpanded: () => isExpanded,
+  }), [isPinned, isExpanded]);
+
+  // Save states to localStorage
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, String(isCollapsed));
-  }, [isCollapsed]);
+    localStorage.setItem(STORAGE_KEY_PINNED, String(isPinned));
+  }, [isPinned]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_EXPANDED, String(isExpanded));
+  }, [isExpanded]);
+
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEY_TAB, activeTab);
+  }, [activeTab]);
+
+  // Restore expanded state on mount if pinned
+  useEffect(() => {
+    if (isPinned && !isExpanded) {
+      setIsExpanded(true);
+    }
+  }, [isPinned]); // Only run when pin state changes
+
+  // Auto-minimize when clicking outside if not pinned
+  useEffect(() => {
+    if (!isExpanded || isPinned) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as Node | null;
+      if (menuRef.current && target && !menuRef.current.contains(target)) {
+        setIsExpanded(false);
+      }
+    };
+
+    // Add event listener with a small delay to avoid immediate closure
+    const timeoutId = setTimeout(() => {
+      // Use capture phase to catch events before they're stopped by ReactFlow
+      document.addEventListener('mousedown', handleClickOutside, true);
+    }, 100);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside, true);
+    };
+  }, [isExpanded, isPinned]);
 
   // Monitor plugin registry changes
   useEffect(() => {
@@ -159,13 +310,8 @@ export default function LeftSidebar() {
       }
     };
     
-    // Check immediately
     checkPlugins();
-    
-    // Poll for plugin changes (plugins load asynchronously)
     const interval = setInterval(checkPlugins, 100);
-    
-    // Stop polling after 5 seconds (plugins should load by then)
     const timeout = setTimeout(() => {
       clearInterval(interval);
     }, 5000);
@@ -206,46 +352,7 @@ export default function LeftSidebar() {
   };
 
   const handleDragEnd = () => {
-    // Clear active state after drag ends
     setTimeout(() => setActiveNode(null), 200);
-  };
-
-  // Handle tooltip delay
-  useEffect(() => {
-    // Clear any existing timeout
-    if (tooltipTimeoutRef.current) {
-      clearTimeout(tooltipTimeoutRef.current);
-      tooltipTimeoutRef.current = null;
-    }
-
-    // If collapsed and hovering over a node, set timeout to show tooltip
-    if (isCollapsed && hoveredNode) {
-      tooltipTimeoutRef.current = setTimeout(() => {
-        setShowTooltip(hoveredNode);
-      }, 2000); // 2 second delay
-    } else {
-      setShowTooltip(null);
-    }
-
-    // Cleanup timeout on unmount or when dependencies change
-    return () => {
-      if (tooltipTimeoutRef.current) {
-        clearTimeout(tooltipTimeoutRef.current);
-      }
-    };
-  }, [isCollapsed, hoveredNode]);
-
-  const handleMouseEnter = (nodeId: string) => {
-    setHoveredNode(nodeId);
-  };
-
-  const handleMouseLeave = () => {
-    setHoveredNode(null);
-    setShowTooltip(null);
-    if (tooltipTimeoutRef.current) {
-      clearTimeout(tooltipTimeoutRef.current);
-      tooltipTimeoutRef.current = null;
-    }
   };
 
   // Search function that matches two-word combinations
@@ -256,13 +363,10 @@ export default function LeftSidebar() {
     const normalizedQuery = query.toLowerCase().trim();
     const queryWords = normalizedQuery.split(/\s+/).filter(word => word.length > 0);
     
-    // If single word, check if it matches anywhere in the text
     if (queryWords.length === 1) {
       return normalizedText.includes(queryWords[0]);
     }
     
-    // For two or more words, check if all words appear in the text
-    // This allows matching "open browser" with "Open Browser"
     return queryWords.every(word => normalizedText.includes(word));
   };
 
@@ -270,19 +374,15 @@ export default function LeftSidebar() {
   const allCategories = useMemo(() => {
     const categoryMap = new Map<string, Array<{ type: string; label: string; icon?: string }>>();
     
-    // Add predefined categories
     NODE_CATEGORIES.forEach((category) => {
       categoryMap.set(category.label, [...category.nodes]);
     });
     
-    // Merge plugin categories (add nodes to existing categories or create new ones)
     pluginCategories.forEach((category) => {
       if (categoryMap.has(category.label)) {
-        // Merge nodes into existing category
         const existingNodes = categoryMap.get(category.label)!;
         categoryMap.set(category.label, [...existingNodes, ...category.nodes]);
       } else {
-        // Create new category
         categoryMap.set(category.label, [...category.nodes]);
       }
     });
@@ -293,20 +393,50 @@ export default function LeftSidebar() {
     }));
   }, [pluginCategories]);
 
-  // Filter categories and nodes based on search query
-  const filteredCategories = useMemo(() => {
-    if (!searchQuery.trim()) {
+  // Filter categories based on active tab
+  const tabFilteredCategories = useMemo(() => {
+    if (activeTab === 'all') {
       return allCategories;
     }
 
-    return allCategories
+    const filteredMap = new Map<string, Array<{ type: string; label: string; icon?: string }>>();
+    
+    allCategories.forEach((category) => {
+      const matchingNodes = category.nodes.filter((node) => {
+        const nodeCategory = getNodeCategory(node.type, node.label);
+        return nodeCategory === activeTab;
+      });
+      
+      if (matchingNodes.length > 0) {
+        if (filteredMap.has(category.label)) {
+          const existingNodes = filteredMap.get(category.label)!;
+          filteredMap.set(category.label, [...existingNodes, ...matchingNodes]);
+        } else {
+          filteredMap.set(category.label, matchingNodes);
+        }
+      }
+    });
+    
+    return Array.from(filteredMap.entries()).map(([label, nodes]) => ({
+      label,
+      nodes,
+    }));
+  }, [allCategories, activeTab]);
+
+  // Filter categories and nodes based on search query
+  const filteredCategories = useMemo(() => {
+    const categoriesToFilter = tabFilteredCategories;
+    
+    if (!searchQuery.trim()) {
+      return categoriesToFilter;
+    }
+
+    return categoriesToFilter
       .map((category) => {
-        // Filter nodes that match the search query
         const filteredNodes = category.nodes.filter((node) =>
           matchesSearch(node.label, searchQuery) || matchesSearch(category.label, searchQuery)
         );
         
-        // Only include category if it has matching nodes or the category name matches
         if (filteredNodes.length > 0 || matchesSearch(category.label, searchQuery)) {
           return {
             ...category,
@@ -316,136 +446,234 @@ export default function LeftSidebar() {
         return null;
       })
       .filter((category): category is NonNullable<typeof category> => category !== null);
-  }, [allCategories, searchQuery]);
+  }, [tabFilteredCategories, searchQuery]);
+
+  // Prevent clicks inside menu from propagating to canvas
+  const handleMenuClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+  };
 
   return (
-    <div
-      className={`relative bg-gray-800 border-r border-gray-700 overflow-y-auto transition-all duration-300 ease-in-out ${
-        isCollapsed ? 'w-16' : 'w-64'
-      }`}
-    >
-      {/* Toggle Button */}
-      <button
-        onClick={() => {
-          setIsCollapsed((prev) => !prev);
-        }}
-        className="absolute top-4 right-2 z-10 p-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
-        aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-      >
-        {isCollapsed ? (
-          <ChevronRight size={16} />
-        ) : (
-          <ChevronLeft size={16} />
-        )}
-      </button>
+    <>
+      {/* FAB Button - shows when not expanded, positioned next to zoom controls */}
+      {!isExpanded && (
+        <Tooltip content="Open node library">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(true);
+            }}
+            className="fixed bottom-5 z-30 w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 border border-gray-700 shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
+            data-tour="left-sidebar"
+            aria-label="Open node library"
+            style={{ left: '60px' }}
+          >
+            <Layers size={24} className="text-gray-200" />
+          </button>
+        </Tooltip>
+      )}
 
-      <div className={`p-4 ${isCollapsed ? 'px-2' : ''}`}>
-        {!isCollapsed && (
-          <>
-            <h2 className="text-sm font-semibold text-gray-400 uppercase mb-4 pr-8">Node Library</h2>
-            {/* Search Box */}
-            <div className="relative mb-4">
-              <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
-                <Search size={16} />
-              </div>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search nodes..."
-                className="w-full pl-10 pr-8 py-2 bg-gray-700 text-gray-200 placeholder-gray-400 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-              />
-              {searchQuery && (
+          {/* Expanded Menu */}
+      {isExpanded && (
+        <div
+          ref={menuRef}
+          onClick={handleMenuClick}
+          className="fixed bottom-5 z-30 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl flex flex-col transition-all duration-300 ease-in-out"
+          style={{ width: `${DEFAULT_WIDTH}px`, height: 'calc(100vh - 120px)', maxHeight: '600px', left: '60px' }}
+          data-tour="left-sidebar"
+        >
+          {/* Header with Pin Button and Wiki Button */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-700 bg-gray-800">
+            <h2 className="text-sm font-semibold text-gray-400 uppercase">Node Library</h2>
+            <div className="flex items-center gap-2">
+              <Tooltip content="Open documentation wiki">
                 <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
-                  aria-label="Clear search"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    window.open('/wiki/index.html', '_blank');
+                  }}
+                  className="p-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
+                  aria-label="Open wiki"
                 >
-                  <X size={16} />
+                  <BookOpen size={16} />
                 </button>
-              )}
+              </Tooltip>
+              <Tooltip content={isPinned ? 'Unpin sidebar' : 'Pin sidebar'}>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsPinned((prev) => !prev);
+                  }}
+                  className="p-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
+                  aria-label={isPinned ? 'Unpin sidebar' : 'Pin sidebar'}
+                >
+                  {isPinned ? <Pin size={16} /> : <PinOff size={16} />}
+                </button>
+              </Tooltip>
             </div>
-          </>
-        )}
-        <div className="space-y-6">
-          {filteredCategories.map((category) => (
-            <div key={category.label}>
-              {!isCollapsed && (
-                <h3 className="text-xs font-medium text-gray-500 uppercase mb-2 px-1">
-                  {category.label}
-                </h3>
-              )}
-              <div className="space-y-1">
-                {category.nodes.map((node) => {
-                  const nodeId = node.type;
-                  const isHovered = hoveredNode === nodeId;
-                  const isActive = activeNode === nodeId;
+          </div>
 
-                  return (
-                    <div
-                      key={nodeId}
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, nodeId)}
-                      onDragEnd={handleDragEnd}
-                      onMouseEnter={() => handleMouseEnter(nodeId)}
-                      onMouseLeave={handleMouseLeave}
-                      className={`
-                        relative group
-                        ${isCollapsed ? 'p-2' : 'p-2'}
-                        bg-gray-700 
-                        hover:bg-gray-600 
-                        rounded 
-                        cursor-move 
-                        flex 
-                        items-center 
-                        ${isCollapsed ? 'justify-center' : 'gap-2'} 
-                        text-sm 
-                        text-gray-200 
-                        transition-all 
-                        duration-200
-                        ${isHovered ? 'shadow-md scale-[1.02]' : ''}
-                        ${isActive ? 'bg-blue-600/30 hover:bg-blue-600/40' : ''}
-                      `}
-                      title={isCollapsed ? node.label : undefined}
-                    >
-                      {/* Active state accent bar */}
-                      {isActive && (
-                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l" />
-                      )}
-                      
-                      {/* Icon */}
-                      {(() => {
-                        const iconConfig = getNodeIconConfig(node.type);
-                        if (iconConfig) {
-                          const IconComponent = iconConfig.icon;
-                          return <IconComponent sx={{ fontSize: '1.25rem', color: iconConfig.color }} />;
-                        }
-                        // Fallback for plugin nodes that still use string icons
-                        const pluginNode = frontendPluginRegistry.getPluginNode(node.type);
-                        return <span className="text-lg flex-shrink-0">{pluginNode?.icon || '📦'}</span>;
-                      })()}
-                      
-                      {/* Label - hidden when collapsed */}
-                      {!isCollapsed && (
-                        <span className="truncate flex-1">{node.label}</span>
-                      )}
-                      
-                      {/* Tooltip for collapsed state */}
-                      {isCollapsed && showTooltip === nodeId && (
-                        <div className="absolute left-full ml-3 px-3 py-2 bg-gray-900 text-white text-xs font-medium rounded-md shadow-xl whitespace-nowrap z-[100] pointer-events-none border border-gray-700 transition-opacity duration-200 opacity-100">
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-full w-0 h-0 border-t-4 border-b-4 border-r-4 border-transparent border-r-gray-900"></div>
-                          {node.label}
+          {/* Scrollable Content Area - Nodes */}
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="space-y-6">
+              {filteredCategories.map((category) => (
+                <div key={category.label}>
+                  <h3 className="text-xs font-medium text-gray-500 uppercase mb-2 px-1">
+                    {category.label}
+                  </h3>
+                  <div className="space-y-1">
+                    {category.nodes.map((node) => {
+                      const nodeId = node.type;
+                      const isHovered = hoveredNode === nodeId;
+                      const isActive = activeNode === nodeId;
+
+                      return (
+                        <div
+                          key={nodeId}
+                          draggable
+                          onDragStart={(e) => handleDragStart(e, nodeId)}
+                          onDragEnd={handleDragEnd}
+                          onMouseEnter={() => setHoveredNode(nodeId)}
+                          onMouseLeave={() => setHoveredNode(null)}
+                          className={`
+                            relative group
+                            p-2
+                            bg-gray-700 
+                            hover:bg-gray-600 
+                            rounded 
+                            cursor-move 
+                            flex 
+                            items-center 
+                            gap-2
+                            text-sm 
+                            text-gray-200 
+                            transition-all 
+                            duration-200
+                            ${isHovered ? 'shadow-md scale-[1.02]' : ''}
+                            ${isActive ? 'bg-blue-600/30 hover:bg-blue-600/40' : ''}
+                          `}
+                        >
+                          {isActive && (
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-l" />
+                          )}
+                          
+                          {(() => {
+                            const iconConfig = getNodeIconConfig(node.type);
+                            if (iconConfig) {
+                              const IconComponent = iconConfig.icon;
+                              return <IconComponent sx={{ fontSize: '1.25rem', color: iconConfig.color }} />;
+                            }
+                            // Special handling for setConfig.setConfig to use EditIcon with orange border
+                            if (node.type === 'setConfig.setConfig') {
+                              return (
+                                <div className="flex-shrink-0 p-0.5 rounded border-2 border-orange-500">
+                                  <EditIcon sx={{ fontSize: '1rem', color: '#FF9800' }} />
+                                </div>
+                              );
+                            }
+                            const pluginNode = frontendPluginRegistry.getPluginNode(node.type);
+                            return <span className="text-lg flex-shrink-0">{pluginNode?.icon || '📦'}</span>;
+                          })()}
+                          
+                          <span className="truncate flex-1">{node.label}</span>
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Bottom Fixed Section - Tabs and Search */}
+          <div className="border-t border-gray-700 bg-gray-800">
+            {/* Tabs */}
+            <div className="flex border-b border-gray-700 px-4 relative">
+              <button
+                onClick={() => setActiveTab('all')}
+                className={`px-3 py-2 text-xs font-medium transition-colors ${
+                  activeTab === 'all'
+                    ? 'text-blue-400 border-b-2 border-blue-400'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                All
+              </button>
+              <button
+                onClick={() => setActiveTab('browser')}
+                className={`px-3 py-2 text-xs font-medium transition-colors ${
+                  activeTab === 'browser'
+                    ? 'text-blue-400 border-b-2 border-blue-400'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                Browser
+              </button>
+              <button
+                onClick={() => setActiveTab('api')}
+                className={`px-3 py-2 text-xs font-medium transition-colors ${
+                  activeTab === 'api'
+                    ? 'text-blue-400 border-b-2 border-blue-400'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                API
+              </button>
+              <button
+                onClick={() => setActiveTab('db')}
+                className={`px-3 py-2 text-xs font-medium transition-colors ${
+                  activeTab === 'db'
+                    ? 'text-blue-400 border-b-2 border-blue-400'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                DB
+              </button>
+              <button
+                onClick={() => setActiveTab('utils')}
+                className={`px-3 py-2 text-xs font-medium transition-colors relative ${
+                  activeTab === 'utils'
+                    ? 'text-blue-400 border-b-2 border-blue-400'
+                    : 'text-gray-400 hover:text-gray-200'
+                }`}
+              >
+                Utils
+                {/* 2px indicator at rightmost tab */}
+                <div className="absolute right-0 top-0 bottom-0 w-0.5 bg-gray-600" />
+              </button>
+            </div>
+
+            {/* Search Box */}
+            <div className="p-4 pt-2">
+              <div className="relative">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                  <Search size={16} />
+                </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search nodes..."
+                  className="w-full pl-10 pr-8 py-2 bg-gray-700 text-gray-200 placeholder-gray-400 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                    aria-label="Clear search"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
               </div>
             </div>
-          ))}
+          </div>
         </div>
-      </div>
-    </div>
+      )}
+    </>
   );
-}
+});
 
+LeftSidebar.displayName = 'LeftSidebar';
+
+export default LeftSidebar;

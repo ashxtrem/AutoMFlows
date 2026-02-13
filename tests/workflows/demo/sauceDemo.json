@@ -41,14 +41,15 @@
     },
     {
       "id": "navigate-1768324901260-2",
-      "type": "navigate",
+      "type": "navigation",
       "position": {
         "x": 600.8203976160346,
         "y": 218.44894447438435
       },
       "data": {
-        "type": "navigate",
+        "type": "navigation",
         "label": "Navigate",
+        "action": "navigate",
         "url": "https://www.saucedemo.com/",
         "isTest": true,
         "timeout": 30000,
@@ -152,14 +153,15 @@
     },
     {
       "id": "click-1768326864564",
-      "type": "click",
+      "type": "action",
       "position": {
         "x": 1257.6880804646032,
         "y": 206.90656326060122
       },
       "data": {
-        "type": "click",
+        "type": "action",
         "label": "Click Login button",
+        "action": "click",
         "selector": "#login-button",
         "selectorType": "css",
         "timeout": 30000,
@@ -215,14 +217,15 @@
     },
     {
       "id": "click-1768327170470",
-      "type": "click",
+      "type": "action",
       "position": {
         "x": 689.149258989255,
         "y": 699.950885490862
       },
       "data": {
-        "type": "click",
+        "type": "action",
         "label": "Click",
+        "action": "click",
         "selector": "(//*[@class=\"inventory_item\"])[1]",
         "selectorType": "xpath",
         "timeout": 30000,

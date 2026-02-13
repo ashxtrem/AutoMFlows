@@ -5,177 +5,24 @@ import { Handle, Position, NodeProps } from 'reactflow';
 import { NodeType, PropertyDataType, OpenBrowserNodeData } from '@automflows/shared';
 import { frontendPluginRegistry } from '../plugins/registry';
 import { useWorkflowStore } from '../store/workflowStore';
-import { InlineTextInput, InlineNumberInput, InlineSelect, InlineTextarea, InlineCheckbox } from '../components/InlinePropertyEditor';
+import { useSettingsStore } from '../store/settingsStore';
+import { InlineTextInput, InlineNumberInput, InlineCheckbox } from '../components/InlinePropertyEditor';
 import NodeMenuBar from '../components/NodeMenuBar';
 import CapabilitiesPopup from '../components/CapabilitiesPopup';
 import PropertyEditorPopup, { PropertyEditorType } from '../components/PropertyEditorPopup';
 import MarkdownEditorPopup from '../components/MarkdownEditorPopup';
-import MarkdownRenderer from '../components/MarkdownRenderer';
+import Editor from '@monaco-editor/react';
+import { X } from 'lucide-react';
 import { getNodeProperties, isPropertyInputConnection, getPropertyInputHandleId } from '../utils/nodeProperties';
 import { getContrastTextColor } from '../utils/colorContrast';
-import { validateShortcut } from '../utils/shortcutValidator';
-import PlayCircleFilledWhiteTwoToneIcon from '@mui/icons-material/PlayCircleFilledWhiteTwoTone';
-import LanguageIcon from '@mui/icons-material/Language';
-import LinkIcon from '@mui/icons-material/Link';
-import TouchAppIcon from '@mui/icons-material/TouchApp';
-import KeyboardIcon from '@mui/icons-material/Keyboard';
-import TextFieldsIcon from '@mui/icons-material/TextFields';
-import CameraAltIcon from '@mui/icons-material/CameraAlt';
-import ScheduleIcon from '@mui/icons-material/Schedule';
-import CodeIcon from '@mui/icons-material/Code';
-import LoopIcon from '@mui/icons-material/Loop';
-import NumbersIcon from '@mui/icons-material/Numbers';
-import DescriptionIcon from '@mui/icons-material/Description';
-import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import InputIcon from '@mui/icons-material/Input';
-import VerifiedIcon from '@mui/icons-material/Verified';
-import HttpIcon from '@mui/icons-material/Http';
-import TerminalIcon from '@mui/icons-material/Terminal';
-import InventoryIcon from '@mui/icons-material/Inventory';
-import FolderIcon from '@mui/icons-material/Folder';
-import FolderOpenIcon from '@mui/icons-material/FolderOpen';
-
-interface IconConfig {
-  icon: React.ComponentType<{ sx?: any }>;
-  color: string;
-}
-
-const nodeIcons: Record<NodeType, IconConfig> = {
-  [NodeType.START]: { icon: PlayCircleFilledWhiteTwoToneIcon, color: '#4CAF50' },
-  [NodeType.OPEN_BROWSER]: { icon: LanguageIcon, color: '#2196F3' },
-  [NodeType.NAVIGATE]: { icon: LinkIcon, color: '#2196F3' },
-  [NodeType.CLICK]: { icon: TouchAppIcon, color: '#9C27B0' },
-  [NodeType.TYPE]: { icon: KeyboardIcon, color: '#FF9800' },
-  [NodeType.GET_TEXT]: { icon: TextFieldsIcon, color: '#4CAF50' },
-  [NodeType.SCREENSHOT]: { icon: CameraAltIcon, color: '#F44336' },
-  [NodeType.WAIT]: { icon: ScheduleIcon, color: '#FFC107' },
-  [NodeType.JAVASCRIPT_CODE]: { icon: CodeIcon, color: '#2196F3' },
-  [NodeType.LOOP]: { icon: LoopIcon, color: '#9C27B0' },
-  [NodeType.INT_VALUE]: { icon: NumbersIcon, color: '#2196F3' },
-  [NodeType.STRING_VALUE]: { icon: DescriptionIcon, color: '#4CAF50' },
-  [NodeType.BOOLEAN_VALUE]: { icon: CheckCircleIcon, color: '#4CAF50' },
-  [NodeType.INPUT_VALUE]: { icon: InputIcon, color: '#FF9800' },
-  [NodeType.VERIFY]: { icon: VerifiedIcon, color: '#4CAF50' },
-  [NodeType.API_REQUEST]: { icon: HttpIcon, color: '#2196F3' },
-  [NodeType.API_CURL]: { icon: TerminalIcon, color: '#9C27B0' },
-  [NodeType.LOAD_CONFIG_FILE]: { icon: FolderIcon, color: '#FF9800' },
-  [NodeType.SELECT_CONFIG_FILE]: { icon: FolderOpenIcon, color: '#FF9800' },
-};
-
-function getNodeIcon(nodeType: NodeType | string): IconConfig | null {
-  if (Object.values(NodeType).includes(nodeType as NodeType)) {
-    return nodeIcons[nodeType as NodeType] || { icon: InventoryIcon, color: '#757575' };
-  }
-  
-  const pluginNode = frontendPluginRegistry.getPluginNode(nodeType);
-  if (pluginNode && pluginNode.icon) {
-    // For plugin nodes, return null to use the string icon fallback
-    return null;
-  }
-  
-  return { icon: InventoryIcon, color: '#757575' };
-}
-
-function getNodeLabel(type: NodeType | string): string {
-  if (Object.values(NodeType).includes(type as NodeType)) {
-    const labels: Record<NodeType, string> = {
-      [NodeType.START]: 'Start',
-      [NodeType.OPEN_BROWSER]: 'Open Browser',
-      [NodeType.NAVIGATE]: 'Navigate',
-      [NodeType.CLICK]: 'Click',
-      [NodeType.TYPE]: 'Type',
-      [NodeType.GET_TEXT]: 'Get Text',
-      [NodeType.SCREENSHOT]: 'Screenshot',
-      [NodeType.WAIT]: 'Wait',
-      [NodeType.JAVASCRIPT_CODE]: 'JavaScript Code',
-      [NodeType.LOOP]: 'Loop',
-      [NodeType.INT_VALUE]: 'Int Value',
-      [NodeType.STRING_VALUE]: 'String Value',
-      [NodeType.BOOLEAN_VALUE]: 'Boolean Value',
-      [NodeType.INPUT_VALUE]: 'Input Value',
-      [NodeType.VERIFY]: 'Verify',
-      [NodeType.API_REQUEST]: 'API Request',
-      [NodeType.API_CURL]: 'API cURL',
-      [NodeType.LOAD_CONFIG_FILE]: 'Load Config File',
-      [NodeType.SELECT_CONFIG_FILE]: 'Select Config File',
-    };
-    return labels[type as NodeType] || type;
-  }
-  
-  const nodeDef = frontendPluginRegistry.getNodeDefinition(type);
-  if (nodeDef) {
-    return nodeDef.label;
-  }
-  
-  return type;
-}
-
-interface ResizeHandleProps {
-  onResize: (deltaX: number, deltaY: number) => void;
-}
-
-function ResizeHandle({ onResize }: ResizeHandleProps) {
-  const [isResizing, setIsResizing] = useState(false);
-  const startPos = useRef<{ x: number; y: number } | null>(null);
-
-  const handleMouseDown = useCallback((e: React.MouseEvent | React.PointerEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsResizing(true);
-    startPos.current = { x: e.clientX, y: e.clientY };
-  }, []);
-
-  useEffect(() => {
-    if (!isResizing) return;
-
-    const handleMouseMove = (e: MouseEvent | PointerEvent) => {
-      if (startPos.current) {
-        const deltaX = e.clientX - startPos.current.x;
-        const deltaY = e.clientY - startPos.current.y;
-        onResize(deltaX, deltaY);
-        startPos.current = { x: e.clientX, y: e.clientY };
-      }
-    };
-
-    const handleMouseUp = (e?: MouseEvent | PointerEvent) => {
-      if (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        e.stopImmediatePropagation();
-      }
-      // Remove listeners immediately to prevent any further resize events
-      document.removeEventListener('mousemove', handleMouseMove, true);
-      document.removeEventListener('mouseup', handleMouseUp, true);
-      document.removeEventListener('pointermove', handleMouseMove, true);
-      document.removeEventListener('pointerup', handleMouseUp, true);
-      setIsResizing(false);
-      startPos.current = null;
-    };
-
-    // Use capture phase to ensure we catch events before ReactFlow
-    document.addEventListener('mousemove', handleMouseMove, true);
-    document.addEventListener('mouseup', handleMouseUp, true);
-    document.addEventListener('pointermove', handleMouseMove, true);
-    document.addEventListener('pointerup', handleMouseUp, true);
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove, true);
-      document.removeEventListener('mouseup', handleMouseUp, true);
-      document.removeEventListener('pointermove', handleMouseMove, true);
-      document.removeEventListener('pointerup', handleMouseUp, true);
-    };
-  }, [isResizing, onResize]);
-
-  return (
-    <div
-      data-nodrag
-      className="absolute bottom-0 right-0 w-4 h-4 bg-blue-500 border-2 border-gray-800 rounded-tl-lg cursor-nwse-resize hover:bg-blue-400"
-      onMouseDown={handleMouseDown}
-      onPointerDown={handleMouseDown}
-      style={{ zIndex: 10, pointerEvents: 'auto' }}
-    />
-  );
-}
+import { isDeprecatedNodeType, getMigrationSuggestion } from '../utils/migration';
+// Import from extracted modules
+import { getNodeIcon, getNodeGlowColor, hexToRgba } from './CustomNode/icons';
+import { getNodeLabel } from './CustomNode/labels';
+import { ResizeHandle } from './CustomNode/ResizeHandle';
+import { validateConfigPaths } from './CustomNode/configValidation';
+import { PropertyPopupState } from './CustomNode/types';
+import { getPropertyRenderer } from './CustomNode/propertyRenderers/registry';
 
 export default function CustomNode({ id, data, selected }: NodeProps) {
   const width = (data as any).width;
@@ -184,26 +31,115 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const [showCapabilitiesPopup, setShowCapabilitiesPopup] = useState(false);
   
   // State for property editor popup
-  const [propertyPopup, setPropertyPopup] = useState<{
-    type: PropertyEditorType;
-    label: string;
-    field: string; // Store field name to read latest value
-    value: any;
-    onChange: (value: any) => void;
-    placeholder?: string;
-    min?: number;
-    max?: number;
-  } | null>(null);
+  const [propertyPopup, setPropertyPopup] = useState<PropertyPopupState | null>(null);
+  
+  // State for Set Config modal (Monaco editor)
+  const [showSetConfigModal, setShowSetConfigModal] = useState(false);
+  const [setConfigJsonValue, setSetConfigJsonValue] = useState<string>('{}');
+  const [setConfigJsonError, setSetConfigJsonError] = useState<string | null>(null);
+  const [setConfigOriginalJsonValue, setSetConfigOriginalJsonValue] = useState<string>('{}');
   
   // State for markdown editor popup (for comment box)
   const [showMarkdownEditor, setShowMarkdownEditor] = useState(false);
   
-  // State for shortcut validation error
-  const [shortcutError, setShortcutError] = useState<string | null>(null);
-  
   // Get latest node data from store to avoid stale prop issues
   const storeNodes = useWorkflowStore((state) => state.nodes);
-  const latestNodeData = storeNodes.find(n => n.id === id)?.data || data;
+  const storeNodeData = storeNodes.find(n => n.id === id)?.data;
+  // Use data prop for searchHighlighted (set in mappedNodes) but fall back to store for other properties
+  // This ensures searchHighlighted updates correctly when search results change
+  const latestNodeData = { ...storeNodeData, ...data };
+  
+  // Get nodeType early for use in useEffect
+  const nodeType = latestNodeData.type as NodeType | string;
+  
+  // Update Set Config modal when config changes
+  useEffect(() => {
+    if (showSetConfigModal && nodeType === 'setConfig.setConfig') {
+      const configValue = latestNodeData.config || {};
+      try {
+        const jsonString = JSON.stringify(configValue, null, 2);
+        setSetConfigJsonValue(jsonString);
+        setSetConfigOriginalJsonValue(jsonString);
+        setSetConfigJsonError(null);
+      } catch (error: any) {
+        setSetConfigJsonError(error.message);
+      }
+    }
+  }, [showSetConfigModal, latestNodeData.config, nodeType, id]);
+
+  // Check if there are unsaved changes in Set Config modal
+  const hasSetConfigUnsavedChanges = useCallback((): boolean => {
+    try {
+      const current = setConfigJsonValue.trim();
+      const original = setConfigOriginalJsonValue.trim();
+      
+      // Parse both to compare structure (ignoring formatting)
+      const currentParsed = JSON.parse(current);
+      const originalParsed = JSON.parse(original);
+      
+      return JSON.stringify(currentParsed) !== JSON.stringify(originalParsed);
+    } catch {
+      // If parsing fails, consider it changed if strings differ
+      return setConfigJsonValue.trim() !== setConfigOriginalJsonValue.trim();
+    }
+  }, [setConfigJsonValue, setConfigOriginalJsonValue]);
+
+  // Handle closing Set Config modal with unsaved changes check
+  const handleCloseSetConfigModal = useCallback(() => {
+    if (hasSetConfigUnsavedChanges()) {
+      const confirmed = window.confirm(
+        'You have unsaved changes. Are you sure you want to close without saving?'
+      );
+      if (!confirmed) {
+        return;
+      }
+    }
+    setShowSetConfigModal(false);
+    setSetConfigJsonError(null);
+    // Reset to original value if not saved
+    setSetConfigJsonValue(setConfigOriginalJsonValue);
+  }, [hasSetConfigUnsavedChanges, setConfigOriginalJsonValue]);
+
+  // Handle keyboard events for Set Config modal (ESC and Backspace prevention)
+  useEffect(() => {
+    if (!showSetConfigModal || nodeType !== 'setConfig.setConfig') return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent backspace from deleting nodes when modal is open
+      if (e.key === 'Backspace') {
+        const target = e.target as HTMLElement;
+        // Allow backspace in Monaco editor and input fields
+        const isInEditableElement = target instanceof HTMLInputElement || 
+                                    target instanceof HTMLTextAreaElement ||
+                                    target.closest('.monaco-editor') !== null ||
+                                    target.closest('[contenteditable="true"]') !== null;
+        
+        if (!isInEditableElement) {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+        }
+      }
+      
+      // Handle ESC key
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        handleCloseSetConfigModal();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true); // Use capture phase to catch early
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown, true);
+    };
+  }, [showSetConfigModal, nodeType, handleCloseSetConfigModal]);
+  // Check if this node is currently paused
+  const pausedNodeId = useWorkflowStore((state) => state.pausedNodeId);
+  const isPaused = pausedNodeId === id;
+  // Get theme for text color adjustments
+  const theme = useSettingsStore((state) => state.appearance.theme);
   
   // Stabilize data prop by comparing content, not reference
   // This prevents infinite loops when ReactFlow recreates data objects with same content
@@ -237,23 +173,13 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const browserDataKey = latestNodeData.type === NodeType.OPEN_BROWSER 
     ? `|maxWindow:${latestNodeData.maxWindow}|browser:${latestNodeData.browser || 'chromium'}|stealthMode:${latestNodeData.stealthMode || false}|capabilities:${latestNodeData.capabilities ? Object.keys(latestNodeData.capabilities).length : 0}|launchOptions:${latestNodeData.launchOptions ? Object.keys(latestNodeData.launchOptions).length : 0}`
     : '';
-  // Include url and timeout for NAVIGATE nodes, selector/timeout for CLICK/GET_TEXT nodes
-  const navigateDataKey = latestNodeData.type === NodeType.NAVIGATE 
-    ? `|url:${latestNodeData.url || ''}|timeout:${latestNodeData.timeout || ''}|waitUntil:${latestNodeData.waitUntil || ''}|referer:${latestNodeData.referer || ''}` 
-    : '';
-  const clickDataKey = latestNodeData.type === NodeType.CLICK 
-    ? `|selector:${latestNodeData.selector || ''}|timeout:${latestNodeData.timeout || ''}` 
-    : '';
-  const getTextDataKey = latestNodeData.type === NodeType.GET_TEXT 
-    ? `|selector:${latestNodeData.selector || ''}|timeout:${latestNodeData.timeout || ''}|outputVariable:${latestNodeData.outputVariable || ''}` 
-    : '';
   const apiRequestDataKey = latestNodeData.type === NodeType.API_REQUEST 
     ? `|method:${latestNodeData.method || 'GET'}|url:${latestNodeData.url || ''}|timeout:${latestNodeData.timeout || ''}|contextKey:${latestNodeData.contextKey || ''}` 
     : '';
   const apiCurlDataKey = latestNodeData.type === NodeType.API_CURL 
     ? `|curlCommand:${latestNodeData.curlCommand || ''}|timeout:${latestNodeData.timeout || ''}|contextKey:${latestNodeData.contextKey || ''}` 
     : '';
-  const currentDataKey = `${latestNodeData.type}|${latestNodeData.label || ''}|${latestNodeData.code || ''}|${latestNodeData.width || ''}|${latestNodeData.height || ''}|${inputConnectionsKey}|${backgroundColorKey}|isMinimized:${isMinimizedKey}|bypass:${bypassKey}|failSilently:${failSilentlyKey}${valueKey}${dataTypeKey}${browserDataKey}${navigateDataKey}${clickDataKey}${getTextDataKey}${apiRequestDataKey}${apiCurlDataKey}`;
+  const currentDataKey = `${latestNodeData.type}|${latestNodeData.label || ''}|${latestNodeData.code || ''}|${latestNodeData.width || ''}|${latestNodeData.height || ''}|${inputConnectionsKey}|${backgroundColorKey}|isMinimized:${isMinimizedKey}|bypass:${bypassKey}|failSilently:${failSilentlyKey}${valueKey}${dataTypeKey}${browserDataKey}${apiRequestDataKey}${apiCurlDataKey}`;
   const dataContentChanged = dataKeyRef.current !== currentDataKey;
   
   if (dataContentChanged) {
@@ -287,6 +213,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     method: latestNodeData.method,
     curlCommand: latestNodeData.curlCommand,
     contextKey: latestNodeData.contextKey,
+    config: latestNodeData.config, // Include config for setConfig nodes
   });
   
   // Update version when data changes to force re-render
@@ -299,8 +226,6 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     }
   }, [currentDataVersion, id, latestNodeData.url, latestNodeData.timeout]);
   
-  const nodeType = renderData.type as NodeType | string;
-  
   const customLabel = renderData.label;
   const defaultLabel = getNodeLabel(nodeType);
   const label = customLabel || defaultLabel;
@@ -308,7 +233,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const updateNodeData = useWorkflowStore((state) => state.updateNodeData);
   const updateNodeDimensions = useWorkflowStore((state) => state.updateNodeDimensions);
   const renameNode = useWorkflowStore((state) => state.renameNode);
-  const autoResizeNode = useWorkflowStore((state) => state.autoResizeNode);
+  const setSelectedNode = useWorkflowStore((state) => state.setSelectedNode);
   const edgesRaw = useWorkflowStore((state) => state.edges);
   const nodesRaw = useWorkflowStore((state) => state.nodes);
   
@@ -320,6 +245,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
       return {
         bypass: node?.data?.bypass || false,
         failSilently: node?.data?.failSilently || false,
+        breakpoint: node?.data?.breakpoint || false,
         isMinimized: node?.data?.isMinimized || false,
         isTest: node?.data?.isTest !== undefined ? node?.data?.isTest : true,
         isPinned: node?.data?.isPinned || false,
@@ -381,7 +307,6 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(label);
   const renameInputRef = useRef<HTMLInputElement>(null);
-  const selectConfigFileInputRef = useRef<HTMLInputElement>(null);
   const [connectingHandleId, setConnectingHandleId] = useState<string | null>(null);
   
   // Check if this handle has an incoming/outgoing connection
@@ -413,39 +338,79 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const isPinned = nodeDataFromStore.isPinned ?? false;
   // Use custom background color if set, otherwise use default
   // Read directly from data prop (not stableData) to get real-time updates
-  const backgroundColor = data.backgroundColor || '#1f2937';
+  // Also check latestNodeData to ensure we have the most recent value
+  const backgroundColor = latestNodeData.backgroundColor || data.backgroundColor || '#1f2937';
+  
   // Calculate optimal text color based on background color for contrast
-  const textColor = getContrastTextColor(backgroundColor);
-  // Border color: red if failed, blue if selected, default gray otherwise
-  const borderColor = isFailed ? '#ef4444' : (selected ? '#3b82f6' : '#4b5563');
+  // In light theme, use theme text color for better visibility
+  const textColor = theme === 'light' 
+    ? '#1F2937' // Use dark grey for light theme
+    : getContrastTextColor(backgroundColor);
+  // Check if node is search highlighted
+  const isSearchHighlighted = latestNodeData.searchHighlighted === true;
+  // Border color: red if failed, blue if selected, orange/yellow if search highlighted, default gray otherwise
+  const borderColor = isFailed ? '#ef4444' : (selected ? '#3b82f6' : (isSearchHighlighted ? '#f59e0b' : '#4b5563'));
 
   // Calculate minimum dimensions based on content
   const calculateMinDimensions = useCallback(() => {
     // Minimum width: enough for label + icon + padding
     // Estimate label width: ~8px per character + icon (~24px) + padding (32px total)
     const labelWidth = (label.length * 8) + 24 + 32;
-    const minWidth = Math.max(150, labelWidth);
     
-    // Check if node has properties (without calling renderProperties to avoid circular dependency)
+    // Calculate width needed for properties
+    let maxPropertyWidth = 0;
     let hasProps = false;
     let propertyCount = 0;
     
     if (Object.values(NodeType).includes(nodeType as NodeType)) {
-      // Built-in nodes - check if they have properties
-      hasProps = nodeType !== NodeType.START;
-      if (hasProps) {
-        propertyCount = Object.keys(data).filter(
-          (key) => !['type', 'label', 'isExecuting', 'width', 'height', 'borderColor', 'backgroundColor', 'bypass', 'isMinimized'].includes(key)
-        ).length;
+      // Built-in nodes - get properties from schema
+      const properties = getNodeProperties(nodeType);
+      hasProps = properties.length > 0;
+      propertyCount = properties.length;
+      
+      // Special handling for API_CURL nodes - use property key width only
+      if (nodeType === NodeType.API_CURL) {
+        // Calculate minimum width based on property key only
+        // Label "cURL Command" is ~13 chars, so: 13 * 8 + 60 + 3 = 104 + 63 = 167px
+        const curlKeyWidth = 13 * 8 + 60 + 3; // ~167px
+        maxPropertyWidth = Math.max(maxPropertyWidth, curlKeyWidth);
       }
+      
+      // Calculate width for each property
+      properties.forEach(prop => {
+        // Skip properties that are converted to inputs (they show connection info, not values)
+        const isInput = isPropertyInputConnection(data, prop.name);
+        if (isInput) {
+          // For inputs, estimate width based on label only (connection info is shorter)
+          const inputWidth = (prop.label.length * 8) + 60 + 3; // label + min-w-[60px] + 3px
+          maxPropertyWidth = Math.max(maxPropertyWidth, inputWidth);
+        } else {
+          // Calculate width based on property key (label) only, ignoring value length
+          // This allows resize until property key + 3px, values will overflow
+          const propertyKeyWidth = (prop.label.length * 8) + 60 + 3; // label + min-w-[60px] + 3px
+          maxPropertyWidth = Math.max(maxPropertyWidth, propertyKeyWidth);
+        }
+      });
     } else {
       // Plugin nodes
       const pluginNode = frontendPluginRegistry.getPluginNode(nodeType);
       hasProps = !!(pluginNode && pluginNode.definition.defaultData !== undefined);
       if (hasProps && pluginNode?.definition.defaultData) {
-        propertyCount = Object.keys(pluginNode.definition.defaultData).length;
+        const properties = Object.keys(pluginNode.definition.defaultData);
+        propertyCount = properties.length;
+        
+        // Calculate width for each plugin property
+        properties.forEach(propName => {
+          // Calculate width based on property key (name) only, ignoring value length
+          // This allows resize until property key + 3px, values will overflow
+          const propertyKeyWidth = (propName.length * 8) + 60 + 3; // name + min-w-[60px] + 3px
+          maxPropertyWidth = Math.max(maxPropertyWidth, propertyKeyWidth);
+        });
       }
     }
+    
+    // Minimum width is max of: label width, max property width, or 150px
+    const minWidth = Math.max(150, labelWidth, maxPropertyWidth);
     
     // Minimum height: header (~50px) + properties if not minimized
     let minHeight = 50; // Header height
@@ -482,11 +447,13 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const handleDoubleClickHeader = useCallback(() => {
     setIsRenaming(true);
     setRenameValue(label);
+    // Remove explicit height to allow natural sizing when editing header
+    updateNodeDimensions(id, currentWidth, undefined);
     setTimeout(() => {
       renameInputRef.current?.focus();
       renameInputRef.current?.select();
     }, 0);
-  }, [label]);
+  }, [label, id, currentWidth, updateNodeDimensions]);
 
   const handleRenameSubmit = useCallback(() => {
     if (renameValue.trim() && renameValue !== label) {
@@ -508,8 +475,9 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
 
   const handleBoundaryDoubleClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-    autoResizeNode(id);
-  }, [id, autoResizeNode]);
+    // Remove explicit height to allow natural sizing without auto-resizing
+    updateNodeDimensions(id, currentWidth, undefined);
+  }, [id, currentWidth, updateNodeDimensions]);
 
   const handlePropertyChange = useCallback((field: string, value: any) => {
     updateNodeData(id, { [field]: value });
@@ -560,7 +528,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     const sourceNodeLabel = sourceNode?.data?.label || sourceNode?.data?.type || connectedEdge?.source;
 
     return (
-      <div key={propertyName} className="relative flex items-center gap-2 min-h-[24px]">
+      <div key={propertyName} className="relative flex items-center gap-2 min-h-[24px] min-w-0">
         {/* Property input handle */}
         {isInput && (
           <>
@@ -572,16 +540,21 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                 connectingHandleId === handleId
                   ? 'connecting'
                   : hasConnection
-                    ? '!bg-green-500 hover:!bg-green-400'
-                    : isRequired && !hasConnection
-                      ? '!bg-yellow-500 hover:!bg-yellow-400'
-                      : '!bg-blue-500 hover:!bg-blue-400'
+                    ? 'handle-connected'
+                    : ''
               }`}
               style={{
                 position: 'absolute',
                 left: '-6px',
                 top: '50%',
                 transform: 'translateY(-50%)',
+                borderColor: connectingHandleId === handleId
+                  ? '#22c55e'
+                  : hasConnection
+                    ? '#22c55e'
+                    : isRequired && !hasConnection
+                      ? '#eab308'
+                      : '#4a9eff',
               }}
               onMouseEnter={() => setConnectingHandleId(handleId)}
               onMouseLeave={() => setConnectingHandleId(null)}
@@ -594,18 +567,18 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
         )}
         {/* Property editor - hide if converted to input */}
         {!isInput && (
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             {React.isValidElement(propertyElement) 
               ? React.cloneElement(propertyElement as React.ReactElement<any>, { field: propertyName })
               : propertyElement}
           </div>
         )}
         {isInput && (
-          <div className={`flex-1 text-xs ${!hasConnection ? 'italic' : ''}`} style={{ color: textColor, opacity: hasConnection ? 0.9 : 0.6 }}>
+          <div className={`flex-1 text-xs min-w-0 ${!hasConnection ? 'italic' : ''}`} style={{ color: textColor, opacity: theme === 'light' ? 1 : (hasConnection ? 0.9 : 0.6) }}>
             {hasConnection ? (
-              <span className="flex items-center gap-1">
-                <span className="text-green-400">●</span>
-                <span className="truncate" title={sourceNodeLabel}>{sourceNodeLabel}</span>
+              <span className="flex items-center gap-1 min-w-0">
+                <span className="text-green-400 flex-shrink-0">●</span>
+                <span className="truncate min-w-0" title={sourceNodeLabel}>{sourceNodeLabel}</span>
               </span>
             ) : (
               <span>Not connected</span>
@@ -614,1165 +587,42 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
         )}
       </div>
     );
-  }, [id, edgesForThisNode, sourceNodes, isPropertyInput, connectingHandleId, nodeType, setConnectingHandleId, textColor]);
+  }, [id, edgesForThisNode, sourceNodes, isPropertyInput, connectingHandleId, nodeType, setConnectingHandleId, textColor, theme]);
 
   const renderProperties = () => {
-    if (Object.values(NodeType).includes(nodeType as NodeType)) {
-      switch (nodeType as NodeType) {
-        case NodeType.START:
-          return (
-            <div className="mt-2 space-y-1">
-              {renderPropertyRow('recordSession', (
-                <InlineCheckbox
-                  label="Record Session"
-                  value={renderData.recordSession || false}
-                  onChange={(value) => handlePropertyChange('recordSession', value)}
-                />
-              ), 0)}
-              {renderPropertyRow('screenshotAllNodes', (
-                <InlineCheckbox
-                  label="Screenshot All Nodes"
-                  value={renderData.screenshotAllNodes || false}
-                  onChange={(value) => handlePropertyChange('screenshotAllNodes', value)}
-                />
-              ), 1)}
-              {renderData.screenshotAllNodes && renderPropertyRow('screenshotTiming', (
-                <InlineSelect
-                  label="Screenshot Timing"
-                  value={renderData.screenshotTiming || 'post'}
-                  onChange={(value) => handlePropertyChange('screenshotTiming', value)}
-                  options={[
-                    { label: 'Pre', value: 'pre' },
-                    { label: 'Post', value: 'post' },
-                    { label: 'Both', value: 'both' },
-                  ]}
-                />
-              ), 2)}
-            </div>
-          );
-        
-        case NodeType.NAVIGATE:
-          return (
-            <div className="mt-2 space-y-1">
-              {renderPropertyRow('url', (
-                <InlineTextInput
-                  label="URL"
-                  value={renderData.url || ''}
-                  onChange={(value) => handlePropertyChange('url', value)}
-                  placeholder="https://example.com"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 0)}
-              {renderPropertyRow('timeout', (
-                <InlineNumberInput
-                  label="Timeout"
-                  value={renderData.timeout || 30000}
-                  onChange={(value) => handlePropertyChange('timeout', value)}
-                  placeholder="30000"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 1)}
-              {renderPropertyRow('waitUntil', (
-                <InlineSelect
-                  label="Wait Until"
-                  value={renderData.waitUntil || 'networkidle'}
-                  onChange={(value) => handlePropertyChange('waitUntil', value)}
-                  options={[
-                    { label: 'load', value: 'load' },
-                    { label: 'domcontentloaded', value: 'domcontentloaded' },
-                    { label: 'networkidle', value: 'networkidle' },
-                    { label: 'commit', value: 'commit' },
-                  ]}
-                />
-              ), 2)}
-              {renderPropertyRow('referer', (
-                <InlineTextInput
-                  label="Referer"
-                  value={renderData.referer || ''}
-                  onChange={(value) => handlePropertyChange('referer', value)}
-                  placeholder="https://example.com (optional)"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 3)}
-              {renderData.waitForSelector && renderPropertyRow('waitForSelector', (
-                <InlineTextInput
-                  label={renderData.waitAfterOperation ? "Wait After: Selector" : "Wait Before: Selector"}
-                  value={renderData.waitForSelector || ''}
-                  onChange={(value) => handlePropertyChange('waitForSelector', value)}
-                  placeholder=".my-class"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 4)}
-              {renderData.waitForSelector && renderPropertyRow('waitForSelectorType', (
-                <InlineSelect
-                  label="Selector Type"
-                  value={renderData.waitForSelectorType || 'css'}
-                  onChange={(value) => handlePropertyChange('waitForSelectorType', value)}
-                  options={[
-                    { label: 'CSS', value: 'css' },
-                    { label: 'XPath', value: 'xpath' },
-                  ]}
-                />
-              ), 5)}
-              {renderData.waitForUrl && renderPropertyRow('waitForUrl', (
-                <InlineTextInput
-                  label={renderData.waitAfterOperation ? "Wait After: URL" : "Wait Before: URL"}
-                  value={renderData.waitForUrl || ''}
-                  onChange={(value) => handlePropertyChange('waitForUrl', value)}
-                  placeholder="/pattern/ or exact-url"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 6)}
-              {renderData.waitForCondition && renderPropertyRow('waitForCondition', (
-                <InlineTextarea
-                  label={renderData.waitAfterOperation ? "Wait After: Condition" : "Wait Before: Condition"}
-                  value={renderData.waitForCondition || ''}
-                  onChange={(value) => handlePropertyChange('waitForCondition', value)}
-                  placeholder="() => document.querySelector('.loaded')"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 7)}
-              {(renderData.waitForSelector || renderData.waitForUrl || renderData.waitForCondition) && renderPropertyRow('waitStrategy', (
-                <InlineSelect
-                  label="Wait Strategy"
-                  value={renderData.waitStrategy || 'parallel'}
-                  onChange={(value) => handlePropertyChange('waitStrategy', value)}
-                  options={[
-                    { label: 'Parallel', value: 'parallel' },
-                    { label: 'Sequential', value: 'sequential' },
-                  ]}
-                />
-              ), 8)}
-            </div>
-          );
-        
-        case NodeType.CLICK:
-          return (
-            <div className="mt-2 space-y-1">
-              {renderPropertyRow('selectorType', (
-                <InlineSelect
-                  label="Selector Type"
-                  value={renderData.selectorType || 'css'}
-                  onChange={(value) => handlePropertyChange('selectorType', value)}
-                  options={[
-                    { label: 'CSS', value: 'css' },
-                    { label: 'XPath', value: 'xpath' },
-                  ]}
-                />
-              ), 0)}
-              {renderPropertyRow('selector', (
-                <InlineTextInput
-                  label="Selector"
-                  value={renderData.selector || ''}
-                  onChange={(value) => handlePropertyChange('selector', value)}
-                  placeholder="#button or //button[@id='button']"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 1)}
-              {renderPropertyRow('timeout', (
-                <InlineNumberInput
-                  label="Timeout"
-                  value={renderData.timeout || 30000}
-                  onChange={(value) => handlePropertyChange('timeout', value)}
-                  placeholder="30000"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 2)}
-              {renderData.waitForSelector && renderPropertyRow('waitForSelector', (
-                <InlineTextInput
-                  label={renderData.waitAfterOperation ? "Wait After: Selector" : "Wait Before: Selector"}
-                  value={renderData.waitForSelector || ''}
-                  onChange={(value) => handlePropertyChange('waitForSelector', value)}
-                  placeholder=".my-class"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 3)}
-              {renderData.waitForSelector && renderPropertyRow('waitForSelectorType', (
-                <InlineSelect
-                  label="Selector Type"
-                  value={renderData.waitForSelectorType || 'css'}
-                  onChange={(value) => handlePropertyChange('waitForSelectorType', value)}
-                  options={[
-                    { label: 'CSS', value: 'css' },
-                    { label: 'XPath', value: 'xpath' },
-                  ]}
-                />
-              ), 4)}
-              {renderData.waitForUrl && renderPropertyRow('waitForUrl', (
-                <InlineTextInput
-                  label={renderData.waitAfterOperation ? "Wait After: URL" : "Wait Before: URL"}
-                  value={renderData.waitForUrl || ''}
-                  onChange={(value) => handlePropertyChange('waitForUrl', value)}
-                  placeholder="/pattern/ or exact-url"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 5)}
-              {renderData.waitForCondition && renderPropertyRow('waitForCondition', (
-                <InlineTextarea
-                  label={renderData.waitAfterOperation ? "Wait After: Condition" : "Wait Before: Condition"}
-                  value={renderData.waitForCondition || ''}
-                  onChange={(value) => handlePropertyChange('waitForCondition', value)}
-                  placeholder="() => document.querySelector('.loaded')"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 6)}
-              {(renderData.waitForSelector || renderData.waitForUrl || renderData.waitForCondition) && renderPropertyRow('waitStrategy', (
-                <InlineSelect
-                  label="Wait Strategy"
-                  value={renderData.waitStrategy || 'parallel'}
-                  onChange={(value) => handlePropertyChange('waitStrategy', value)}
-                  options={[
-                    { label: 'Parallel', value: 'parallel' },
-                    { label: 'Sequential', value: 'sequential' },
-                  ]}
-                />
-              ), 7)}
-              {renderData.retryEnabled && renderPropertyRow('retryStrategy', (
-                <InlineSelect
-                  label="Retry Strategy"
-                  value={renderData.retryStrategy || 'count'}
-                  onChange={(value) => handlePropertyChange('retryStrategy', value)}
-                  options={[
-                    { label: 'Count', value: 'count' },
-                    { label: 'Until Condition', value: 'untilCondition' },
-                  ]}
-                />
-              ), 8)}
-              {renderData.retryEnabled && renderData.retryStrategy === 'count' && renderPropertyRow('retryCount', (
-                <InlineNumberInput
-                  label="Retry Count"
-                  value={renderData.retryCount || 3}
-                  onChange={(value) => handlePropertyChange('retryCount', value)}
-                  placeholder="3"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 9)}
-            </div>
-          );
-        
-        case NodeType.TYPE:
-          return (
-            <div className="mt-2 space-y-1">
-              {renderPropertyRow('selectorType', (
-                <InlineSelect
-                  label="Selector Type"
-                  value={renderData.selectorType || 'css'}
-                  onChange={(value) => handlePropertyChange('selectorType', value)}
-                  options={[
-                    { label: 'CSS', value: 'css' },
-                    { label: 'XPath', value: 'xpath' },
-                  ]}
-                />
-              ), 0)}
-              {renderPropertyRow('selector', (
-                <InlineTextInput
-                  label="Selector"
-                  value={renderData.selector || ''}
-                  onChange={(value) => handlePropertyChange('selector', value)}
-                  placeholder="#input or //input[@id='input']"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 1)}
-              {renderPropertyRow('text', (
-                <InlineTextarea
-                  label="Text"
-                  value={renderData.text || ''}
-                  onChange={(value) => handlePropertyChange('text', value)}
-                  placeholder="Text to type"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 2)}
-              {renderPropertyRow('timeout', (
-                <InlineNumberInput
-                  label="Timeout"
-                  value={renderData.timeout || 30000}
-                  onChange={(value) => handlePropertyChange('timeout', value)}
-                  placeholder="30000"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 3)}
-              {renderData.waitForSelector && renderPropertyRow('waitForSelector', (
-                <InlineTextInput
-                  label="Wait Selector"
-                  value={renderData.waitForSelector || ''}
-                  onChange={(value) => handlePropertyChange('waitForSelector', value)}
-                  placeholder=".my-class"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 4)}
-              {renderData.waitForSelector && renderPropertyRow('waitForSelectorType', (
-                <InlineSelect
-                  label="Wait Selector Type"
-                  value={renderData.waitForSelectorType || 'css'}
-                  onChange={(value) => handlePropertyChange('waitForSelectorType', value)}
-                  options={[
-                    { label: 'CSS', value: 'css' },
-                    { label: 'XPath', value: 'xpath' },
-                  ]}
-                />
-              ), 5)}
-              {renderData.waitForUrl && renderPropertyRow('waitForUrl', (
-                <InlineTextInput
-                  label="Wait URL"
-                  value={renderData.waitForUrl || ''}
-                  onChange={(value) => handlePropertyChange('waitForUrl', value)}
-                  placeholder="/pattern/ or exact-url"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 6)}
-              {renderData.waitForCondition && renderPropertyRow('waitForCondition', (
-                <InlineTextarea
-                  label="Wait Condition"
-                  value={renderData.waitForCondition || ''}
-                  onChange={(value) => handlePropertyChange('waitForCondition', value)}
-                  placeholder="() => document.querySelector('.loaded')"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 7)}
-              {(renderData.waitForSelector || renderData.waitForUrl || renderData.waitForCondition) && renderPropertyRow('waitStrategy', (
-                <InlineSelect
-                  label="Wait Strategy"
-                  value={renderData.waitStrategy || 'parallel'}
-                  onChange={(value) => handlePropertyChange('waitStrategy', value)}
-                  options={[
-                    { label: 'Parallel', value: 'parallel' },
-                    { label: 'Sequential', value: 'sequential' },
-                  ]}
-                />
-              ), 8)}
-              {renderData.retryEnabled && renderPropertyRow('retryStrategy', (
-                <InlineSelect
-                  label="Retry Strategy"
-                  value={renderData.retryStrategy || 'count'}
-                  onChange={(value) => handlePropertyChange('retryStrategy', value)}
-                  options={[
-                    { label: 'Count', value: 'count' },
-                    { label: 'Until Condition', value: 'untilCondition' },
-                  ]}
-                />
-              ), 9)}
-              {renderData.retryEnabled && renderData.retryStrategy === 'count' && renderPropertyRow('retryCount', (
-                <InlineNumberInput
-                  label="Retry Count"
-                  value={renderData.retryCount || 3}
-                  onChange={(value) => handlePropertyChange('retryCount', value)}
-                  placeholder="3"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 10)}
-            </div>
-          );
-        
-        case NodeType.GET_TEXT:
-          return (
-            <div className="mt-2 space-y-1">
-              {renderPropertyRow('selectorType', (
-                <InlineSelect
-                  label="Selector Type"
-                  value={stableData.selectorType || 'css'}
-                  onChange={(value) => handlePropertyChange('selectorType', value)}
-                  options={[
-                    { label: 'CSS', value: 'css' },
-                    { label: 'XPath', value: 'xpath' },
-                  ]}
-                />
-              ), 0)}
-              {renderPropertyRow('selector', (
-                <InlineTextInput
-                  label="Selector"
-                  value={stableData.selector || ''}
-                  onChange={(value) => handlePropertyChange('selector', value)}
-                  placeholder="#element or //div[@class='text']"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 1)}
-              {renderPropertyRow('outputVariable', (
-                <InlineTextInput
-                  label="Output Var"
-                  value={renderData.outputVariable || 'text'}
-                  onChange={(value) => handlePropertyChange('outputVariable', value)}
-                  placeholder="text"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 2)}
-              {renderPropertyRow('timeout', (
-                <InlineNumberInput
-                  label="Timeout"
-                  value={stableData.timeout || 30000}
-                  onChange={(value) => handlePropertyChange('timeout', value)}
-                  placeholder="30000"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 3)}
-              {renderData.waitForSelector && renderPropertyRow('waitForSelector', (
-                <InlineTextInput
-                  label="Wait Selector"
-                  value={renderData.waitForSelector || ''}
-                  onChange={(value) => handlePropertyChange('waitForSelector', value)}
-                  placeholder=".my-class"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 4)}
-              {renderData.waitForSelector && renderPropertyRow('waitForSelectorType', (
-                <InlineSelect
-                  label="Wait Selector Type"
-                  value={renderData.waitForSelectorType || 'css'}
-                  onChange={(value) => handlePropertyChange('waitForSelectorType', value)}
-                  options={[
-                    { label: 'CSS', value: 'css' },
-                    { label: 'XPath', value: 'xpath' },
-                  ]}
-                />
-              ), 5)}
-              {renderData.waitForUrl && renderPropertyRow('waitForUrl', (
-                <InlineTextInput
-                  label="Wait URL"
-                  value={renderData.waitForUrl || ''}
-                  onChange={(value) => handlePropertyChange('waitForUrl', value)}
-                  placeholder="/pattern/ or exact-url"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 6)}
-              {renderData.waitForCondition && renderPropertyRow('waitForCondition', (
-                <InlineTextarea
-                  label="Wait Condition"
-                  value={renderData.waitForCondition || ''}
-                  onChange={(value) => handlePropertyChange('waitForCondition', value)}
-                  placeholder="() => document.querySelector('.loaded')"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 7)}
-              {(renderData.waitForSelector || renderData.waitForUrl || renderData.waitForCondition) && renderPropertyRow('waitStrategy', (
-                <InlineSelect
-                  label="Wait Strategy"
-                  value={renderData.waitStrategy || 'parallel'}
-                  onChange={(value) => handlePropertyChange('waitStrategy', value)}
-                  options={[
-                    { label: 'Parallel', value: 'parallel' },
-                    { label: 'Sequential', value: 'sequential' },
-                  ]}
-                />
-              ), 8)}
-              {renderData.retryEnabled && renderPropertyRow('retryStrategy', (
-                <InlineSelect
-                  label="Retry Strategy"
-                  value={renderData.retryStrategy || 'count'}
-                  onChange={(value) => handlePropertyChange('retryStrategy', value)}
-                  options={[
-                    { label: 'Count', value: 'count' },
-                    { label: 'Until Condition', value: 'untilCondition' },
-                  ]}
-                />
-              ), 9)}
-              {renderData.retryEnabled && renderData.retryStrategy === 'count' && renderPropertyRow('retryCount', (
-                <InlineNumberInput
-                  label="Retry Count"
-                  value={renderData.retryCount || 3}
-                  onChange={(value) => handlePropertyChange('retryCount', value)}
-                  placeholder="3"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 10)}
-            </div>
-          );
-        
-        case NodeType.SCREENSHOT:
-          return (
-            <div className="mt-2 space-y-1">
-              {renderPropertyRow('fullPage', (
-                <InlineCheckbox
-                  label="Full Page"
-                  value={renderData.fullPage || false}
-                  onChange={(value) => handlePropertyChange('fullPage', value)}
-                />
-              ), 0)}
-              {renderPropertyRow('path', (
-                <InlineTextInput
-                  label="Path"
-                  value={renderData.path || ''}
-                  onChange={(value) => handlePropertyChange('path', value)}
-                  placeholder="screenshot.png (optional)"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 1)}
-              {renderData.waitForSelector && renderPropertyRow('waitForSelector', (
-                <InlineTextInput
-                  label="Wait Selector"
-                  value={renderData.waitForSelector || ''}
-                  onChange={(value) => handlePropertyChange('waitForSelector', value)}
-                  placeholder=".my-class"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 2)}
-              {renderData.waitForSelector && renderPropertyRow('waitForSelectorType', (
-                <InlineSelect
-                  label="Wait Selector Type"
-                  value={renderData.waitForSelectorType || 'css'}
-                  onChange={(value) => handlePropertyChange('waitForSelectorType', value)}
-                  options={[
-                    { label: 'CSS', value: 'css' },
-                    { label: 'XPath', value: 'xpath' },
-                  ]}
-                />
-              ), 3)}
-              {renderData.waitForUrl && renderPropertyRow('waitForUrl', (
-                <InlineTextInput
-                  label="Wait URL"
-                  value={renderData.waitForUrl || ''}
-                  onChange={(value) => handlePropertyChange('waitForUrl', value)}
-                  placeholder="/pattern/ or exact-url"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 4)}
-              {renderData.waitForCondition && renderPropertyRow('waitForCondition', (
-                <InlineTextarea
-                  label="Wait Condition"
-                  value={renderData.waitForCondition || ''}
-                  onChange={(value) => handlePropertyChange('waitForCondition', value)}
-                  placeholder="() => document.querySelector('.loaded')"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 5)}
-              {(renderData.waitForSelector || renderData.waitForUrl || renderData.waitForCondition) && renderPropertyRow('waitStrategy', (
-                <InlineSelect
-                  label="Wait Strategy"
-                  value={renderData.waitStrategy || 'parallel'}
-                  onChange={(value) => handlePropertyChange('waitStrategy', value)}
-                  options={[
-                    { label: 'Parallel', value: 'parallel' },
-                    { label: 'Sequential', value: 'sequential' },
-                  ]}
-                />
-              ), 6)}
-              {renderData.retryEnabled && renderPropertyRow('retryStrategy', (
-                <InlineSelect
-                  label="Retry Strategy"
-                  value={renderData.retryStrategy || 'count'}
-                  onChange={(value) => handlePropertyChange('retryStrategy', value)}
-                  options={[
-                    { label: 'Count', value: 'count' },
-                    { label: 'Until Condition', value: 'untilCondition' },
-                  ]}
-                />
-              ), 7)}
-              {renderData.retryEnabled && renderData.retryStrategy === 'count' && renderPropertyRow('retryCount', (
-                <InlineNumberInput
-                  label="Retry Count"
-                  value={renderData.retryCount || 3}
-                  onChange={(value) => handlePropertyChange('retryCount', value)}
-                  placeholder="3"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 8)}
-            </div>
-          );
-        
-        case NodeType.WAIT:
-          return (
-            <div className="mt-2 space-y-1">
-              {renderPropertyRow('waitType', (
-                <InlineSelect
-                  label="Wait Type"
-                  value={renderData.waitType || 'timeout'}
-                  onChange={(value) => handlePropertyChange('waitType', value)}
-                  options={[
-                    { label: 'Timeout', value: 'timeout' },
-                    { label: 'Selector', value: 'selector' },
-                    { label: 'URL Pattern', value: 'url' },
-                    { label: 'JavaScript Condition', value: 'condition' },
-                  ]}
-                />
-              ), 0)}
-              {renderData.waitType === 'timeout' ? (
-                renderPropertyRow('value', (
-                  <InlineNumberInput
-                    label="Value (ms)"
-                    value={typeof renderData.value === 'number' ? renderData.value : parseInt(String(renderData.value || 1000), 10)}
-                    onChange={(value) => handlePropertyChange('value', value)}
-                    placeholder="1000"
-                    onOpenPopup={handleOpenPopup}
-                  />
-                ), 1)
-              ) : renderData.waitType === 'selector' ? (
-                <>
-                  {renderPropertyRow('selectorType', (
-                    <InlineSelect
-                      label="Selector Type"
-                      value={renderData.selectorType || 'css'}
-                      onChange={(value) => handlePropertyChange('selectorType', value)}
-                      options={[
-                        { label: 'CSS', value: 'css' },
-                        { label: 'XPath', value: 'xpath' },
-                      ]}
-                    />
-                  ), 1)}
-                  {renderPropertyRow('value', (
-                    <InlineTextInput
-                      label="Selector"
-                      value={typeof renderData.value === 'string' ? renderData.value : ''}
-                      onChange={(value) => handlePropertyChange('value', value)}
-                      placeholder="#element or //div[@class='element']"
-                      onOpenPopup={handleOpenPopup}
-                    />
-                  ), 2)}
-                  {renderPropertyRow('timeout', (
-                    <InlineNumberInput
-                      label="Timeout"
-                      value={renderData.timeout || 30000}
-                      onChange={(value) => handlePropertyChange('timeout', value)}
-                      placeholder="30000"
-                      onOpenPopup={handleOpenPopup}
-                    />
-                  ), 3)}
-                </>
-              ) : renderData.waitType === 'url' ? (
-                <>
-                  {renderPropertyRow('value', (
-                    <InlineTextInput
-                      label="URL Pattern"
-                      value={typeof renderData.value === 'string' ? renderData.value : ''}
-                      onChange={(value) => handlePropertyChange('value', value)}
-                      placeholder="/pattern/ or exact-url"
-                      onOpenPopup={handleOpenPopup}
-                    />
-                  ), 1)}
-                  {renderPropertyRow('timeout', (
-                    <InlineNumberInput
-                      label="Timeout"
-                      value={renderData.timeout || 30000}
-                      onChange={(value) => handlePropertyChange('timeout', value)}
-                      placeholder="30000"
-                      onOpenPopup={handleOpenPopup}
-                    />
-                  ), 2)}
-                </>
-              ) : (
-                <>
-                  {renderPropertyRow('value', (
-                    <InlineTextarea
-                      label="Condition"
-                      value={typeof renderData.value === 'string' ? renderData.value : ''}
-                      onChange={(value) => handlePropertyChange('value', value)}
-                      placeholder="() => document.querySelector('.loaded')"
-                      onOpenPopup={handleOpenPopup}
-                    />
-                  ), 1)}
-                  {renderPropertyRow('timeout', (
-                    <InlineNumberInput
-                      label="Timeout"
-                      value={renderData.timeout || 30000}
-                      onChange={(value) => handlePropertyChange('timeout', value)}
-                      placeholder="30000"
-                      onOpenPopup={handleOpenPopup}
-                    />
-                  ), 2)}
-                </>
-              )}
-              {renderData.retryEnabled && renderPropertyRow('retryStrategy', (
-                <InlineSelect
-                  label="Retry Strategy"
-                  value={renderData.retryStrategy || 'count'}
-                  onChange={(value) => handlePropertyChange('retryStrategy', value)}
-                  options={[
-                    { label: 'Count', value: 'count' },
-                    { label: 'Until Condition', value: 'untilCondition' },
-                  ]}
-                />
-              ), 3)}
-              {renderData.retryEnabled && renderData.retryStrategy === 'count' && renderPropertyRow('retryCount', (
-                <InlineNumberInput
-                  label="Retry Count"
-                  value={renderData.retryCount || 3}
-                  onChange={(value) => handlePropertyChange('retryCount', value)}
-                  placeholder="3"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 4)}
-            </div>
-          );
-        
-        case NodeType.JAVASCRIPT_CODE:
-          return (
-            <div className="mt-2 space-y-1">
-              {renderPropertyRow('code', (
-                <InlineTextarea
-                  label="Code"
-                  value={renderData.code || ''}
-                  onChange={(value) => handlePropertyChange('code', value)}
-                  placeholder="// Your code here"
-                  field="code"
-                  onOpenPopup={(_type, label, value, onChange, placeholder, min, max, field) => {
-                    handleOpenPopup('code', label, value, onChange, placeholder, min, max, field);
-                  }}
-                />
-              ), 0)}
-            </div>
-          );
-        
-        case NodeType.LOOP:
-          return (
-            <div className="mt-2 space-y-1">
-              {renderPropertyRow('arrayVariable', (
-                <InlineTextInput
-                  label="Array Var"
-                  value={renderData.arrayVariable || ''}
-                  onChange={(value) => handlePropertyChange('arrayVariable', value)}
-                  placeholder="items (variable name)"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 0)}
-            </div>
-          );
-        
-        case NodeType.OPEN_BROWSER:
-          const browserData = renderData as OpenBrowserNodeData;
-          const maxWindow = browserData.maxWindow !== false; // Default to true
-          const capabilitiesCount = browserData.capabilities ? Object.keys(browserData.capabilities).length : 0;
-          const launchOptionsCount = browserData.launchOptions ? Object.keys(browserData.launchOptions).length : 0;
-          
-          return (
-            <>
-              <div className="mt-2 space-y-1">
-                {renderPropertyRow('browser', (
-                  <InlineSelect
-                    label="Browser"
-                    value={browserData.browser || 'chromium'}
-                    onChange={(value) => handlePropertyChange('browser', value)}
-                    options={[
-                      { label: 'Chromium', value: 'chromium' },
-                      { label: 'Firefox', value: 'firefox' },
-                      { label: 'WebKit', value: 'webkit' },
-                    ]}
-                  />
-                ), 0)}
-                {renderPropertyRow('maxWindow', (
-                  <InlineCheckbox
-                    label="Max Window"
-                    value={maxWindow}
-                    onChange={(value) => {
-                      handlePropertyChange('maxWindow', value);
-                      // If disabling max window, set default viewport if not set
-                      if (!value && !browserData.viewportWidth && !browserData.viewportHeight) {
-                        handlePropertyChange('viewportWidth', 1280);
-                        handlePropertyChange('viewportHeight', 720);
-                      }
-                    }}
-                  />
-                ), 1)}
-                {!maxWindow && renderPropertyRow('viewportWidth', (
-                  <InlineNumberInput
-                    label="Width"
-                    value={browserData.viewportWidth || 1280}
-                    onChange={(value) => handlePropertyChange('viewportWidth', value)}
-                    placeholder="1280"
-                    onOpenPopup={handleOpenPopup}
-                  />
-                ), 2)}
-                {!maxWindow && renderPropertyRow('viewportHeight', (
-                  <InlineNumberInput
-                    label="Height"
-                    value={browserData.viewportHeight || 720}
-                    onChange={(value) => handlePropertyChange('viewportHeight', value)}
-                    placeholder="720"
-                    onOpenPopup={handleOpenPopup}
-                  />
-                ), 3)}
-                {renderPropertyRow('headless', (
-                  <InlineCheckbox
-                    label="Headless"
-                    value={browserData.headless !== false}
-                    onChange={(value) => handlePropertyChange('headless', value)}
-                  />
-                ), 4)}
-                {renderPropertyRow('stealthMode', (
-                  <InlineCheckbox
-                    label="Stealth Mode"
-                    value={browserData.stealthMode || false}
-                    onChange={(value) => handlePropertyChange('stealthMode', value)}
-                  />
-                ), 5)}
-                {/* View/Add Options button - rendered directly, NOT via renderPropertyRow */}
-                <div className="mt-1">
-                  <button
-                    onClick={() => {
-                      setShowCapabilitiesPopup(true);
-                    }}
-                    className="w-full px-2 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded text-white transition-colors"
-                  >
-                    View/Add Options
-                    {(capabilitiesCount > 0 || launchOptionsCount > 0) && (
-                      <span className="ml-2 text-blue-400">
-                        (C:{capabilitiesCount}, L:{launchOptionsCount})
-                      </span>
-                    )}
-                  </button>
-                </div>
-              </div>
-            </>
-          );
-        
-        case NodeType.INT_VALUE:
-          return (
-            <div className="mt-2 space-y-1">
-              <InlineNumberInput
-                label="Value"
-                value={renderData.value ?? 0}
-                onChange={(value) => handlePropertyChange('value', value)}
-                placeholder="0"
-                field="value"
-                onOpenPopup={handleOpenPopup}
-              />
-            </div>
-          );
-        
-        case NodeType.STRING_VALUE:
-          return (
-            <div className="mt-2 space-y-1">
-              <InlineTextInput
-                label="Value"
-                value={renderData.value ?? ''}
-                onChange={(value) => handlePropertyChange('value', value)}
-                placeholder="Enter string value"
-                field="value"
-                onOpenPopup={handleOpenPopup}
-              />
-            </div>
-          );
-        
-        case NodeType.BOOLEAN_VALUE:
-          return (
-            <div className="mt-2 space-y-1">
-              <InlineSelect
-                label="Value"
-                value={String(renderData.value ?? false)}
-                onChange={(value) => handlePropertyChange('value', value === 'true')}
-                options={[
-                  { label: 'True', value: 'true' },
-                  { label: 'False', value: 'false' },
-                ]}
-              />
-            </div>
-          );
-        
-        case NodeType.INPUT_VALUE:
-          const inputDataType = renderData.dataType || PropertyDataType.STRING;
-          const inputValue = renderData.value ?? (inputDataType === PropertyDataType.BOOLEAN ? false : inputDataType === PropertyDataType.INT ? 0 : '');
-          
-          return (
-            <div className="mt-2 space-y-1">
-              <InlineSelect
-                label="Data Type"
-                value={inputDataType}
-                onChange={(value) => {
-                  const newDataType = value as PropertyDataType;
-                  // Reset value when type changes
-                  let newValue: string | number | boolean;
-                  if (newDataType === PropertyDataType.BOOLEAN) {
-                    newValue = false;
-                  } else if (newDataType === PropertyDataType.INT || newDataType === PropertyDataType.FLOAT || newDataType === PropertyDataType.DOUBLE) {
-                    newValue = 0;
-                  } else {
-                    newValue = '';
-                  }
-                  handlePropertyChange('dataType', newDataType);
-                  handlePropertyChange('value', newValue);
-                }}
-                options={[
-                  { label: 'String', value: PropertyDataType.STRING },
-                  { label: 'Int', value: PropertyDataType.INT },
-                  { label: 'Float', value: PropertyDataType.FLOAT },
-                  { label: 'Double', value: PropertyDataType.DOUBLE },
-                  { label: 'Boolean', value: PropertyDataType.BOOLEAN },
-                ]}
-              />
-              {inputDataType === PropertyDataType.STRING && (
-                <InlineTextInput
-                  label="Value"
-                  value={String(inputValue)}
-                  onChange={(value) => handlePropertyChange('value', value)}
-                  placeholder="Enter string value"
-                  field="value"
-                  onOpenPopup={handleOpenPopup}
-                />
-              )}
-              {(inputDataType === PropertyDataType.INT || inputDataType === PropertyDataType.FLOAT || inputDataType === PropertyDataType.DOUBLE) && (
-                <InlineNumberInput
-                  label="Value"
-                  value={typeof inputValue === 'number' ? inputValue : parseFloat(String(inputValue)) || 0}
-                  onChange={(value) => handlePropertyChange('value', value)}
-                  placeholder="0"
-                  field="value"
-                  onOpenPopup={handleOpenPopup}
-                />
-              )}
-              {inputDataType === PropertyDataType.BOOLEAN && (
-                <InlineSelect
-                  label="Value"
-                  value={inputValue ? '1' : '0'}
-                  onChange={(value) => handlePropertyChange('value', value === '1')}
-                  options={[
-                    { label: '0', value: '0' },
-                    { label: '1', value: '1' },
-                  ]}
-                />
-              )}
-            </div>
-          );
-        
-        case NodeType.API_REQUEST:
-          return (
-            <div className="mt-2 space-y-1">
-              {renderPropertyRow('method', (
-                <InlineSelect
-                  label="Method"
-                  value={renderData.method || 'GET'}
-                  onChange={(value) => handlePropertyChange('method', value)}
-                  options={[
-                    { label: 'GET', value: 'GET' },
-                    { label: 'POST', value: 'POST' },
-                    { label: 'PUT', value: 'PUT' },
-                    { label: 'DELETE', value: 'DELETE' },
-                    { label: 'PATCH', value: 'PATCH' },
-                    { label: 'HEAD', value: 'HEAD' },
-                    { label: 'OPTIONS', value: 'OPTIONS' },
-                  ]}
-                />
-              ), 0)}
-              {renderPropertyRow('url', (
-                <InlineTextInput
-                  label="URL"
-                  value={renderData.url || ''}
-                  onChange={(value) => handlePropertyChange('url', value)}
-                  placeholder="https://api.example.com/users"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 1)}
-              {renderPropertyRow('contextKey', (
-                <InlineTextInput
-                  label="Context Key"
-                  value={renderData.contextKey || 'apiResponse'}
-                  onChange={(value) => handlePropertyChange('contextKey', value)}
-                  placeholder="apiResponse"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 2)}
-              {renderPropertyRow('timeout', (
-                <InlineNumberInput
-                  label="Timeout"
-                  value={renderData.timeout || 30000}
-                  onChange={(value) => handlePropertyChange('timeout', value)}
-                  placeholder="30000"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 3)}
-            </div>
-          );
-        
-        case NodeType.API_CURL:
-          return (
-            <div className="mt-2 space-y-1">
-              {renderPropertyRow('curlCommand', (
-                <InlineTextarea
-                  label="cURL Command"
-                  value={renderData.curlCommand || ''}
-                  onChange={(value) => handlePropertyChange('curlCommand', value)}
-                  placeholder="curl -X POST https://api.example.com/users"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 0)}
-              {renderPropertyRow('contextKey', (
-                <InlineTextInput
-                  label="Context Key"
-                  value={renderData.contextKey || 'apiResponse'}
-                  onChange={(value) => handlePropertyChange('contextKey', value)}
-                  placeholder="apiResponse"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 1)}
-              {renderPropertyRow('timeout', (
-                <InlineNumberInput
-                  label="Timeout"
-                  value={renderData.timeout || 30000}
-                  onChange={(value) => handlePropertyChange('timeout', value)}
-                  placeholder="30000"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 2)}
-            </div>
-          );
-        
-        case NodeType.LOAD_CONFIG_FILE:
-          return (
-            <div className="mt-2 space-y-1">
-              {renderPropertyRow('filePath', (
-                <InlineTextInput
-                  label="File Path"
-                  value={renderData.filePath || ''}
-                  onChange={(value) => handlePropertyChange('filePath', value)}
-                  placeholder="tests/resources/env.Env1.json"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 0)}
-              {renderData.contextKey && renderPropertyRow('contextKey', (
-                <InlineTextInput
-                  label="Context Key"
-                  value={renderData.contextKey || ''}
-                  onChange={(value) => handlePropertyChange('contextKey', value)}
-                  placeholder="env (optional)"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 1)}
-            </div>
-          );
-        
-        case NodeType.SELECT_CONFIG_FILE:
-          const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            
-            if (!file.name.endsWith('.json')) {
-              alert('Please select a JSON file');
-              return;
-            }
-            
-            try {
-              const fileContent = await file.text();
-              // Validate JSON
-              JSON.parse(fileContent);
-              handlePropertyChange('fileContent', fileContent);
-              handlePropertyChange('fileName', file.name);
-            } catch (error: any) {
-              alert(`Invalid JSON: ${error.message}`);
-            }
-          };
-          
-          return (
-            <div className="mt-2 space-y-1">
-              <input
-                ref={selectConfigFileInputRef}
-                type="file"
-                accept="application/json"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
-              <div className="px-2 py-1">
-                <button
-                  type="button"
-                  onClick={() => selectConfigFileInputRef.current?.click()}
-                  className="w-full px-2 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 border border-gray-600 rounded text-gray-200 transition-colors"
-                >
-                  {renderData.fileName || 'Select JSON File'}
-                </button>
-                {renderData.fileName && (
-                  <p className="mt-1 text-xs text-gray-400 truncate" title={renderData.fileName}>
-                    {renderData.fileName}
-                  </p>
-                )}
-              </div>
-              {renderData.contextKey && renderPropertyRow('contextKey', (
-                <InlineTextInput
-                  label="Context Key"
-                  value={renderData.contextKey || ''}
-                  onChange={(value) => handlePropertyChange('contextKey', value)}
-                  placeholder="env (optional)"
-                  onOpenPopup={handleOpenPopup}
-                />
-              ), 1)}
-            </div>
-          );
-        
-        default:
-          return null;
-      }
+    // Try to get renderer from registry first
+    const renderer = getPropertyRenderer(nodeType);
+    if (renderer) {
+      return renderer({
+        renderData,
+        handlePropertyChange,
+        handleOpenPopup,
+        renderPropertyRow,
+        setShowCapabilitiesPopup,
+        setShowMarkdownEditor,
+        setShowSetConfigModal,
+        setSetConfigJsonValue,
+        setSetConfigOriginalJsonValue,
+        setSetConfigJsonError,
+        id,
+        storeNodes: nodesRaw,
+        setSelectedNode,
+      });
     }
-
-    // Special handling for comment box plugin
-    if (isCommentBox) {
-      const content = renderData.content || '';
-      return (
-        <div className="mt-2">
-          <div
-            onClick={() => setShowMarkdownEditor(true)}
-            className="cursor-pointer min-h-[60px] p-2 rounded border border-gray-600 hover:border-gray-500 transition-colors"
-            style={{ color: textColor }}
-          >
-            <MarkdownRenderer content={content} />
-          </div>
-        </div>
-      );
-    }
-
-    // Special handling for shortcut plugin
-    if (isShortcut) {
-      const shortcut = renderData.shortcut || '';
-      const nodes = useWorkflowStore.getState().nodes;
-      
-      // Get existing shortcuts for validation
-      const existingShortcuts = nodes
-        .filter(n => n.data.type === 'shortcut.shortcut' && n.id !== id)
-        .map(n => (n.data.shortcut || '').toLowerCase())
-        .filter(s => s.length === 1);
-
-      const handleShortcutChange = (value: string) => {
-        // Only allow single character
-        const newShortcut = value.slice(-1).toLowerCase();
-        const validation = validateShortcut(newShortcut, existingShortcuts);
-        
-        if (validation.isValid) {
-          setShortcutError(null);
-          handlePropertyChange('shortcut', newShortcut);
-        } else {
-          setShortcutError(validation.error || 'Invalid shortcut');
-          // Still update the value so user can see what they typed
-          handlePropertyChange('shortcut', newShortcut);
-        }
-      };
-
-      return (
-        <div className="mt-2">
-          <div>
-            <label className="text-xs mb-1 block" style={{ color: textColor, opacity: 0.7 }}>
-              Shortcut Key
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                value={shortcut}
-                onChange={(e) => handleShortcutChange(e.target.value)}
-                maxLength={1}
-                placeholder="a-z, 0-9"
-                className={`w-full px-2 py-1.5 bg-gray-700 border rounded text-sm ${
-                  shortcutError ? 'border-red-500' : 'border-gray-600'
-                }`}
-                style={{ color: textColor }}
-              />
-              {shortcut && !shortcutError && (
-                <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs font-mono bg-blue-600 px-2 py-0.5 rounded">
-                  {shortcut.toUpperCase()}
-                </div>
-              )}
-            </div>
-            {shortcutError && (
-              <div className="text-xs text-red-400 mt-1">{shortcutError}</div>
-            )}
-            {shortcut && !shortcutError && (
-              <div className="text-xs text-gray-400 mt-1">
-                Press "{shortcut.toUpperCase()}" to navigate to this node
-              </div>
-            )}
-          </div>
-        </div>
-      );
-    }
+    
+    // All standard node types are now handled by the registry
+    // Fallback switch statement removed - all cases extracted to propertyRenderers/
 
     // Plugin nodes (generic handling)
     const pluginNode = frontendPluginRegistry.getPluginNode(nodeType);
     if (pluginNode && pluginNode.definition.defaultData) {
       const properties = Object.keys(pluginNode.definition.defaultData);
+      
+      // Generic plugin node handling
       return (
         <div className="mt-2 space-y-1">
           {properties.map((key) => {
-            const value = data[key] ?? pluginNode.definition.defaultData![key];
+            const value = latestNodeData[key] ?? pluginNode.definition.defaultData![key];
             const valueType = typeof value;
             
             if (valueType === 'boolean') {
@@ -1845,6 +695,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     renderData.method,
     renderData.curlCommand,
     renderData.contextKey,
+    renderData.action, // Include action for nodes that use it (ACTION, CONTEXT_MANIPULATE, etc.)
     edgesForThisNode.length,
     sourceNodes.length,
     connectingHandleId,
@@ -1855,17 +706,44 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   ]);
   const hasProperties = properties !== null;
 
+  // Get glow color - use user-selected backgroundColor if available, otherwise use node type color
+  const glowColor = getNodeGlowColor(nodeType, backgroundColor);
+  
+  // Convert backgroundColor to rgba for glassmorphism effect
+  const glassmorphismBg = backgroundColor && backgroundColor !== '#1f2937' 
+    ? hexToRgba(backgroundColor, 0.7) 
+    : 'rgba(30, 30, 30, 0.7)';
+  
   // Build style object with colors
-  // Priority: validation error > execution error > executing > default
+  // Priority: validation error > execution error > executing > paused > search highlighted > default
   const nodeStyle: React.CSSProperties = {
     width: currentWidth,
     height: currentHeight,
     minWidth: 150,
     minHeight: hasProperties && !isMinimized ? undefined : 50,
-    backgroundColor: backgroundColor,
-    borderColor: hasValidationError ? '#ef4444' : (isFailed ? '#ef4444' : (isExecuting ? '#22c55e' : borderColor)),
+    backgroundColor: isPaused 
+      ? 'rgba(234, 179, 8, 0.3)' // Yellow background for paused nodes
+      : (hasValidationError || isFailed || isExecuting 
+        ? backgroundColor 
+        : glassmorphismBg), // Glassmorphism effect using user color
+    backdropFilter: isPaused || hasValidationError || isFailed || isExecuting 
+      ? 'none' 
+      : 'blur(10px)', // Glassmorphism blur
+    WebkitBackdropFilter: isPaused || hasValidationError || isFailed || isExecuting 
+      ? 'none' 
+      : 'blur(10px)', // Safari support
+    borderColor: isPaused 
+      ? '#eab308' // Yellow border for paused nodes
+      : (hasValidationError ? '#ef4444' : (isFailed ? '#ef4444' : (isExecuting ? '#22c55e' : borderColor))),
     borderWidth: '2px',
     borderStyle: 'solid',
+    boxShadow: isPaused
+      ? '0 0 20px rgba(234, 179, 8, 0.6), 0 4px 6px rgba(0, 0, 0, 0.3)' // Yellow glow for paused nodes
+      : (hasValidationError || isFailed || isExecuting
+        ? undefined
+        : isSearchHighlighted
+        ? '0 0 20px rgba(245, 158, 11, 0.6), 0 4px 6px rgba(0, 0, 0, 0.3)' // Orange glow for search highlighted nodes
+        : `0 0 20px ${glowColor}, 0 4px 6px rgba(0, 0, 0, 0.3)`), // Color-coded glow using user color
   };
 
   return (
@@ -1878,13 +756,14 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     >
       {selected && (
         <NodeMenuBar
-          key={`${id}-${bypass}-${nodeDataFromStore.failSilently}-${isMinimized}-${nodeDataFromStore.isTest}-${isPinned}`}
+          key={`${id}-${bypass}-${nodeDataFromStore.failSilently}-${isMinimized}-${nodeDataFromStore.isTest}-${isPinned}-${nodeDataFromStore.breakpoint}`}
           nodeId={id}
           bypass={bypass}
           failSilently={nodeDataFromStore.failSilently}
           isMinimized={isMinimized}
           isTest={nodeDataFromStore.isTest}
           isPinned={isPinned}
+          breakpoint={nodeDataFromStore.breakpoint}
         />
       )}
       {/* Default control flow handle (driver) - skip for utility nodes */}
@@ -1897,24 +776,97 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
             connectingHandleId === 'driver' 
               ? 'connecting' 
               : hasDriverConnection 
-                ? '!bg-green-500 hover:!bg-green-400' 
-                : '!bg-blue-500 hover:!bg-blue-400'
+                ? 'handle-connected' 
+                : ''
           }`}
           style={{ 
             display: nodeType === NodeType.START || nodeType === 'start' ? 'none' : 'block',
             top: '50%',
             transform: 'translateY(-50%)',
+            borderColor: connectingHandleId === 'driver' 
+              ? '#22c55e' 
+              : hasDriverConnection 
+                ? '#22c55e' 
+                : '#4a9eff',
           }}
           onMouseEnter={() => setConnectingHandleId('driver')}
           onMouseLeave={() => setConnectingHandleId(null)}
         />
       )}
-      <div className="flex items-center gap-2">
+      {/* Deprecation Warning Banner */}
+      {isDeprecatedNodeType(nodeType as NodeType) && (() => {
+        const suggestion = getMigrationSuggestion(nodeType as NodeType);
+        return (
+          <div 
+            className="px-2 py-1 -mx-4 -mt-3 mb-1 rounded-t-lg bg-yellow-900/30 border-b border-yellow-600/50"
+            style={{ fontSize: '0.7rem' }}
+          >
+            <div className="flex items-center gap-1 text-yellow-400">
+              <span>⚠️</span>
+              <span className="font-semibold">Deprecated:</span>
+              <span>This node type is deprecated.</span>
+              {suggestion && (
+                <span>Use <strong>{suggestion.newType}</strong> with action="{suggestion.action}" instead.</span>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+      {/* Header Block with Status Dot */}
+      <div 
+        className="flex items-center gap-2 px-2 py-1.5 -mx-4 -mt-3 mb-2 rounded-t-lg min-w-0"
+        style={{ 
+          backgroundColor: 'rgba(40, 40, 40, 0.8)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+        }}
+      >
+        {/* Status Dot */}
+        <div
+          className="w-2 h-2 rounded-full flex-shrink-0"
+          style={{
+            backgroundColor: isExecuting 
+              ? '#22c55e' 
+              : hasValidationError 
+                ? '#eab308' 
+                : isFailed 
+                  ? '#ef4444' 
+                  : '#6b7280',
+            boxShadow: isExecuting 
+              ? '0 0 6px rgba(34, 197, 94, 0.8)' 
+              : hasValidationError 
+                ? '0 0 6px rgba(234, 179, 8, 0.8)' 
+                : isFailed 
+                  ? '0 0 6px rgba(239, 68, 68, 0.8)' 
+                  : undefined,
+            animation: isExecuting ? 'pulse 2s ease-in-out infinite' : undefined,
+          }}
+          title={
+            isExecuting 
+              ? 'Executing' 
+              : hasValidationError 
+                ? 'Validation Error' 
+                : isFailed 
+                  ? 'Failed' 
+                  : 'Idle'
+          }
+        />
         {icon ? (() => {
           const IconComponent = icon.icon;
-          return <IconComponent sx={{ fontSize: '1.25rem', color: icon.color }} />;
+          // Special styling for setConfig.setConfig with orange border
+          if (nodeType === 'setConfig.setConfig') {
+            return (
+              <div className="flex-shrink-0 p-0.5 rounded border-2 border-orange-500">
+                <IconComponent sx={{ fontSize: '1rem', color: icon.color }} />
+              </div>
+            );
+          }
+          return (
+            <div className="flex-shrink-0">
+              <IconComponent sx={{ fontSize: '1.25rem', color: icon.color }} />
+            </div>
+          );
         })() : (
-          <span className="text-lg">{frontendPluginRegistry.getPluginNode(nodeType)?.icon || '📦'}</span>
+          <span className="text-lg flex-shrink-0">{frontendPluginRegistry.getPluginNode(nodeType)?.icon || '📦'}</span>
         )}
         {isRenaming ? (
           <input
@@ -1930,7 +882,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
           />
         ) : (
           <div
-            className={`text-sm font-medium ${(isFailed || hasValidationError) ? 'cursor-pointer hover:underline' : 'cursor-text'}`}
+            className={`text-sm font-medium flex-1 min-w-0 truncate ${(isFailed || hasValidationError) ? 'cursor-pointer hover:underline' : 'cursor-text'}`}
             style={{ color: textColor }}
             onDoubleClick={handleDoubleClickHeader}
             onClick={(e) => {
@@ -1942,7 +894,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                 // Validation errors are shown in ValidationErrorPopup, not NodeErrorPopup
               }
             }}
-            title={(isFailed || hasValidationError) ? 'Click to view error details | Double-click to rename' : 'Double-click to rename'}
+            title={`${label}${isReusableNode && renderData.contextName ? ` (${renderData.contextName})` : ''}${isRunReusableNode && renderData.contextName ? ` → ${renderData.contextName}` : ''}${isEndNode ? ' (End)' : ''}${bypass ? ' (bypassed)' : ''}${failSilently ? ' (failSilently)' : ''} | Double-click to rename`}
           >
             {label}
             {isReusableNode && renderData.contextName && (
@@ -1966,7 +918,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
         )}
       </div>
       {hasProperties && !isMinimized && (
-        <div className="mt-2 border-t border-gray-700 pt-2">
+        <div className="mt-2 border-t border-gray-700 pt-2 min-w-0">
           {properties}
         </div>
       )}
@@ -2016,6 +968,129 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
         />,
         document.body
       )}
+      {/* Render Set Config Modal via portal (Monaco editor for setConfig nodes) */}
+      {showSetConfigModal && nodeType === 'setConfig.setConfig' && typeof document !== 'undefined' && createPortal(
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              handleCloseSetConfigModal();
+            }
+          }}
+          onKeyDown={(e) => {
+            // Prevent backspace from propagating
+            if (e.key === 'Backspace' && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }}
+        >
+          <div 
+            className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[85vh] overflow-hidden flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-gray-700">
+              <h2 className="text-lg font-semibold text-white">Edit Config</h2>
+              <button
+                onClick={handleCloseSetConfigModal}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="overflow-y-auto p-4 flex-1">
+              <div className="mb-4">
+                <div className="bg-gray-900 border border-gray-700 rounded overflow-hidden" style={{ minHeight: '400px' }}>
+                  <Editor
+                    height="400px"
+                    language="json"
+                    value={setConfigJsonValue}
+                    onChange={(value) => {
+                      setSetConfigJsonValue(value || '{}');
+                      setSetConfigJsonError(null);
+                    }}
+                    theme="vs-dark"
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 12,
+                      lineNumbers: 'on',
+                      scrollBeyondLastLine: false,
+                      automaticLayout: true,
+                      formatOnPaste: true,
+                      formatOnType: true,
+                      readOnly: false,
+                    }}
+                    loading={
+                      <div className="flex items-center justify-center h-[400px] text-gray-400">
+                        Loading editor...
+                      </div>
+                    }
+                  />
+                </div>
+                {setConfigJsonError && (
+                  <div className="mt-2">
+                    <div className="text-sm text-red-400 font-medium mb-1">Validation Errors:</div>
+                    <div className="text-sm text-red-400 whitespace-pre-wrap break-words">
+                      {setConfigJsonError.split('\n').map((error, index) => (
+                        <div key={index} className="mb-1">
+                          • {error}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <p className="mt-2 text-xs text-gray-400">
+                  Enter valid JSON object. Press Escape to cancel.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-gray-700 flex justify-end gap-2">
+              <button
+                onClick={handleCloseSetConfigModal}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  try {
+                    const trimmedJson = setConfigJsonValue.trim();
+                    const parsed = JSON.parse(trimmedJson);
+                    
+                    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+                      setSetConfigJsonError('Config must be a JSON object');
+                      return;
+                    }
+
+                    // Validate paths for duplicates and conflicts
+                    const validation = validateConfigPaths(trimmedJson, parsed);
+                    if (!validation.isValid) {
+                      const errorMessage = validation.errors.join('\n');
+                      setSetConfigJsonError(errorMessage);
+                      return;
+                    }
+
+                    handlePropertyChange('config', parsed);
+                    setSetConfigJsonError(null);
+                    // Update original value to current saved value
+                    setSetConfigOriginalJsonValue(trimmedJson);
+                    setShowSetConfigModal(false);
+                  } catch (error: any) {
+                    setSetConfigJsonError(`Invalid JSON: ${error.message}`);
+                  }
+                }}
+                disabled={!!setConfigJsonError}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
       {selected && (
         <ResizeHandle onResize={handleResize} />
       )}
@@ -2058,11 +1133,16 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                     connectingHandleId === handleId
                       ? 'connecting'
                       : hasCaseConnection
-                        ? '!bg-green-500 hover:!bg-green-400'
-                        : '!bg-blue-500 hover:!bg-blue-400'
+                        ? 'handle-connected'
+                        : ''
                   }`}
                   style={{
                     top: `${topPercent}%`,
+                    borderColor: connectingHandleId === handleId
+                      ? '#22c55e'
+                      : hasCaseConnection
+                        ? '#22c55e'
+                        : '#4a9eff',
                   }}
                   onMouseEnter={() => setConnectingHandleId(handleId)}
                   onMouseLeave={() => setConnectingHandleId(null)}
@@ -2102,11 +1182,16 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                     connectingHandleId === handleId
                       ? 'connecting'
                       : hasDefaultConnection
-                        ? '!bg-green-500 hover:!bg-green-400'
-                        : '!bg-blue-500 hover:!bg-blue-400'
+                        ? 'handle-connected'
+                        : ''
                   }`}
                   style={{
                     top: `${topPercent}%`,
+                    borderColor: connectingHandleId === handleId
+                      ? '#22c55e'
+                      : hasDefaultConnection
+                        ? '#22c55e'
+                        : '#4a9eff',
                   }}
                   onMouseEnter={() => setConnectingHandleId(handleId)}
                   onMouseLeave={() => setConnectingHandleId(null)}
@@ -2126,10 +1211,17 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
               connectingHandleId === 'output' 
                 ? 'connecting' 
                 : hasOutputConnection 
-                  ? '!bg-green-500 hover:!bg-green-400' 
-                  : '!bg-blue-500 hover:!bg-blue-400'
+                  ? 'handle-connected' 
+                  : ''
             }`}
-            style={{ display: nodeType === NodeType.START ? 'block' : 'block' }}
+            style={{ 
+              display: nodeType === NodeType.START ? 'block' : 'block',
+              borderColor: connectingHandleId === 'output' 
+                ? '#22c55e' 
+                : hasOutputConnection 
+                  ? '#22c55e' 
+                  : '#4a9eff',
+            }}
             onMouseEnter={() => setConnectingHandleId('output')}
             onMouseLeave={() => setConnectingHandleId(null)}
           />

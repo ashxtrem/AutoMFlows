@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AutoMFlows Node Documentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #111827;
+            --bg-secondary: #1f2937;
+            --bg-tertiary: #374151;
+            --text-primary: #f9fafb;
+            --text-secondary: #d1d5db;
+            --text-muted: #9ca3af;
+            --accent: #60a5fa;
+            --accent-hover: #93c5fd;
+            --border: #374151;
+            --code-bg: #1f2937;
+            --code-border: #4b5563;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Navigation */
+        .sidebar {
+            width: 280px;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            padding: 20px;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            margin-bottom: 30px;
+        }
+
+        .sidebar-header h1 {
+            font-size: 24px;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .sidebar-header p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .search-box {
+            margin-bottom: 20px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 12px;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .nav-section {
+            margin-bottom: 25px;
+        }
+
+        .nav-section-title {
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-link {
+            display: block;
+            padding: 8px 12px;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 4px;
+            margin-bottom: 4px;
+            transition: all 0.2s;
+            font-size: 14px;
+        }
+
+        .nav-link:hover {
+            background-color: var(--bg-tertiary);
+            color: var(--accent);
+        }
+
+        .nav-link.active {
+            background-color: var(--bg-tertiary);
+            color: var(--accent);
+            font-weight: 500;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 40px;
+            max-width: 1200px;
+        }
+
+        .node-section {
+            margin-bottom: 60px;
+            scroll-margin-top: 20px;
+        }
+
+        .node-header {
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+
+        .node-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .node-subtitle {
+            font-size: 18px;
+            color: var(--text-secondary);
+            margin-bottom: 15px;
+        }
+
+        .node-description {
+            font-size: 16px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-top: 30px;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .use-case-list,
+        .config-list {
+            list-style: none;
+            margin-left: 0;
+        }
+
+        .use-case-list li,
+        .config-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .use-case-list li:last-child,
+        .config-list li:last-child {
+            border-bottom: none;
+        }
+
+        .use-case-title {
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 5px;
+        }
+
+        .use-case-description {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .config-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+        }
+
+        .config-name {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        .config-type {
+            color: var(--text-muted);
+            font-size: 12px;
+            font-style: italic;
+        }
+
+        .config-description {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin-top: 5px;
+            flex: 1;
+        }
+
+        code {
+            background-color: var(--code-bg);
+            border: 1px solid var(--code-border);
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            color: var(--accent);
+        }
+
+        pre {
+            background-color: var(--code-bg);
+            border: 1px solid var(--code-border);
+            border-radius: 6px;
+            padding: 16px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+
+        pre code {
+            background: none;
+            border: none;
+            padding: 0;
+            color: var(--text-secondary);
+        }
+
+        .example-box {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .example-title {
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+
+        .related-nodes {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .related-node-link {
+            display: inline-block;
+            padding: 6px 12px;
+            background-color: var(--bg-tertiary);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .related-node-link:hover {
+            background-color: var(--bg-secondary);
+            border-color: var(--accent);
+        }
+
+        .intro-section {
+            margin-bottom: 60px;
+            padding: 30px;
+            background-color: var(--bg-secondary);
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .intro-section h1 {
+            font-size: 36px;
+            margin-bottom: 15px;
+        }
+
+        .intro-section p {
+            font-size: 16px;
+            color: var(--text-secondary);
+            line-height: 1.8;
+            margin-bottom: 15px;
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+                padding: 20px;
+            }
+
+            .mobile-menu-toggle {
+                position: fixed;
+                top: 20px;
+                left: 20px;
+                z-index: 101;
+                background-color: var(--bg-secondary);
+                border: 1px solid var(--border);
+                color: var(--text-primary);
+                padding: 10px 15px;
+                border-radius: 6px;
+                cursor: pointer;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .highlight {
+            background-color: rgba(96, 165, 250, 0.2);
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1>AutoMFlows</h1>
+                <p>Node Documentation</p>
+            </div>
+            
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="Search nodes...">
+            </div>
+
+            <a href="#intro" class="nav-link" data-section="intro">Introduction</a>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Start</div>
+                <a href="#node-start" class="nav-link" data-section="node-start">Start</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Browser</div>
+                <a href="#node-openBrowser" class="nav-link" data-section="node-openBrowser">Open Browser</a>
+                <a href="#node-contextManipulate" class="nav-link" data-section="node-contextManipulate">Context Manipulate</a>
+                <a href="#node-navigation" class="nav-link" data-section="node-navigation">Navigation</a>
+                <a href="#node-keyboard" class="nav-link" data-section="node-keyboard">Keyboard</a>
+                <a href="#node-scroll" class="nav-link" data-section="node-scroll">Scroll</a>
+                <a href="#node-dialog" class="nav-link" data-section="node-dialog">Dialog</a>
+                <a href="#node-download" class="nav-link" data-section="node-download">Download</a>
+                <a href="#node-iframe" class="nav-link" data-section="node-iframe">Iframe</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Interaction</div>
+                <a href="#node-action" class="nav-link" data-section="node-action">Action</a>
+                <a href="#node-formInput" class="nav-link" data-section="node-formInput">Form Input</a>
+                <a href="#node-type" class="nav-link" data-section="node-type">Type</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Storage</div>
+                <a href="#node-storage" class="nav-link" data-section="node-storage">Storage</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Data</div>
+                <a href="#node-elementQuery" class="nav-link" data-section="node-elementQuery">Element Query</a>
+                <a href="#node-screenshot" class="nav-link" data-section="node-screenshot">Screenshot</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Verification</div>
+                <a href="#node-verify" class="nav-link" data-section="node-verify">Verify</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">API</div>
+                <a href="#node-apiRequest" class="nav-link" data-section="node-apiRequest">API Request</a>
+                <a href="#node-apiCurl" class="nav-link" data-section="node-apiCurl">API cURL</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Database</div>
+                <a href="#node-dbConnect" class="nav-link" data-section="node-dbConnect">DB Connect</a>
+                <a href="#node-dbDisconnect" class="nav-link" data-section="node-dbDisconnect">DB Disconnect</a>
+                <a href="#node-dbQuery" class="nav-link" data-section="node-dbQuery">DB Query</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Control</div>
+                <a href="#node-wait" class="nav-link" data-section="node-wait">Wait</a>
+                <a href="#node-loop" class="nav-link" data-section="node-loop">Loop</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Code</div>
+                <a href="#node-javascriptCode" class="nav-link" data-section="node-javascriptCode">JavaScript Code</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Values</div>
+                <a href="#node-intValue" class="nav-link" data-section="node-intValue">Int Value</a>
+                <a href="#node-stringValue" class="nav-link" data-section="node-stringValue">String Value</a>
+                <a href="#node-booleanValue" class="nav-link" data-section="node-booleanValue">Boolean Value</a>
+                <a href="#node-inputValue" class="nav-link" data-section="node-inputValue">Input Value</a>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Configuration</div>
+                <a href="#node-loadConfigFile" class="nav-link" data-section="node-loadConfigFile">Load Config File</a>
+                <a href="#node-selectConfigFile" class="nav-link" data-section="node-selectConfigFile">Select Config File</a>
+            </div>
+
+            <div class="nav-section" id="pluginNodesSection" style="display: none;">
+                <div class="nav-section-title">Plugins</div>
+                <div id="pluginNodesList"></div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Introduction Section -->
+            <section id="intro" class="intro-section">
+                <h1>Welcome to AutoMFlows Documentation</h1>
+                <p>
+                    AutoMFlows is a powerful automation tool that allows you to create complex workflows using a visual node-based interface. 
+                    This documentation provides comprehensive information about all available nodes, their use cases, and configuration options.
+                </p>
+                <p>
+                    Each node represents a specific action or operation in your automation workflow. You can connect nodes together to create 
+                    sophisticated automation sequences for web automation, API testing, database operations, and more.
+                </p>
+                <p>
+                    Use the navigation sidebar to explore different node categories, or search for specific nodes using the search box above.
+                </p>
+            </section>
+
+            <!-- Node Sections -->
+            <!-- Start Node -->
+            <section id="node-start" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Start</h2>
+                    <p class="node-subtitle">The entry point of your workflow</p>
+                </div>
+                <p class="node-description">
+                    The Start node marks the beginning of your automation workflow. It defines global settings that apply to the entire workflow execution.
+                </p>
+                
+                <h3 class="section-title">Use Cases</h3>
+                <ul class="use-case-list">
+                    <li>
+                        <div class="use-case-title">Workflow Initialization</div>
+                        <div class="use-case-description">Configure browser settings, recording options, and execution parameters before starting automation.</div>
+                    </li>
+                    <li>
+                        <div class="use-case-title">Session Recording</div>
+                        <div class="use-case-description">Enable video recording to capture the entire automation session for debugging and documentation.</div>
+                    </li>
+                    <li>
+                        <div class="use-case-title">Screenshot Configuration</div>
+                        <div class="use-case-description">Set up automatic screenshots for all nodes or specific timing (pre/post execution).</div>
+                    </li>
+                </ul>
+
+                <h3 class="section-title">Configuration Options</h3>
+                <ul class="config-list">
+                    <li>
+                        <div class="config-item">
+                            <div>
+                                <span class="config-name">recordSession</span>
+                                <span class="config-type">boolean</span>
+                                <div class="config-description">Enable video recording of the automation session</div>
+                            </div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="config-item">
+                            <div>
+                                <span class="config-name">screenshotAllNodes</span>
+                                <span class="config-type">boolean</span>
+                                <div class="config-description">Take screenshots automatically for all nodes</div>
+                            </div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="config-item">
+                            <div>
+                                <span class="config-name">screenshotTiming</span>
+                                <span class="config-type">'pre' | 'post' | 'both'</span>
+                                <div class="config-description">When to capture screenshots relative to node execution</div>
+                            </div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="config-item">
+                            <div>
+                                <span class="config-name">slowMo</span>
+                                <span class="config-type">number</span>
+                                <div class="config-description">Delay in milliseconds between node executions (useful for debugging)</div>
+                            </div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="config-item">
+                            <div>
+                                <span class="config-name">scrollThenAction</span>
+                                <span class="config-type">boolean</span>
+                                <div class="config-description">Enable smooth scroll to elements before performing actions</div>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+
+            <!-- Open Browser Node -->
+            <section id="node-openBrowser" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Open Browser</h2>
+                    <p class="node-subtitle">Launch and configure a browser instance</p>
+                </div>
+                <p class="node-description">
+                    The Open Browser node initializes a browser instance with customizable settings. This is typically the first node 
+                    after Start in browser automation workflows.
+                </p>
+                
+                <h3 class="section-title">Use Cases</h3>
+                <ul class="use-case-list">
+                    <li>
+                        <div class="use-case-title">Browser Initialization</div>
+                        <div class="use-case-description">Launch Chromium, Firefox, or WebKit browsers with specific configurations.</div>
+                    </li>
+                    <li>
+                        <div class="use-case-title">Viewport Configuration</div>
+                        <div class="use-case-description">Set custom viewport dimensions or maximize the browser window.</div>
+                    </li>
+                    <li>
+                        <div class="use-case-title">Stealth Mode</div>
+                        <div class="use-case-description">Enable stealth mode to avoid detection by anti-bot systems.</div>
+                    </li>
+                    <li>
+                        <div class="use-case-title">Script Injection</div>
+                        <div class="use-case-description">Inject JavaScript code into all pages loaded by the browser.</div>
+                    </li>
+                </ul>
+
+                <h3 class="section-title">Configuration Options</h3>
+                <ul class="config-list">
+                    <li>
+                        <div class="config-item">
+                            <div>
+                                <span class="config-name">headless</span>
+                                <span class="config-type">boolean</span>
+                                <div class="config-description">Run browser in headless mode (no visible window)</div>
+                            </div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="config-item">
+                            <div>
+                                <span class="config-name">browser</span>
+                                <span class="config-type">'chromium' | 'firefox' | 'webkit'</span>
+                                <div class="config-description">Select the browser engine to use</div>
+                            </div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="config-item">
+                            <div>
+                                <span class="config-name">viewportWidth / viewportHeight</span>
+                                <span class="config-type">number</span>
+                                <div class="config-description">Set browser viewport dimensions</div>
+                            </div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="config-item">
+                            <div>
+                                <span class="config-name">maxWindow</span>
+                                <span class="config-type">boolean</span>
+                                <div class="config-description">Maximize the browser window</div>
+                            </div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="config-item">
+                            <div>
+                                <span class="config-name">stealthMode</span>
+                                <span class="config-type">boolean</span>
+                                <div class="config-description">Enable stealth mode to avoid detection</div>
+                            </div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="config-item">
+                            <div>
+                                <span class="config-name">jsScript</span>
+                                <span class="config-type">string</span>
+                                <div class="config-description">JavaScript code to inject into all pages</div>
+                            </div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="config-item">
+                            <div>
+                                <span class="config-name">capabilities</span>
+                                <span class="config-type">object</span>
+                                <div class="config-description">Browser context options (permissions, geolocation, etc.)</div>
+                            </div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="config-item">
+                            <div>
+                                <span class="config-name">launchOptions</span>
+                                <span class="config-type">object</span>
+                                <div class="config-description">Browser launch options (args, executablePath, etc.)</div>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+
+            <!-- Continue with other nodes... Due to length, I'll create a template and generate all nodes -->
+            
+            <!-- Navigation Node -->
+            <section id="node-navigation" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Navigation</h2>
+                    <p class="node-subtitle">Navigate to URLs and wait for conditions</p>
+                </div>
+                <p class="node-description">
+                    Navigate to a specific URL and optionally wait for various conditions before proceeding.
+                </p>
+                
+                <h3 class="section-title">Use Cases</h3>
+                <ul class="use-case-list">
+                    <li>
+                        <div class="use-case-title">Page Navigation</div>
+                        <div class="use-case-description">Navigate to web pages and wait for them to load completely.</div>
+                    </li>
+                    <li>
+                        <div class="use-case-title">Conditional Waiting</div>
+                        <div class="use-case-description">Wait for selectors, URLs, or JavaScript conditions before proceeding.</div>
+                    </li>
+                    <li>
+                        <div class="use-case-title">Retry Logic</div>
+                        <div class="use-case-description">Implement retry strategies for unreliable network conditions.</div>
+                    </li>
+                </ul>
+
+                <h3 class="section-title">Configuration Options</h3>
+                <ul class="config-list">
+                    <li>
+                        <div class="config-item">
+                            <div>
+                                <span class="config-name">url</span>
+                                <span class="config-type">string</span>
+                                <div class="config-description">The URL to navigate to</div>
+                            </div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="config-item">
+                            <div>
+                                <span class="config-name">waitUntil</span>
+                                <span class="config-type">'load' | 'domcontentloaded' | 'networkidle' | 'commit'</span>
+                                <div class="config-description">When to consider navigation successful</div>
+                            </div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="config-item">
+                            <div>
+                                <span class="config-name">waitForSelector</span>
+                                <span class="config-type">string</span>
+                                <div class="config-description">Wait for a specific selector to appear</div>
+                            </div>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="config-item">
+                            <div>
+                                <span class="config-name">retryEnabled</span>
+                                <span class="config-type">boolean</span>
+                                <div class="config-description">Enable retry logic for failed navigations</div>
+                            </div>
+                        </div>
+                    </li>
+                </ul>
+            </section>
+
+            <!-- Action Node -->
+            <section id="node-action" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Action</h2>
+                    <p class="node-subtitle">Perform actions on page elements</p>
+                </div>
+                <p class="node-description">
+                    Perform various actions like click, double-click, hover, or other interactions on page elements.
+                </p>
+                
+                <h3 class="section-title">Use Cases</h3>
+                <ul class="use-case-list">
+                    <li>
+                        <div class="use-case-title">Element Interaction</div>
+                        <div class="use-case-description">Click buttons, links, or any clickable elements on the page.</div>
+                    </li>
+                    <li>
+                        <div class="use-case-title">Hover Actions</div>
+                        <div class="use-case-description">Trigger hover effects to reveal dropdown menus or tooltips.</div>
+                    </li>
+                    <li>
+                        <div class="use-case-title">Complex Interactions</div>
+                        <div class="use-case-description">Perform double-clicks, right-clicks, or force clicks.</div>
+                    </li>
+                </ul>
+            </section>
+
+            <!-- Type Node -->
+            <section id="node-type" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Type</h2>
+                    <p class="node-subtitle">Type text into input fields</p>
+                </div>
+                <p class="node-description">
+                    Type text into input fields, textareas, or contenteditable elements with customizable typing speed.
+                </p>
+                
+                <h3 class="section-title">Use Cases</h3>
+                <ul class="use-case-list">
+                    <li>
+                        <div class="use-case-title">Form Filling</div>
+                        <div class="use-case-description">Fill out forms with text input.</div>
+                    </li>
+                    <li>
+                        <div class="use-case-title">Search Queries</div>
+                        <div class="use-case-description">Enter search terms into search boxes.</div>
+                    </li>
+                    <li>
+                        <div class="use-case-title">Realistic Typing</div>
+                        <div class="use-case-description">Simulate human-like typing with delays between keystrokes.</div>
+                    </li>
+                </ul>
+            </section>
+
+            <!-- Element Query Node -->
+            <section id="node-elementQuery" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Element Query</h2>
+                    <p class="node-subtitle">Query and extract data from page elements</p>
+                </div>
+                <p class="node-description">
+                    Find elements on the page and extract their text content, attributes, or other properties.
+                </p>
+                
+                <h3 class="section-title">Use Cases</h3>
+                <ul class="use-case-list">
+                    <li>
+                        <div class="use-case-title">Data Extraction</div>
+                        <div class="use-case-description">Extract text, attributes, or HTML from page elements.</div>
+                    </li>
+                    <li>
+                        <div class="use-case-title">Element Validation</div>
+                        <div class="use-case-description">Check if elements exist or have specific properties.</div>
+                    </li>
+                    <li>
+                        <div class="use-case-title">Dynamic Content</div>
+                        <div class="use-case-description">Query elements that are dynamically loaded.</div>
+                    </li>
+                </ul>
+            </section>
+
+            <!-- Form Input Node -->
+            <section id="node-formInput" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Form Input</h2>
+                    <p class="node-subtitle">Fill form inputs with values</p>
+                </div>
+                <p class="node-description">
+                    Fill various types of form inputs including text, select dropdowns, checkboxes, and radio buttons.
+                </p>
+            </section>
+
+            <!-- Screenshot Node -->
+            <section id="node-screenshot" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Screenshot</h2>
+                    <p class="node-subtitle">Capture screenshots of pages or elements</p>
+                </div>
+                <p class="node-description">
+                    Take screenshots of the entire page, viewport, or specific elements for documentation and debugging.
+                </p>
+            </section>
+
+            <!-- Wait Node -->
+            <section id="node-wait" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Wait</h2>
+                    <p class="node-subtitle">Wait for a specified duration or condition</p>
+                </div>
+                <p class="node-description">
+                    Pause workflow execution for a fixed duration or until a specific condition is met.
+                </p>
+            </section>
+
+            <!-- JavaScript Code Node -->
+            <section id="node-javascriptCode" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">JavaScript Code</h2>
+                    <p class="node-subtitle">Execute custom JavaScript code</p>
+                </div>
+                <p class="node-description">
+                    Execute custom JavaScript code in the browser context or Node.js context for advanced automation logic.
+                </p>
+            </section>
+
+            <!-- Loop Node -->
+            <section id="node-loop" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Loop</h2>
+                    <p class="node-subtitle">Repeat a sequence of nodes</p>
+                </div>
+                <p class="node-description">
+                    Create loops to repeat a sequence of nodes a specified number of times or until a condition is met.
+                </p>
+            </section>
+
+            <!-- Storage Node -->
+            <section id="node-storage" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Storage</h2>
+                    <p class="node-subtitle">Manage browser storage</p>
+                </div>
+                <p class="node-description">
+                    Set, get, or clear browser storage including localStorage, sessionStorage, and cookies.
+                </p>
+            </section>
+
+            <!-- Keyboard Node -->
+            <section id="node-keyboard" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Keyboard</h2>
+                    <p class="node-subtitle">Simulate keyboard input</p>
+                </div>
+                <p class="node-description">
+                    Simulate keyboard events including key presses, shortcuts, and special key combinations.
+                </p>
+            </section>
+
+            <!-- Scroll Node -->
+            <section id="node-scroll" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Scroll</h2>
+                    <p class="node-subtitle">Scroll the page or elements</p>
+                </div>
+                <p class="node-description">
+                    Scroll the page or specific elements to bring content into view.
+                </p>
+            </section>
+
+            <!-- Dialog Node -->
+            <section id="node-dialog" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Dialog</h2>
+                    <p class="node-subtitle">Handle browser dialogs</p>
+                </div>
+                <p class="node-description">
+                    Handle browser dialogs like alerts, confirms, and prompts.
+                </p>
+            </section>
+
+            <!-- Download Node -->
+            <section id="node-download" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Download</h2>
+                    <p class="node-subtitle">Handle file downloads</p>
+                </div>
+                <p class="node-description">
+                    Monitor and handle file downloads from the browser.
+                </p>
+            </section>
+
+            <!-- Iframe Node -->
+            <section id="node-iframe" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Iframe</h2>
+                    <p class="node-subtitle">Work with iframes</p>
+                </div>
+                <p class="node-description">
+                    Access and interact with content inside iframes.
+                </p>
+            </section>
+
+            <!-- Verify Node -->
+            <section id="node-verify" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Verify</h2>
+                    <p class="node-subtitle">Verify conditions and assertions</p>
+                </div>
+                <p class="node-description">
+                    Verify conditions, element states, or values and fail the workflow if verification fails.
+                </p>
+            </section>
+
+            <!-- API Request Node -->
+            <section id="node-apiRequest" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">API Request</h2>
+                    <p class="node-subtitle">Make HTTP API requests</p>
+                </div>
+                <p class="node-description">
+                    Make HTTP requests (GET, POST, PUT, DELETE, etc.) to REST APIs and handle responses.
+                </p>
+            </section>
+
+            <!-- API cURL Node -->
+            <section id="node-apiCurl" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">API cURL</h2>
+                    <p class="node-subtitle">Execute cURL commands</p>
+                </div>
+                <p class="node-description">
+                    Execute cURL commands directly for complex API interactions.
+                </p>
+            </section>
+
+            <!-- DB Connect Node -->
+            <section id="node-dbConnect" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">DB Connect</h2>
+                    <p class="node-subtitle">Connect to a database</p>
+                </div>
+                <p class="node-description">
+                    Establish a connection to a database (MySQL, PostgreSQL, SQLite, etc.).
+                </p>
+            </section>
+
+            <!-- DB Disconnect Node -->
+            <section id="node-dbDisconnect" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">DB Disconnect</h2>
+                    <p class="node-subtitle">Close database connection</p>
+                </div>
+                <p class="node-description">
+                    Close an active database connection.
+                </p>
+            </section>
+
+            <!-- DB Query Node -->
+            <section id="node-dbQuery" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">DB Query</h2>
+                    <p class="node-subtitle">Execute database queries</p>
+                </div>
+                <p class="node-description">
+                    Execute SQL queries against a connected database and retrieve results.
+                </p>
+            </section>
+
+            <!-- Context Manipulate Node -->
+            <section id="node-contextManipulate" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Context Manipulate</h2>
+                    <p class="node-subtitle">Manipulate browser context</p>
+                </div>
+                <p class="node-description">
+                    Modify browser context settings like permissions, geolocation, or other context options.
+                </p>
+            </section>
+
+            <!-- Int Value Node -->
+            <section id="node-intValue" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Int Value</h2>
+                    <p class="node-subtitle">Create integer values</p>
+                </div>
+                <p class="node-description">
+                    Create integer constant values to use in workflows.
+                </p>
+            </section>
+
+            <!-- String Value Node -->
+            <section id="node-stringValue" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">String Value</h2>
+                    <p class="node-subtitle">Create string values</p>
+                </div>
+                <p class="node-description">
+                    Create string constant values to use in workflows.
+                </p>
+            </section>
+
+            <!-- Boolean Value Node -->
+            <section id="node-booleanValue" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Boolean Value</h2>
+                    <p class="node-subtitle">Create boolean values</p>
+                </div>
+                <p class="node-description">
+                    Create boolean constant values to use in workflows.
+                </p>
+            </section>
+
+            <!-- Input Value Node -->
+            <section id="node-inputValue" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Input Value</h2>
+                    <p class="node-subtitle">Accept input values</p>
+                </div>
+                <p class="node-description">
+                    Accept input values from workflow execution context or user input.
+                </p>
+            </section>
+
+            <!-- Load Config File Node -->
+            <section id="node-loadConfigFile" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Load Config File</h2>
+                    <p class="node-subtitle">Load configuration from file</p>
+                </div>
+                <p class="node-description">
+                    Load configuration data from JSON files to use throughout the workflow.
+                </p>
+            </section>
+
+            <!-- Select Config File Node -->
+            <section id="node-selectConfigFile" class="node-section">
+                <div class="node-header">
+                    <h2 class="node-title">Select Config File</h2>
+                    <p class="node-subtitle">Select and load configuration file</p>
+                </div>
+                <p class="node-description">
+                    Dynamically select and load configuration files based on conditions or user input.
+                </p>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        const navLinks = document.querySelectorAll('.nav-link');
+        const nodeSections = document.querySelectorAll('.node-section');
+
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            
+            navLinks.forEach(link => {
+                const text = link.textContent.toLowerCase();
+                const sectionId = link.getAttribute('data-section');
+                const section = document.getElementById(sectionId || link.getAttribute('href').substring(1));
+                
+                if (query === '' || text.includes(query) || (section && section.textContent.toLowerCase().includes(query))) {
+                    link.style.display = 'block';
+                } else {
+                    link.style.display = 'none';
+                }
+            });
+
+            // Highlight search results
+            if (query) {
+                nodeSections.forEach(section => {
+                    const content = section.textContent.toLowerCase();
+                    if (content.includes(query)) {
+                        section.style.display = 'block';
+                    } else {
+                        // Only hide if it's not the intro section
+                        if (section.id !== 'intro') {
+                            section.style.display = 'none';
+                        }
+                    }
+                });
+            } else {
+                nodeSections.forEach(section => {
+                    section.style.display = 'block';
+                });
+            }
+        });
+
+        // Active link highlighting
+        function updateActiveLink() {
+            const hash = window.location.hash || '#intro';
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href') === hash) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        // Smooth scroll on hash change
+        function scrollToSection() {
+            const hash = window.location.hash;
+            if (hash) {
+                const element = document.querySelector(hash);
+                if (element) {
+                    setTimeout(() => {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        updateActiveLink();
+                    }, 100);
+                }
+            } else {
+                // Scroll to top if no hash
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                updateActiveLink();
+            }
+        }
+
+        // Handle hash changes
+        window.addEventListener('hashchange', () => {
+            scrollToSection();
+        });
+
+        // Initial scroll on load
+        window.addEventListener('load', () => {
+            scrollToSection();
+        });
+
+        // Update active link on scroll
+        let scrollTimeout;
+        window.addEventListener('scroll', () => {
+            clearTimeout(scrollTimeout);
+            scrollTimeout = setTimeout(() => {
+                const sections = document.querySelectorAll('.node-section, #intro');
+                let current = '';
+                
+                sections.forEach(section => {
+                    const rect = section.getBoundingClientRect();
+                    if (rect.top <= 100) {
+                        current = section.id;
+                    }
+                });
+
+                if (current) {
+                    navLinks.forEach(link => {
+                        link.classList.remove('active');
+                        if (link.getAttribute('href') === `#${current}`) {
+                            link.classList.add('active');
+                        }
+                    });
+                }
+            }, 100);
+        });
+
+        // Mobile menu toggle
+        if (window.innerWidth <= 768) {
+            const sidebar = document.getElementById('sidebar');
+            const toggle = document.createElement('button');
+            toggle.className = 'mobile-menu-toggle';
+            toggle.textContent = '☰ Menu';
+            toggle.onclick = () => {
+                sidebar.classList.toggle('open');
+            };
+            document.body.appendChild(toggle);
+        }
+
+        // Load plugin nodes dynamically (if available)
+        // This would be populated by querying the plugin registry
+        // For now, we'll leave it as a placeholder structure
+        function addPluginNode(nodeType, nodeLabel) {
+            const pluginSection = document.getElementById('pluginNodesSection');
+            const pluginList = document.getElementById('pluginNodesList');
+            
+            if (pluginSection && pluginList) {
+                pluginSection.style.display = 'block';
+                const link = document.createElement('a');
+                link.href = `#node-${nodeType.replace(/\./g, '-')}`;
+                link.className = 'nav-link';
+                link.setAttribute('data-section', `node-${nodeType.replace(/\./g, '-')}`);
+                link.textContent = nodeLabel;
+                pluginList.appendChild(link);
+            }
+        }
+
+        // Example: Add plugin nodes (this would be called from the main app)
+        // addPluginNode('setConfig.setConfig', 'Set Config');
+    </script>
+</body>
+</html>

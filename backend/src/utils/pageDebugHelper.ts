@@ -14,6 +14,11 @@ export interface PageDebugInfo {
   pageUrl?: string;
   pageSource?: string;
   similarSelectors?: SelectorSuggestion[];
+  screenshotPaths?: {
+    pre?: string;
+    post?: string;
+  };
+  executionFolderName?: string; // Folder name for constructing screenshot URLs
 }
 
 export class PageDebugHelper {

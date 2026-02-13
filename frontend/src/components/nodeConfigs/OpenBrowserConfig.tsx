@@ -20,8 +20,20 @@ export default function OpenBrowserConfig({ node, onChange }: OpenBrowserConfigP
   const capabilitiesCount = data.capabilities ? Object.keys(data.capabilities).length : 0;
   const hasScript = data.jsScript && data.jsScript.trim().length > 0;
 
-  const handleCapabilitiesSave = (capabilities: Record<string, any>) => {
-    onChange('capabilities', capabilities);
+  const handleCapabilitiesSave = (data: { capabilities?: Record<string, any>, launchOptions?: Record<string, any> }) => {
+    if (data.capabilities !== undefined) {
+      onChange('capabilities', data.capabilities);
+    }
+    // Always handle launchOptions - if empty, remove it; otherwise update it
+    if (data.launchOptions !== undefined) {
+      if (Object.keys(data.launchOptions).length === 0) {
+        // Remove launchOptions if it's empty
+        onChange('launchOptions', undefined);
+      } else {
+        // Update launchOptions if it has entries
+        onChange('launchOptions', data.launchOptions);
+      }
+    }
   };
 
   const handleScriptSave = (script: string) => {

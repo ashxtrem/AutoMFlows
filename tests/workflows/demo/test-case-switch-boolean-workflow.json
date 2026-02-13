@@ -67,14 +67,15 @@
     },
     {
       "id": "navigate-google-1",
-      "type": "navigate",
+      "type": "navigation",
       "position": {
         "x": 1100,
         "y": 100
       },
       "data": {
-        "type": "navigate",
+        "type": "navigation",
         "label": "Navigate to Google",
+        "action": "navigate",
         "url": "https://google.com",
         "timeout": 30000,
         "waitUntil": "networkidle"
@@ -82,14 +83,15 @@
     },
     {
       "id": "navigate-wiki-1",
-      "type": "navigate",
+      "type": "navigation",
       "position": {
         "x": 1100,
         "y": 300
       },
       "data": {
-        "type": "navigate",
+        "type": "navigation",
         "label": "Navigate to Wikipedia",
+        "action": "navigate",
         "url": "https://wiki.com",
         "timeout": 30000,
         "waitUntil": "networkidle"

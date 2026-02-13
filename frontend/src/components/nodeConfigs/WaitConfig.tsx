@@ -1,6 +1,8 @@
 import { Node } from 'reactflow';
 import RetryConfigSection from '../RetryConfigSection';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
+import SelectorFinderButton from '../SelectorFinderButton';
+import { getSelectorPlaceholder, getSelectorHelpText, SELECTOR_TYPE_OPTIONS } from '../../utils/selectorHelpers';
 
 interface WaitConfigProps {
   node: Node;
@@ -77,8 +79,9 @@ export default function WaitConfig({ node, onChange }: WaitConfigProps) {
               disabled={isPropertyDisabled('selectorType')}
               className={getInputClassName('selectorType', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
             >
-              <option value="css">CSS Selector</option>
-              <option value="xpath">XPath</option>
+              {SELECTOR_TYPE_OPTIONS.map(option => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
             </select>
             {isPropertyDisabled('selectorType') && (
               <div className="mt-1 text-xs text-gray-500 italic">
@@ -88,17 +91,27 @@ export default function WaitConfig({ node, onChange }: WaitConfigProps) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Selector</label>
-            <input
-              type="text"
-              value={typeof getPropertyValue('value', '') === 'string' ? getPropertyValue('value', '') : ''}
-              onChange={(e) => onChange('value', e.target.value)}
-              placeholder="#element or //div[@class='element']"
-              disabled={isPropertyDisabled('value')}
-              className={getInputClassName('value', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
-            />
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={typeof getPropertyValue('value', '') === 'string' ? getPropertyValue('value', '') : ''}
+                onChange={(e) => onChange('value', e.target.value)}
+                placeholder={getSelectorPlaceholder(getPropertyValue('selectorType', 'css'))}
+                disabled={isPropertyDisabled('value')}
+                className={getInputClassName('value', 'flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+              />
+              {!isPropertyDisabled('value') && (
+                <SelectorFinderButton nodeId={node.id} fieldName="value" />
+              )}
+            </div>
             {isPropertyDisabled('value') && (
               <div className="mt-1 text-xs text-gray-500 italic">
                 This property is converted to input. Connect a node to provide the value.
+              </div>
+            )}
+            {getSelectorHelpText(getPropertyValue('selectorType', 'css')) && (
+              <div className="mt-1 text-xs text-gray-400">
+                {getSelectorHelpText(getPropertyValue('selectorType', 'css'))}
               </div>
             )}
           </div>
@@ -301,6 +314,20 @@ export default function WaitConfig({ node, onChange }: WaitConfigProps) {
           </div>
         </>
       )}
+      <div>
+        <label className="block text-sm font-medium text-gray-300 mb-1">Pause</label>
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={data.pause || false}
+            onChange={(e) => onChange('pause', e.target.checked)}
+            className="rounded"
+          />
+          <span className="text-sm text-gray-400">
+            Pause execution at this wait node
+          </span>
+        </label>
+      </div>
       <div>
         <label className="block text-sm font-medium text-gray-300 mb-1">Fail Silently</label>
         <label className="flex items-center gap-2 cursor-pointer">

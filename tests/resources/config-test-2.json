@@ -1,0 +1,10 @@
+{
+  "appName": "TestAppV2",
+  "version": "2.0.0",
+  "apiUrl": "https://api.example.com/v2",
+  "feature": {
+    "enabled": true,
+    "name": "New Feature"
+  },
+  "timeout": 5000
+}

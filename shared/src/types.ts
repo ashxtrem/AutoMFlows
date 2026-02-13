@@ -7,14 +7,23 @@ export enum PropertyDataType {
   BOOLEAN = 'boolean',
 }
 
+// Selector Types - supports CSS, XPath, and Playwright locator methods
+export type SelectorType = 
+  | 'css' 
+  | 'xpath' 
+  | 'getByRole' 
+  | 'getByText' 
+  | 'getByLabel' 
+  | 'getByPlaceholder' 
+  | 'getByTestId' 
+  | 'getByTitle' 
+  | 'getByAltText';
+
 // Node Types
 export enum NodeType {
   START = 'start',
   OPEN_BROWSER = 'openBrowser',
-  NAVIGATE = 'navigate',
-  CLICK = 'click',
   TYPE = 'type',
-  GET_TEXT = 'getText',
   SCREENSHOT = 'screenshot',
   WAIT = 'wait',
   JAVASCRIPT_CODE = 'javascriptCode',
@@ -28,6 +37,20 @@ export enum NodeType {
   API_CURL = 'apiCurl',
   LOAD_CONFIG_FILE = 'loadConfigFile',
   SELECT_CONFIG_FILE = 'selectConfigFile',
+  DB_CONNECT = 'dbConnect',
+  DB_DISCONNECT = 'dbDisconnect',
+  DB_QUERY = 'dbQuery',
+  ACTION = 'action',
+  ELEMENT_QUERY = 'elementQuery',
+  FORM_INPUT = 'formInput',
+  NAVIGATION = 'navigation',
+  KEYBOARD = 'keyboard',
+  SCROLL = 'scroll',
+  STORAGE = 'storage',
+  DIALOG = 'dialog',
+  DOWNLOAD = 'download',
+  IFRAME = 'iframe',
+  CONTEXT_MANIPULATE = 'contextManipulate',
 }
 
 // Base Node Interface
@@ -44,6 +67,8 @@ export interface StartNodeData {
   recordSession?: boolean; // Enable video recording
   screenshotAllNodes?: boolean; // Enable screenshots on all nodes
   screenshotTiming?: 'pre' | 'post' | 'both'; // When to take screenshots
+  slowMo?: number; // Delay in milliseconds between node executions
+  scrollThenAction?: boolean; // Enable smooth scroll to elements before actions on UI nodes
 }
 
 export interface OpenBrowserNodeData {
@@ -71,7 +96,7 @@ export interface NavigateNodeData {
   failSilently?: boolean;
   referer?: string;
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string; // Supports regex patterns
   waitForUrlTimeout?: number;
@@ -81,16 +106,147 @@ export interface NavigateNodeData {
   waitAfterOperation?: boolean; // false = wait before (default), true = wait after
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
-    timeout?: number;
+    selectorType?: SelectorType;
+    visibility?: 'visible' | 'invisible';
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface NavigationNodeData {
+  action: 'navigate' | 'goBack' | 'goForward' | 'reload' | 'newTab' | 'switchTab' | 'closeTab';
+  timeout?: number;
+  failSilently?: boolean;
+  // Action-specific properties
+  url?: string; // For navigate/newTab actions
+  waitUntil?: 'load' | 'domcontentloaded' | 'networkidle' | 'commit'; // For navigate/goBack/goForward/reload
+  referer?: string; // For navigate action
+  tabIndex?: number; // For switchTab/closeTab actions
+  urlPattern?: string; // For switchTab action
+  contextKey?: string; // For newTab/switchTab actions (store page reference)
+  // Advanced Waiting Options
+  waitForSelector?: string;
+  waitForSelectorType?: SelectorType;
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean; // false = wait before (default), true = wait after
+  // Retry Configuration
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number | string;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: SelectorType;
+    visibility?: 'visible' | 'invisible';
+    timeout?: number | string;
+  };
+  retryDelay?: number | string;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number | string;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface KeyboardNodeData {
+  action: 'press' | 'type' | 'insertText' | 'shortcut' | 'down' | 'up';
+  timeout?: number;
+  failSilently?: boolean;
+  // Action-specific properties
+  key?: string; // For press/down/up actions
+  text?: string; // For type/insertText actions
+  shortcut?: string; // For shortcut action (e.g., "Control+C", "Meta+V")
+  selector?: string; // Optional - focus element first before action
+  selectorType?: SelectorType; // Selector type
+  delay?: number; // For type action - delay between keystrokes
+  clearFirst?: boolean; // For type/insertText actions - clear field before typing
+  // Advanced Waiting Options
+  waitForSelector?: string;
+  waitForSelectorType?: SelectorType;
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean;
+  // Retry Configuration
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number | string;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: SelectorType;
+    visibility?: 'visible' | 'invisible';
+    timeout?: number | string;
+  };
+  retryDelay?: number | string;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number | string;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface ScrollNodeData {
+  action: 'scrollToElement' | 'scrollToPosition' | 'scrollBy' | 'scrollToTop' | 'scrollToBottom';
+  timeout?: number;
+  failSilently?: boolean;
+  // Action-specific properties
+  selector?: string; // For scrollToElement action
+  selectorType?: SelectorType; // For scrollToElement action
+  x?: number; // For scrollToPosition action
+  y?: number; // For scrollToPosition action
+  deltaX?: number; // For scrollBy action
+  deltaY?: number; // For scrollBy action
+  // Advanced Waiting Options
+  waitForSelector?: string;
+  waitForSelectorType?: SelectorType;
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean;
+  // Retry Configuration
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number | string;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: SelectorType;
+    visibility?: 'visible' | 'invisible';
+    timeout?: number | string;
+  };
+  retryDelay?: number | string;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -101,11 +257,11 @@ export interface NavigateNodeData {
 
 export interface ClickNodeData {
   selector: string;
-  selectorType?: 'css' | 'xpath';
+  selectorType?: SelectorType;
   timeout?: number;
   failSilently?: boolean;
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -115,16 +271,17 @@ export interface ClickNodeData {
   waitAfterOperation?: boolean; // false = wait before (default), true = wait after
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
-    timeout?: number;
+    selectorType?: SelectorType;
+    visibility?: 'visible' | 'invisible';
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -135,12 +292,15 @@ export interface ClickNodeData {
 
 export interface TypeNodeData {
   selector: string;
-  selectorType?: 'css' | 'xpath';
+  selectorType?: SelectorType;
   text: string;
+  inputMethod?: 'fill' | 'type' | 'pressSequentially' | 'append' | 'prepend' | 'direct';
+  delay?: number; // Delay between keystrokes for type/pressSequentially methods (in ms)
+  clearFirst?: boolean; // Clear field before typing (for type/pressSequentially methods)
   timeout?: number;
   failSilently?: boolean;
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -150,16 +310,147 @@ export interface TypeNodeData {
   waitAfterOperation?: boolean; // false = wait before (default), true = wait after
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
-    timeout?: number;
+    selectorType?: SelectorType;
+    visibility?: 'visible' | 'invisible';
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface ActionNodeData {
+  action: 'click' | 'doubleClick' | 'rightClick' | 'hover' | 'dragAndDrop';
+  selector: string;
+  selectorType?: SelectorType;
+  timeout?: number;
+  failSilently?: boolean;
+  // Action-specific properties
+  button?: 'left' | 'right' | 'middle'; // For click/rightClick actions
+  delay?: number; // For hover/doubleClick actions
+  targetSelector?: string; // For dragAndDrop action - target element selector
+  targetSelectorType?: SelectorType; // For dragAndDrop action - target selector type
+  targetX?: number; // For dragAndDrop action - optional target X coordinate
+  targetY?: number; // For dragAndDrop action - optional target Y coordinate
+  // Advanced Waiting Options
+  waitForSelector?: string;
+  waitForSelectorType?: SelectorType;
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean; // false = wait before (default), true = wait after
+  // Retry Configuration
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number | string;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: SelectorType;
+    visibility?: 'visible' | 'invisible';
+    timeout?: number | string;
+  };
+  retryDelay?: number | string;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number | string;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface ElementQueryNodeData {
+  action: 'getText' | 'getAttribute' | 'getCount' | 'isVisible' | 'isEnabled' | 'isChecked' | 'getBoundingBox' | 'getAllText';
+  selector: string;
+  selectorType?: SelectorType;
+  timeout?: number;
+  failSilently?: boolean;
+  // Action-specific properties
+  attributeName?: string; // For getAttribute action
+  outputVariable?: string; // For all actions (defaults vary by action)
+  // Advanced Waiting Options
+  waitForSelector?: string;
+  waitForSelectorType?: SelectorType;
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean; // false = wait before (default), true = wait after
+  // Retry Configuration
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number | string;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: SelectorType;
+    visibility?: 'visible' | 'invisible';
+    timeout?: number | string;
+  };
+  retryDelay?: number | string;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number | string;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface FormInputNodeData {
+  action: 'select' | 'check' | 'uncheck' | 'upload';
+  selector: string;
+  selectorType?: SelectorType;
+  timeout?: number;
+  failSilently?: boolean;
+  // Action-specific properties
+  values?: string | string[]; // For select action
+  selectBy?: 'value' | 'label' | 'index'; // For select action
+  multiple?: boolean; // For select/upload actions
+  force?: boolean; // For check/uncheck actions
+  filePaths?: string | string[]; // For upload action
+  // Advanced Waiting Options
+  waitForSelector?: string;
+  waitForSelectorType?: SelectorType;
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean; // false = wait before (default), true = wait after
+  // Retry Configuration
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number | string;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: SelectorType;
+    visibility?: 'visible' | 'invisible';
+    timeout?: number | string;
+  };
+  retryDelay?: number | string;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -170,12 +461,12 @@ export interface TypeNodeData {
 
 export interface GetTextNodeData {
   selector: string;
-  selectorType?: 'css' | 'xpath';
+  selectorType?: SelectorType;
   outputVariable?: string;
   timeout?: number;
   failSilently?: boolean;
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -185,16 +476,17 @@ export interface GetTextNodeData {
   waitAfterOperation?: boolean; // false = wait before (default), true = wait after
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
-    timeout?: number;
+    selectorType?: SelectorType;
+    visibility?: 'visible' | 'invisible';
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -204,11 +496,20 @@ export interface GetTextNodeData {
 }
 
 export interface ScreenshotNodeData {
+  action?: 'fullPage' | 'element' | 'viewport' | 'pdf'; // Enhanced: add action dropdown
   path?: string;
-  fullPage?: boolean;
+  fullPage?: boolean; // Legacy: kept for backward compatibility
   failSilently?: boolean;
+  // Action-specific properties
+  selector?: string; // For element action
+  selectorType?: SelectorType; // For element action
+  mask?: string[]; // For element/fullPage/viewport actions - selectors to mask
+  format?: 'A4' | 'Letter'; // For pdf action
+  margin?: { top?: number; right?: number; bottom?: number; left?: number }; // For pdf action
+  printBackground?: boolean; // For pdf action
+  landscape?: boolean; // For pdf action
   waitForSelector?: string;
-  waitForSelectorType?: 'css' | 'xpath';
+  waitForSelectorType?: SelectorType;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -218,16 +519,194 @@ export interface ScreenshotNodeData {
   waitAfterOperation?: boolean; // false = wait before (default), true = wait after
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
-    timeout?: number;
+    selectorType?: SelectorType;
+    visibility?: 'visible' | 'invisible';
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface StorageNodeData {
+  action: 'getCookie' | 'setCookie' | 'clearCookies' | 'getLocalStorage' | 'setLocalStorage' | 'clearLocalStorage' | 'getSessionStorage' | 'setSessionStorage' | 'clearSessionStorage';
+  contextKey?: string; // Where to store retrieved values
+  failSilently?: boolean;
+  // Action-specific properties
+  name?: string; // For getCookie - get specific cookie, or all if not specified
+  url?: string; // For getCookie/setCookie - URL for cookie operations
+  cookies?: Array<{ // For setCookie
+    name: string;
+    value: string;
+    domain?: string;
+    path?: string;
+    expires?: number;
+    httpOnly?: boolean;
+    secure?: boolean;
+    sameSite?: 'Strict' | 'Lax' | 'None';
+  }>;
+  domain?: string; // For clearCookies - clear cookies for specific domain
+  key?: string; // For getLocalStorage/getSessionStorage/setLocalStorage/setSessionStorage
+  value?: string; // For setLocalStorage/setSessionStorage
+  // Advanced Waiting Options
+  waitForSelector?: string;
+  waitForSelectorType?: SelectorType;
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean;
+  // Retry Configuration
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number | string;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: SelectorType;
+    visibility?: 'visible' | 'invisible';
+    timeout?: number | string;
+  };
+  retryDelay?: number | string;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number | string;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface DialogNodeData {
+  action: 'accept' | 'dismiss' | 'prompt' | 'waitForDialog';
+  timeout?: number;
+  failSilently?: boolean;
+  // Action-specific properties
+  message?: string; // For accept/dismiss/prompt/waitForDialog - expected dialog message
+  inputText?: string; // For prompt action - text to input
+  outputVariable?: string; // For waitForDialog - store dialog message (default: 'dialogMessage')
+  // Advanced Waiting Options
+  waitForSelector?: string;
+  waitForSelectorType?: SelectorType;
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean;
+  // Retry Configuration
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number | string;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: SelectorType;
+    visibility?: 'visible' | 'invisible';
+    timeout?: number | string;
+  };
+  retryDelay?: number | string;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number | string;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface DownloadNodeData {
+  action: 'waitForDownload' | 'saveDownload' | 'getDownloadPath';
+  timeout?: number;
+  failSilently?: boolean;
+  // Action-specific properties
+  urlPattern?: string; // For waitForDownload - wait for download from URL matching pattern
+  outputVariable?: string; // For waitForDownload/getDownloadPath - store download object/path
+  downloadObject?: string; // For saveDownload/getDownloadPath - download object from context (from waitForDownload)
+  savePath?: string; // For saveDownload - path to save file
+  // Advanced Waiting Options
+  waitForSelector?: string;
+  waitForSelectorType?: SelectorType;
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean;
+  // Retry Configuration
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number | string;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: SelectorType;
+    visibility?: 'visible' | 'invisible';
+    timeout?: number | string;
+  };
+  retryDelay?: number | string;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number | string;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface IframeNodeData {
+  action: 'switchToIframe' | 'switchToMainFrame' | 'getIframeContent';
+  timeout?: number;
+  failSilently?: boolean;
+  // Action-specific properties
+  selector?: string; // For switchToIframe/getIframeContent - iframe selector
+  name?: string; // For switchToIframe - iframe name attribute
+  url?: string; // For switchToIframe - iframe URL pattern
+  contextKey?: string; // For switchToIframe - store iframe page reference (default: 'iframePage')
+  iframeSelector?: string; // For getIframeContent - iframe selector
+  contentSelector?: string; // For getIframeContent - element selector within iframe
+  outputVariable?: string; // For getIframeContent - store content (default: 'iframeContent')
+  // Advanced Waiting Options
+  waitForSelector?: string;
+  waitForSelectorType?: SelectorType;
+  waitForSelectorTimeout?: number;
+  waitForUrl?: string;
+  waitForUrlTimeout?: number;
+  waitForCondition?: string;
+  waitForConditionTimeout?: number;
+  waitStrategy?: 'sequential' | 'parallel';
+  waitAfterOperation?: boolean;
+  // Retry Configuration
+  retryEnabled?: boolean;
+  retryStrategy?: 'count' | 'untilCondition';
+  retryCount?: number | string;
+  retryUntilCondition?: {
+    type: 'selector' | 'url' | 'javascript';
+    value: string;
+    selectorType?: SelectorType;
+    visibility?: 'visible' | 'invisible';
+    timeout?: number | string;
+  };
+  retryDelay?: number | string;
+  retryDelayStrategy?: 'fixed' | 'exponential';
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -239,9 +718,10 @@ export interface ScreenshotNodeData {
 export interface WaitNodeData {
   waitType: 'timeout' | 'selector' | 'url' | 'condition' | 'api-response';
   value: number | string; // timeout in ms, selector string, URL pattern, JavaScript condition, or API response context key
-  selectorType?: 'css' | 'xpath';
+  selectorType?: SelectorType;
   timeout?: number;
   failSilently?: boolean;
+  pause?: boolean; // When true, execution pauses at this wait node with 2-hour timeout override
   // API response wait configuration
   apiWaitConfig?: {
     contextKey: string; // Which API response to check
@@ -252,16 +732,17 @@ export interface WaitNodeData {
   };
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
-    timeout?: number;
+    selectorType?: SelectorType;
+    visibility?: 'visible' | 'invisible';
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -275,26 +756,63 @@ export interface JavaScriptCodeNodeData {
   failSilently?: boolean;
 }
 
+/**
+ * Condition interface for switch nodes and loop nodes (doWhile mode)
+ * Supports multiple condition types: UI element, API status, API JSON path, JavaScript, and variable
+ */
+export interface SwitchCondition {
+  type: 'ui-element' | 'api-status' | 'api-json-path' | 'javascript' | 'variable';
+  // UI element condition fields
+  selector?: string;
+  selectorType?: 'css' | 'xpath';
+  elementCheck?: 'visible' | 'hidden' | 'exists';
+  // API condition fields
+  apiContextKey?: string;
+  statusCode?: number;
+  jsonPath?: string;
+  expectedValue?: any;
+  matchType?: 'equals' | 'contains' | 'greaterThan' | 'lessThan' | 'greaterThanOrEqual' | 'lessThanOrEqual' | 'startsWith' | 'endsWith' | 'regex';
+  // JavaScript condition fields
+  javascriptExpression?: string;
+  // Variable condition fields
+  variableName?: string;
+  comparisonOperator?: 'equals' | 'greaterThan' | 'lessThan' | 'greaterThanOrEqual' | 'lessThanOrEqual';
+  comparisonValue?: any;
+  timeout?: number;
+}
+
 export interface LoopNodeData {
-  arrayVariable: string; // Variable name from previous node output
+  mode: 'forEach' | 'doWhile'; // Loop mode selector (required)
   failSilently?: boolean;
+  
+  // Mode A: For Each (Array Iterator)
+  arrayVariable?: string; // Variable name containing array (required when mode = 'forEach')
+  
+  // Mode B: Do While (Condition Based)
+  condition?: SwitchCondition; // Condition to evaluate each iteration (required when mode = 'doWhile')
+  updateStep?: string; // Optional JavaScript code to execute at end of each iteration (e.g., increment counter)
+  maxIterations?: number; // Safety limit to prevent infinite loops (default: 1000)
 }
 
 export interface IntValueNodeData {
-  value: number;
+  value: number | string; // string allowed for interpolation (e.g., "${data.key}")
+  variableName?: string;
 }
 
 export interface StringValueNodeData {
   value: string;
+  variableName?: string;
 }
 
 export interface BooleanValueNodeData {
-  value: boolean;
+  value: boolean | string; // string allowed for interpolation (e.g., "${data.key}")
+  variableName?: string;
 }
 
 export interface InputValueNodeData {
   dataType: PropertyDataType;
   value: string | number | boolean;
+  variableName?: string;
 }
 
 export interface ApiRequestNodeData {
@@ -303,26 +821,28 @@ export interface ApiRequestNodeData {
   headers?: Record<string, string>; // Supports interpolation in values
   body?: string; // Request body (supports interpolation)
   bodyType?: 'json' | 'form-data' | 'raw' | 'url-encoded';
+  formFields?: Array<{ key: string; value: string; type: 'text' }>; // For multipart/form-data text fields
+  formFiles?: Array<{ key: string; filePath: string }>; // For multipart/form-data file fields (supports interpolation in filePath)
   timeout?: number;
   contextKey?: string; // Where to store response (default: 'apiResponse')
   failSilently?: boolean;
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'api-status' | 'api-json-path' | 'api-javascript';
     value?: string; // Optional, used for api-javascript condition code
-    timeout?: number;
+    timeout?: number | string;
     // API-specific fields
-    expectedStatus?: number; // For api-status
+    expectedStatus?: number | string; // For api-status
     jsonPath?: string; // For api-json-path
     expectedValue?: any; // For api-json-path
     matchType?: MatchType; // For api-json-path
     contextKey?: string; // For api-javascript (which API response to check, defaults to node's contextKey)
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -338,21 +858,21 @@ export interface ApiCurlNodeData {
   failSilently?: boolean;
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'api-status' | 'api-json-path' | 'api-javascript';
     value?: string; // Optional, used for api-javascript condition code
-    timeout?: number;
+    timeout?: number | string;
     // API-specific fields
-    expectedStatus?: number; // For api-status
+    expectedStatus?: number | string; // For api-status
     jsonPath?: string; // For api-json-path
     expectedValue?: any; // For api-json-path
     matchType?: MatchType; // For api-json-path
     contextKey?: string; // For api-javascript (which API response to check, defaults to node's contextKey)
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -362,20 +882,93 @@ export interface ApiCurlNodeData {
 }
 
 export interface LoadConfigFileNodeData {
-  filePath: string; // Relative or absolute path
-  contextKey?: string; // Optional key to store under (default: merge into root)
+  configs?: Array<{
+    id: string; // Unique ID for each config
+    fileName: string; // Name of the selected file
+    fileContent: string; // JSON content from file picker
+    contextKey?: string; // Optional key to store under
+    enabled: boolean; // Whether this config is enabled
+  }>;
+  // Legacy fields for backward compatibility (deprecated)
+  filePath?: string; // Relative or absolute path (deprecated - use configs array instead)
+  contextKey?: string; // Optional key to store under (deprecated - use configs array instead)
 }
 
 export interface SelectConfigFileNodeData {
-  fileContent: string; // JSON content from file picker
-  fileName?: string; // Optional: name of the selected file
+  // Use same structure as LoadConfigFileNodeData for unified handling
+  configs?: Array<{
+    id: string; // Unique ID for each config
+    fileName: string; // Name of the selected file
+    fileContent: string; // JSON content from file picker
+    contextKey?: string; // Optional key to store under
+    enabled: boolean; // Whether this config is enabled
+  }>;
+  // Legacy fields for backward compatibility (deprecated)
+  fileContent?: string; // JSON content from file picker (deprecated - use configs array instead)
+  fileName?: string; // Optional: name of the selected file (deprecated - use configs array instead)
+  contextKey?: string; // Optional key to store under (deprecated - use configs array instead)
+}
+
+export interface SetConfigNodeData {
+  config?: Record<string, any>; // The config object (stored as JSON)
   contextKey?: string; // Optional key to store under (default: merge into root)
+  exportedFileName?: string; // Optional: name of exported file (for reference)
+}
+
+export interface DbConnectNodeData {
+  dbType: 'postgres' | 'mysql' | 'mongodb' | 'sqlite'; // Supports ${data.config.dbType}
+  host?: string; // Supports variable interpolation
+  port?: number | string; // Supports variable interpolation (parsed after interpolation)
+  user?: string; // Supports variable interpolation
+  password?: string; // Supports variable interpolation
+  database?: string; // Supports variable interpolation
+  connectionString?: string; // Optional alternative to individual fields (supports interpolation)
+  configKey?: string; // Optional - load entire config object from context (e.g., 'env.db' loads from data.env.db)
+  connectionKey?: string; // Context key to store connection (default: 'dbConnection', supports ${data.key})
+  options?: Record<string, any>; // Database-specific options (pool size, SSL, etc.) - supports interpolation for string values
+  failSilently?: boolean;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface DbDisconnectNodeData {
+  connectionKey?: string; // Which connection to disconnect (default: 'dbConnection', supports ${data.key})
+  failSilently?: boolean;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface DbQueryNodeData {
+  connectionKey?: string; // Which connection to use (supports ${data.connectionKey})
+  query?: string | Record<string, any>; // SQL query string (for SQL databases) or query object (for NoSQL) - supports variable interpolation
+  queryKey?: string; // Optional - load query string/object from context (e.g., 'queries.selectUser' loads from data.queries.selectUser)
+  queryType?: 'sql' | 'mongodb' | 'raw'; // Supports ${data.queryType}
+  params?: any[]; // Parameterized query parameters (each param supports interpolation)
+  contextKey?: string; // Where to store results (default: 'dbResult', supports ${data.resultKey})
+  timeout?: number; // Query timeout (supports ${data.timeout})
+  failSilently?: boolean;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
 }
 
 // Verification Domain and Types
 export type VerificationDomain = 'browser' | 'api' | 'database';
 
 export type BrowserVerificationType = 'url' | 'text' | 'element' | 'attribute' | 'formField' | 'cookie' | 'storage' | 'css';
+
+export type DatabaseVerificationType = 'rowCount' | 'columnValue' | 'rowExists' | 'queryResult';
 
 export type MatchType = 'contains' | 'equals' | 'regex' | 'startsWith' | 'endsWith';
 
@@ -388,7 +981,7 @@ export interface VerifyNodeData {
   urlPattern?: string;
   expectedText?: string;
   selector?: string;
-  selectorType?: 'css' | 'xpath';
+  selectorType?: SelectorType;
   attributeName?: string;
   elementCheck?: 'visible' | 'hidden' | 'exists' | 'notExists' | 'count' | 'enabled' | 'disabled' | 'selected' | 'checked';
   cookieName?: string;
@@ -400,8 +993,11 @@ export interface VerifyNodeData {
   jsonPath?: string;
   headerName?: string;
   apiContextKey?: string; // Context key for API response to verify
-  // Database-specific fields (future)
-  query?: string;
+  // Database-specific fields
+  dbContextKey?: string; // Context key for query result to verify (default: 'dbResult', supports ${data.resultKey})
+  dbVerificationType?: DatabaseVerificationType; // 'rowCount' | 'columnValue' | 'rowExists' | 'queryResult' (supports ${data.type})
+  columnName?: string; // For column value verification (supports ${data.column})
+  rowIndex?: number; // For row-based verification (default: 0, supports ${data.index})
   // Common fields
   matchType?: MatchType;
   comparisonOperator?: ComparisonOperator;
@@ -411,16 +1007,50 @@ export interface VerifyNodeData {
   failSilently?: boolean;
   retryEnabled?: boolean;
   retryStrategy?: 'count' | 'untilCondition';
-  retryCount?: number;
+  retryCount?: number | string;
   retryUntilCondition?: {
     type: 'selector' | 'url' | 'javascript';
     value: string;
-    selectorType?: 'css' | 'xpath';
-    timeout?: number;
+    selectorType?: SelectorType;
+    visibility?: 'visible' | 'invisible';
+    timeout?: number | string;
   };
-  retryDelay?: number;
+  retryDelay?: number | string;
   retryDelayStrategy?: 'fixed' | 'exponential';
-  retryMaxDelay?: number;
+  retryMaxDelay?: number | string;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface ContextManipulateNodeData {
+  action: 'setGeolocation' | 'setPermissions' | 'setViewportSize' | 'setUserAgent' | 
+          'setLocale' | 'setTimezone' | 'setColorScheme' | 'setExtraHTTPHeaders' |
+          'createContext' | 'switchContext' | 'saveState' | 'loadState' | 
+          'emulateDevice' | 'addInitScript' | 'clearPermissions';
+  
+  // Action-specific properties
+  geolocation?: { latitude: number; longitude: number; accuracy?: number };
+  permissions?: string[]; // For setPermissions
+  revokePermissions?: string[]; // For revoking permissions
+  viewportWidth?: number;
+  viewportHeight?: number;
+  userAgent?: string;
+  locale?: string;
+  timezoneId?: string;
+  colorScheme?: 'light' | 'dark' | 'no-preference';
+  extraHTTPHeaders?: Record<string, string>;
+  contextKey?: string; // For createContext/switchContext
+  contextOptions?: Record<string, any>; // For createContext
+  stateFilePath?: string; // For saveState/loadState
+  device?: string; // Device name for emulateDevice (e.g., 'iPhone 12', 'Pixel 5')
+  initScript?: string; // JavaScript code for addInitScript
+  
+  // Standard node properties
+  failSilently?: boolean;
   _inputConnections?: {
     [propertyName: string]: {
       sourceNodeId: string;
@@ -432,10 +1062,17 @@ export interface VerifyNodeData {
 export type NodeData =
   | StartNodeData
   | OpenBrowserNodeData
-  | NavigateNodeData
-  | ClickNodeData
   | TypeNodeData
-  | GetTextNodeData
+  | ActionNodeData
+  | ElementQueryNodeData
+  | FormInputNodeData
+  | NavigationNodeData
+  | KeyboardNodeData
+  | ScrollNodeData
+  | StorageNodeData
+  | DialogNodeData
+  | DownloadNodeData
+  | IframeNodeData
   | ScreenshotNodeData
   | WaitNodeData
   | JavaScriptCodeNodeData
@@ -445,10 +1082,14 @@ export type NodeData =
   | BooleanValueNodeData
   | InputValueNodeData
   | VerifyNodeData
+  | ContextManipulateNodeData
   | ApiRequestNodeData
   | ApiCurlNodeData
   | LoadConfigFileNodeData
   | SelectConfigFileNodeData
+  | DbConnectNodeData
+  | DbDisconnectNodeData
+  | DbQueryNodeData
   | Record<string, any>; // Support custom plugin node data
 
 // Edge/Connection Interface
@@ -460,10 +1101,22 @@ export interface Edge {
   targetHandle?: string; // Input port
 }
 
+// Group Interface
+export interface Group {
+  id: string;
+  name: string;
+  nodeIds: string[];
+  position: { x: number; y: number };
+  width: number;
+  height: number;
+  borderColor?: string; // Optional border color for the group boundary
+}
+
 // Workflow JSON Schema
 export interface Workflow {
   nodes: BaseNode[];
   edges: Edge[];
+  groups?: Group[];
 }
 
 // Execution Context
@@ -491,13 +1144,16 @@ export enum ExecutionEventType {
   EXECUTION_START = 'execution_start',
   EXECUTION_COMPLETE = 'execution_complete',
   EXECUTION_ERROR = 'execution_error',
+  EXECUTION_PAUSED = 'execution_paused',
+  BREAKPOINT_TRIGGERED = 'breakpoint_triggered',
+  BUILDER_MODE_READY = 'builder_mode_ready',
   LOG = 'log',
 }
 
 // Page Debug Info for UI node errors
 export interface SelectorSuggestion {
   selector: string;
-  selectorType: 'css' | 'xpath';
+  selectorType: SelectorType;
   reason: string; // e.g., "Similar ID found", "Class match", etc.
   elementInfo?: string; // e.g., "button#submit-btn.login-button"
 }
@@ -506,6 +1162,59 @@ export interface PageDebugInfo {
   pageUrl?: string;
   pageSource?: string;
   similarSelectors?: SelectorSuggestion[];
+  screenshotPaths?: {
+    pre?: string;
+    post?: string;
+    failure?: string;
+  };
+  executionFolderName?: string; // Folder name for constructing screenshot URLs
+}
+
+// Selector Finder Types
+export interface SelectorOption {
+  selector: string;
+  type: SelectorType;
+  quality: 'high' | 'medium' | 'low';
+  reason: string;
+}
+
+export interface SelectorFinderEvent {
+  event: 'selectors-generated' | 'session-started' | 'session-closed';
+  selectors?: SelectorOption[];
+  nodeId?: string;
+  fieldName?: string;
+  sessionId?: string;
+}
+
+// Builder Mode Types
+export interface RecordedAction {
+  id: string;
+  type: 'click' | 'type' | 'keyboard' | 'form-input' | 'navigation' | 'scroll' | 'hover';
+  selector?: string;
+  selectorType?: SelectorType;
+  value?: string; // For type actions
+  key?: string; // For keyboard actions
+  url?: string; // For navigation
+  timestamp: number;
+  inserted?: boolean; // Whether action has been inserted into canvas
+  nodeId?: string; // Node ID if inserted
+  elementInfo?: {
+    tagName: string;
+    id?: string;
+    className?: string;
+    text?: string;
+  };
+  detectedNodeType?: NodeType; // Auto-detected node type
+  customNodeType?: NodeType; // User-overridden node type
+}
+
+export interface BuilderModeEvent {
+  event: 'recording-started' | 'recording-stopped' | 'action-recorded' | 'actions-reset';
+  sessionId?: string;
+  action?: RecordedAction; // Single action for real-time updates
+  actions?: RecordedAction[]; // Batch actions
+  reason?: 'user' | 'execution-stopped' | 'builder-mode-disabled' | 'workflow-rerun' | 'browser-closed';
+  timestamp?: number;
 }
 
 // Execution Event
@@ -527,6 +1236,7 @@ export interface ReportConfig {
   enabled: boolean;
   outputPath?: string; // Default: './output'
   reportTypes: ReportType[]; // ['html', 'allure', 'json', etc.]
+  reportRetention?: number; // Number of reports to keep (default: 10)
 }
 
 export interface ScreenshotConfig {
@@ -534,25 +1244,23 @@ export interface ScreenshotConfig {
   timing: 'pre' | 'post' | 'both'; // When to take screenshots
 }
 
-// API Request/Response Types
-export interface ExecuteWorkflowRequest {
-  workflow: Workflow;
-  traceLogs?: boolean; // Enable trace logging to terminal (default: false)
-  screenshotConfig?: ScreenshotConfig;
-  reportConfig?: ReportConfig;
-  recordSession?: boolean; // Flag to enable video recording
+export interface BreakpointConfig {
+  enabled: boolean;
+  breakpointAt: 'pre' | 'post' | 'both'; // When to pause
+  breakpointFor: 'all' | 'marked'; // Which nodes to pause on
 }
 
-export interface ExecuteWorkflowResponse {
-  executionId: string;
-  status: ExecutionStatus;
-}
+// API Request/Response Types
+// Note: ExecuteWorkflowRequest and ExecuteWorkflowResponse are now defined below with parallel execution support
+// Old definitions removed - see new definitions below
 
 export interface ExecutionStatusResponse {
   executionId: string;
   status: ExecutionStatus;
   currentNodeId?: string;
   error?: string;
+  pausedNodeId?: string | null;
+  pauseReason?: 'wait-pause' | 'breakpoint' | null;
 }
 
 export interface StopExecutionResponse {
@@ -620,5 +1328,184 @@ export interface PluginMetadata {
   path: string; // Absolute path to plugin directory
   loaded: boolean;
   error?: string;
+}
+
+// Parallel Execution Types
+export interface StartNodeOverrides {
+  recordSession?: boolean;                // Optional: override Start node recordSession
+  screenshotAllNodes?: boolean;            // Optional: override Start node screenshotAllNodes
+  screenshotTiming?: 'pre' | 'post' | 'both'; // Optional: override Start node screenshotTiming
+  slowMo?: number;                        // Optional: override Start node slowMo (milliseconds)
+  scrollThenAction?: boolean;             // Optional: override Start node scrollThenAction
+}
+
+export interface ExecuteWorkflowRequest {
+  // Single Mode: workflow object
+  workflow?: Workflow;                     // Required for single mode: single workflow object
+  
+  // Parallel Mode: one of these required
+  workflows?: Workflow[];                  // Optional: array of workflow objects (parallel mode)
+  folderPath?: string;                    // Optional: path to folder containing workflows (parallel mode)
+  // Note: files are handled via multer middleware for multipart/form-data (parallel mode)
+  
+  // Execution Mode Override
+  executionMode?: 'single' | 'parallel' | 'auto'; // Optional: explicit mode (default: 'auto' - auto-detect)
+  
+  // Common options (apply to both modes)
+  traceLogs?: boolean;                   // Optional: enable trace logs (default: false)
+  screenshotConfig?: ScreenshotConfig;    // Optional: screenshot config
+  reportConfig?: ReportConfig;           // Optional: report config
+  recordSession?: boolean;                // Optional: enable video recording (default: false)
+  workflowFileName?: string;             // Optional: workflow filename (single mode)
+  breakpointConfig?: BreakpointConfig;   // Optional: breakpoint config (single mode only, controlled via localStorage in frontend)
+  builderModeEnabled?: boolean;          // Optional: builder mode flag (single mode only, controlled via localStorage in frontend)
+  
+  // Parallel Mode Options
+  workers?: number;                       // Optional: max concurrent workers (default: 4, use 1 for MCP/API)
+  outputPath?: string;                   // Optional: output directory (default: './output')
+  recursive?: boolean;                    // Optional: scan subdirectories (default: false, folder mode only)
+  pattern?: string;                       // Optional: file pattern (default: "*.json", folder mode only)
+  startNodeOverrides?: StartNodeOverrides; // Optional: override Start node properties (parallel mode only)
+  batchPriority?: number;                 // Optional: batch priority (higher = processed first, default: FIFO order)
+  
+  // Note: breakpointConfig and builderModeEnabled are controlled via localStorage (frontend), not API parameters
+  // Note: Same folder/files can be executed multiple times concurrently - each call creates a new batch
+}
+
+export interface ExecuteWorkflowResponse {
+  // Single Mode Response
+  executionId?: string;                   // Present for single mode
+  status?: string;                        // Present for single mode: "running"
+  executionMode: 'single' | 'parallel';   // Execution mode used
+  
+  // Parallel Mode Response
+  batchId?: string;                       // Present for parallel mode
+  sourceType?: 'folder' | 'files' | 'workflows'; // Present for parallel mode
+  folderPath?: string;                    // Present if sourceType is 'folder'
+  totalWorkflows?: number;                 // Present for parallel mode
+  validWorkflows?: number;                 // Present for parallel mode
+  invalidWorkflows?: number;              // Present for parallel mode
+  validationErrors?: Array<{               // Present for parallel mode
+    fileName: string;
+    errors: string[];
+  }>;
+  executions?: Array<{                    // Present for parallel mode
+    executionId: string;
+    workflowFileName: string;
+    workflowPath?: string;                // Present for folder mode
+    status: ExecutionStatus;
+    workerId?: number;
+    validationErrors?: string[];
+  }>;
+}
+
+export interface BatchStatusResponse {
+  batchId: string;
+  status: 'running' | 'completed' | 'error' | 'stopped';
+  sourceType: 'folder' | 'files' | 'workflows';
+  folderPath?: string;  // Present if sourceType is 'folder'
+  totalWorkflows: number;
+  completed: number;
+  running: number;
+  queued: number;
+  failed: number;
+  startTime: number;
+  endTime?: number;  // NULL if still running
+  executions: Array<{
+    executionId: string;
+    workflowFileName: string;
+    status: ExecutionStatus;
+    error?: string;
+  }>;
+}
+
+export interface BatchHistoryResponse {
+  total: number;
+  limit: number;
+  offset: number;
+  batches: Array<{
+    batchId: string;
+    status: 'running' | 'completed' | 'error' | 'stopped';
+    sourceType: 'folder' | 'files' | 'workflows';
+    folderPath?: string;
+    totalWorkflows: number;
+    completed: number;
+    failed: number;
+    startTime: number;
+    endTime?: number;
+    duration?: number;  // milliseconds (endTime - startTime)
+  }>;
+}
+
+export interface BatchPersistenceMetadata {
+  batchId: string;
+  status: 'running' | 'completed' | 'error' | 'stopped';
+  sourceType: 'folder' | 'files' | 'workflows';
+  folderPath?: string;
+  totalWorkflows: number;
+  validWorkflows: number;
+  invalidWorkflows: number;
+  completed: number;
+  running: number;
+  queued: number;
+  failed: number;
+  workers: number;
+  priority: number;
+  startTime: number;
+  endTime?: number;
+  createdAt: number;
+  outputPath: string;
+  startNodeOverrides?: StartNodeOverrides;
+}
+
+export interface ExecutionPersistenceMetadata {
+  executionId: string;
+  batchId: string;
+  workflowFileName: string;
+  workflowPath?: string;
+  status: 'queued' | 'running' | 'completed' | 'error' | 'stopped' | 'cancelled';
+  workerId?: number;
+  startTime: number;
+  endTime?: number;
+  error?: string;
+  reportPath?: string;  // Path to execution report directory
+}
+
+export interface StopExecutionResponse {
+  success: boolean;
+  message: string;
+  executionId?: string;
+  wasRunning?: boolean;
+  wasQueued?: boolean;
+}
+
+export interface StopBatchResponse {
+  success: boolean;
+  message: string;
+  batchId: string;
+  stoppedExecutions: number;
+  runningStopped: number;
+  queuedCancelled: number;
+}
+
+export interface StopAllResponse {
+  success: boolean;
+  message: string;
+  totalBatches: number;
+  totalStopped: number;
+  runningStopped: number;
+  queuedCancelled: number;
+  batches: Array<{
+    batchId: string;
+    stopped: number;
+  }>;
+}
+
+export interface WorkflowFileInfo {
+  fileName: string;
+  filePath: string;
+  isValid: boolean;
+  validationErrors?: string[];
+  workflow?: Workflow;                    // Parsed workflow if valid
 }
 

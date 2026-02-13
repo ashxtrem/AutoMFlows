@@ -1,7 +1,8 @@
 import { Node, Edge } from 'reactflow';
 import { Workflow, BaseNode as WorkflowNode, Edge as WorkflowEdge, NodeType } from '@automflows/shared';
+import { migrateWorkflow } from './migration';
 
-export function serializeWorkflow(nodes: Node[], edges: Edge[]): Workflow {
+export function serializeWorkflow(nodes: Node[], edges: Edge[], groups?: any[]): Workflow {
   const workflowNodes: WorkflowNode[] = nodes.map((node) => ({
     id: node.id,
     type: node.data.type as NodeType,
@@ -26,10 +27,11 @@ export function serializeWorkflow(nodes: Node[], edges: Edge[]): Workflow {
   return {
     nodes: workflowNodes,
     edges: workflowEdges,
+    groups: groups || undefined,
   };
 }
 
-export function deserializeWorkflow(workflow: Workflow): { nodes: Node[]; edges: Edge[] } {
+export function deserializeWorkflow(workflow: Workflow): { nodes: Node[]; edges: Edge[]; groups?: any[] } {
   const nodes: Node[] = workflow.nodes.map((node) => ({
     id: node.id,
     type: 'custom',
@@ -59,17 +61,24 @@ export function deserializeWorkflow(workflow: Workflow): { nodes: Node[]; edges:
     targetHandle: edge.targetHandle || 'input',
   }));
 
-  return { nodes, edges };
+  return { nodes, edges, groups: workflow.groups };
 }
 
 function getNodeLabel(type: NodeType): string {
   const labels: Record<NodeType, string> = {
     [NodeType.START]: 'Start',
     [NodeType.OPEN_BROWSER]: 'Open Browser',
-    [NodeType.NAVIGATE]: 'Navigate',
-    [NodeType.CLICK]: 'Click',
+    [NodeType.NAVIGATION]: 'Navigation',
+    [NodeType.KEYBOARD]: 'Keyboard',
+    [NodeType.SCROLL]: 'Scroll',
+    [NodeType.STORAGE]: 'Storage',
+    [NodeType.DIALOG]: 'Dialog',
+    [NodeType.DOWNLOAD]: 'Download',
+    [NodeType.IFRAME]: 'Iframe',
+    [NodeType.ACTION]: 'Action',
+    [NodeType.ELEMENT_QUERY]: 'Element Query',
+    [NodeType.FORM_INPUT]: 'Form Input',
     [NodeType.TYPE]: 'Type',
-    [NodeType.GET_TEXT]: 'Get Text',
     [NodeType.SCREENSHOT]: 'Screenshot',
     [NodeType.WAIT]: 'Wait',
     [NodeType.JAVASCRIPT_CODE]: 'JavaScript Code',
@@ -83,16 +92,20 @@ function getNodeLabel(type: NodeType): string {
     [NodeType.API_CURL]: 'API cURL',
     [NodeType.LOAD_CONFIG_FILE]: 'Load Config File',
     [NodeType.SELECT_CONFIG_FILE]: 'Select Config File',
+    [NodeType.DB_CONNECT]: 'DB Connect',
+    [NodeType.DB_DISCONNECT]: 'DB Disconnect',
+    [NodeType.DB_QUERY]: 'DB Query',
+    [NodeType.CONTEXT_MANIPULATE]: 'Context Manipulate',
   };
   return labels[type] || type;
 }
 
-export function saveToLocalStorage(nodes: Node[], edges: Edge[]): void {
-  const workflow = serializeWorkflow(nodes, edges);
+export function saveToLocalStorage(nodes: Node[], edges: Edge[], groups?: any[]): void {
+  const workflow = serializeWorkflow(nodes, edges, groups);
   localStorage.setItem('automflows-workflow', JSON.stringify(workflow));
 }
 
-export function loadFromLocalStorage(): { nodes: Node[]; edges: Edge[] } | null {
+export function loadFromLocalStorage(): { nodes: Node[]; edges: Edge[]; groups?: any[]; warnings?: string[] } | null {
   const stored = localStorage.getItem('automflows-workflow');
   if (!stored) {
     return null;
@@ -100,7 +113,28 @@ export function loadFromLocalStorage(): { nodes: Node[]; edges: Edge[] } | null 
 
   try {
     const workflow = JSON.parse(stored) as Workflow;
-    return deserializeWorkflow(workflow);
+    
+    // Migrate old nodes to new consolidated format
+    const migrationResult = migrateWorkflow(workflow);
+    
+    // Log migration warnings
+    if (migrationResult.warnings.length > 0) {
+      console.warn('Workflow migration warnings:', migrationResult.warnings);
+      // Show user-friendly notification (could be enhanced with a toast/notification system)
+      migrationResult.warnings.forEach(warning => {
+        console.warn(warning);
+      });
+    }
+    
+    // Save migrated workflow back to localStorage
+    if (migrationResult.warnings.length > 0) {
+      localStorage.setItem('automflows-workflow', JSON.stringify(migrationResult.workflow));
+    }
+    
+    return {
+      ...deserializeWorkflow(migrationResult.workflow),
+      warnings: migrationResult.warnings.length > 0 ? migrationResult.warnings : undefined,
+    };
   } catch (error) {
     console.error('Failed to load workflow from localStorage:', error);
     return null;

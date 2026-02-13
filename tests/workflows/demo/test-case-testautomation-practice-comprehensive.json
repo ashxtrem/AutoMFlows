@@ -29,14 +29,15 @@
     },
     {
       "id": "navigate-1",
-      "type": "navigate",
+      "type": "navigation",
       "position": {
         "x": 600,
         "y": 200
       },
       "data": {
-        "type": "navigate",
+        "type": "navigation",
         "label": "Navigate to Test Site",
+        "action": "navigate",
         "url": "https://testautomationpractice.blogspot.com/",
         "timeout": 30000,
         "waitUntil": "networkidle",
@@ -190,14 +191,15 @@
     },
     {
       "id": "select-gender-male",
-      "type": "click",
+        "type": "action",
       "position": {
         "x": 1600,
         "y": 200
       },
       "data": {
-        "type": "click",
+        "type": "action",
         "label": "Select Gender Male",
+        "action": "click",
         "selector": "#male",
         "selectorType": "css",
         "timeout": 30000,
@@ -225,14 +227,15 @@
     },
     {
       "id": "select-day-sunday",
-      "type": "click",
+        "type": "action",
       "position": {
         "x": 1600,
         "y": 300
       },
       "data": {
-        "type": "click",
+        "type": "action",
         "label": "Select Sunday",
+        "action": "click",
         "selector": "#sunday",
         "selectorType": "css",
         "timeout": 30000,
@@ -242,14 +245,15 @@
     },
     {
       "id": "select-day-monday",
-      "type": "click",
+        "type": "action",
       "position": {
         "x": 1600,
         "y": 400
       },
       "data": {
-        "type": "click",
+        "type": "action",
         "label": "Select Monday",
+        "action": "click",
         "selector": "#monday",
         "selectorType": "css",
         "timeout": 30000,
@@ -310,14 +314,15 @@
     },
     {
       "id": "select-color-red",
-      "type": "click",
+        "type": "action",
       "position": {
         "x": 2100,
         "y": 300
       },
       "data": {
-        "type": "click",
+        "type": "action",
         "label": "Select Red Color",
+        "action": "click",
         "selector": "#red",
         "selectorType": "css",
         "timeout": 30000,
@@ -402,16 +407,18 @@
     },
     {
       "id": "get-text-first-book",
-      "type": "getText",
+      "type": "elementQuery",
       "position": {
         "x": 2850,
         "y": 400
       },
       "data": {
-        "type": "getText",
+        "type": "elementQuery",
         "label": "Get First Book Name",
+        "action": "getText",
         "selector": "table.wp-block-table tbody tr:first-child td:first-child",
         "selectorType": "css",
+        "outputVariable": "firstBookName",
         "contextKey": "firstBookName",
         "timeout": 30000,
         "retryEnabled": true,
@@ -454,14 +461,15 @@
     },
     {
       "id": "click-tab-2",
-      "type": "click",
+        "type": "action",
       "position": {
         "x": 3600,
         "y": 200
       },
       "data": {
-        "type": "click",
+        "type": "action",
         "label": "Click Tab 2",
+        "action": "click",
         "selector": "button[onclick=\"opentab('tab2')\"]",
         "selectorType": "css",
         "timeout": 30000,
@@ -510,14 +518,15 @@
     },
     {
       "id": "click-dynamic-button",
-      "type": "click",
+        "type": "action",
       "position": {
         "x": 3600,
         "y": 300
       },
       "data": {
-        "type": "click",
+        "type": "action",
         "label": "Click Dynamic Button",
+        "action": "click",
         "selector": "button[onclick*='START']",
         "selectorType": "css",
         "timeout": 30000,
@@ -551,14 +560,15 @@
     },
     {
       "id": "click-simple-alert",
-      "type": "click",
+        "type": "action",
       "position": {
         "x": 3600,
         "y": 400
       },
       "data": {
-        "type": "click",
+        "type": "action",
         "label": "Click Simple Alert",
+        "action": "click",
         "selector": "button[onclick='myFunction()']",
         "selectorType": "css",
         "timeout": 30000,

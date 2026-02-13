@@ -1,15 +1,17 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.VariableInterpolator = void 0;
+const dynamicDataGenerator_1 = require("./dynamicDataGenerator");
 /**
  * Variable Interpolator Utility
  * Resolves nested JSON paths in template strings
- * Supports patterns: ${data.key.path} or ${variables.key.path}
+ * Supports patterns: ${data.key.path}, ${variables.key.path}, or ${dynamic.key}
  */
 class VariableInterpolator {
     /**
      * Interpolate a template string by replacing variable references with actual values
      * Supports nested object access (e.g., data.api1.response.body.customer.id)
+     * Also supports dynamic data generation (e.g., ${dynamic.randomEmail})
      *
      * @param template - Template string with variable references
      * @param context - ContextManager instance
@@ -19,10 +21,24 @@ class VariableInterpolator {
         if (!template || typeof template !== 'string') {
             return template;
         }
-        // Match ${data.key.path} or ${variables.key.path} patterns
+        // First, handle dynamic patterns: ${dynamic.key}
+        // Dynamic patterns are simpler and don't support nested paths
+        const dynamicPattern = /\$\{dynamic\.([a-zA-Z0-9_]+)\}/g;
+        let result = template.replace(dynamicPattern, (match, key) => {
+            try {
+                const value = dynamicDataGenerator_1.DynamicDataGenerator.generate(key);
+                return this.stringifyValue(value);
+            }
+            catch (error) {
+                // If generation fails, return original match
+                console.warn(`[VariableInterpolator] Failed to generate dynamic value for "${key}": ${error.message}`);
+                return match;
+            }
+        });
+        // Then, handle data and variables patterns: ${data.key.path} or ${variables.key.path}
         // Supports nested paths like data.api1.body.customerId
         const variablePattern = /\$\{((?:data|variables)\.(?:[a-zA-Z0-9_\[\]'"]+\.?)+)\}/g;
-        return template.replace(variablePattern, (match, path) => {
+        return result.replace(variablePattern, (match, path) => {
             try {
                 const value = this.resolvePath(path, context);
                 if (value === undefined) {

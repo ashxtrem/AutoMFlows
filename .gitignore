@@ -44,6 +44,7 @@ blob-report/
 .env*.local
 
 # IDE
+.cursor/
 .vscode/
 .idea/
 *.swp
@@ -118,12 +119,20 @@ dist/
 # AutoMflows runtime files
 .automflows-port
 
+# MCP Server
+mcp-server/dist/
+mcp-server/node_modules/
+mcp-server/config.json
+
 # Database files
 *.db
 *.sqlite
 *.sqlite3
 *.db-shm
 *.db-wal
+
+# Backend data directory (contains execution database)
+backend/src/data/
 
 # Backup files
 *.bak

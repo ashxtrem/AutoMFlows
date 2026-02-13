@@ -1,0 +1,279 @@
+{
+  "nodes": [
+    {
+      "id": "start-1770483184162",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 200
+      },
+      "data": {
+        "type": "start",
+        "label": "Start"
+      }
+    },
+    {
+      "id": "openBrowser-1770483184162-rfm2mz3hq",
+      "type": "openBrowser",
+      "position": {
+        "x": 400,
+        "y": 200
+      },
+      "data": {
+        "type": "openBrowser",
+        "label": "Open Browser",
+        "headless": false,
+        "browser": "chromium",
+        "viewportWidth": 1280,
+        "viewportHeight": 720
+      }
+    },
+    {
+      "id": "navigate-1770483184162-8r31zzhd2",
+      "type": "navigation",
+      "position": {
+        "x": 700,
+        "y": 200
+      },
+      "data": {
+        "type": "navigation",
+        "label": "Navigate to Sauce Demo",
+        "action": "navigate",
+        "url": "https://sauce-demo.myshopify.com/",
+        "waitUntil": "networkidle"
+      }
+    },
+    {
+      "id": "wait-1770483184162-fzoi75idd",
+      "type": "wait",
+      "position": {
+        "x": 1000,
+        "y": 200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait after navigation",
+        "timeout": 2000
+      }
+    },
+    {
+      "id": "click-1770483184162-a72iynaf6",
+      "type": "action",
+      "position": {
+        "x": 1300,
+        "y": 200
+      },
+      "data": {
+        "type": "action",
+        "label": "Click Sign up",
+        "action": "click",
+        "selector": "a:has-text(\"Sign up\"), a[href*=\"register\"], a[href*=\"sign\"]",
+        "selectorType": "css"
+      }
+    },
+    {
+      "id": "wait-1770483184162-2xteb6yf7",
+      "type": "wait",
+      "position": {
+        "x": 1600,
+        "y": 200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait after click",
+        "timeout": 2000
+      }
+    },
+    {
+      "id": "verify-1770483184162-enows72co",
+      "type": "verify",
+      "position": {
+        "x": 1900,
+        "y": 200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Create Account label and URL",
+        "domain": "browser",
+        "verificationType": "text",
+        "selector": "h1:has-text(\"Create Account\"), h1",
+        "expectedValue": "Create Account",
+        "selectorType": "css"
+      }
+    },
+    {
+      "id": "verify-1770483184162-bzicze77s",
+      "type": "verify",
+      "position": {
+        "x": 2200,
+        "y": 200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify URL matches register page",
+        "domain": "browser",
+        "verificationType": "url",
+        "expectedValue": "https://sauce-demo.myshopify.com/account/register"
+      }
+    },
+    {
+      "id": "javascriptCode-1770483184162-aiwnr3z3f",
+      "type": "javascriptCode",
+      "position": {
+        "x": 2500,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Fill form with random data",
+        "code": "\n      const page = context.page;\n      if (!page) {\n        throw new Error('Page not available');\n      }\n      \n      // Generate random data\n      const randomData = {\n        firstName: 'Test' + Math.floor(Math.random() * 10000),\n        lastName: 'User' + Math.floor(Math.random() * 10000),\n        email: 'test' + Math.floor(Math.random() * 10000) + '@example.com',\n        password: 'Test1234!@#$',\n      };\n      \n      // Fill form fields\n      await page.fill('input[name=\"customer[first_name]\"], input[id*=\"first\"], input[placeholder*=\"First\"]', randomData.firstName);\n      await page.fill('input[name=\"customer[last_name]\"], input[id*=\"last\"], input[placeholder*=\"Last\"]', randomData.lastName);\n      await page.fill('input[name=\"customer[email]\"], input[type=\"email\"]', randomData.email);\n      await page.fill('input[name=\"customer[password]\"], input[type=\"password\"]', randomData.password);\n      \n      // Store data in context for later use\n      context.setData('registrationData', randomData);\n      \n      console.log('Form filled with:', randomData);\n    "
+      }
+    },
+    {
+      "id": "click-1770483184162-of097ire0",
+      "type": "action",
+      "position": {
+        "x": 2800,
+        "y": 200
+      },
+      "data": {
+        "type": "action",
+        "label": "Click Create button",
+        "action": "click",
+        "selector": "button[type=\"submit\"]:has-text(\"Create\"), button:has-text(\"Create\"), input[type=\"submit\"][value*=\"Create\"]",
+        "selectorType": "css"
+      }
+    },
+    {
+      "id": "wait-1770483184162-ztw339nao",
+      "type": "wait",
+      "position": {
+        "x": 3100,
+        "y": 200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait after create",
+        "timeout": 3000
+      }
+    },
+    {
+      "id": "verify-1770483184162-2zdvtng66",
+      "type": "verify",
+      "position": {
+        "x": 3400,
+        "y": 200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Log Out is visible",
+        "domain": "browser",
+        "verificationType": "text",
+        "selector": "a:has-text(\"Log Out\"), a[href*=\"logout\"], button:has-text(\"Log Out\")",
+        "expectedValue": "Log Out",
+        "selectorType": "css"
+      }
+    },
+    {
+      "id": "verify-1770483184162-qta1uc3k0",
+      "type": "verify",
+      "position": {
+        "x": 3700,
+        "y": 200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify URL matches home page",
+        "domain": "browser",
+        "verificationType": "url",
+        "expectedValue": "https://sauce-demo.myshopify.com/"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-1770483184162-openBrowser-1770483184162-rfm2mz3hq-output-input",
+      "source": "start-1770483184162",
+      "target": "openBrowser-1770483184162-rfm2mz3hq",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-openBrowser-1770483184162-rfm2mz3hq-navigate-1770483184162-8r31zzhd2-output-input",
+      "source": "openBrowser-1770483184162-rfm2mz3hq",
+      "target": "navigate-1770483184162-8r31zzhd2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-navigate-1770483184162-8r31zzhd2-wait-1770483184162-fzoi75idd-output-input",
+      "source": "navigate-1770483184162-8r31zzhd2",
+      "target": "wait-1770483184162-fzoi75idd",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-1770483184162-fzoi75idd-click-1770483184162-a72iynaf6-output-input",
+      "source": "wait-1770483184162-fzoi75idd",
+      "target": "click-1770483184162-a72iynaf6",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-click-1770483184162-a72iynaf6-wait-1770483184162-2xteb6yf7-output-input",
+      "source": "click-1770483184162-a72iynaf6",
+      "target": "wait-1770483184162-2xteb6yf7",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-1770483184162-2xteb6yf7-verify-1770483184162-enows72co-output-input",
+      "source": "wait-1770483184162-2xteb6yf7",
+      "target": "verify-1770483184162-enows72co",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-1770483184162-enows72co-verify-1770483184162-bzicze77s-output-input",
+      "source": "verify-1770483184162-enows72co",
+      "target": "verify-1770483184162-bzicze77s",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-1770483184162-bzicze77s-javascriptCode-1770483184162-aiwnr3z3f-output-input",
+      "source": "verify-1770483184162-bzicze77s",
+      "target": "javascriptCode-1770483184162-aiwnr3z3f",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-javascriptCode-1770483184162-aiwnr3z3f-click-1770483184162-of097ire0-output-input",
+      "source": "javascriptCode-1770483184162-aiwnr3z3f",
+      "target": "click-1770483184162-of097ire0",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-click-1770483184162-of097ire0-wait-1770483184162-ztw339nao-output-input",
+      "source": "click-1770483184162-of097ire0",
+      "target": "wait-1770483184162-ztw339nao",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-1770483184162-ztw339nao-verify-1770483184162-2zdvtng66-output-input",
+      "source": "wait-1770483184162-ztw339nao",
+      "target": "verify-1770483184162-2zdvtng66",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-1770483184162-2zdvtng66-verify-1770483184162-qta1uc3k0-output-input",
+      "source": "verify-1770483184162-2zdvtng66",
+      "target": "verify-1770483184162-qta1uc3k0",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    }
+  ]
+}

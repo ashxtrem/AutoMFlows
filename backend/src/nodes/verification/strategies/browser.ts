@@ -1,6 +1,7 @@
 import { VerifyNodeData } from '@automflows/shared';
 import { ContextManager } from '../../../engine/context';
 import { BaseVerificationStrategy, VerificationResult } from './base';
+import { LocatorHelper } from '../../../utils/locatorHelper';
 
 /**
  * Browser URL Verification Strategy
@@ -69,12 +70,8 @@ export class BrowserTextStrategy extends BaseVerificationStrategy {
     let actualText: string;
     if (selector) {
       // Get text from specific element
-      if (selectorType === 'xpath') {
-        const element = await page.locator(`xpath=${selector}`).first();
-        actualText = (await element.textContent({ timeout })) || '';
-      } else {
-        actualText = (await page.textContent(selector, { timeout })) || '';
-      }
+      const locator = LocatorHelper.createLocator(page, selector, selectorType);
+      actualText = (await locator.first().textContent({ timeout })) || '';
     } else {
       // Get text from entire page body
       actualText = (await page.textContent('body', { timeout })) || '';
@@ -136,9 +133,7 @@ export class BrowserElementStrategy extends BaseVerificationStrategy {
       throw new Error('Selector is required for element verification');
     }
 
-    const locator = selectorType === 'xpath' 
-      ? page.locator(`xpath=${selector}`)
-      : page.locator(selector);
+    const locator = LocatorHelper.createLocator(page, selector, selectorType);
 
     let passed: boolean;
     let actualValue: any;
@@ -284,9 +279,7 @@ export class BrowserAttributeStrategy extends BaseVerificationStrategy {
       throw new Error('Attribute name is required for attribute verification');
     }
 
-    const locator = selectorType === 'xpath' 
-      ? page.locator(`xpath=${selector}`).first()
-      : page.locator(selector).first();
+    const locator = LocatorHelper.createLocator(page, selector, selectorType).first();
 
     const actualValue = await locator.getAttribute(attributeName, { timeout });
 
@@ -351,9 +344,7 @@ export class BrowserFormFieldStrategy extends BaseVerificationStrategy {
       throw new Error('Expected value is required for form field verification');
     }
 
-    const locator = selectorType === 'xpath' 
-      ? page.locator(`xpath=${selector}`).first()
-      : page.locator(selector).first();
+    const locator = LocatorHelper.createLocator(page, selector, selectorType).first();
 
     const actualValue = await locator.inputValue({ timeout });
 
@@ -527,9 +518,7 @@ export class BrowserCssStrategy extends BaseVerificationStrategy {
       throw new Error('CSS property is required for CSS verification');
     }
 
-    const locator = selectorType === 'xpath' 
-      ? page.locator(`xpath=${selector}`).first()
-      : page.locator(selector).first();
+    const locator = LocatorHelper.createLocator(page, selector, selectorType).first();
 
     const actualValue = await locator.evaluate((el: HTMLElement, prop: string) => {
       return window.getComputedStyle(el).getPropertyValue(prop);

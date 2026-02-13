@@ -1,0 +1,20 @@
+{
+  "name": "set-config-node",
+  "version": "1.0.0",
+  "description": "Set Config node plugin for defining configuration/test data in workflows",
+  "author": "AutoMFlows Team",
+  "nodes": [
+    {
+      "type": "setConfig.setConfig",
+      "label": "Set Config",
+      "category": "Configuration",
+      "icon": "⚙️",
+      "description": "Define and edit configuration/test data using JSON editor. Data is stored in context.data and can overwrite existing values.",
+      "handlerPath": "handler.js",
+      "configComponentPath": "config.tsx",
+      "defaultData": {
+        "config": {}
+      }
+    }
+  ]
+}

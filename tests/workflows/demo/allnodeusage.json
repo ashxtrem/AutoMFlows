@@ -1,0 +1,2458 @@
+{
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 200
+      },
+      "data": {
+        "type": "start",
+        "label": "Start",
+        "isPinned": true,
+        "isTest": true,
+        "screenshotAllNodes": false,
+        "screenshotTiming": "both",
+        "searchHighlighted": false,
+        "scrollThenAction": true
+      }
+    },
+    {
+      "id": "openBrowser-1",
+      "type": "openBrowser",
+      "position": {
+        "x": 381,
+        "y": 200
+      },
+      "data": {
+        "type": "openBrowser",
+        "label": "Open Browser",
+        "headless": false,
+        "viewportWidth": 1280,
+        "viewportHeight": 720,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "navigate-1",
+      "type": "navigation",
+      "position": {
+        "x": 662,
+        "y": 200
+      },
+      "data": {
+        "type": "navigation",
+        "label": "Navigate to Test Site",
+        "action": "navigate",
+        "url": "https://testautomationpractice.blogspot.com/",
+        "timeout": 30000,
+        "waitUntil": "networkidle",
+        "retryEnabled": true,
+        "retryStrategy": "count",
+        "retryCount": 3,
+        "retryDelay": 2000,
+        "retryDelayStrategy": "fixed",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-url-loaded",
+      "type": "verify",
+      "position": {
+        "x": 943,
+        "y": 200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify URL Loaded",
+        "domain": "browser",
+        "verificationType": "url",
+        "urlPattern": "testautomationpractice.blogspot.com",
+        "matchType": "contains",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-page-title",
+      "type": "verify",
+      "position": {
+        "x": 1224,
+        "y": 200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Page Title",
+        "domain": "browser",
+        "verificationType": "text",
+        "expectedText": "Automation Testing Practice",
+        "matchType": "contains",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "screenshot-initial",
+      "type": "screenshot",
+      "position": {
+        "x": 1505,
+        "y": 200
+      },
+      "data": {
+        "type": "screenshot",
+        "label": "Take Initial Screenshot",
+        "fullPage": false,
+        "retryEnabled": true,
+        "retryCount": 2,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "javascript-set-name",
+      "type": "javascriptCode",
+      "position": {
+        "x": 1786,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set Form Field Variables",
+        "code": "context.setData('fieldSelector', '#name');\ncontext.setData('fieldValue', 'John Doe');",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "run-fill-name",
+      "type": "reusable.runReusable",
+      "position": {
+        "x": 2067,
+        "y": 200
+      },
+      "data": {
+        "type": "reusable.runReusable",
+        "label": "Fill Name Field",
+        "contextName": "fill_form_field",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-name-filled",
+      "type": "verify",
+      "position": {
+        "x": 100,
+        "y": 450
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Name Filled",
+        "domain": "browser",
+        "verificationType": "formField",
+        "selector": "#name",
+        "selectorType": "css",
+        "expectedValue": "John Doe",
+        "matchType": "equals",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "javascript-set-email",
+      "type": "javascriptCode",
+      "position": {
+        "x": 381,
+        "y": 450
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set Email Variables",
+        "code": "context.setData('fieldSelector', '#email');\ncontext.setData('fieldValue', 'john.doe@example.com');",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "run-fill-email",
+      "type": "reusable.runReusable",
+      "position": {
+        "x": 662,
+        "y": 450
+      },
+      "data": {
+        "type": "reusable.runReusable",
+        "label": "Fill Email Field",
+        "contextName": "fill_form_field",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-email-filled",
+      "type": "verify",
+      "position": {
+        "x": 943,
+        "y": 450
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Email Filled",
+        "domain": "browser",
+        "verificationType": "formField",
+        "selector": "#email",
+        "selectorType": "css",
+        "expectedValue": "john.doe@example.com",
+        "matchType": "equals",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "javascript-set-phone",
+      "type": "javascriptCode",
+      "position": {
+        "x": 1224,
+        "y": 450
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set Phone Variables",
+        "code": "context.setData('fieldSelector', '#phone');\ncontext.setData('fieldValue', '1234567890');",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "run-fill-phone",
+      "type": "reusable.runReusable",
+      "position": {
+        "x": 1505,
+        "y": 450
+      },
+      "data": {
+        "type": "reusable.runReusable",
+        "label": "Fill Phone Field",
+        "contextName": "fill_form_field",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "fill-address",
+      "type": "type",
+      "position": {
+        "x": 1786,
+        "y": 450
+      },
+      "data": {
+        "type": "type",
+        "label": "Fill Address Field",
+        "selector": "#textarea",
+        "selectorType": "css",
+        "text": "123 Main Street, City, State 12345",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "select-gender-male",
+      "type": "action",
+      "position": {
+        "x": 2067,
+        "y": 450
+      },
+      "data": {
+        "type": "action",
+        "label": "Select Gender Male",
+        "action": "click",
+        "selector": "#male",
+        "selectorType": "css",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-gender-selected",
+      "type": "verify",
+      "position": {
+        "x": 100,
+        "y": 700
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Gender Selected",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "#male",
+        "selectorType": "css",
+        "elementCheck": "checked",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "javascript-set-days-array-d9e7e37c",
+      "type": "javascriptCode",
+      "position": {
+        "x": 381,
+        "y": 700
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set Days Array",
+        "code": "context.setData('days_array', ['#sunday', '#monday']);",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "loop-days-9a6aa170",
+      "type": "loop",
+      "position": {
+        "x": 662,
+        "y": 700
+      },
+      "data": {
+        "type": "loop",
+        "label": "Loop: Select Days",
+        "mode": "forEach",
+        "arrayVariable": "days_array",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-days-selected",
+      "type": "verify",
+      "position": {
+        "x": 943,
+        "y": 700
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Days Selected",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "#sunday",
+        "selectorType": "css",
+        "elementCheck": "checked",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "javascript-set-current-day-ec48f020",
+      "type": "javascriptCode",
+      "position": {
+        "x": 1224,
+        "y": 700
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set Current Day Selector",
+        "code": "const currentDay = context.getVariable('item');\ncontext.setData('daySelector', currentDay);",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "select-country-india",
+      "type": "formInput",
+      "position": {
+        "x": 1505,
+        "y": 700
+      },
+      "data": {
+        "action": "select",
+        "selector": "#country",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": true,
+        "type": "formInput",
+        "label": "Form Input",
+        "values": "india",
+        "isPinned": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "run-select-day-1ef90a0d",
+      "type": "reusable.runReusable",
+      "position": {
+        "x": 1786,
+        "y": 700
+      },
+      "data": {
+        "type": "reusable.runReusable",
+        "label": "Run Reusable: select_day",
+        "contextName": "select_day",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-country-selected",
+      "type": "verify",
+      "position": {
+        "x": 2067,
+        "y": 700
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Country Selected",
+        "domain": "browser",
+        "verificationType": "formField",
+        "selector": "#country",
+        "selectorType": "css",
+        "attributeName": "value",
+        "expectedValue": "india",
+        "matchType": "equals",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "formInput-1768650944105",
+      "type": "formInput",
+      "position": {
+        "x": 100,
+        "y": 950
+      },
+      "data": {
+        "action": "select",
+        "selector": "#colors",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": true,
+        "type": "formInput",
+        "label": "Form Input",
+        "values": "red",
+        "isPinned": true,
+        "width": 212,
+        "height": 226,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-color-selected",
+      "type": "verify",
+      "position": {
+        "x": 381,
+        "y": 950
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Color Selected",
+        "domain": "browser",
+        "verificationType": "attribute",
+        "selector": "#colors option",
+        "selectorType": "css",
+        "elementCheck": "checked",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "expectedValue": "Red",
+        "attributeName": "value",
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-table-exists",
+      "type": "verify",
+      "position": {
+        "x": 662,
+        "y": 950
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Static Table Exists",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "#HTML1",
+        "selectorType": "css",
+        "elementCheck": "exists",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-table-headers",
+      "type": "verify",
+      "position": {
+        "x": 943,
+        "y": 950
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Table Headers",
+        "domain": "browser",
+        "verificationType": "text",
+        "selector": "#HTML1 tbody",
+        "selectorType": "css",
+        "expectedText": "BookName",
+        "matchType": "contains",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-table-row-count",
+      "type": "verify",
+      "position": {
+        "x": 1224,
+        "y": 950
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Table Has 7 Rows",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "#HTML1 tbody tr",
+        "selectorType": "css",
+        "elementCheck": "count",
+        "expectedValue": 7,
+        "comparisonOperator": "equals",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "isMinimized": true,
+        "width": 276,
+        "height": 63.375,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "get-text-first-book",
+      "type": "elementQuery",
+      "position": {
+        "x": 1505,
+        "y": 950
+      },
+      "data": {
+        "type": "elementQuery",
+        "label": "Get First Book Name",
+        "action": "getText",
+        "selector": "//*[@id=\"HTML1\"]/div[1]/table/tbody/tr[2]/td[1]",
+        "selectorType": "css",
+        "contextKey": "firstBookName",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-first-book-name",
+      "type": "verify",
+      "position": {
+        "x": 1786,
+        "y": 950
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify First Book Name",
+        "domain": "browser",
+        "verificationType": "text",
+        "selector": "",
+        "selectorType": "css",
+        "expectedText": "Learn Selenium",
+        "matchType": "contains",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-submit-button-enabled",
+      "type": "verify",
+      "position": {
+        "x": 2067,
+        "y": 950
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Submit Button Enabled",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "input[type='submit']",
+        "selectorType": "css",
+        "elementCheck": "enabled",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "scroll-to-tabs",
+      "type": "scroll",
+      "position": {
+        "x": 100,
+        "y": 1200
+      },
+      "data": {
+        "type": "scroll",
+        "label": "Scroll to Tabs Section",
+        "action": "scrollToElement",
+        "selector": "#sidebar-right-1",
+        "selectorType": "css",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "type-1768883857238",
+      "type": "type",
+      "position": {
+        "x": 381,
+        "y": 1200
+      },
+      "data": {
+        "type": "type",
+        "label": "Type",
+        "selector": "",
+        "selectorType": "css",
+        "text": "",
+        "timeout": 30000,
+        "isTest": true,
+        "isPinned": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "click-tab-2",
+      "type": "action",
+      "position": {
+        "x": 662,
+        "y": 1200
+      },
+      "data": {
+        "type": "action",
+        "label": "Click Tab 2",
+        "action": "click",
+        "selector": "//*[@id=\"Wikipedia1\"]/h2[1]",
+        "selectorType": "xpath",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-tab-2-content",
+      "type": "verify",
+      "position": {
+        "x": 943,
+        "y": 1200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Tab 2 Content Visible",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "#HTML9",
+        "selectorType": "css",
+        "elementCheck": "visible",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-tab-2-text",
+      "type": "verify",
+      "position": {
+        "x": 1224,
+        "y": 1200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Tab 2 Text",
+        "domain": "browser",
+        "verificationType": "text",
+        "selector": "#HTML9 h2",
+        "selectorType": "css",
+        "expectedText": "Alerts & Popups",
+        "matchType": "contains",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "click-dynamic-button",
+      "type": "action",
+      "position": {
+        "x": 1505,
+        "y": 1200
+      },
+      "data": {
+        "type": "action",
+        "label": "Click Dynamic Button",
+        "action": "click",
+        "selector": "#HTML5 button",
+        "selectorType": "css",
+        "timeout": 30000,
+        "retryEnabled": false,
+        "retryCount": 3,
+        "waitForSelector": "#HTML5 button",
+        "waitForSelectorTimeout": 10000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-button-changed",
+      "type": "verify",
+      "position": {
+        "x": 1786,
+        "y": 1200
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Button Changed to STOP",
+        "domain": "browser",
+        "verificationType": "text",
+        "selector": "#HTML5 button",
+        "selectorType": "css",
+        "expectedText": "STOP",
+        "matchType": "contains",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 5,
+        "retryDelay": 1000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "click-simple-alert",
+      "type": "action",
+      "position": {
+        "x": 2067,
+        "y": 1200
+      },
+      "data": {
+        "type": "action",
+        "label": "Click Simple Alert",
+        "action": "click",
+        "selector": "#alertBtn",
+        "selectorType": "css",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "handle-alert",
+      "type": "dialog",
+      "position": {
+        "x": 100,
+        "y": 1450
+      },
+      "data": {
+        "type": "dialog",
+        "label": "Handle Alert",
+        "action": "accept",
+        "timeout": 5000,
+        "retryEnabled": true,
+        "retryCount": 2,
+        "isPinned": true,
+        "isTest": true,
+        "failSilently": true,
+        "breakpoint": false,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-alert-handled",
+      "type": "verify",
+      "position": {
+        "x": 381,
+        "y": 1450
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Alert Handled",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "button[onclick='myFunction()']",
+        "selectorType": "css",
+        "elementCheck": "visible",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "failSilently": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "scroll-to-double-click",
+      "type": "scroll",
+      "position": {
+        "x": 662,
+        "y": 1450
+      },
+      "data": {
+        "type": "scroll",
+        "label": "Scroll to Double Click Section",
+        "action": "scrollToElement",
+        "selector": "#field1",
+        "selectorType": "css",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "fill-field1",
+      "type": "type",
+      "position": {
+        "x": 943,
+        "y": 1450
+      },
+      "data": {
+        "type": "type",
+        "label": "Fill Field 1",
+        "selector": "#field1",
+        "selectorType": "css",
+        "text": "Hello World",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "double-click-copy-button",
+      "type": "action",
+      "position": {
+        "x": 1224,
+        "y": 1450
+      },
+      "data": {
+        "type": "action",
+        "label": "Double Click Copy Button",
+        "action": "doubleClick",
+        "selector": "#HTML10 button",
+        "selectorType": "css",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "wait-field2-update",
+      "type": "wait",
+      "position": {
+        "x": 1505,
+        "y": 1450
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for Field 2 Update",
+        "waitType": "selector",
+        "value": "#field2",
+        "selectorType": "css",
+        "timeout": 10000,
+        "retryEnabled": true,
+        "retryCount": 5,
+        "retryDelay": 500,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-field2-copied",
+      "type": "verify",
+      "position": {
+        "x": 1786,
+        "y": 1450
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Field 2 Copied",
+        "domain": "browser",
+        "verificationType": "formField",
+        "selector": "#field2",
+        "selectorType": "css",
+        "expectedValue": "Hello World",
+        "matchType": "contains",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 5,
+        "retryDelay": 1000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "scroll-to-drag-drop",
+      "type": "scroll",
+      "position": {
+        "x": 2067,
+        "y": 1450
+      },
+      "data": {
+        "type": "scroll",
+        "label": "Scroll to Drag Drop Section",
+        "action": "scrollToElement",
+        "selector": "#draggable",
+        "selectorType": "css",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-drag-element",
+      "type": "verify",
+      "position": {
+        "x": 100,
+        "y": 1700
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Drag Element Exists",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "#draggable",
+        "selectorType": "css",
+        "elementCheck": "visible",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-drop-target",
+      "type": "verify",
+      "position": {
+        "x": 381,
+        "y": 1700
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Drop Target Exists",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "#droppable",
+        "selectorType": "css",
+        "elementCheck": "visible",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "drag-and-drop",
+      "type": "action",
+      "position": {
+        "x": 662,
+        "y": 1700
+      },
+      "data": {
+        "type": "action",
+        "label": "Drag and Drop",
+        "action": "dragAndDrop",
+        "selector": "#draggable",
+        "selectorType": "css",
+        "targetSelector": "#droppable",
+        "targetSelectorType": "css",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-drag-drop-success",
+      "type": "verify",
+      "position": {
+        "x": 943,
+        "y": 1700
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Drag Drop Success",
+        "domain": "browser",
+        "verificationType": "text",
+        "selector": "#droppable",
+        "selectorType": "css",
+        "expectedText": "Dropped!",
+        "matchType": "contains",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "scroll-to-slider",
+      "type": "scroll",
+      "position": {
+        "x": 1224,
+        "y": 1700
+      },
+      "data": {
+        "type": "scroll",
+        "label": "Scroll to Slider Section",
+        "action": "scrollToElement",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false,
+        "selector": "//*[@id=\"slider-range\"]/span[1]",
+        "selectorType": "xpath"
+      }
+    },
+    {
+      "id": "verify-slider-exists",
+      "type": "verify",
+      "position": {
+        "x": 1505,
+        "y": 1700
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Slider Exists",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "//*[@id=\"slider-range\"]/span[1]",
+        "selectorType": "xpath",
+        "elementCheck": "exists",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false,
+        "failSilently": true
+      }
+    },
+    {
+      "id": "verify-slider-enabled",
+      "type": "verify",
+      "position": {
+        "x": 1786,
+        "y": 1700
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Slider Enabled",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "//*[@id=\"slider-range\"]/span[1]",
+        "selectorType": "xpath",
+        "elementCheck": "enabled",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false,
+        "failSilently": true
+      }
+    },
+    {
+      "id": "move-slider",
+      "type": "action",
+      "position": {
+        "x": 2067,
+        "y": 1700
+      },
+      "data": {
+        "type": "action",
+        "label": "Move Slider",
+        "action": "dragAndDrop",
+        "selector": "//*[@id=\"slider-range\"]/span[1]",
+        "selectorType": "xpath",
+        "value": "50",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false,
+        "failSilently": true,
+        "targetSelectorType": "css",
+        "targetX": 626,
+        "targetY": 235
+      }
+    },
+    {
+      "id": "verify-slider-value",
+      "type": "verify",
+      "position": {
+        "x": 100,
+        "y": 1950
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Slider Value",
+        "domain": "browser",
+        "verificationType": "attribute",
+        "selector": "//*[@id=\"slider-range\"]/span[1]",
+        "selectorType": "css",
+        "attributeName": "value",
+        "expectedValue": "50",
+        "matchType": "equals",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false,
+        "failSilently": true
+      }
+    },
+    {
+      "id": "scroll-to-links",
+      "type": "scroll",
+      "position": {
+        "x": 381,
+        "y": 1950
+      },
+      "data": {
+        "type": "scroll",
+        "label": "Scroll to Links Section",
+        "action": "scrollToElement",
+        "selector": "#samsung",
+        "selectorType": "css",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-mobile-labels",
+      "type": "verify",
+      "position": {
+        "x": 662,
+        "y": 1950
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Mobile Labels Section",
+        "domain": "browser",
+        "verificationType": "text",
+        "expectedText": "Mobile Labels",
+        "matchType": "contains",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-laptop-links",
+      "type": "verify",
+      "position": {
+        "x": 943,
+        "y": 1950
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Laptop Links Section",
+        "domain": "browser",
+        "verificationType": "text",
+        "expectedText": "Laptop Links",
+        "matchType": "contains",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-broken-links-section",
+      "type": "verify",
+      "position": {
+        "x": 1224,
+        "y": 1950
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Broken Links Section",
+        "domain": "browser",
+        "verificationType": "text",
+        "expectedText": "Broken Links",
+        "matchType": "contains",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "javascript-set-links-array-23a54b8c",
+      "type": "javascriptCode",
+      "position": {
+        "x": 1505,
+        "y": 1950
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set Links Array",
+        "code": "context.setData('links_array', [\n  {selector: \"a[href*='Samsung']\", label: 'Samsung'},\n  {selector: \"a[href*='Apple']\", label: 'Apple'},\n  {selector: \"a[href*='404']\", label: '404'}\n]);",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "loop-links-bf0efd64",
+      "type": "loop",
+      "position": {
+        "x": 1786,
+        "y": 1950
+      },
+      "data": {
+        "type": "loop",
+        "label": "Loop: Verify Links",
+        "mode": "forEach",
+        "arrayVariable": "links_array",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "javascript-set-current-link-0b951383",
+      "type": "javascriptCode",
+      "position": {
+        "x": 2067,
+        "y": 1950
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set Current Link Selector",
+        "code": "const currentLink = context.getVariable('item');\ncontext.setData('linkSelector', currentLink.selector);",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "screenshot-final",
+      "type": "screenshot",
+      "position": {
+        "x": 100,
+        "y": 2200
+      },
+      "data": {
+        "type": "screenshot",
+        "label": "Take Final Screenshot",
+        "fullPage": true,
+        "retryEnabled": true,
+        "retryCount": 2,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "run-verify-link-0148fe77",
+      "type": "reusable.runReusable",
+      "position": {
+        "x": 381,
+        "y": 2200
+      },
+      "data": {
+        "type": "reusable.runReusable",
+        "label": "Run Reusable: verify_link",
+        "contextName": "verify_link",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "reusable-fill-form-field",
+      "type": "reusable.reusable",
+      "position": {
+        "x": 100,
+        "y": -105
+      },
+      "data": {
+        "type": "reusable.reusable",
+        "label": "Reusable: fill_form_field",
+        "contextName": "fill_form_field",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "reusable-verify-element",
+      "type": "reusable.reusable",
+      "position": {
+        "x": 381,
+        "y": -105
+      },
+      "data": {
+        "type": "reusable.reusable",
+        "label": "Reusable: verify_element",
+        "contextName": "verify_element",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "reusable-select-day",
+      "type": "reusable.reusable",
+      "position": {
+        "x": 662,
+        "y": -105
+      },
+      "data": {
+        "type": "reusable.reusable",
+        "label": "Reusable: select_day",
+        "contextName": "select_day",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "reusable-verify-link",
+      "type": "reusable.reusable",
+      "position": {
+        "x": 943,
+        "y": -105
+      },
+      "data": {
+        "type": "reusable.reusable",
+        "label": "Reusable: verify_link",
+        "contextName": "verify_link",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "wait-field-selector",
+      "type": "wait",
+      "position": {
+        "x": 100,
+        "y": -410
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for Field",
+        "waitType": "selector",
+        "value": "${data.fieldSelector}",
+        "selectorType": "css",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "type-field-value",
+      "type": "type",
+      "position": {
+        "x": 381,
+        "y": -410
+      },
+      "data": {
+        "type": "type",
+        "label": "Type Field Value",
+        "selector": "${data.fieldSelector}",
+        "selectorType": "css",
+        "text": "${data.fieldValue}",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "retryDelay": 1000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "end-fill-form-field",
+      "type": "reusable.end",
+      "position": {
+        "x": 662,
+        "y": -410
+      },
+      "data": {
+        "type": "reusable.end",
+        "label": "End",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-element-exists",
+      "type": "verify",
+      "position": {
+        "x": 943,
+        "y": -410
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Element",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "${data.verifySelector}",
+        "selectorType": "css",
+        "elementCheck": "${data.verifyCheck}",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "end-verify-element",
+      "type": "reusable.end",
+      "position": {
+        "x": 1224,
+        "y": -410
+      },
+      "data": {
+        "type": "reusable.end",
+        "label": "End",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "shortcut.shortcut-1768651980624",
+      "type": "shortcut.shortcut",
+      "position": {
+        "x": 1505,
+        "y": -410
+      },
+      "data": {
+        "type": "shortcut.shortcut",
+        "label": "Shortcut",
+        "shortcut": "s",
+        "targetNodeId": "",
+        "isTest": true,
+        "isPinned": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "click-day-checkbox",
+      "type": "action",
+      "position": {
+        "x": 1786,
+        "y": -410
+      },
+      "data": {
+        "type": "action",
+        "label": "Click Day Checkbox",
+        "action": "click",
+        "selector": "${data.daySelector}",
+        "selectorType": "css",
+        "timeout": 30000,
+        "retryEnabled": true,
+        "retryCount": 3,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "end-select-day",
+      "type": "reusable.end",
+      "position": {
+        "x": 2067,
+        "y": -410
+      },
+      "data": {
+        "type": "reusable.end",
+        "label": "End",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "verify-link-exists",
+      "type": "verify",
+      "position": {
+        "x": 2348,
+        "y": -410
+      },
+      "data": {
+        "type": "verify",
+        "label": "Verify Link Exists",
+        "domain": "browser",
+        "verificationType": "element",
+        "selector": "${data.linkSelector}",
+        "selectorType": "css",
+        "elementCheck": "exists",
+        "timeout": 30000,
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "end-verify-link",
+      "type": "reusable.end",
+      "position": {
+        "x": 2629,
+        "y": -410
+      },
+      "data": {
+        "type": "reusable.end",
+        "label": "End",
+        "isPinned": true,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-openBrowser-input",
+      "source": "start-1",
+      "target": "openBrowser-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-start-openBrowser-driver",
+      "source": "start-1",
+      "target": "openBrowser-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-reusable-fill-wait",
+      "source": "reusable-fill-form-field",
+      "target": "wait-field-selector",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-type",
+      "source": "wait-field-selector",
+      "target": "type-field-value",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-end-fill",
+      "source": "type-field-value",
+      "target": "end-fill-form-field",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-reusable-verify-verify",
+      "source": "reusable-verify-element",
+      "target": "verify-element-exists",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-end-verify",
+      "source": "verify-element-exists",
+      "target": "end-verify-element",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-openBrowser-navigate-input",
+      "source": "openBrowser-1",
+      "target": "navigate-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-openBrowser-navigate-driver",
+      "source": "openBrowser-1",
+      "target": "navigate-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-navigate-verify-url-input",
+      "source": "navigate-1",
+      "target": "verify-url-loaded",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-navigate-verify-url-driver",
+      "source": "navigate-1",
+      "target": "verify-url-loaded",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-url-screenshot-input",
+      "source": "verify-url-loaded",
+      "target": "verify-page-title",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-screenshot-javascript-set-name-input",
+      "source": "screenshot-initial",
+      "target": "javascript-set-name",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-screenshot-javascript-set-name-driver",
+      "source": "screenshot-initial",
+      "target": "javascript-set-name",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-set-name-run-fill-name-input",
+      "source": "javascript-set-name",
+      "target": "run-fill-name",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-javascript-set-name-run-fill-name-driver",
+      "source": "javascript-set-name",
+      "target": "run-fill-name",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-run-fill-name-verify-name-input",
+      "source": "run-fill-name",
+      "target": "verify-name-filled",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-run-fill-name-verify-name-driver",
+      "source": "run-fill-name",
+      "target": "verify-name-filled",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-name-javascript-set-email-input",
+      "source": "verify-name-filled",
+      "target": "javascript-set-email",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-name-javascript-set-email-driver",
+      "source": "verify-name-filled",
+      "target": "javascript-set-email",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-set-email-run-fill-email-input",
+      "source": "javascript-set-email",
+      "target": "run-fill-email",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-javascript-set-email-run-fill-email-driver",
+      "source": "javascript-set-email",
+      "target": "run-fill-email",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-run-fill-email-verify-email-input",
+      "source": "run-fill-email",
+      "target": "verify-email-filled",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-run-fill-email-verify-email-driver",
+      "source": "run-fill-email",
+      "target": "verify-email-filled",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-email-javascript-set-phone-input",
+      "source": "verify-email-filled",
+      "target": "javascript-set-phone",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-email-javascript-set-phone-driver",
+      "source": "verify-email-filled",
+      "target": "javascript-set-phone",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-set-phone-run-fill-phone-input",
+      "source": "javascript-set-phone",
+      "target": "run-fill-phone",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-javascript-set-phone-run-fill-phone-driver",
+      "source": "javascript-set-phone",
+      "target": "run-fill-phone",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-run-fill-phone-fill-address-input",
+      "source": "run-fill-phone",
+      "target": "fill-address",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-run-fill-phone-fill-address-driver",
+      "source": "run-fill-phone",
+      "target": "fill-address",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-fill-address-select-gender-input",
+      "source": "fill-address",
+      "target": "select-gender-male",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-fill-address-select-gender-driver",
+      "source": "fill-address",
+      "target": "select-gender-male",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-select-gender-verify-gender-input",
+      "source": "select-gender-male",
+      "target": "verify-gender-selected",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-select-gender-verify-gender-driver",
+      "source": "select-gender-male",
+      "target": "verify-gender-selected",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-days-select-country-input",
+      "source": "verify-days-selected",
+      "target": "select-country-india",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-days-select-country-driver",
+      "source": "verify-days-selected",
+      "target": "select-country-india",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-select-country-verify-country-input",
+      "source": "select-country-india",
+      "target": "verify-country-selected",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-select-country-verify-country-driver",
+      "source": "select-country-india",
+      "target": "verify-country-selected",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-color-verify-table-input",
+      "source": "verify-color-selected",
+      "target": "verify-table-exists",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-color-verify-table-driver",
+      "source": "verify-color-selected",
+      "target": "verify-table-exists",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-table-verify-headers-input",
+      "source": "verify-table-exists",
+      "target": "verify-table-headers",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-table-verify-headers-driver",
+      "source": "verify-table-exists",
+      "target": "verify-table-headers",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-headers-verify-row-count-input",
+      "source": "verify-table-headers",
+      "target": "verify-table-row-count",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-headers-verify-row-count-driver",
+      "source": "verify-table-headers",
+      "target": "verify-table-row-count",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-row-count-get-text-input",
+      "source": "verify-table-row-count",
+      "target": "get-text-first-book",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-row-count-get-text-driver",
+      "source": "verify-table-row-count",
+      "target": "get-text-first-book",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-get-text-verify-book-name-input",
+      "source": "get-text-first-book",
+      "target": "verify-first-book-name",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-get-text-verify-book-name-driver",
+      "source": "get-text-first-book",
+      "target": "verify-first-book-name",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-scroll-tabs-click-tab-input",
+      "source": "scroll-to-tabs",
+      "target": "click-tab-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-scroll-tabs-click-tab-driver",
+      "source": "scroll-to-tabs",
+      "target": "click-tab-2",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-click-tab-verify-content-input",
+      "source": "click-tab-2",
+      "target": "verify-tab-2-content",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-click-tab-verify-content-driver",
+      "source": "click-tab-2",
+      "target": "verify-tab-2-content",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-content-verify-text-input",
+      "source": "verify-tab-2-content",
+      "target": "verify-tab-2-text",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-content-verify-text-driver",
+      "source": "verify-tab-2-content",
+      "target": "verify-tab-2-text",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-text-click-dynamic-input",
+      "source": "verify-tab-2-text",
+      "target": "click-dynamic-button",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-text-click-dynamic-driver",
+      "source": "verify-tab-2-text",
+      "target": "click-dynamic-button",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-click-dynamic-verify-button-input",
+      "source": "click-dynamic-button",
+      "target": "verify-button-changed",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-click-dynamic-verify-button-driver",
+      "source": "click-dynamic-button",
+      "target": "verify-button-changed",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-button-click-alert-input",
+      "source": "verify-button-changed",
+      "target": "click-simple-alert",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-button-click-alert-driver",
+      "source": "verify-button-changed",
+      "target": "click-simple-alert",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-click-alert-handle-alert-input",
+      "source": "click-simple-alert",
+      "target": "handle-alert",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-click-alert-handle-alert-driver",
+      "source": "click-simple-alert",
+      "target": "handle-alert",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-handle-alert-verify-handled-input",
+      "source": "handle-alert",
+      "target": "verify-alert-handled",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-handle-alert-verify-handled-driver",
+      "source": "handle-alert",
+      "target": "verify-alert-handled",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-handled-scroll-double-input",
+      "source": "verify-alert-handled",
+      "target": "scroll-to-double-click",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-handled-scroll-double-driver",
+      "source": "verify-alert-handled",
+      "target": "scroll-to-double-click",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-scroll-double-fill-field1-input",
+      "source": "scroll-to-double-click",
+      "target": "fill-field1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-scroll-double-fill-field1-driver",
+      "source": "scroll-to-double-click",
+      "target": "fill-field1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-fill-field1-double-click-input",
+      "source": "fill-field1",
+      "target": "double-click-copy-button",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-fill-field1-double-click-driver",
+      "source": "fill-field1",
+      "target": "double-click-copy-button",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-double-click-wait-field2-input",
+      "source": "double-click-copy-button",
+      "target": "wait-field2-update",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-double-click-wait-field2-driver",
+      "source": "double-click-copy-button",
+      "target": "wait-field2-update",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-field2-verify-copied-input",
+      "source": "wait-field2-update",
+      "target": "verify-field2-copied",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-field2-verify-copied-driver",
+      "source": "wait-field2-update",
+      "target": "verify-field2-copied",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-copied-scroll-drag-input",
+      "source": "verify-field2-copied",
+      "target": "scroll-to-drag-drop",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-copied-scroll-drag-driver",
+      "source": "verify-field2-copied",
+      "target": "scroll-to-drag-drop",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-scroll-drag-verify-drag-input",
+      "source": "scroll-to-drag-drop",
+      "target": "verify-drag-element",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-scroll-drag-verify-drag-driver",
+      "source": "scroll-to-drag-drop",
+      "target": "verify-drag-element",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-drag-verify-drop-input",
+      "source": "verify-drag-element",
+      "target": "verify-drop-target",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-drag-verify-drop-driver",
+      "source": "verify-drag-element",
+      "target": "verify-drop-target",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-drop-drag-and-drop-input",
+      "source": "verify-drop-target",
+      "target": "drag-and-drop",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-drop-drag-and-drop-driver",
+      "source": "verify-drop-target",
+      "target": "drag-and-drop",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-drag-and-drop-verify-success-input",
+      "source": "drag-and-drop",
+      "target": "verify-drag-drop-success",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-drag-and-drop-verify-success-driver",
+      "source": "drag-and-drop",
+      "target": "verify-drag-drop-success",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-exists-verify-enabled-input",
+      "source": "verify-slider-exists",
+      "target": "verify-slider-enabled",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-exists-verify-enabled-driver",
+      "source": "verify-slider-exists",
+      "target": "verify-slider-enabled",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-enabled-move-slider-input",
+      "source": "verify-slider-enabled",
+      "target": "move-slider",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-enabled-move-slider-driver",
+      "source": "verify-slider-enabled",
+      "target": "move-slider",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-move-slider-verify-value-input",
+      "source": "move-slider",
+      "target": "verify-slider-value",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-move-slider-verify-value-driver",
+      "source": "move-slider",
+      "target": "verify-slider-value",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-value-scroll-links-input",
+      "source": "verify-slider-value",
+      "target": "scroll-to-links",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-value-scroll-links-driver",
+      "source": "verify-slider-value",
+      "target": "scroll-to-links",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-scroll-links-verify-mobile-input",
+      "source": "scroll-to-links",
+      "target": "verify-mobile-labels",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-scroll-links-verify-mobile-driver",
+      "source": "scroll-to-links",
+      "target": "verify-mobile-labels",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-mobile-verify-laptop-input",
+      "source": "verify-mobile-labels",
+      "target": "verify-laptop-links",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-mobile-verify-laptop-driver",
+      "source": "verify-mobile-labels",
+      "target": "verify-laptop-links",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-laptop-verify-broken-input",
+      "source": "verify-laptop-links",
+      "target": "verify-broken-links-section",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-laptop-verify-broken-driver",
+      "source": "verify-laptop-links",
+      "target": "verify-broken-links-section",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-verify-country-selectedoutput-formInput-1768650944105driver",
+      "source": "verify-country-selected",
+      "target": "formInput-1768650944105",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-formInput-1768650944105output-verify-color-selecteddriver",
+      "source": "formInput-1768650944105",
+      "target": "verify-color-selected",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-verify-page-titleoutput-screenshot-initialdriver",
+      "source": "verify-page-title",
+      "target": "screenshot-initial",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "verify-first-book-name-verify-submit-button-enabled-1768882982790-0-3ndhp347m",
+      "source": "verify-first-book-name",
+      "target": "verify-submit-button-enabled",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "verify-submit-button-enabled-scroll-to-tabs-1768883832939-0-qb4jz32ox",
+      "source": "verify-submit-button-enabled",
+      "target": "scroll-to-tabs",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "verify-submit-button-enabled-scroll-to-tabs-1768883832939-2-f59i8o36k",
+      "source": "verify-submit-button-enabled",
+      "target": "type-1768883857238",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-reusable-select-day-click-0d43546d",
+      "source": "reusable-select-day",
+      "target": "click-day-checkbox",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-click-end-select-day-a56be0d0",
+      "source": "click-day-checkbox",
+      "target": "end-select-day",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-reusable-verify-link-verify-66ec5f8c",
+      "source": "reusable-verify-link",
+      "target": "verify-link-exists",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-end-verify-link-c86b1c85",
+      "source": "verify-link-exists",
+      "target": "end-verify-link",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-gender-javascript-days-a7467085",
+      "source": "verify-gender-selected",
+      "target": "javascript-set-days-array-d9e7e37c",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-gender-javascript-days-08717fa0",
+      "source": "verify-gender-selected",
+      "target": "javascript-set-days-array-d9e7e37c",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-days-loop-391fb056",
+      "source": "javascript-set-days-array-d9e7e37c",
+      "target": "loop-days-9a6aa170",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-loop-javascript-day-55a5c11b",
+      "source": "loop-days-9a6aa170",
+      "target": "javascript-set-current-day-ec48f020",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-day-run-select-77398455",
+      "source": "javascript-set-current-day-ec48f020",
+      "target": "run-select-day-1ef90a0d",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-days-verify-days-8c9932bc",
+      "source": "javascript-set-days-array-d9e7e37c",
+      "target": "verify-days-selected",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-verify-broken-javascript-links-497fc8eb",
+      "source": "verify-broken-links-section",
+      "target": "javascript-set-links-array-23a54b8c",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-verify-broken-javascript-links-6a6fbc16",
+      "source": "verify-broken-links-section",
+      "target": "javascript-set-links-array-23a54b8c",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-links-loop-d5ec9268",
+      "source": "javascript-set-links-array-23a54b8c",
+      "target": "loop-links-bf0efd64",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-loop-javascript-link-52f09833",
+      "source": "loop-links-bf0efd64",
+      "target": "javascript-set-current-link-0b951383",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-javascript-link-run-verify-76cedda8",
+      "source": "javascript-set-current-link-0b951383",
+      "target": "run-verify-link-0148fe77",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-loop-links-screenshot-64c7f69b",
+      "source": "loop-links-bf0efd64",
+      "target": "screenshot-final",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-verify-drag-drop-successoutput-action-1770830414503driver",
+      "source": "verify-drag-drop-success",
+      "target": "scroll-to-slider",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-scroll-to-slideroutput-verify-slider-existsdriver",
+      "source": "scroll-to-slider",
+      "target": "verify-slider-exists",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    }
+  ],
+  "groups": []
+}
