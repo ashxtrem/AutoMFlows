@@ -11,6 +11,7 @@ import {
 } from '../services/actionRecorder';
 import { useWorkflowStore } from '../store/workflowStore';
 import { useNotificationStore } from '../store/notificationStore';
+import { getBackendBaseUrl } from '../utils/getBackendPort';
 
 async function getBackendPort(): Promise<number> {
   try {
@@ -133,7 +134,7 @@ export function useBuilderMode() {
       setShowOverlayVisibilityMessage(true);
 
       // Call backend to inject overlay (switch to browser and inject)
-      const response = await fetch(`http://localhost:${backendPort}/api/workflows/builder-mode/start`, {
+      const response = await fetch(`${getBackendBaseUrl(backendPort)}/api/workflows/builder-mode/start`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

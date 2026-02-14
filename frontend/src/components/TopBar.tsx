@@ -25,6 +25,7 @@ import KeyBindingsModal from './KeyBindingsModal';
 import { NodeType } from '@automflows/shared';
 import { useNotificationStore } from '../store/notificationStore';
 import Tooltip from './Tooltip';
+import { getBackendBaseUrl } from '../utils/getBackendPort';
 
 const STORAGE_KEY_TRACE_LOGS = 'automflows_trace_logs';
 
@@ -92,7 +93,7 @@ export default function TopBar() {
             const port = parseInt(portText.trim(), 10);
             if (!isNaN(port) && port > 0) {
               // Call API to toggle trace logs
-              const response = await fetch(`http://localhost:${port}/api/workflows/execution/trace-logs`, {
+              const response = await fetch(`${getBackendBaseUrl(port)}/api/workflows/execution/trace-logs`, {
                 method: 'POST',
                 headers: {
                   'Content-Type': 'application/json',

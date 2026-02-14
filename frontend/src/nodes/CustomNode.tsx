@@ -335,6 +335,8 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   const isMinimized = nodeDataFromStore.isMinimized;
   const bypass = nodeDataFromStore.bypass;
   const failSilently = nodeDataFromStore.failSilently;
+  const breakpoint = nodeDataFromStore.breakpoint;
+  const isTest = nodeDataFromStore.isTest;
   const isPinned = nodeDataFromStore.isPinned ?? false;
   // Use custom background color if set, otherwise use default
   // Read directly from data prop (not stableData) to get real-time updates
@@ -894,7 +896,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                 // Validation errors are shown in ValidationErrorPopup, not NodeErrorPopup
               }
             }}
-            title={`${label}${isReusableNode && renderData.contextName ? ` (${renderData.contextName})` : ''}${isRunReusableNode && renderData.contextName ? ` → ${renderData.contextName}` : ''}${isEndNode ? ' (End)' : ''}${bypass ? ' (bypassed)' : ''}${failSilently ? ' (failSilently)' : ''} | Double-click to rename`}
+            title={`${label}${isReusableNode && renderData.contextName ? ` (${renderData.contextName})` : ''}${isRunReusableNode && renderData.contextName ? ` → ${renderData.contextName}` : ''}${isEndNode ? ' (End)' : ''}${bypass ? ' (bypassed)' : ''}${failSilently ? ' (failSilently)' : ''}${breakpoint ? ' (breakpoint)' : ''}${!isTest ? ' (support)' : ''} | Double-click to rename`}
           >
             {label}
             {isReusableNode && renderData.contextName && (
@@ -914,6 +916,8 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
             )}
             {bypass && <span className="ml-2 text-xs text-yellow-400">(bypassed)</span>}
             {failSilently && <span className="ml-2 text-xs text-orange-400">(failSilently)</span>}
+            {breakpoint && <span className="ml-2 text-xs text-orange-500">(breakpoint)</span>}
+            {!isTest && <span className="ml-2 text-xs text-gray-400">(support)</span>}
           </div>
         )}
       </div>

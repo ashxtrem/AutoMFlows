@@ -1,10 +1,11 @@
 import { PluginMetadata } from '@automflows/shared';
 import { FrontendPlugin, LoadedPluginNode } from './types';
 import { frontendPluginRegistry } from './registry';
+import { getBackendBaseUrl } from '../utils/getBackendPort';
 
 export async function loadPlugins(backendPort: number): Promise<void> {
   try {
-    const response = await fetch(`http://localhost:${backendPort}/api/plugins`);
+    const response = await fetch(`${getBackendBaseUrl(backendPort)}/api/plugins`);
     if (!response.ok) {
       throw new Error(`Failed to fetch plugins: ${response.statusText}`);
     }

@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { ReactFlowProvider } from 'reactflow';
 import { NodeType } from '@automflows/shared';
 import CustomNode from '../../CustomNode';
+import { useWorkflowStore } from '../../../store/workflowStore';
 
 vi.mock('reactflow', async () => {
   const actual = await vi.importActual('reactflow');
@@ -12,19 +13,39 @@ vi.mock('reactflow', async () => {
   };
 });
 
-vi.mock('../../store/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({
-    nodes: [],
+function createMockState(overrides: { nodes?: Array<{ id: string; data: Record<string, unknown> }> } = {}) {
+  return {
+    nodes: overrides.nodes ?? [],
     edges: [],
-    selectedNode: null,
+    pausedNodeId: null,
     updateNodeData: vi.fn(),
-  })),
+    updateNodeDimensions: vi.fn(),
+    renameNode: vi.fn(),
+    setSelectedNode: vi.fn(),
+    failedNodes: new Set<string>(),
+    validationErrors: new Set<string>(),
+    executingNodeId: null,
+    showErrorPopupForNode: vi.fn(),
+    // NodeMenuBar and other consumers when calling useWorkflowStore() with no selector
+    copyNode: vi.fn(),
+    duplicateNode: vi.fn(),
+    deleteNode: vi.fn(),
+    toggleBypass: vi.fn(),
+    toggleMinimize: vi.fn(),
+    togglePin: vi.fn(),
+    toggleBreakpoint: vi.fn(),
+    selectedNodeIds: new Set<string>(),
+  };
+}
+
+vi.mock('../../../store/workflowStore', () => ({
+  useWorkflowStore: vi.fn(),
 }));
 
-vi.mock('../../store/settingsStore', () => ({
-  useSettingsStore: vi.fn(() => ({
-    theme: 'dark',
-  })),
+vi.mock('../../../store/settingsStore', () => ({
+  useSettingsStore: vi.fn((selector: (s: { appearance: { theme: string } }) => unknown) =>
+    selector({ appearance: { theme: 'dark' } })
+  ),
 }));
 
 describe('CustomNode', () => {
@@ -38,7 +59,10 @@ describe('CustomNode', () => {
   };
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.mocked(useWorkflowStore).mockImplementation((selector?: (s: unknown) => unknown) => {
+      const state = createMockState();
+      return typeof selector === 'function' ? selector(state) : state;
+    });
   });
 
   it('should render node with basic props', () => {
@@ -77,5 +101,47 @@ describe('CustomNode', () => {
       </ReactFlowProvider>
     );
     expect(container).toBeTruthy();
+  });
+
+  it('should show (breakpoint) in header when node has breakpoint enabled', () => {
+    vi.mocked(useWorkflowStore).mockImplementation((selector: (s: unknown) => unknown) =>
+      selector(
+        createMockState({
+          nodes: [
+            {
+              id: 'test-node',
+              data: { type: NodeType.START, label: 'Test Node', breakpoint: true },
+            },
+          ],
+        })
+      )
+    );
+    render(
+      <ReactFlowProvider>
+        <CustomNode {...defaultProps} />
+      </ReactFlowProvider>
+    );
+    expect(screen.getByText(/\(breakpoint\)/)).toBeInTheDocument();
+  });
+
+  it('should show (support) in header when node is marked as support (isTest false)', () => {
+    vi.mocked(useWorkflowStore).mockImplementation((selector: (s: unknown) => unknown) =>
+      selector(
+        createMockState({
+          nodes: [
+            {
+              id: 'test-node',
+              data: { type: NodeType.START, label: 'Test Node', isTest: false },
+            },
+          ],
+        })
+      )
+    );
+    render(
+      <ReactFlowProvider>
+        <CustomNode {...defaultProps} />
+      </ReactFlowProvider>
+    );
+    expect(screen.getByText(/\(support\)/)).toBeInTheDocument();
   });
 });

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Trash2, Search, X } from 'lucide-react';
-import { getBackendPort } from '../utils/getBackendPort';
+import { getBackendPort, getBackendBaseUrl } from '../utils/getBackendPort';
 
 interface ReportFile {
   name: string;
@@ -59,7 +59,7 @@ export default function ReportHistory() {
     
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:${port}/api/reports/list`);
+      const response = await fetch(`${getBackendBaseUrl(port)}/api/reports/list`);
       if (!response.ok) {
         throw new Error('Failed to fetch reports');
       }
@@ -77,7 +77,7 @@ export default function ReportHistory() {
     if (!port) return;
     
     try {
-      const response = await fetch(`http://localhost:${port}/api/reports/${folderName}`, {
+      const response = await fetch(`${getBackendBaseUrl(port)}/api/reports/${folderName}`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -95,7 +95,7 @@ export default function ReportHistory() {
     if (!port) return;
     
     try {
-      const response = await fetch(`http://localhost:${port}/api/reports`, {
+      const response = await fetch(`${getBackendBaseUrl(port)}/api/reports`, {
         method: 'DELETE',
       });
       if (!response.ok) {
@@ -113,10 +113,10 @@ export default function ReportHistory() {
     if (!port) return;
     // For Allure reports, ensure we use index.html
     if (reportType === 'allure') {
-      const url = `http://localhost:${port}/reports/${folderName}/allure/index.html`;
+      const url = `${getBackendBaseUrl(port)}/reports/${folderName}/allure/index.html`;
       window.open(url, '_blank');
     } else {
-      const url = `http://localhost:${port}/reports/${folderName}/${filePath}`;
+      const url = `${getBackendBaseUrl(port)}/reports/${folderName}/${filePath}`;
       window.open(url, '_blank');
     }
   };

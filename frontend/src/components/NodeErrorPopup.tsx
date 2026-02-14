@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, AlertCircle, FileText, ChevronDown, ChevronUp, Copy, Code, Globe, Search, Camera } from 'lucide-react';
 import { useWorkflowStore } from '../store/workflowStore';
 import { PageDebugInfo, SelectorSuggestion } from '@automflows/shared';
-import { getBackendPort } from '../utils/getBackendPort';
+import { getBackendPort, getBackendBaseUrl } from '../utils/getBackendPort';
 
 interface NodeErrorPopupProps {
   nodeId: string;
@@ -86,7 +86,7 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
     }
     // Extract filename from full path
     const filename = screenshotPath.split(/[/\\]/).pop() || screenshotPath;
-    return `http://localhost:${backendPort}/api/reports/${error.debugInfo.executionFolderName}/screenshots/${filename}`;
+    return `${getBackendBaseUrl(backendPort)}/api/reports/${error.debugInfo.executionFolderName}/screenshots/${filename}`;
   };
 
   const highlightSearchText = (text: string, search: string): React.ReactNode => {

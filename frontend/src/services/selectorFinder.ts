@@ -1,5 +1,6 @@
 import { SelectorOption, SelectorFinderEvent } from '@automflows/shared';
 import { io, Socket } from 'socket.io-client';
+import { getBackendBaseUrl } from '../utils/getBackendPort';
 
 let socket: Socket | null = null;
 let selectorFinderCallbacks: Map<string, (selectors: SelectorOption[]) => void> = new Map();
@@ -12,7 +13,7 @@ export function initSelectorFinder(backendPort: number): void {
     return; // Already initialized
   }
 
-  socket = io(`http://localhost:${backendPort}`, {
+  socket = io(getBackendBaseUrl(backendPort), {
     transports: ['websocket', 'polling'],
   });
 
@@ -47,7 +48,7 @@ export async function startSelectorFinder(
 ): Promise<{ sessionId: string; pageUrl: string }> {
   initSelectorFinder(backendPort);
 
-  const response = await fetch(`http://localhost:${backendPort}/api/workflows/selector-finder/start`, {
+  const response = await fetch(`${getBackendBaseUrl(backendPort)}/api/workflows/selector-finder/start`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -67,7 +68,7 @@ export async function startSelectorFinder(
  * Stop selector finder session
  */
 export async function stopSelectorFinder(backendPort: number): Promise<void> {
-  const response = await fetch(`http://localhost:${backendPort}/api/workflows/selector-finder/stop`, {
+  const response = await fetch(`${getBackendBaseUrl(backendPort)}/api/workflows/selector-finder/stop`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -88,7 +89,7 @@ export async function getSelectorFinderStatus(backendPort: number): Promise<{
   sessionId: string | null;
   pageUrl: string | null;
 }> {
-  const response = await fetch(`http://localhost:${backendPort}/api/workflows/selector-finder/status`);
+  const response = await fetch(`${getBackendBaseUrl(backendPort)}/api/workflows/selector-finder/status`);
 
   if (!response.ok) {
     throw new Error('Failed to get selector finder status');
@@ -124,7 +125,7 @@ export async function selectSelector(
   fieldName: string,
   backendPort: number
 ): Promise<void> {
-  const response = await fetch(`http://localhost:${backendPort}/api/workflows/selector-finder/selectors`, {
+  const response = await fetch(`${getBackendBaseUrl(backendPort)}/api/workflows/selector-finder/selectors`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

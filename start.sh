@@ -29,6 +29,15 @@ cleanup() {
 # Trap Ctrl+C and cleanup
 trap cleanup SIGINT SIGTERM
 
+# Parse --host / --lan for LAN mode (bind to all interfaces, show LAN IP in logs)
+LAN_MODE=false
+for arg in "$@"; do
+  if [ "$arg" = "--host" ] || [ "$arg" = "--lan" ]; then
+    LAN_MODE=true
+    break
+  fi
+done
+
 # Function to kill processes on a port
 kill_port() {
     local port=$1
@@ -76,6 +85,9 @@ cd ..
 
 # Step 4: Start backend server
 echo -e "${GREEN}🔧 Starting backend server...${NC}"
+if [ "$LAN_MODE" = true ]; then
+  export HOST=0.0.0.0
+fi
 npm run dev:backend &
 BACKEND_PID=$!
 echo "Backend started (PID: $BACKEND_PID)"
@@ -85,7 +97,11 @@ sleep 3
 
 # Step 5: Start frontend server
 echo -e "${GREEN}🎨 Starting frontend server...${NC}"
-npm run dev:frontend &
+if [ "$LAN_MODE" = true ]; then
+  npm run dev:frontend:host &
+else
+  npm run dev:frontend &
+fi
 FRONTEND_PID=$!
 echo "Frontend started (PID: $FRONTEND_PID)"
 
@@ -129,6 +145,33 @@ echo -e "${GREEN}✅ AutoMFlows is running!${NC}"
 echo -e "${BLUE}Backend: http://localhost:$BACKEND_PORT${NC}"
 echo -e "${BLUE}Frontend: http://localhost:$FRONTEND_PORT${NC}"
 echo -e "${BLUE}Swagger API Docs: http://localhost:$BACKEND_PORT/api-docs${NC}"
+if [ "$LAN_MODE" = true ]; then
+  LAN_IP=""
+  # Linux: hostname -I or ip route
+  if command -v hostname >/dev/null 2>&1; then
+    LAN_IP=$(hostname -I 2>/dev/null | awk '{print $1}')
+  fi
+  if [ -z "$LAN_IP" ] && command -v ip >/dev/null 2>&1; then
+    LAN_IP=$(ip route get 1 2>/dev/null | awk '{print $7; exit}')
+  fi
+  # macOS: ipconfig getifaddr en0
+  if [ -z "$LAN_IP" ] && command -v ipconfig >/dev/null 2>&1; then
+    LAN_IP=$(ipconfig getifaddr en0 2>/dev/null)
+  fi
+  # Windows / Git Bash: parse ipconfig for first non-loopback IPv4
+  if [ -z "$LAN_IP" ] && command -v ipconfig >/dev/null 2>&1; then
+    LAN_IP=$(ipconfig 2>/dev/null | grep -i "IPv4" | grep -oE '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+' | grep -v '^127\.' | head -1)
+  fi
+  if [ -n "$LAN_IP" ]; then
+    echo ""
+    echo -e "${BLUE}LAN access (other machines):${NC}"
+    echo -e "${BLUE}Backend: http://${LAN_IP}:$BACKEND_PORT${NC}"
+    echo -e "${BLUE}Frontend: http://${LAN_IP}:$FRONTEND_PORT${NC}"
+    echo -e "${BLUE}Swagger API Docs: http://${LAN_IP}:$BACKEND_PORT/api-docs${NC}"
+  else
+    echo -e "${YELLOW}(LAN IP could not be detected)${NC}"
+  fi
+fi
 echo ""
 echo -e "${YELLOW}Press Ctrl+C to stop all servers${NC}"
 

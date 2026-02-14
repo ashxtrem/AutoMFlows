@@ -27,6 +27,17 @@ export async function getBackendPort(): Promise<number> {
   return 3003;
 }
 
+/**
+ * Build backend base URL using the same host as the current page (for LAN access).
+ * When the app is opened at http://LAN_IP:5173, API calls go to http://LAN_IP:port.
+ */
+export function getBackendBaseUrl(port: number): string {
+  if (typeof window !== 'undefined') {
+    return `${window.location.protocol}//${window.location.hostname}:${port}`;
+  }
+  return `http://localhost:${port}`;
+}
+
 // Cache the port once fetched
 let cachedPort: number | null = null;
 

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { io, Socket } from 'socket.io-client';
-import { getBackendPort } from '../utils/getBackendPort';
+import { getBackendPort, getBackendBaseUrl } from '../utils/getBackendPort';
 
 let socket: Socket | null = null;
 let wasConnected = false;
@@ -26,7 +26,7 @@ export function useServerRestartWarning() {
 
         // Initialize socket if not exists
         if (!socket) {
-          socket = io(`http://localhost:${port}`, {
+          socket = io(getBackendBaseUrl(port), {
             transports: ['websocket'],
             reconnection: true,
             reconnectionDelay: 1000,

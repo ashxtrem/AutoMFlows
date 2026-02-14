@@ -8,6 +8,7 @@ import { useNotificationStore } from '../store/notificationStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { Node } from 'reactflow';
 import { hasHeadlessBrowser } from '../utils/workflowChecks';
+import { getBackendBaseUrl } from '../utils/getBackendPort';
 
 let socket: Socket | null = null;
 let backendPort: number | null = null;
@@ -135,7 +136,7 @@ export function useExecution() {
         if (socket) {
           socket.disconnect();
         }
-        socket = io(`http://localhost:${p}`, {
+        socket = io(getBackendBaseUrl(p), {
           transports: ['websocket'],
         });
         // Reset listenersRegistered when creating new socket so listeners are re-registered
@@ -255,7 +256,7 @@ export function useExecution() {
                 if (!currentPort) return;
                 
                 // Fetch latest reports
-                const response = await fetch(`http://localhost:${currentPort}/api/reports/list`);
+                const response = await fetch(`${getBackendBaseUrl(currentPort)}/api/reports/list`);
                 if (!response.ok) return;
                 
                 const reports = await response.json();
@@ -277,9 +278,9 @@ export function useExecution() {
                   // Build report URL
                   let reportUrl: string;
                   if (defaultFormat === 'allure') {
-                    reportUrl = `http://localhost:${currentPort}/reports/${latestReport.folderName}/allure/index.html`;
+                    reportUrl = `${getBackendBaseUrl(currentPort)}/reports/${latestReport.folderName}/allure/index.html`;
                   } else {
-                    reportUrl = `http://localhost:${currentPort}/reports/${latestReport.folderName}/${reportFile.type}/${reportFile.name}`;
+                    reportUrl = `${getBackendBaseUrl(currentPort)}/reports/${latestReport.folderName}/${reportFile.type}/${reportFile.name}`;
                   }
                   
                   // Auto-open report if enabled
@@ -435,7 +436,7 @@ export function useExecution() {
       const fetchController = new AbortController();
       const fetchTimeoutId = setTimeout(() => fetchController.abort(), 10000); // 10 second timeout for API call
       
-      const response = await fetch(`http://localhost:${currentPort}/api/workflows/execute`, {
+      const response = await fetch(`${getBackendBaseUrl(currentPort)}/api/workflows/execute`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -512,7 +513,7 @@ export function useExecution() {
       // Also reset backend actions if port is available
       if (port) {
         try {
-          await fetch(`http://localhost:${port}/api/workflows/builder-mode/actions/reset`, {
+          await fetch(`${getBackendBaseUrl(port)}/api/workflows/builder-mode/actions/reset`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
           }).catch(() => {
@@ -580,7 +581,7 @@ export function useExecution() {
   const stopExecution = async () => {
     try {
       const currentPort = port || await getBackendPortSync();
-      const response = await fetch(`http://localhost:${currentPort}/api/workflows/execution/stop`, {
+      const response = await fetch(`${getBackendBaseUrl(currentPort)}/api/workflows/execution/stop`, {
         method: 'POST',
       });
 
@@ -597,7 +598,7 @@ export function useExecution() {
   const continueExecution = async () => {
     try {
       const currentPort = port || await getBackendPortSync();
-      const response = await fetch(`http://localhost:${currentPort}/api/workflows/execution/continue`, {
+      const response = await fetch(`${getBackendBaseUrl(currentPort)}/api/workflows/execution/continue`, {
         method: 'POST',
       });
 
@@ -614,7 +615,7 @@ export function useExecution() {
   const updateWorkflowDuringExecution = async (workflow: any) => {
     try {
       const currentPort = port || await getBackendPortSync();
-      const response = await fetch(`http://localhost:${currentPort}/api/workflows/execution/update-workflow`, {
+      const response = await fetch(`${getBackendBaseUrl(currentPort)}/api/workflows/execution/update-workflow`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -667,7 +668,7 @@ export function useExecution() {
 
     try {
       const currentPort = port || await getBackendPortSync();
-      const response = await fetch(`http://localhost:${currentPort}/api/workflows/execution/pause-control`, {
+      const response = await fetch(`${getBackendBaseUrl(currentPort)}/api/workflows/execution/pause-control`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
