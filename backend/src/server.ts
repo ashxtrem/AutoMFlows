@@ -170,14 +170,22 @@ async function startServer() {
     });
 
     const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : await findAvailablePort();
+    const HOST = process.env.HOST || undefined; // e.g. 0.0.0.0 when started with --host for LAN access
     
     // Write port file before starting (for frontend to discover)
     writePortFile(PORT);
     
-    httpServer.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
-      console.log(`Port file written to .automflows-port`);
-    });
+    if (HOST) {
+      httpServer.listen(PORT, HOST, () => {
+        console.log(`Server running on http://${HOST}:${PORT} (LAN mode)`);
+        console.log(`Port file written to .automflows-port`);
+      });
+    } else {
+      httpServer.listen(PORT, () => {
+        console.log(`Server running on http://localhost:${PORT}`);
+        console.log(`Port file written to .automflows-port`);
+      });
+    }
   } catch (error) {
     console.error('Failed to start server:', error);
     process.exit(1);

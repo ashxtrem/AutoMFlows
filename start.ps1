@@ -3,7 +3,10 @@
 
 $ErrorActionPreference = "Stop"
 
-Write-Host '🚀 Starting AutoMFlows...' -ForegroundColor Cyan
+Write-Host '[Start] Starting AutoMFlows...' -ForegroundColor Cyan
+
+# Parse --host / --lan for LAN mode (bind to all interfaces, show LAN IP in logs)
+$LAN_MODE = ($args -contains '--host') -or ($args -contains '--lan')
 
 # Function to cleanup on exit
 function Cleanup {
@@ -91,19 +94,19 @@ function Stop-Port {
 }
 
 # Stop any existing processes on backend and frontend ports
-Write-Host '🛑 Stopping any existing processes on ports 3003 and 5173...' -ForegroundColor Yellow
+Write-Host '[Stop] Stopping any existing processes on ports 3003 and 5173...' -ForegroundColor Yellow
 Stop-Port -Port 3003
 Stop-Port -Port 5173
 
 # Step 1: Install dependencies
-Write-Host '📦 Installing dependencies...' -ForegroundColor Blue
+Write-Host '[Packages] Installing dependencies...' -ForegroundColor Blue
 npm install
 if ($LASTEXITCODE -ne 0) {
     Write-Host 'Warning: npm install failed. Continuing anyway...' -ForegroundColor Yellow
 }
 
 # Step 2: Install Playwright browsers
-Write-Host '🌐 Installing Playwright browsers...' -ForegroundColor Blue
+Write-Host '[Playwright] Installing Playwright browsers...' -ForegroundColor Blue
 Push-Location backend
 try {
     npx playwright install chromium 2>&1 | Out-Null
@@ -125,7 +128,7 @@ try {
 }
 
 # Step 3: Build shared package
-Write-Host '🔨 Building shared package...' -ForegroundColor Blue
+Write-Host '[Build] Building shared package...' -ForegroundColor Blue
 Push-Location shared
 try {
     npm run build
@@ -138,7 +141,10 @@ try {
 }
 
 # Step 4: Start backend server
-Write-Host '🔧 Starting backend server...' -ForegroundColor Green
+Write-Host '[Backend] Starting backend server...' -ForegroundColor Green
+if ($LAN_MODE) {
+    $env:HOST = '0.0.0.0'
+}
 $backendProcessInfo = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', 'npm', 'run', 'dev:backend' -PassThru
 $script:BACKEND_PROCESS = $backendProcessInfo
 Write-Host ('Backend started (PID: ' + $backendProcessInfo.Id + ')')
@@ -147,8 +153,12 @@ Write-Host ('Backend started (PID: ' + $backendProcessInfo.Id + ')')
 Start-Sleep -Seconds 3
 
 # Step 5: Start frontend server
-Write-Host '🎨 Starting frontend server...' -ForegroundColor Green
-$frontendProcessInfo = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', 'npm', 'run', 'dev:frontend' -PassThru
+Write-Host '[Frontend] Starting frontend server...' -ForegroundColor Green
+if ($LAN_MODE) {
+    $frontendProcessInfo = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', 'npm', 'run', 'dev:frontend', '--', '--host' -PassThru
+} else {
+    $frontendProcessInfo = Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', 'npm', 'run', 'dev:frontend' -PassThru
+}
 $script:FRONTEND_PROCESS = $frontendProcessInfo
 Write-Host ('Frontend started (PID: ' + $frontendProcessInfo.Id + ')')
 
@@ -159,7 +169,7 @@ Start-Sleep -Seconds 3
 Start-Sleep -Seconds 2
 
 # Step 6: Read backend port from file (with retry)
-$BACKEND_PORT = "3003"
+$BACKEND_PORT = '3003'
 for ($i = 1; $i -le 5; $i++) {
     if (Test-Path '.automflows-port') {
         try {
@@ -216,10 +226,28 @@ try {
 }
 
 Write-Host ''
-Write-Host '✅ AutoMFlows is running!' -ForegroundColor Green
+Write-Host '[OK] AutoMFlows is running!' -ForegroundColor Green
 Write-Host ('Backend: http://localhost:' + $BACKEND_PORT) -ForegroundColor Blue
 Write-Host ('Frontend: http://localhost:' + $FRONTEND_PORT) -ForegroundColor Blue
 Write-Host ('Swagger API Docs: http://localhost:' + $BACKEND_PORT + '/api-docs') -ForegroundColor Blue
+if ($LAN_MODE) {
+    $LAN_IP = $null
+    try {
+        $addr = Get-NetIPAddress -AddressFamily IPv4 -ErrorAction SilentlyContinue | Where-Object { $_.InterfaceAlias -notlike '*Loopback*' -and $_.IPAddress -notlike '169.*' } | Select-Object -First 1
+        if ($addr) { $LAN_IP = $addr.IPAddress }
+    } catch {
+        # Ignore
+    }
+    if ($LAN_IP) {
+        Write-Host ''
+        Write-Host 'LAN access (other machines):' -ForegroundColor Blue
+        Write-Host ('Backend: http://' + $LAN_IP + ':' + $BACKEND_PORT) -ForegroundColor Blue
+        Write-Host ('Frontend: http://' + $LAN_IP + ':' + $FRONTEND_PORT) -ForegroundColor Blue
+        Write-Host ('Swagger API Docs: http://' + $LAN_IP + ':' + $BACKEND_PORT + '/api-docs') -ForegroundColor Blue
+    } else {
+        Write-Host '(LAN IP could not be detected)' -ForegroundColor Yellow
+    }
+}
 Write-Host ''
 Write-Host 'Press Ctrl+C to stop all servers' -ForegroundColor Yellow
 

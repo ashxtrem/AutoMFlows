@@ -1,5 +1,6 @@
 import { RecordedAction, BuilderModeEvent } from '@automflows/shared';
 import { io, Socket } from 'socket.io-client';
+import { getBackendBaseUrl } from '../utils/getBackendPort';
 
 let socket: Socket | null = null;
 let actionRecordedCallbacks: Map<string, (action: RecordedAction) => void> = new Map();
@@ -14,7 +15,7 @@ export function initActionRecorder(backendPort: number): void {
     return; // Already initialized
   }
 
-  socket = io(`http://localhost:${backendPort}`, {
+  socket = io(getBackendBaseUrl(backendPort), {
     transports: ['websocket', 'polling'],
   });
 
@@ -57,7 +58,7 @@ export function initActionRecorder(backendPort: number): void {
 export async function startActionRecording(backendPort: number): Promise<{ sessionId: string; pageUrl: string }> {
   initActionRecorder(backendPort);
 
-  const response = await fetch(`http://localhost:${backendPort}/api/workflows/builder-mode/webhook/start`, {
+  const response = await fetch(`${getBackendBaseUrl(backendPort)}/api/workflows/builder-mode/webhook/start`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -76,7 +77,7 @@ export async function startActionRecording(backendPort: number): Promise<{ sessi
  * Stop action recording session
  */
 export async function stopActionRecording(backendPort: number): Promise<void> {
-  const response = await fetch(`http://localhost:${backendPort}/api/workflows/builder-mode/webhook/stop`, {
+  const response = await fetch(`${getBackendBaseUrl(backendPort)}/api/workflows/builder-mode/webhook/stop`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -98,7 +99,7 @@ export async function getActionRecorderStatus(backendPort: number): Promise<{
   sessionId: string | null;
   pageUrl: string | null;
 }> {
-  const response = await fetch(`http://localhost:${backendPort}/api/workflows/builder-mode/status`);
+  const response = await fetch(`${getBackendBaseUrl(backendPort)}/api/workflows/builder-mode/status`);
 
   if (!response.ok) {
     throw new Error('Failed to get action recorder status');
@@ -111,7 +112,7 @@ export async function getActionRecorderStatus(backendPort: number): Promise<{
  * Get recorded actions
  */
 export async function getRecordedActions(backendPort: number): Promise<RecordedAction[]> {
-  const response = await fetch(`http://localhost:${backendPort}/api/workflows/builder-mode/actions`);
+  const response = await fetch(`${getBackendBaseUrl(backendPort)}/api/workflows/builder-mode/actions`);
 
   if (!response.ok) {
     throw new Error('Failed to get recorded actions');
@@ -124,7 +125,7 @@ export async function getRecordedActions(backendPort: number): Promise<RecordedA
  * Reset recorded actions
  */
 export async function resetActions(backendPort: number): Promise<void> {
-  const response = await fetch(`http://localhost:${backendPort}/api/workflows/builder-mode/actions/reset`, {
+  const response = await fetch(`${getBackendBaseUrl(backendPort)}/api/workflows/builder-mode/actions/reset`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',

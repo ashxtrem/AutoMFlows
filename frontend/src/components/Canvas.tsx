@@ -276,7 +276,9 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
   }, [canvasReloading, getViewport]);
   
   // Follow mode: automatically navigate to executing node when it changes
-  // Also navigate when breakpoint is triggered (paused node)
+  // Also navigate when breakpoint is triggered (paused node) - but only once
+  const lastPausedNodeRef = useRef<string | null>(null);
+  
   useEffect(() => {
     if (!followModeEnabled) {
       return;
@@ -287,8 +289,9 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
       navigation.navigateToExecutingNode();
     }
     
-    // Navigate to paused node when breakpoint is triggered
-    if (pausedNodeId && pauseReason === 'breakpoint') {
+    // Navigate to paused node when breakpoint is triggered - but only once per pause
+    if (pausedNodeId && pauseReason === 'breakpoint' && lastPausedNodeRef.current !== pausedNodeId) {
+      lastPausedNodeRef.current = pausedNodeId;
       const pausedNode = nodes.find(n => n.id === pausedNodeId);
       if (pausedNode) {
         fitView({
@@ -297,6 +300,11 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
           duration: 300,
         });
       }
+    }
+    
+    // Reset the ref when no longer paused
+    if (!pausedNodeId) {
+      lastPausedNodeRef.current = null;
     }
   }, [followModeEnabled, executionStatus, executingNodeId, pausedNodeId, pauseReason, nodes, fitView, navigation]);
   

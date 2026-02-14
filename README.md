@@ -3,7 +3,7 @@
 [![GitHub](https://img.shields.io/badge/GitHub-ashxtrem%2FAutoMFlows-blue?logo=github)](https://github.com/ashxtrem/AutoMFlows)
 
 AutoMFlows is a web-based visual workflow builder for browser automation, inspired by n8n and ComfyUI. Create complex web automation workflows using a drag-and-drop node-based interface without writing code.
-
+https://github.com/ashxtrem/AutoMFlows
 ## Features
 
 - **Visual Workflow Editor**: Drag-and-drop node-based interface
@@ -50,40 +50,24 @@ npm install
 cd shared && npm run build && cd ..
 ```
 
-### Development
+### Run Project
 
-**Quick Start:**
+Start the app with the project script:
 
-Unix/Linux/macOS:
+**Unix/Linux/macOS:**
 
 ```bash
 ./start.sh
 ```
 
-Windows:
+**Windows:**
 
 ```powershell
 .\start.ps1
 ```
 
-**Manual Start:**
-
-```bash
-npm run dev:backend  # Terminal 1 – backend on http://localhost:3003
-npm run dev:frontend # Terminal 2 – frontend on http://localhost:5173
-```
-
 - **Backend**: [http://localhost:3003](http://localhost:3003) (API, Swagger at `/api-docs`)
 - **Frontend**: [http://localhost:5173](http://localhost:5173)
-
-### Production Build
-
-```bash
-npm run build
-cd backend && npm start
-```
-
-Single server at [http://localhost:3000](http://localhost:3000) (backend serves the built frontend).
 
 ## Docker
 
