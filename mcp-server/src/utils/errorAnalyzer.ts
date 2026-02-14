@@ -1,5 +1,21 @@
 import { Workflow, BaseNode } from '@automflows/shared';
 
+export interface PageDebugInfo {
+  pageUrl?: string;
+  pageSource?: string;
+  similarSelectors?: Array<{
+    selector: string;
+    selectorType: 'css' | 'xpath';
+    reason: string;
+    elementInfo?: string;
+  }>;
+  screenshotPaths?: {
+    pre?: string;
+    post?: string;
+  };
+  executionFolderName?: string;
+}
+
 export interface ErrorAnalysis {
   category: 'selector' | 'missing_node' | 'configuration' | 'connection' | 'execution' | 'unknown';
   severity: 'error' | 'warning';
@@ -10,9 +26,104 @@ export interface ErrorAnalysis {
   extractedSelectors?: string[]; // Selectors extracted from error message
   correctSelector?: string; // Suggested correct selector
   failedSelector?: string; // The selector that failed
+  pageUrl?: string; // Page URL from DOM capture
 }
 
 export class ErrorAnalyzer {
+  /**
+   * Analyze errors with DOM context for better selector suggestions
+   */
+  static analyzeWithDOM(
+    workflow: Workflow,
+    errorMessage: string,
+    pageDebugInfo: PageDebugInfo,
+    executionLogs?: string[],
+    currentNodeId?: string
+  ): ErrorAnalysis[] {
+    // First, do standard analysis
+    const analyses = this.analyze(workflow, errorMessage, executionLogs, currentNodeId);
+
+    // Enhance selector errors with DOM-based suggestions
+    for (const analysis of analyses) {
+      if (analysis.category === 'selector' && pageDebugInfo.similarSelectors) {
+        // Extract available selectors from DOM
+        const availableSelectors = pageDebugInfo.similarSelectors.map(s => s.selector);
+        
+        if (!analysis.extractedSelectors) {
+          analysis.extractedSelectors = [];
+        }
+        
+        // Add DOM selectors to extracted selectors
+        for (const selector of availableSelectors) {
+          if (!analysis.extractedSelectors.includes(selector)) {
+            analysis.extractedSelectors.push(selector);
+          }
+        }
+
+        // If we have a failed node and label, try to match with DOM selectors
+        if (analysis.nodeId && !analysis.correctSelector) {
+          const node = workflow.nodes.find(n => n.id === analysis.nodeId);
+          if (node?.data && typeof node.data === 'object') {
+            const nodeData = node.data as any;
+            const label = nodeData.label as string | undefined;
+            
+            if (label) {
+              analysis.correctSelector = this.matchSelectorToLabel(
+                label,
+                pageDebugInfo.similarSelectors
+              );
+            }
+          }
+        }
+
+        // Update suggested fix with DOM-based selector
+        if (analysis.correctSelector) {
+          analysis.suggestedFix = `Use selector from DOM: ${analysis.correctSelector}`;
+        } else if (analysis.extractedSelectors.length > 0) {
+          analysis.suggestedFix = `Try one of these selectors from DOM: ${analysis.extractedSelectors.slice(0, 3).join(', ')}`;
+        }
+
+        // Add page URL for context
+        if (pageDebugInfo.pageUrl) {
+          analysis.pageUrl = pageDebugInfo.pageUrl;
+        }
+      }
+    }
+
+    return analyses;
+  }
+
+  /**
+   * Match a selector to a node label using DOM similar selectors
+   */
+  private static matchSelectorToLabel(
+    label: string,
+    similarSelectors: Array<{ selector: string; selectorType: string; reason: string; elementInfo?: string }>
+  ): string | undefined {
+    const labelLower = label.toLowerCase();
+    
+    // Try to find best match based on label keywords
+    for (const similar of similarSelectors) {
+      const selectorLower = similar.selector.toLowerCase();
+      const reasonLower = similar.reason?.toLowerCase() || '';
+      const elementInfoLower = similar.elementInfo?.toLowerCase() || '';
+      
+      // Extract keywords from label
+      const keywords = labelLower.split(/\s+/).filter(w => w.length > 2);
+      
+      for (const keyword of keywords) {
+        if (selectorLower.includes(keyword) || 
+            reasonLower.includes(keyword) || 
+            elementInfoLower.includes(keyword)) {
+          return similar.selector;
+        }
+      }
+    }
+    
+    // Return first selector as fallback
+    return similarSelectors.length > 0 ? similarSelectors[0].selector : undefined;
+  }
+
   static analyze(workflow: Workflow, errorMessage: string, executionLogs?: string[], currentNodeId?: string): ErrorAnalysis[] {
     const analyses: ErrorAnalysis[] = [];
 

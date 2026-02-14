@@ -1,6 +1,7 @@
 import { StateCreator } from 'zustand';
 import { WorkflowStoreStateWithNodes } from './slices';
 import { arrangeNodesVertical, arrangeNodesHorizontal } from '../../utils/nodeArrangement';
+import { getReactFlowSetNodes } from '../../components/Canvas';
 
 export interface ArrangementSlice {
   arrangeNodes: (mode: 'vertical' | 'horizontal', nodesPerRowColumn?: number) => void;
@@ -96,10 +97,3 @@ export const createArrangementSlice: StateCreator<
     setTimeout(() => get().saveToHistory(), 100);
   },
 });
-
-// Import getReactFlowSetNodes - need to handle circular dependency
-function getReactFlowSetNodes() {
-  // Dynamic import to avoid circular dependency
-  const { getReactFlowSetNodes } = require('../../components/Canvas');
-  return getReactFlowSetNodes();
-}

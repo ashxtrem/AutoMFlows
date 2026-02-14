@@ -228,7 +228,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'analyze_workflow_errors',
-        description: 'Analyze errors from workflow execution and provide suggestions',
+        description: 'Analyze errors from workflow execution and provide suggestions. Automatically fetches captured DOM if executionId is provided for better selector analysis.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -245,13 +245,21 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               items: { type: 'string' },
               description: 'Optional: Execution logs for deeper analysis',
             },
+            currentNodeId: {
+              type: 'string',
+              description: 'Optional: Current node ID when error occurred',
+            },
+            executionId: {
+              type: 'string',
+              description: 'Optional: Execution ID to fetch captured DOM for enhanced analysis',
+            },
           },
           required: ['workflow', 'errorMessage'],
         },
       },
       {
         name: 'fix_workflow',
-        description: 'Fix a workflow based on error analysis. Uses LLM if configured, otherwise uses rule-based fixes.',
+        description: 'Fix a workflow based on error analysis. Automatically uses captured DOM if executionId is provided for intelligent selector fixes. Falls back to LLM or rule-based fixes.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -281,6 +289,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: 'array',
               items: { type: 'string' },
               description: 'Optional: Execution logs',
+            },
+            executionId: {
+              type: 'string',
+              description: 'Optional: Execution ID to fetch captured DOM for intelligent selector fixes',
+            },
+            useDOMCapture: {
+              type: 'boolean',
+              description: 'Optional: Enable DOM-based fixing (default: true)',
+              default: true,
             },
           },
           required: ['workflow', 'errorAnalysis'],
@@ -451,10 +468,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       }
 
       case 'analyze_workflow_errors': {
-        const analysis = analyzeWorkflowErrors({
+        const analysis = await analyzeWorkflowErrors({
           workflow: args.workflow as any,
           errorMessage: args.errorMessage as string,
           executionLogs: args.executionLogs as string[] | undefined,
+          currentNodeId: args.currentNodeId as string | undefined,
+          executionId: args.executionId as string | undefined,
         });
         return {
           content: [
@@ -472,6 +491,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           errorAnalysis: args.errorAnalysis as any,
           errorMessage: args.errorMessage as string | undefined,
           executionLogs: args.executionLogs as string[] | undefined,
+          executionId: args.executionId as string | undefined,
+          useDOMCapture: args.useDOMCapture as boolean | undefined,
         });
         return {
           content: [

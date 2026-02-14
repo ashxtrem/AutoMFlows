@@ -63,11 +63,12 @@ export class BackendClient {
     }
   }
 
-  async getExecutionStatus(): Promise<ExecutionResult> {
+  async getExecutionStatus(executionId?: string): Promise<ExecutionResult> {
     try {
-      const response = await this.httpClient.get<ExecutionStatusResponse>(
-        '/api/workflows/execution/status'
-      );
+      const url = executionId
+        ? `/api/workflows/execution/${encodeURIComponent(executionId)}`
+        : '/api/workflows/execution/status';
+      const response = await this.httpClient.get<ExecutionStatusResponse>(url);
 
       return {
         executionId: response.data.executionId || '',
@@ -154,11 +155,23 @@ export class BackendClient {
 
     while (Date.now() - startTime < maxDurationMs) {
       try {
-        const status = await this.getExecutionStatus();
-        
+        let status: ExecutionResult;
+        try {
+          status = await this.getExecutionStatus(executionId);
+        } catch (err: any) {
+          // 404 may mean execution completed and was cleaned up; try most-recent endpoint
+          if (err.message?.includes('404') && executionId) {
+            const recent = await this.getExecutionStatus();
+            if (recent.executionId === executionId && ['completed', 'error', 'stopped'].includes(recent.status)) {
+              return recent;
+            }
+          }
+          throw err;
+        }
+
         // Reset error counter on successful status check
         consecutiveErrors = 0;
-        
+
         // Check if this is the execution we're waiting for
         if (status.executionId === executionId || !executionId) {
           if (status.status === 'completed' || status.status === 'error' || status.status === 'stopped') {
@@ -166,7 +179,6 @@ export class BackendClient {
           }
         } else if (status.executionId && status.executionId !== executionId) {
           // If there's a different execution running, wait a bit longer
-          // This handles cases where the backend hasn't switched to our execution yet
         }
 
         await new Promise(resolve => setTimeout(resolve, intervalMs));
@@ -177,7 +189,6 @@ export class BackendClient {
             `Failed to poll execution status after ${maxConsecutiveErrors} consecutive errors: ${error.message}`
           );
         }
-        // Wait before retrying on error
         await new Promise(resolve => setTimeout(resolve, intervalMs));
       }
     }
@@ -205,6 +216,30 @@ export class BackendClient {
       return response.data.debugInfo;
     } catch (error: any) {
       throw new Error(`Failed to capture DOM at breakpoint: ${error.message}`);
+    }
+  }
+
+  /**
+   * Get captured DOM from a failed execution
+   * Returns the PageDebugInfo that was captured during error
+   */
+  async getCapturedDOM(executionId?: string): Promise<any | null> {
+    try {
+      const url = executionId
+        ? `/api/workflows/execution/${encodeURIComponent(executionId)}/captured-dom`
+        : '/api/workflows/execution/captured-dom';
+      
+      const response = await this.httpClient.get<{ success: boolean; debugInfo: any }>(url);
+      
+      if (!response.data.success || !response.data.debugInfo) {
+        return null;
+      }
+      
+      return response.data.debugInfo;
+    } catch (error: any) {
+      // Return null if DOM not available (404 or other errors)
+      console.warn(`Failed to get captured DOM: ${error.message}`);
+      return null;
     }
   }
 

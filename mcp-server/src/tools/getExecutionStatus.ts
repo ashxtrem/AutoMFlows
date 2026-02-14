@@ -23,7 +23,7 @@ export async function getExecutionStatus(
     return await client.pollExecutionStatus(executionId, pollIntervalMs, maxDurationMs);
   }
 
-  return await client.getExecutionStatus();
+  return await client.getExecutionStatus(executionId);
 }
 
 export function connectWebSocket(

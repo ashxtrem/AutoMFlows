@@ -27,7 +27,40 @@ https://github.com/ashxtrem/AutoMFlows
 
 ### Prerequisites
 
-- Node.js 20+ and npm
+- **Node.js 20+** and npm
+
+### Installing Node.js
+
+You need Node.js 20 or newer. Here are common ways to install it on different operating systems.
+
+**Windows**
+
+- **Official installer**: Download the LTS (20.x) from [nodejs.org](https://nodejs.org/) and run the installer.
+- **winget**: `winget install OpenJS.NodeJS.LTS`
+- **Chocolatey**: `choco install nodejs-lts`
+- **nvm-windows**: [nvm-windows](https://github.com/coreybutler/nvm-windows) — then `nvm install 20` and `nvm use 20`
+
+**macOS**
+
+- **nvm** (recommended): `curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash`, then `nvm install 20` and `nvm use 20`
+- **Homebrew**: `brew install node@20` (or `brew install node` for latest)
+- **Official installer**: Download from [nodejs.org](https://nodejs.org/)
+
+**Linux**
+
+- **nvm**: Same install script as macOS, then `nvm install 20` and `nvm use 20`
+- **NodeSource** (Ubuntu/Debian): See [NodeSource distributions](https://github.com/nodesource/distributions#debinstall) for Node 20.
+- **Package manager**:  
+  - Ubuntu/Debian: `sudo apt update && sudo apt install nodejs npm` (check version; use NodeSource if you need 20+)  
+  - Fedora: `sudo dnf install nodejs`  
+  - Arch: `sudo pacman -S nodejs npm`
+
+Check your version with:
+
+```bash
+node -v   # should be v20.x.x or higher
+npm -v
+```
 
 ### Installation
 
