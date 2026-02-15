@@ -48,6 +48,7 @@ describe('useWorkflow', () => {
         setGroups: mockSetGroups,
         saveToHistory: mockSaveToHistory,
         clearAllNodeErrors: mockClearAllNodeErrors,
+        setFitViewRequested: vi.fn(),
       });
 
       const mockWorkflow = {

@@ -7,8 +7,11 @@ import ReactFlow, {
   Node,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
+import { RefreshCw } from 'lucide-react';
 import { useWorkflowStore } from '../store/workflowStore';
 import { useSettingsStore } from '../store/settingsStore';
+import { useNotificationStore } from '../store/notificationStore';
+import Tooltip from './Tooltip';
 import CustomNode from '../nodes/CustomNode';
 import CustomEdge from './CustomEdge';
 import ContextMenu from './ContextMenu';
@@ -111,7 +114,11 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     hasUnsavedChanges, 
     groups, 
     addNodesToGroup,
+    fitViewRequested,
+    setFitViewRequested,
+    refreshCanvas,
   } = useWorkflowStore();
+  const addNotification = useNotificationStore((state) => state.addNotification);
   
   const { showGrid, gridSize, snapToGrid, showFPSCounter } = useSettingsStore((state) => ({
     showGrid: state.canvas.showGrid,
@@ -259,6 +266,16 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
       }, 100);
     }
   }, [nodes.length, fitView]);
+  
+  // When fitViewRequested is set (e.g. after Reset or loading template on first load), run fitView once
+  useEffect(() => {
+    if (!fitViewRequested || nodes.length === 0) return;
+    const timeoutId = setTimeout(() => {
+      fitView({ duration: 300 });
+      setFitViewRequested(false);
+    }, 150);
+    return () => clearTimeout(timeoutId);
+  }, [fitViewRequested, nodes.length, fitView, setFitViewRequested]);
   
   // Save viewport BEFORE remount happens (when canvasReloading becomes true)
   // CRITICAL: Only save if we don't already have a saved viewport (prevents new instance from overwriting)
@@ -806,12 +823,28 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
             variant={BackgroundVariant.Lines}
           />
         )}
-        <Controls className="bg-gray-800 border border-gray-700" />
+        <Controls className="bg-gray-800 border border-gray-700 !left-3 !bottom-3" />
         {/* Render group boundaries inside ReactFlow so they follow pan/zoom */}
         {groups.map((group) => (
           <GroupBoundary key={group.id} group={group} />
         ))}
       </ReactFlow>
+      {/* Refresh canvas - above zoom controls, centered over the control stack */}
+      <div className="fixed left-7 z-10 w-15 flex flex-col items-center gap-2" style={{ bottom: 'calc(1rem + 108px + 10px)' }}>
+        <Tooltip content="Refresh canvas">
+          <button
+            type="button"
+            onClick={() => {
+              refreshCanvas();
+              addNotification({ type: 'info', title: 'Canvas refreshed', message: 'Canvas has been refreshed.' });
+            }}
+            className="w-8 h-8 rounded flex items-center justify-center bg-transparent text-gray-100 hover:text-white hover:bg-gray-800/40 transition-colors drop-shadow-lg"
+            aria-label="Refresh canvas"
+          >
+            <RefreshCw size={16} className="flex-shrink-0" />
+          </button>
+        </Tooltip>
+      </div>
       {/* Filename display - fixed position in top left */}
       <div className="fixed top-0 left-0 z-10 p-2 text-gray-100 text-sm font-mono flex items-center gap-2">
         <span className="drop-shadow-lg">{workflowFileName}</span>

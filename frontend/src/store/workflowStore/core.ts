@@ -42,6 +42,7 @@ export interface WorkflowStateCore {
   hasUnsavedChanges: boolean;
   groups: Group[];
   selectedGroupId: string | null;
+  fitViewRequested: boolean;
 }
 
 export function getInitialState(): WorkflowStateCore {
@@ -170,5 +171,6 @@ export function getInitialState(): WorkflowStateCore {
     })(),
     groups: [],
     selectedGroupId: null,
+    fitViewRequested: false,
   };
 }

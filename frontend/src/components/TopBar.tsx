@@ -7,7 +7,8 @@ import MenuIcon from '@mui/icons-material/Menu';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PlayCircleFilledWhiteTwoToneIcon from '@mui/icons-material/PlayCircleFilledWhiteTwoTone';
 import { Eye, EyeOff, ChevronDown } from 'lucide-react';
-import { useWorkflowStore, getDefaultNodeData } from '../store/workflowStore';
+import { useWorkflowStore } from '../store/workflowStore';
+import { getSampleTemplate } from '../utils/sampleTemplate';
 import { useSettingsStore } from '../store/settingsStore';
 import { useExecution } from '../hooks/useExecution';
 import { serializeWorkflow, deserializeWorkflow } from '../utils/serialization';
@@ -22,7 +23,6 @@ import AppearanceSettingsSubmenu from './AppearanceSettingsSubmenu';
 import NotificationSettingsSubmenu from './NotificationSettingsSubmenu';
 import MemoryManagementSubmenu from './MemoryManagementSubmenu';
 import KeyBindingsModal from './KeyBindingsModal';
-import { NodeType } from '@automflows/shared';
 import { useNotificationStore } from '../store/notificationStore';
 import Tooltip from './Tooltip';
 import { getBackendBaseUrl } from '../utils/getBackendPort';
@@ -30,7 +30,7 @@ import { getBackendBaseUrl } from '../utils/getBackendPort';
 const STORAGE_KEY_TRACE_LOGS = 'automflows_trace_logs';
 
 export default function TopBar() {
-  const { nodes, edges, groups, setNodes, setEdges, setGroups, resetExecution, edgesHidden, setEdgesHidden, selectedNode, followModeEnabled, setFollowModeEnabled, workflowFileName, setWorkflowFileName, setHasUnsavedChanges } = useWorkflowStore();
+  const { nodes, edges, groups, setNodes, setEdges, setGroups, resetExecution, edgesHidden, setEdgesHidden, selectedNode, followModeEnabled, setFollowModeEnabled, workflowFileName, setWorkflowFileName, setHasUnsavedChanges, setFitViewRequested } = useWorkflowStore();
   const { validationErrors, setValidationErrors } = useExecution();
   const addNotification = useNotificationStore((state) => state.addNotification);
   const { tourCompleted, startTour, resetTour } = useSettingsStore();
@@ -547,133 +547,10 @@ export default function TopBar() {
     
     // Use setTimeout to ensure ReactFlow processes the clearing before setting new nodes
     setTimeout(() => {
-      // Create nodes with proper spacing (200px horizontal spacing)
-      const startX = 100;
-      const y = 200;
-      const spacing = 250;
-      const baseTimestamp = Date.now();
-
-      // Helper function to create a node with default data
-      let nodeCounter = 0;
-      const createNodeWithDefaults = (nodeType: NodeType, position: { x: number; y: number }, label: string, overrides?: any) => {
-      const id = `${nodeType}-${baseTimestamp}-${nodeCounter++}`;
-      const defaultData = getDefaultNodeData(nodeType);
-      return {
-        id,
-        type: 'custom' as const,
-        position,
-        data: {
-          type: nodeType,
-          label,
-          ...defaultData,
-          ...overrides,
-        },
-      };
-      };
-
-      // Start node
-      const startNode = createNodeWithDefaults(NodeType.START, { x: startX, y }, 'Start');
-      const startId = startNode.id;
-
-      // Open Browser node
-      const openBrowserNode = createNodeWithDefaults(
-        NodeType.OPEN_BROWSER,
-        { x: startX + spacing, y },
-        'Open Browser',
-        { headless: false, viewportWidth: 1280, viewportHeight: 720 }
-      );
-      const openBrowserId = openBrowserNode.id;
-
-      // Navigation node
-      const navigateNode = createNodeWithDefaults(
-        NodeType.NAVIGATION,
-        { x: startX + spacing * 2, y },
-        'Navigation',
-        { action: 'navigate', url: 'https://example.com', timeout: 30000, waitUntil: 'networkidle' }
-      );
-      const navigateId = navigateNode.id;
-
-      // Wait node
-      const waitNode = createNodeWithDefaults(
-        NodeType.WAIT,
-        { x: startX + spacing * 3, y },
-        'Wait',
-        { waitType: 'timeout', value: 2000 }
-      );
-      const waitId = waitNode.id;
-
-      // Screenshot node
-      const screenshotNode = createNodeWithDefaults(
-        NodeType.SCREENSHOT,
-        { x: startX + spacing * 4, y },
-        'Screenshot',
-        { fullPage: false }
-      );
-      const screenshotId = screenshotNode.id;
-
-      // Create edges
-      const newEdges = [
-        {
-          id: `edge-${startId}-output-${openBrowserId}-input`,
-          source: startId,
-          target: openBrowserId,
-          sourceHandle: 'output',
-          targetHandle: 'input',
-        },
-        {
-          id: `edge-${startId}-output-${openBrowserId}-driver`,
-          source: startId,
-          target: openBrowserId,
-          sourceHandle: 'output',
-          targetHandle: 'driver',
-        },
-        {
-          id: `edge-${openBrowserId}-output-${navigateId}-input`,
-          source: openBrowserId,
-          target: navigateId,
-          sourceHandle: 'output',
-          targetHandle: 'input',
-        },
-        {
-          id: `edge-${openBrowserId}-output-${navigateId}-driver`,
-          source: openBrowserId,
-          target: navigateId,
-          sourceHandle: 'output',
-          targetHandle: 'driver',
-        },
-        {
-          id: `edge-${navigateId}-output-${waitId}-input`,
-          source: navigateId,
-          target: waitId,
-          sourceHandle: 'output',
-          targetHandle: 'input',
-        },
-        {
-          id: `edge-${navigateId}-output-${waitId}-driver`,
-          source: navigateId,
-          target: waitId,
-          sourceHandle: 'output',
-          targetHandle: 'driver',
-        },
-        {
-          id: `edge-${waitId}-output-${screenshotId}-input`,
-          source: waitId,
-          target: screenshotId,
-          sourceHandle: 'output',
-          targetHandle: 'input',
-        },
-        {
-          id: `edge-${waitId}-output-${screenshotId}-driver`,
-          source: waitId,
-          target: screenshotId,
-          sourceHandle: 'output',
-          targetHandle: 'driver',
-        },
-      ];
-
-      // Set nodes and edges together to ensure ReactFlow updates properly
-      setNodes([startNode, openBrowserNode, navigateNode, waitNode, screenshotNode]);
-      setEdges(newEdges);
+      const { nodes: templateNodes, edges: templateEdges } = getSampleTemplate();
+      setNodes(templateNodes);
+      setEdges(templateEdges);
+      setFitViewRequested(true);
     }, 10);
   };
 
