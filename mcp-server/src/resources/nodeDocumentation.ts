@@ -49,7 +49,7 @@ const NODE_CATEGORIES: Record<string, string[]> = {
   'Browser': ['openBrowser', 'contextManipulate', 'navigation', 'keyboard', 'scroll', 'dialog', 'download', 'iframe'],
   'Interaction': ['action', 'formInput', 'type'],
   'Storage': ['storage'],
-  'Data': ['elementQuery', 'screenshot'],
+  'Data': ['elementQuery', 'screenshot', 'csvHandle'],
   'Verification': ['verify'],
   'API': ['apiRequest', 'apiCurl'],
   'Database': ['dbConnect', 'dbDisconnect', 'dbQuery'],
@@ -393,6 +393,65 @@ export function generateNodeDocumentation(): NodeDocumentation[] {
     examples: [
       'Verify element visible: domain="browser", verificationType="visible", selector=".success"',
       'Verify API status: domain="api", verificationType="status", expectedValue=200',
+    ],
+  });
+
+  // CSV Handle Node
+  docs.push({
+    type: NodeType.CSV_HANDLE,
+    label: 'CSV Handle',
+    category: 'Data',
+    description: 'Read CSV from file into context, or write/append an array from context to a CSV file. Use case: save scraped product list to CSV, or load CSV data for use in later nodes.',
+    fields: [
+      {
+        name: 'action',
+        label: 'Action',
+        type: 'string',
+        required: true,
+        description: 'write (create/overwrite), append (add rows), or read (load file into context)',
+        defaultValue: 'write',
+      },
+      {
+        name: 'filePath',
+        label: 'File path',
+        type: 'string',
+        required: true,
+        description: 'Path to CSV file. Supports ${data.outputDirectory}/file.csv for run output dir.',
+      },
+      {
+        name: 'dataSource',
+        label: 'Data source',
+        type: 'string',
+        required: false,
+        description: 'Context key holding array of objects/rows (for write/append)',
+      },
+      {
+        name: 'contextKey',
+        label: 'Context key',
+        type: 'string',
+        required: false,
+        description: 'Where to store parsed data for read (default: csvData)',
+        defaultValue: 'csvData',
+      },
+      {
+        name: 'headers',
+        label: 'Headers',
+        type: 'string[]',
+        required: false,
+        description: 'Column order for write/append; optional, inferred from first object if omitted',
+      },
+      {
+        name: 'delimiter',
+        label: 'Delimiter',
+        type: 'string',
+        required: false,
+        description: 'CSV delimiter (default: comma)',
+        defaultValue: ',',
+      },
+    ],
+    examples: [
+      'Write products to CSV: action="write", filePath="${data.outputDirectory}/products.csv", dataSource="products"',
+      'Read CSV: action="read", filePath="/path/to/data.csv", contextKey="csvData"',
     ],
   });
 

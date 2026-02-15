@@ -39,6 +39,7 @@ export function getDefaultNodeLabel(nodeType: string): string {
       [NodeType.DB_DISCONNECT]: 'DB Disconnect',
       [NodeType.DB_QUERY]: 'DB Query',
       [NodeType.CONTEXT_MANIPULATE]: 'Context Manipulate',
+      [NodeType.CSV_HANDLE]: 'CSV Handle',
     };
     return labels[nodeType as NodeType] || nodeType;
   }

@@ -1,0 +1,85 @@
+{
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": { "x": 100, "y": 200 },
+      "data": {
+        "type": "start",
+        "label": "Start",
+        "isTest": true,
+        "recordSession": false,
+        "screenshotAllNodes": false,
+        "scrollThenAction": false
+      }
+    },
+    {
+      "id": "js-set-products",
+      "type": "javascriptCode",
+      "position": { "x": 320, "y": 200 },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set products array",
+        "code": "context.setData('products', [\n  { name: 'Product A', price: '10', url: 'https://a.com' },\n  { name: 'Product B', price: '20', url: 'https://b.com' }\n]);"
+      }
+    },
+    {
+      "id": "csv-write",
+      "type": "csvHandle",
+      "position": { "x": 540, "y": 200 },
+      "data": {
+        "type": "csvHandle",
+        "label": "CSV Write",
+        "action": "write",
+        "filePath": "${data.outputDirectory}/products.csv",
+        "dataSource": "products",
+        "headers": ["name", "price", "url"],
+        "delimiter": ","
+      }
+    },
+    {
+      "id": "js-set-more",
+      "type": "javascriptCode",
+      "position": { "x": 760, "y": 200 },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set more products",
+        "code": "context.setData('moreProducts', [\n  { name: 'Product C', price: '30', url: 'https://c.com' }\n]);"
+      }
+    },
+    {
+      "id": "csv-append",
+      "type": "csvHandle",
+      "position": { "x": 980, "y": 200 },
+      "data": {
+        "type": "csvHandle",
+        "label": "CSV Append",
+        "action": "append",
+        "filePath": "${data.outputDirectory}/products.csv",
+        "dataSource": "moreProducts",
+        "headers": ["name", "price", "url"],
+        "delimiter": ","
+      }
+    },
+    {
+      "id": "csv-read",
+      "type": "csvHandle",
+      "position": { "x": 1200, "y": 200 },
+      "data": {
+        "type": "csvHandle",
+        "label": "CSV Read",
+        "action": "read",
+        "filePath": "${data.outputDirectory}/products.csv",
+        "contextKey": "csvReadResult",
+        "delimiter": ","
+      }
+    }
+  ],
+  "edges": [
+    { "id": "e1", "source": "start-1", "target": "js-set-products", "sourceHandle": "output", "targetHandle": "input" },
+    { "id": "e2", "source": "js-set-products", "target": "csv-write", "sourceHandle": "output", "targetHandle": "input" },
+    { "id": "e3", "source": "csv-write", "target": "js-set-more", "sourceHandle": "output", "targetHandle": "input" },
+    { "id": "e4", "source": "js-set-more", "target": "csv-append", "sourceHandle": "output", "targetHandle": "input" },
+    { "id": "e5", "source": "csv-append", "target": "csv-read", "sourceHandle": "output", "targetHandle": "input" }
+  ]
+}

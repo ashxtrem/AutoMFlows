@@ -766,6 +766,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
           isTest={nodeDataFromStore.isTest}
           isPinned={isPinned}
           breakpoint={nodeDataFromStore.breakpoint}
+          isUtilityNode={isUtilityNode}
         />
       )}
       {/* Default control flow handle (driver) - skip for utility nodes */}

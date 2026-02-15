@@ -10,9 +10,10 @@ interface NodeMenuBarProps {
   isTest?: boolean;
   isPinned?: boolean;
   breakpoint?: boolean;
+  isUtilityNode?: boolean;
 }
 
-export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized, isTest, isPinned, breakpoint }: NodeMenuBarProps) {
+export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized, isTest, isPinned, breakpoint, isUtilityNode }: NodeMenuBarProps) {
   // Ensure isPinned is always a boolean
   const pinned = isPinned ?? false;
   const hasBreakpoint = breakpoint ?? false;
@@ -124,36 +125,40 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized,
       onMouseDown={(e) => e.stopPropagation()}
       style={{ zIndex: 1000, pointerEvents: 'auto' }}
     >
-      <Tooltip content="Bypass">
-        <button
-          onClick={handleBypass}
-          className={`p-1.5 rounded hover:bg-gray-700 transition-colors ${
-            bypass ? 'text-yellow-400' : 'text-gray-400'
-          }`}
-        >
-          <SkipForward size={14} />
-        </button>
-      </Tooltip>
-      <Tooltip content="Fail Silently">
-        <button
-          onClick={handleFailSilently}
-          className={`p-1.5 rounded hover:bg-gray-700 transition-colors ${
-            failSilently ? 'text-orange-400' : 'text-gray-400'
-          }`}
-        >
-          <AlertCircle size={14} />
-        </button>
-      </Tooltip>
-      <Tooltip content={isTest ? 'Test Case' : 'Support Case'}>
-        <button
-          onClick={handleToggleIsTest}
-          className={`p-1.5 rounded hover:bg-gray-700 transition-colors ${
-            isTest ? 'text-green-400' : 'text-gray-400'
-          }`}
-        >
-          {isTest ? <CheckSquare size={14} /> : <Wrench size={14} />}
-        </button>
-      </Tooltip>
+      {!isUtilityNode && (
+        <>
+          <Tooltip content="Bypass">
+            <button
+              onClick={handleBypass}
+              className={`p-1.5 rounded hover:bg-gray-700 transition-colors ${
+                bypass ? 'text-yellow-400' : 'text-gray-400'
+              }`}
+            >
+              <SkipForward size={14} />
+            </button>
+          </Tooltip>
+          <Tooltip content="Fail Silently">
+            <button
+              onClick={handleFailSilently}
+              className={`p-1.5 rounded hover:bg-gray-700 transition-colors ${
+                failSilently ? 'text-orange-400' : 'text-gray-400'
+              }`}
+            >
+              <AlertCircle size={14} />
+            </button>
+          </Tooltip>
+          <Tooltip content={isTest ? 'Test Case' : 'Support Case'}>
+            <button
+              onClick={handleToggleIsTest}
+              className={`p-1.5 rounded hover:bg-gray-700 transition-colors ${
+                isTest ? 'text-green-400' : 'text-gray-400'
+              }`}
+            >
+              {isTest ? <CheckSquare size={14} /> : <Wrench size={14} />}
+            </button>
+          </Tooltip>
+        </>
+      )}
       <Tooltip content={pinned ? 'Unpin' : 'Pin'}>
         <button
           onClick={handlePin}
@@ -164,16 +169,18 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized,
           <Pin size={14} />
         </button>
       </Tooltip>
-      <Tooltip content={hasBreakpoint ? 'Remove Breakpoint' : 'Add Breakpoint'}>
-        <button
-          onClick={handleBreakpoint}
-          className={`p-1.5 rounded hover:bg-gray-700 transition-colors ${
-            hasBreakpoint ? 'text-orange-500' : 'text-gray-400'
-          }`}
-        >
-          <CircleDot size={14} />
-        </button>
-      </Tooltip>
+      {!isUtilityNode && (
+        <Tooltip content={hasBreakpoint ? 'Remove Breakpoint' : 'Add Breakpoint'}>
+          <button
+            onClick={handleBreakpoint}
+            className={`p-1.5 rounded hover:bg-gray-700 transition-colors ${
+              hasBreakpoint ? 'text-orange-500' : 'text-gray-400'
+            }`}
+          >
+            <CircleDot size={14} />
+          </button>
+        </Tooltip>
+      )}
       <div className="w-px h-4 bg-gray-700 mx-0.5" />
       <Tooltip content="Copy">
         <button

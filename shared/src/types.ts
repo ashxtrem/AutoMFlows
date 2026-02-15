@@ -51,6 +51,7 @@ export enum NodeType {
   DOWNLOAD = 'download',
   IFRAME = 'iframe',
   CONTEXT_MANIPULATE = 'contextManipulate',
+  CSV_HANDLE = 'csvHandle',
 }
 
 // Base Node Interface
@@ -963,6 +964,22 @@ export interface DbQueryNodeData {
   };
 }
 
+export interface CsvHandleNodeData {
+  action: 'write' | 'append' | 'read';
+  filePath?: string; // Relative to project root or absolute; supports ${data.outputDirectory}/file.csv
+  dataSource?: string; // Context key for write/append — value must be array of objects or array of arrays
+  contextKey?: string; // For read: where to store parsed data (default: 'csvData')
+  headers?: string[]; // Column order for write/append; for read, first row = headers by default
+  delimiter?: string; // Default ','
+  encoding?: string; // Default 'utf-8'
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
 // Verification Domain and Types
 export type VerificationDomain = 'browser' | 'api' | 'database';
 
@@ -1090,6 +1107,7 @@ export type NodeData =
   | DbConnectNodeData
   | DbDisconnectNodeData
   | DbQueryNodeData
+  | CsvHandleNodeData
   | Record<string, any>; // Support custom plugin node data
 
 // Edge/Connection Interface
