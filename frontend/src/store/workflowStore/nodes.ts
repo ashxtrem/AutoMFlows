@@ -29,6 +29,8 @@ export interface NodesSlice {
   setNodeColor: (nodeId: string | string[], borderColor?: string, backgroundColor?: string) => void;
   autoResizeNode: (nodeId: string) => void;
   reloadNode: (nodeId: string) => void;
+  setFitViewRequested: (value: boolean) => void;
+  refreshCanvas: () => void;
 }
 
 export const createNodesSlice: StateCreator<
@@ -37,6 +39,15 @@ export const createNodesSlice: StateCreator<
   [],
   NodesSlice
 > = (set, get) => ({
+  setFitViewRequested: (value) => set({ fitViewRequested: value }),
+
+  refreshCanvas: () => {
+    set({ canvasReloading: true });
+    setTimeout(() => {
+      set({ canvasReloading: false });
+    }, 100);
+  },
+
   setNodes: (nodes) => {
     const state = get();
     // Clear validation errors when nodes are set directly (e.g., when loading a workflow)

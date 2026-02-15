@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useWorkflowStore } from '../store/workflowStore';
 import { saveToLocalStorage, loadFromLocalStorage } from '../utils/serialization';
+import { getSampleTemplate } from '../utils/sampleTemplate';
 
 export function useWorkflowAutoSave() {
   const { nodes, edges, groups } = useWorkflowStore();
@@ -18,7 +19,7 @@ export function useWorkflowAutoSave() {
 }
 
 export function useWorkflowLoad() {
-  const { setNodes, setEdges, setGroups, saveToHistory, clearAllNodeErrors } = useWorkflowStore();
+  const { setNodes, setEdges, setGroups, saveToHistory, clearAllNodeErrors, setFitViewRequested } = useWorkflowStore();
 
   useEffect(() => {
     // Load workflow from localStorage on mount
@@ -37,7 +38,18 @@ export function useWorkflowLoad() {
       setTimeout(() => {
         saveToHistory();
       }, 100);
+    } else {
+      // No saved workflow: load reset template instead of blank canvas
+      const { nodes: templateNodes, edges: templateEdges } = getSampleTemplate();
+      setNodes(templateNodes);
+      setEdges(templateEdges);
+      setGroups([]);
+      clearAllNodeErrors();
+      setFitViewRequested(true);
+      setTimeout(() => {
+        saveToHistory();
+      }, 100);
     }
-  }, [setNodes, setEdges, setGroups, saveToHistory, clearAllNodeErrors]);
+  }, [setNodes, setEdges, setGroups, saveToHistory, clearAllNodeErrors, setFitViewRequested]);
 }
 
