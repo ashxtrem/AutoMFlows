@@ -30,6 +30,7 @@ import DownloadIcon from '@mui/icons-material/Download';
 import PictureInPictureIcon from '@mui/icons-material/PictureInPicture';
 import SettingsIcon from '@mui/icons-material/Settings';
 import EditIcon from '@mui/icons-material/Edit';
+import TableChartIcon from '@mui/icons-material/TableChart';
 
 export interface IconConfig {
   icon: React.ComponentType<{ sx?: any }>;
@@ -67,6 +68,7 @@ export const nodeIcons: Record<NodeType, IconConfig> = {
   [NodeType.DB_CONNECT]: { icon: StorageIcon, color: '#4CAF50' },
   [NodeType.DB_DISCONNECT]: { icon: StorageIcon, color: '#F44336' },
   [NodeType.DB_QUERY]: { icon: StorageIcon, color: '#2196F3' },
+  [NodeType.CSV_HANDLE]: { icon: TableChartIcon, color: '#00BCD4' },
 };
 
 export function getNodeIcon(nodeType: NodeType | string): IconConfig | null {

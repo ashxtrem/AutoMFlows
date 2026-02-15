@@ -25,6 +25,7 @@ import FolderOpenIcon from '@mui/icons-material/FolderOpen';
 import StorageIcon from '@mui/icons-material/Storage';
 import SettingsIcon from '@mui/icons-material/Settings';
 import EditIcon from '@mui/icons-material/Edit';
+import TableChartIcon from '@mui/icons-material/TableChart';
 
 interface IconConfig {
   icon: React.ComponentType<{ sx?: any }>;
@@ -62,6 +63,7 @@ const nodeIconMap: Record<NodeType, IconConfig> = {
   [NodeType.DB_CONNECT]: { icon: StorageIcon, color: '#4CAF50' },
   [NodeType.DB_DISCONNECT]: { icon: StorageIcon, color: '#F44336' },
   [NodeType.DB_QUERY]: { icon: StorageIcon, color: '#2196F3' },
+  [NodeType.CSV_HANDLE]: { icon: TableChartIcon, color: '#00BCD4' },
 };
 
 function getNodeIconConfig(nodeType: NodeType | string): IconConfig | null {
@@ -104,6 +106,7 @@ function getNodeLabel(nodeType: NodeType | string): string {
       [NodeType.DB_DISCONNECT]: 'DB Disconnect',
       [NodeType.DB_QUERY]: 'DB Query',
       [NodeType.CONTEXT_MANIPULATE]: 'Context Manipulate',
+      [NodeType.CSV_HANDLE]: 'CSV Handle',
     };
     return labels[nodeType as NodeType] || nodeType;
   }

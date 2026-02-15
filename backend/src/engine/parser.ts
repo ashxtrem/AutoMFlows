@@ -165,8 +165,11 @@ export class WorkflowParser {
 
         visiting.delete(nodeId);
         visited.add(nodeId);
-        result.push(nodeId);
-        
+        // Exclude utility nodes (shortcut, comment) from execution order - they are not executed
+        if (node.type !== 'shortcut.shortcut' && node.type !== 'comment-box.comment') {
+          result.push(nodeId);
+        }
+
         // Visit all dependents (forward traversal to continue from this node)
         // This ensures we traverse the entire connected graph from start
         // Skip dependents that are still in the visiting set to avoid false cycles

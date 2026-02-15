@@ -2,7 +2,7 @@ import { NodeType, BaseNode } from '@automflows/shared';
 import { NodeHandler, NodeHandlerMap } from './base';
 import { ContextManager } from '../engine/context';
 import { OpenBrowserHandler, NavigationHandler, ContextManipulateHandler } from './browser';
-import { TypeHandler, ActionHandler, FormInputHandler, KeyboardHandler, ScrollHandler, ElementQueryHandler, ScreenshotHandler, WaitHandler, IntValueHandler, StringValueHandler, BooleanValueHandler, InputValueHandler, VerifyHandler, StorageHandler, DialogHandler, DownloadHandler, IframeHandler } from './handlers';
+import { TypeHandler, ActionHandler, FormInputHandler, KeyboardHandler, ScrollHandler, ElementQueryHandler, ScreenshotHandler, WaitHandler, IntValueHandler, StringValueHandler, BooleanValueHandler, InputValueHandler, VerifyHandler, StorageHandler, DialogHandler, DownloadHandler, IframeHandler, CsvHandleHandler } from './handlers';
 import { JavaScriptCodeHandler, LoopHandler } from './logic';
 import { ApiRequestHandler, ApiCurlHandler } from './api';
 import { LoadConfigFileHandler, SelectConfigFileHandler } from './config';
@@ -47,6 +47,7 @@ const handlers: NodeHandlerMap = {
   [NodeType.DB_CONNECT]: new DbConnectHandler(),
   [NodeType.DB_DISCONNECT]: new DbDisconnectHandler(),
   [NodeType.DB_QUERY]: new DbQueryHandler(),
+  [NodeType.CSV_HANDLE]: new CsvHandleHandler(),
 };
 
 export function getNodeHandler(nodeType: NodeType | string): NodeHandler | undefined {

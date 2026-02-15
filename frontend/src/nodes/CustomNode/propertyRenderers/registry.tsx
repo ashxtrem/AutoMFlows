@@ -28,6 +28,7 @@ import { renderLoadConfigFileProperties } from './loadConfigFile';
 import { renderDbConnectProperties } from './dbConnect';
 import { renderDbDisconnectProperties } from './dbDisconnect';
 import { renderDbQueryProperties } from './dbQuery';
+import { renderCsvHandleProperties } from './csvHandle';
 import { renderShortcutProperties } from './shortcut';
 import { renderCommentBoxProperties } from './commentBox';
 import { renderSetConfigProperties } from './setConfig';
@@ -66,6 +67,7 @@ export const propertyRendererRegistry: Record<string, PropertyRenderer> = {
   [NodeType.DB_CONNECT]: renderDbConnectProperties,
   [NodeType.DB_DISCONNECT]: renderDbDisconnectProperties,
   [NodeType.DB_QUERY]: renderDbQueryProperties,
+  [NodeType.CSV_HANDLE]: renderCsvHandleProperties,
 };
 
 export function getPropertyRenderer(nodeType: string): PropertyRenderer | null {

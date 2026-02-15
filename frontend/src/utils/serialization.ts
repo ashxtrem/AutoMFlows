@@ -96,6 +96,7 @@ function getNodeLabel(type: NodeType): string {
     [NodeType.DB_DISCONNECT]: 'DB Disconnect',
     [NodeType.DB_QUERY]: 'DB Query',
     [NodeType.CONTEXT_MANIPULATE]: 'Context Manipulate',
+    [NodeType.CSV_HANDLE]: 'CSV Handle',
   };
   return labels[type] || type;
 }

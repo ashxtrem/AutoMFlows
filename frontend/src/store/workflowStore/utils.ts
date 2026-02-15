@@ -112,6 +112,7 @@ export function getNodeLabel(type: NodeType | string): string {
       [NodeType.DB_DISCONNECT]: 'DB Disconnect',
       [NodeType.DB_QUERY]: 'DB Query',
       [NodeType.CONTEXT_MANIPULATE]: 'Context Manipulate',
+      [NodeType.CSV_HANDLE]: 'CSV Handle',
     };
     return labels[type as NodeType] || type;
   }
@@ -203,6 +204,14 @@ export function getDefaultNodeData(type: NodeType | string): any {
       },
       [NodeType.CONTEXT_MANIPULATE]: { 
         action: 'setGeolocation',
+        isTest: true 
+      },
+      [NodeType.CSV_HANDLE]: { 
+        action: 'write',
+        filePath: '',
+        dataSource: '',
+        contextKey: 'csvData',
+        delimiter: ',',
         isTest: true 
       },
     };
