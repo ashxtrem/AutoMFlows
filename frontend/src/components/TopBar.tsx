@@ -595,7 +595,7 @@ export default function TopBar() {
               setCurrentSettingsSubmenu('main');
             }
           }}
-          className={`fixed bottom-6 right-6 w-14 h-14 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110 ${
+          className={`fixed bottom-6 right-6 w-14 h-14 bg-surface hover:bg-surfaceHighlight border border-border text-primary rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110 ${
             selectedNode ? 'z-20' : 'z-50'
           }`}
         >
@@ -616,7 +616,7 @@ export default function TopBar() {
       {/* Expandable Menu Panel */}
       <div
         ref={menuRef}
-        className={`fixed bottom-24 right-6 w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl transition-all duration-300 overflow-hidden ${
+        className={`fixed bottom-24 right-6 w-80 bg-surface border border-border rounded-lg shadow-2xl transition-all duration-300 overflow-hidden ${
           selectedNode ? 'z-20' : 'z-50'
         } ${
           isMenuOpen ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4 pointer-events-none'
@@ -624,9 +624,9 @@ export default function TopBar() {
       >
         <div className="p-4 space-y-2 max-h-[calc(100vh-120px)] overflow-y-auto">
           {/* Header */}
-          <div className="pb-2 border-b border-gray-700 mb-2">
-            <h2 className="text-lg font-bold text-white">AutoMFlows</h2>
-            <span className="text-xs text-gray-400">Workspace</span>
+          <div className="pb-2 border-b border-border mb-2">
+            <h2 className="text-lg font-bold text-primary">AutoMFlows</h2>
+            <span className="text-xs text-secondary">Workspace</span>
           </div>
 
 
@@ -636,7 +636,7 @@ export default function TopBar() {
               <div className="flex gap-1">
                 <button
                   onClick={handleSave}
-                  className="flex-1 px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-l flex items-center gap-3 text-sm transition-colors"
+                  className="flex-1 px-4 py-2.5 bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded-l flex items-center gap-3 text-sm transition-colors"
                   title={currentFileHandle ? `Save to ${currentFileHandle.name}` : 'Save workflow'}
                 >
                   <SaveIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
@@ -644,20 +644,20 @@ export default function TopBar() {
                 </button>
                 <button
                   onClick={() => setSaveDropdownOpen(!saveDropdownOpen)}
-                  className="px-2 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded-r flex items-center transition-colors"
+                  className="px-2 py-2.5 bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded-r flex items-center transition-colors"
                   title="Save options"
                 >
                   <ChevronDown size={14} className={saveDropdownOpen ? 'rotate-180' : ''} />
                 </button>
               </div>
               {saveDropdownOpen && (
-                <div className={`absolute left-0 top-full mt-1 w-full bg-gray-800 border border-gray-700 rounded-lg shadow-xl ${
+                <div className={`absolute left-0 top-full mt-1 w-full bg-surface border border-border rounded-lg shadow-xl ${
                   selectedNode ? 'z-20' : 'z-50'
                 }`}>
                   <div className="p-1">
                     <button
                       onClick={() => handleSaveAs()}
-                      className="w-full px-3 py-2 text-sm text-white hover:bg-gray-700 rounded text-left flex items-center gap-2"
+                      className="w-full px-3 py-2 text-sm text-primary hover:bg-surfaceHighlight rounded text-left flex items-center gap-2"
                     >
                       <SaveIcon sx={{ fontSize: '16px', color: '#ffffff' }} className="flex-shrink-0" />
                       Save As
@@ -672,7 +672,7 @@ export default function TopBar() {
                 setIsMenuOpen(false);
                 handleLoad();
               }}
-              className="w-full px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-3 text-sm transition-colors"
+              className="w-full px-4 py-2.5 bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded flex items-center gap-3 text-sm transition-colors"
             >
               <UploadFileIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
               Load
@@ -682,7 +682,7 @@ export default function TopBar() {
                 setIsMenuOpen(false);
                 handleReset();
               }}
-              className="w-full px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-3 text-sm transition-colors"
+              className="w-full px-4 py-2.5 bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded flex items-center gap-3 text-sm transition-colors"
             >
               <RefreshIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
               Reset
@@ -690,13 +690,13 @@ export default function TopBar() {
           </div>
 
           {/* Divider */}
-          <div className="h-px bg-gray-700 my-2" />
+          <div className="h-px bg-border my-2" />
 
           {/* View Section */}
           <div className="space-y-1">
             <button
               onClick={() => setEdgesHidden(!edgesHidden)}
-              className="w-full px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-3 text-sm transition-colors"
+              className="w-full px-4 py-2.5 bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded flex items-center gap-3 text-sm transition-colors"
               title={edgesHidden ? 'Show connections' : 'Hide connections'}
             >
               {edgesHidden ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -708,7 +708,7 @@ export default function TopBar() {
                 const url = window.location.origin + '/reports/history';
                 window.open(url, '_blank');
               }}
-              className="w-full px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-3 text-sm transition-colors"
+              className="w-full px-4 py-2.5 bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded flex items-center gap-3 text-sm transition-colors"
               title="Go to Report History"
             >
               <AssessmentIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
@@ -717,7 +717,7 @@ export default function TopBar() {
           </div>
 
           {/* Divider */}
-          <div className="h-px bg-gray-700 my-2" />
+          <div className="h-px bg-border my-2" />
 
           {/* Tour Section */}
           <div className="space-y-1">
@@ -727,7 +727,7 @@ export default function TopBar() {
                   setIsMenuOpen(false);
                   startTour();
                 }}
-                className="w-full px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-3 text-sm transition-colors"
+                className="w-full px-4 py-2.5 bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded flex items-center gap-3 text-sm transition-colors"
                 title="Take interactive tour"
               >
                 <PlayCircleFilledWhiteTwoToneIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
@@ -739,7 +739,7 @@ export default function TopBar() {
                   setIsMenuOpen(false);
                   resetTour();
                 }}
-                className="w-full px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-3 text-sm transition-colors"
+                className="w-full px-4 py-2.5 bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded flex items-center gap-3 text-sm transition-colors"
                 title="Restart interactive tour"
               >
                 <RefreshIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
@@ -749,14 +749,14 @@ export default function TopBar() {
           </div>
 
           {/* Divider */}
-          <div className="h-px bg-gray-700 my-2" />
+          <div className="h-px bg-border my-2" />
 
           {/* Settings Section - Last Item */}
           <div className="space-y-1">
             <button
               data-settings-button
               onClick={() => setIsSettingsSubmenuOpen(!isSettingsSubmenuOpen)}
-              className="w-full px-4 py-2.5 bg-gray-700 hover:bg-gray-600 text-white rounded flex items-center gap-3 text-sm transition-colors"
+              className="w-full px-4 py-2.5 bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded flex items-center gap-3 text-sm transition-colors"
               title="Settings"
             >
               <SettingsIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
@@ -770,7 +770,7 @@ export default function TopBar() {
       {isSettingsSubmenuOpen && (
         <div
           ref={settingsSubmenuRef}
-          className={`fixed bottom-24 right-[22rem] w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl transition-all duration-300 ${
+          className={`fixed bottom-24 right-[22rem] w-64 bg-surface border border-border rounded-lg shadow-2xl transition-all duration-300 ${
             selectedNode ? 'z-20' : 'z-50'
           }`}
           onClick={(e) => e.stopPropagation()}
@@ -780,7 +780,7 @@ export default function TopBar() {
             <div className="p-3 space-y-3">
               {/* Trace Logs Toggle */}
               <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-                <span className="text-sm text-white font-medium">Trace Logs</span>
+                <span className="text-sm text-primary font-medium">Trace Logs</span>
                 <label 
                   className="relative inline-flex items-center cursor-pointer"
                 >
@@ -796,7 +796,7 @@ export default function TopBar() {
                   />
                   <div
                     className={`w-14 h-7 rounded-lg transition-colors flex items-center px-1 cursor-pointer ${
-                      traceLogs ? 'bg-green-600' : 'bg-gray-700'
+                      traceLogs ? 'bg-green-600' : 'bg-surfaceHighlight'
                     }`}
                   >
                     <div
@@ -810,7 +810,7 @@ export default function TopBar() {
 
               {/* Follow Mode Toggle */}
               <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-                <span className="text-sm text-white font-medium">Follow Mode</span>
+                <span className="text-sm text-primary font-medium">Follow Mode</span>
                 <label 
                   className="relative inline-flex items-center cursor-pointer"
                 >
@@ -826,7 +826,7 @@ export default function TopBar() {
                   />
                   <div
                     className={`w-14 h-7 rounded-lg transition-colors flex items-center px-1 cursor-pointer ${
-                      followModeEnabled ? 'bg-green-600' : 'bg-gray-700'
+                      followModeEnabled ? 'bg-green-600' : 'bg-surfaceHighlight'
                     }`}
                   >
                     <div
@@ -839,13 +839,13 @@ export default function TopBar() {
               </div>
 
               {/* Settings Categories */}
-              <div className="border-t border-gray-700 pt-3 mt-2 space-y-1">
+              <div className="border-t border-border pt-3 mt-2 space-y-1">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     setCurrentSettingsSubmenu('canvas');
                   }}
-                  className="w-full px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors text-left"
+                  className="w-full px-3 py-2 text-sm bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded-md transition-colors text-left"
                 >
                   Canvas
                 </button>
@@ -854,7 +854,7 @@ export default function TopBar() {
                     e.stopPropagation();
                     setCurrentSettingsSubmenu('appearance');
                   }}
-                  className="w-full px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors text-left"
+                  className="w-full px-3 py-2 text-sm bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded-md transition-colors text-left"
                 >
                   Appearance
                 </button>
@@ -863,7 +863,7 @@ export default function TopBar() {
                     e.stopPropagation();
                     setCurrentSettingsSubmenu('notifications');
                   }}
-                  className="w-full px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors text-left"
+                  className="w-full px-3 py-2 text-sm bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded-md transition-colors text-left"
                 >
                   Notifications
                 </button>
@@ -872,14 +872,14 @@ export default function TopBar() {
                     e.stopPropagation();
                     setCurrentSettingsSubmenu('memory');
                   }}
-                  className="w-full px-3 py-2 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded-md transition-colors text-left"
+                  className="w-full px-3 py-2 text-sm bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded-md transition-colors text-left"
                 >
                   Memory Management
                 </button>
               </div>
 
               {/* Breakpoint Settings Button */}
-              <div className="border-t border-gray-700 pt-3 mt-2">
+              <div className="border-t border-border pt-3 mt-2">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -892,7 +892,7 @@ export default function TopBar() {
                 </button>
               </div>
               {/* Report Settings Button */}
-              <div className="border-t border-gray-700 pt-3 mt-2">
+              <div className="border-t border-border pt-3 mt-2">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -906,7 +906,7 @@ export default function TopBar() {
                 </button>
               </div>
               {/* Key Bindings Button */}
-              <div className="border-t border-gray-700 pt-3 mt-2">
+              <div className="border-t border-border pt-3 mt-2">
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -944,7 +944,7 @@ export default function TopBar() {
       {isBreakpointSubmenuOpen && (
         <div
           ref={breakpointSubmenuRef}
-          className={`fixed bottom-24 right-[22rem] w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl transition-all duration-300 ${
+          className={`fixed bottom-24 right-[22rem] w-80 bg-surface border border-border rounded-lg shadow-2xl transition-all duration-300 ${
             selectedNode ? 'z-20' : 'z-50'
           }`}
           onClick={(e) => e.stopPropagation()}
@@ -952,13 +952,13 @@ export default function TopBar() {
         >
           <div className="p-3">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-white">Breakpoint Settings</h3>
+              <h3 className="text-sm font-medium text-primary">Breakpoint Settings</h3>
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   setIsBreakpointSubmenuOpen(false);
                 }}
-                className="text-gray-400 hover:text-white"
+                className="text-secondary hover:text-primary"
               >
                 ×
               </button>

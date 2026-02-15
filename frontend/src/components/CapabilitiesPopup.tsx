@@ -130,20 +130,20 @@ export default function CapabilitiesPopup({ node, onSave, onClose }: Capabilitie
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       onClick={handleBackdropClick}
     >
-      <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+      <div className="bg-surface border border-border rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-2">
             <h2 className="text-lg font-semibold text-white">
               Capabilities for {browserName}
             </h2>
             <div className="relative group">
               <HelpCircle 
-                className="text-gray-400 hover:text-blue-400 cursor-pointer transition-colors" 
+                className="text-secondary hover:text-blue-400 cursor-pointer transition-colors" 
                 size={18}
                 onClick={handleHelpClick}
               />
               <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block z-10">
-                <div className="bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap shadow-lg border border-gray-700">
+                <div className="bg-canvas text-primary text-xs rounded py-1 px-2 whitespace-nowrap shadow-lg border border-border">
                   Click to see Playwright browser capabilities
                   <div className="absolute left-2 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
                 </div>
@@ -152,7 +152,7 @@ export default function CapabilitiesPopup({ node, onSave, onClose }: Capabilitie
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-secondary hover:text-primary transition-colors"
           >
             <X size={20} />
           </button>
@@ -178,11 +178,11 @@ export default function CapabilitiesPopup({ node, onSave, onClose }: Capabilitie
           
           <div className="space-y-3">
             {capabilities.map((row) => (
-              <div key={row.id} className="flex items-center gap-2 p-2 border border-gray-700 rounded" style={{ backgroundColor: row.type === 'launch' ? 'rgba(147, 51, 234, 0.1)' : 'rgba(59, 130, 246, 0.1)' }}>
+              <div key={row.id} className="flex items-center gap-2 p-2 border border-border rounded" style={{ backgroundColor: row.type === 'launch' ? 'rgba(147, 51, 234, 0.1)' : 'rgba(59, 130, 246, 0.1)' }}>
                 <select
                   value={row.type}
                   onChange={(e) => handleTypeChange(row.id, e.target.value as 'context' | 'launch')}
-                  className="px-2 py-2 bg-gray-700 border border-gray-600 rounded text-white text-xs"
+                  className="px-2 py-2 bg-surfaceHighlight border border-border rounded text-primary text-xs"
                   style={{ minWidth: '100px' }}
                 >
                   <option value="context">Context</option>
@@ -194,19 +194,19 @@ export default function CapabilitiesPopup({ node, onSave, onClose }: Capabilitie
                     placeholder="Key"
                     value={row.key}
                     onChange={(e) => handleKeyChange(row.id, e.target.value)}
-                    className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm placeholder-gray-500"
+                    className="flex-1 px-3 py-2 bg-surfaceHighlight border border-border rounded text-primary text-sm placeholder-secondary"
                   />
                   <input
                     type="text"
                     placeholder="Value"
                     value={row.value}
                     onChange={(e) => handleValueChange(row.id, e.target.value)}
-                    className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm placeholder-gray-500"
+                    className="flex-1 px-3 py-2 bg-surfaceHighlight border border-border rounded text-primary text-sm placeholder-secondary"
                   />
                 </div>
                 <button
                   onClick={() => handleDeleteRow(row.id)}
-                  className="p-2 text-gray-400 hover:text-red-400 transition-colors"
+                  className="p-2 text-secondary hover:text-red-400 transition-colors"
                   title="Delete row"
                 >
                   <Trash2 size={16} />
@@ -216,17 +216,17 @@ export default function CapabilitiesPopup({ node, onSave, onClose }: Capabilitie
           </div>
           
           {capabilities.length === 0 && (
-            <div className="text-center text-gray-400 py-8">
+            <div className="text-center text-secondary py-8">
               <p className="mb-2">No options configured</p>
               <p className="text-xs">Click "Add Context Option" or "Add Launch Option" to get started</p>
             </div>
           )}
         </div>
 
-        <div className="p-4 border-t border-gray-700 flex justify-end gap-2">
+        <div className="p-4 border-t border-border flex justify-end gap-2">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+            className="px-4 py-2 bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded transition-colors"
           >
             Cancel
           </button>

@@ -20,6 +20,7 @@ import NodeSearchOverlay from './NodeSearchOverlay';
 import GroupBoundary from './GroupBoundary';
 import { useShortcutNavigation } from '../hooks/useShortcutNavigation';
 import { filterValidEdges, suppressReactFlowWarnings } from '../utils/edgeValidation';
+import { getEffectiveTheme } from '../utils/theme';
 import { useCanvasHandlers } from './Canvas/handlers';
 import { useNavigation } from './Canvas/navigation';
 import { useNodeSearch } from './Canvas/nodeSearch';
@@ -130,8 +131,8 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
   
   // Get grid color based on theme
   const getGridColor = () => {
-    if (theme === 'light') {
-      return '#E5E7EB'; // Light theme grid color with opacity handled by CSS
+    if (getEffectiveTheme(theme) === 'light') {
+      return '#9CA3AF'; // Gray-400, visible on light canvas
     }
     return '#4a4a4a'; // Dark theme default
   };
@@ -813,7 +814,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
         minZoom={0.1}
         maxZoom={2}
         zoomOnDoubleClick={false}
-        className="bg-gray-900 react-flow-canvas"
+        className="bg-canvas react-flow-canvas"
         proOptions={{ hideAttribution: true }}
       >
         {showGrid && (
@@ -823,7 +824,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
             variant={BackgroundVariant.Lines}
           />
         )}
-        <Controls className="bg-gray-800 border border-gray-700 !left-3 !bottom-3" />
+        <Controls className="bg-surface border border-border !left-3 !bottom-3" />
         {/* Render group boundaries inside ReactFlow so they follow pan/zoom */}
         {groups.map((group) => (
           <GroupBoundary key={group.id} group={group} />
@@ -838,7 +839,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
               refreshCanvas();
               addNotification({ type: 'info', title: 'Canvas refreshed', message: 'Canvas has been refreshed.' });
             }}
-            className="w-8 h-8 rounded flex items-center justify-center bg-transparent text-gray-100 hover:text-white hover:bg-gray-800/40 transition-colors drop-shadow-lg"
+            className="w-8 h-8 rounded flex items-center justify-center bg-transparent text-primary hover:bg-surfaceHighlight/40 transition-colors drop-shadow-lg"
             aria-label="Refresh canvas"
           >
             <RefreshCw size={16} className="flex-shrink-0" />
@@ -846,7 +847,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
         </Tooltip>
       </div>
       {/* Filename display - fixed position in top left */}
-      <div className="fixed top-0 left-0 z-10 p-2 text-gray-100 text-sm font-mono flex items-center gap-2">
+      <div className="fixed top-0 left-0 z-10 p-2 text-primary text-sm font-mono flex items-center gap-2">
         <span className="drop-shadow-lg">{workflowFileName}</span>
         {hasUnsavedChanges && (
           <span className="text-yellow-400 text-xs drop-shadow-lg" title="Unsaved changes">●</span>

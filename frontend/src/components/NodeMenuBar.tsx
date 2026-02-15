@@ -120,7 +120,7 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized,
 
   return (
     <div
-      className="absolute -top-8 left-1/2 transform -translate-x-1/2 flex items-center gap-1 bg-gray-800 border border-gray-700 rounded px-2 py-1 shadow-lg z-10"
+      className="absolute -top-8 left-1/2 transform -translate-x-1/2 flex items-center gap-1 bg-surface border border-border rounded px-2 py-1 shadow-lg z-10"
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
       style={{ zIndex: 1000, pointerEvents: 'auto' }}
@@ -130,8 +130,8 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized,
           <Tooltip content="Bypass">
             <button
               onClick={handleBypass}
-              className={`p-1.5 rounded hover:bg-gray-700 transition-colors ${
-                bypass ? 'text-yellow-400' : 'text-gray-400'
+              className={`p-1.5 rounded hover:bg-surfaceHighlight transition-colors ${
+                bypass ? 'text-yellow-400' : 'text-secondary'
               }`}
             >
               <SkipForward size={14} />
@@ -140,8 +140,8 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized,
           <Tooltip content="Fail Silently">
             <button
               onClick={handleFailSilently}
-              className={`p-1.5 rounded hover:bg-gray-700 transition-colors ${
-                failSilently ? 'text-orange-400' : 'text-gray-400'
+              className={`p-1.5 rounded hover:bg-surfaceHighlight transition-colors ${
+                failSilently ? 'text-orange-400' : 'text-secondary'
               }`}
             >
               <AlertCircle size={14} />
@@ -150,8 +150,8 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized,
           <Tooltip content={isTest ? 'Test Case' : 'Support Case'}>
             <button
               onClick={handleToggleIsTest}
-              className={`p-1.5 rounded hover:bg-gray-700 transition-colors ${
-                isTest ? 'text-green-400' : 'text-gray-400'
+              className={`p-1.5 rounded hover:bg-surfaceHighlight transition-colors ${
+                isTest ? 'text-green-400' : 'text-secondary'
               }`}
             >
               {isTest ? <CheckSquare size={14} /> : <Wrench size={14} />}
@@ -162,8 +162,8 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized,
       <Tooltip content={pinned ? 'Unpin' : 'Pin'}>
         <button
           onClick={handlePin}
-          className={`p-1.5 rounded hover:bg-gray-700 transition-colors ${
-            pinned ? 'text-red-500' : 'text-gray-400'
+          className={`p-1.5 rounded hover:bg-surfaceHighlight transition-colors ${
+            pinned ? 'text-red-500' : 'text-secondary'
           }`}
         >
           <Pin size={14} />
@@ -173,19 +173,19 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized,
         <Tooltip content={hasBreakpoint ? 'Remove Breakpoint' : 'Add Breakpoint'}>
           <button
             onClick={handleBreakpoint}
-            className={`p-1.5 rounded hover:bg-gray-700 transition-colors ${
-              hasBreakpoint ? 'text-orange-500' : 'text-gray-400'
+            className={`p-1.5 rounded hover:bg-surfaceHighlight transition-colors ${
+              hasBreakpoint ? 'text-orange-500' : 'text-secondary'
             }`}
           >
             <CircleDot size={14} />
           </button>
         </Tooltip>
       )}
-      <div className="w-px h-4 bg-gray-700 mx-0.5" />
+      <div className="w-px h-4 bg-border mx-0.5" />
       <Tooltip content="Copy">
         <button
           onClick={handleCopy}
-          className="p-1.5 rounded hover:bg-gray-700 transition-colors text-gray-400 hover:text-blue-400"
+          className="p-1.5 rounded hover:bg-surfaceHighlight transition-colors text-secondary hover:text-blue-400"
         >
           <Copy size={14} />
         </button>
@@ -193,25 +193,25 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized,
       <Tooltip content="Duplicate">
         <button
           onClick={handleDuplicate}
-          className="p-1.5 rounded hover:bg-gray-700 transition-colors text-gray-400 hover:text-green-400"
+          className="p-1.5 rounded hover:bg-surfaceHighlight transition-colors text-secondary hover:text-green-400"
         >
           <Files size={14} />
         </button>
       </Tooltip>
-      <div className="w-px h-4 bg-gray-700 mx-0.5" />
+      <div className="w-px h-4 bg-border mx-0.5" />
       <Tooltip content={isMinimized ? 'Maximize' : 'Minimize'}>
         <button
           onClick={handleMinMax}
-          className="p-1.5 rounded hover:bg-gray-700 transition-colors text-gray-400 hover:text-purple-400"
+          className="p-1.5 rounded hover:bg-surfaceHighlight transition-colors text-secondary hover:text-purple-400"
         >
           {isMinimized ? <Maximize2 size={14} /> : <Minimize2 size={14} />}
         </button>
       </Tooltip>
-      <div className="w-px h-4 bg-gray-700 mx-0.5" />
+      <div className="w-px h-4 bg-border mx-0.5" />
       <Tooltip content="Delete">
         <button
           onClick={handleDelete}
-          className="p-1.5 rounded hover:bg-gray-700 transition-colors text-gray-400 hover:text-red-400"
+          className="p-1.5 rounded hover:bg-surfaceHighlight transition-colors text-secondary hover:text-red-400"
         >
           <Trash2 size={14} />
         </button>

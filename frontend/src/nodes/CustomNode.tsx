@@ -817,11 +817,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
       })()}
       {/* Header Block with Status Dot */}
       <div 
-        className="flex items-center gap-2 px-2 py-1.5 -mx-4 -mt-3 mb-2 rounded-t-lg min-w-0"
-        style={{ 
-          backgroundColor: 'rgba(40, 40, 40, 0.8)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-        }}
+        className="custom-node-header flex items-center gap-2 px-2 py-1.5 -mx-4 -mt-3 mb-2 rounded-t-lg min-w-0"
       >
         {/* Status Dot */}
         <div
@@ -879,7 +875,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
             onChange={(e) => setRenameValue(e.target.value)}
             onBlur={handleRenameSubmit}
             onKeyDown={handleRenameKeyDown}
-            className="text-sm font-medium bg-gray-700 border border-gray-600 rounded px-2 py-0.5 flex-1 min-w-0"
+            className="text-sm font-medium bg-surfaceHighlight border border-border rounded px-2 py-0.5 flex-1 min-w-0"
             style={{ color: textColor }}
             onClick={(e) => e.stopPropagation()}
           />
@@ -911,19 +907,19 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
               </span>
             )}
             {isEndNode && (
-              <span className="ml-2 text-xs text-gray-400" title="End of reusable flow">
+              <span className="ml-2 text-xs text-secondary" title="End of reusable flow">
                 (End)
               </span>
             )}
             {bypass && <span className="ml-2 text-xs text-yellow-400">(bypassed)</span>}
             {failSilently && <span className="ml-2 text-xs text-orange-400">(failSilently)</span>}
             {breakpoint && <span className="ml-2 text-xs text-orange-500">(breakpoint)</span>}
-            {!isTest && <span className="ml-2 text-xs text-gray-400">(support)</span>}
+            {!isTest && <span className="ml-2 text-xs text-secondary">(support)</span>}
           </div>
         )}
       </div>
       {hasProperties && !isMinimized && (
-        <div className="mt-2 border-t border-gray-700 pt-2 min-w-0">
+        <div className="mt-2 border-t border-border pt-2 min-w-0">
           {properties}
         </div>
       )}
@@ -991,14 +987,14 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
           }}
         >
           <div 
-            className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[85vh] overflow-hidden flex flex-col"
+            className="bg-surface border border-border rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[85vh] overflow-hidden flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between p-4 border-b border-gray-700">
-              <h2 className="text-lg font-semibold text-white">Edit Config</h2>
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h2 className="text-lg font-semibold text-primary">Edit Config</h2>
               <button
                 onClick={handleCloseSetConfigModal}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-secondary hover:text-primary transition-colors"
               >
                 <X size={20} />
               </button>
@@ -1006,7 +1002,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
             
             <div className="overflow-y-auto p-4 flex-1">
               <div className="mb-4">
-                <div className="bg-gray-900 border border-gray-700 rounded overflow-hidden" style={{ minHeight: '400px' }}>
+                <div className="bg-canvas border border-border rounded overflow-hidden" style={{ minHeight: '400px' }}>
                   <Editor
                     height="400px"
                     language="json"
@@ -1027,7 +1023,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                       readOnly: false,
                     }}
                     loading={
-                      <div className="flex items-center justify-center h-[400px] text-gray-400">
+                      <div className="flex items-center justify-center h-[400px] text-secondary">
                         Loading editor...
                       </div>
                     }
@@ -1045,16 +1041,16 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
                     </div>
                   </div>
                 )}
-                <p className="mt-2 text-xs text-gray-400">
+                <p className="mt-2 text-xs text-secondary">
                   Enter valid JSON object. Press Escape to cancel.
                 </p>
               </div>
             </div>
 
-            <div className="p-4 border-t border-gray-700 flex justify-end gap-2">
+            <div className="p-4 border-t border-border flex justify-end gap-2">
               <button
                 onClick={handleCloseSetConfigModal}
-                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+                className="px-4 py-2 bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded transition-colors"
               >
                 Cancel
               </button>
@@ -1119,7 +1115,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
               <div key={handleId} className="absolute inset-0 pointer-events-none">
                 {/* Case label */}
                 <div 
-                  className="absolute text-xs text-gray-400 text-right pr-2"
+                  className="absolute text-xs text-secondary text-right pr-2"
                   style={{ 
                     right: '20px',
                     top: `${topPercent}%`,
@@ -1168,7 +1164,7 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
               <div key={handleId} className="absolute inset-0 pointer-events-none">
                 {/* Default label */}
                 <div 
-                  className="absolute text-xs text-gray-400 text-right pr-2"
+                  className="absolute text-xs text-secondary text-right pr-2"
                   style={{ 
                     right: '20px',
                     top: `${topPercent}%`,

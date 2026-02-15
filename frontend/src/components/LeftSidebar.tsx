@@ -466,12 +466,12 @@ const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
               e.stopPropagation();
               setIsExpanded(true);
             }}
-            className="fixed bottom-5 z-30 w-12 h-12 rounded-full bg-gray-800 hover:bg-gray-700 border border-gray-700 shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
+            className="fixed bottom-5 z-30 w-12 h-12 rounded-full bg-surface hover:bg-surfaceHighlight border border-border shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110"
             data-tour="left-sidebar"
             aria-label="Open node library"
             style={{ left: '60px' }}
           >
-            <Layers size={24} className="text-gray-200" />
+            <Layers size={24} className="text-primary" />
           </button>
         </Tooltip>
       )}
@@ -481,13 +481,13 @@ const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
         <div
           ref={menuRef}
           onClick={handleMenuClick}
-          className="fixed bottom-5 z-30 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl flex flex-col transition-all duration-300 ease-in-out"
+          className="fixed bottom-5 z-30 bg-surface border border-border rounded-lg shadow-2xl flex flex-col transition-all duration-300 ease-in-out"
           style={{ width: `${DEFAULT_WIDTH}px`, height: 'calc(100vh - 120px)', maxHeight: '600px', left: '60px' }}
           data-tour="left-sidebar"
         >
           {/* Header with Pin Button and Wiki Button */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-700 bg-gray-800">
-            <h2 className="text-sm font-semibold text-gray-400 uppercase">Node Library</h2>
+          <div className="flex items-center justify-between p-4 border-b border-border bg-surface">
+            <h2 className="text-sm font-semibold text-secondary uppercase">Node Library</h2>
             <div className="flex items-center gap-2">
               <Tooltip content="Open documentation wiki">
                 <button
@@ -495,7 +495,7 @@ const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
                     e.stopPropagation();
                     window.open('/wiki/index.html', '_blank');
                   }}
-                  className="p-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
+                  className="p-1.5 rounded-md bg-surfaceHighlight hover:bg-surfaceHighlight text-secondary hover:text-primary transition-colors"
                   aria-label="Open wiki"
                 >
                   <BookOpen size={16} />
@@ -507,7 +507,7 @@ const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
                     e.stopPropagation();
                     setIsPinned((prev) => !prev);
                   }}
-                  className="p-1.5 rounded-md bg-gray-700 hover:bg-gray-600 text-gray-400 hover:text-white transition-colors"
+                  className="p-1.5 rounded-md bg-surfaceHighlight hover:bg-surfaceHighlight text-secondary hover:text-primary transition-colors"
                   aria-label={isPinned ? 'Unpin sidebar' : 'Pin sidebar'}
                 >
                   {isPinned ? <Pin size={16} /> : <PinOff size={16} />}
@@ -521,7 +521,7 @@ const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
             <div className="space-y-6">
               {filteredCategories.map((category) => (
                 <div key={category.label}>
-                  <h3 className="text-xs font-medium text-gray-500 uppercase mb-2 px-1">
+                  <h3 className="text-xs font-medium text-secondary uppercase mb-2 px-1">
                     {category.label}
                   </h3>
                   <div className="space-y-1">
@@ -541,15 +541,15 @@ const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
                           className={`
                             relative group
                             p-2
-                            bg-gray-700 
-                            hover:bg-gray-600 
+                            bg-surfaceHighlight 
+                            hover:bg-surfaceHighlight 
                             rounded 
                             cursor-move 
                             flex 
                             items-center 
                             gap-2
                             text-sm 
-                            text-gray-200 
+                            text-primary 
                             transition-all 
                             duration-200
                             ${isHovered ? 'shadow-md scale-[1.02]' : ''}
@@ -589,15 +589,15 @@ const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
           </div>
 
           {/* Bottom Fixed Section - Tabs and Search */}
-          <div className="border-t border-gray-700 bg-gray-800">
+          <div className="border-t border-border bg-surface">
             {/* Tabs */}
-            <div className="flex border-b border-gray-700 px-4 relative">
+            <div className="flex border-b border-border px-4 relative">
               <button
                 onClick={() => setActiveTab('all')}
                 className={`px-3 py-2 text-xs font-medium transition-colors ${
                   activeTab === 'all'
                     ? 'text-blue-400 border-b-2 border-blue-400'
-                    : 'text-gray-400 hover:text-gray-200'
+                    : 'text-secondary hover:text-primary'
                 }`}
               >
                 All
@@ -607,7 +607,7 @@ const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
                 className={`px-3 py-2 text-xs font-medium transition-colors ${
                   activeTab === 'browser'
                     ? 'text-blue-400 border-b-2 border-blue-400'
-                    : 'text-gray-400 hover:text-gray-200'
+                    : 'text-secondary hover:text-primary'
                 }`}
               >
                 Browser
@@ -617,7 +617,7 @@ const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
                 className={`px-3 py-2 text-xs font-medium transition-colors ${
                   activeTab === 'api'
                     ? 'text-blue-400 border-b-2 border-blue-400'
-                    : 'text-gray-400 hover:text-gray-200'
+                    : 'text-secondary hover:text-primary'
                 }`}
               >
                 API
@@ -627,7 +627,7 @@ const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
                 className={`px-3 py-2 text-xs font-medium transition-colors ${
                   activeTab === 'db'
                     ? 'text-blue-400 border-b-2 border-blue-400'
-                    : 'text-gray-400 hover:text-gray-200'
+                    : 'text-secondary hover:text-primary'
                 }`}
               >
                 DB
@@ -637,19 +637,19 @@ const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
                 className={`px-3 py-2 text-xs font-medium transition-colors relative ${
                   activeTab === 'utils'
                     ? 'text-blue-400 border-b-2 border-blue-400'
-                    : 'text-gray-400 hover:text-gray-200'
+                    : 'text-secondary hover:text-primary'
                 }`}
               >
                 Utils
                 {/* 2px indicator at rightmost tab */}
-                <div className="absolute right-0 top-0 bottom-0 w-0.5 bg-gray-600" />
+                <div className="absolute right-0 top-0 bottom-0 w-0.5 bg-border" />
               </button>
             </div>
 
             {/* Search Box */}
             <div className="p-4 pt-2">
               <div className="relative">
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary">
                   <Search size={16} />
                 </div>
                 <input
@@ -657,12 +657,12 @@ const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search nodes..."
-                  className="w-full pl-10 pr-8 py-2 bg-gray-700 text-gray-200 placeholder-gray-400 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                  className="w-full pl-10 pr-8 py-2 bg-surfaceHighlight text-primary placeholder-secondary rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-secondary hover:text-primary transition-colors"
                     aria-label="Clear search"
                   >
                     <X size={16} />

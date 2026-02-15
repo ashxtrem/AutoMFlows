@@ -354,7 +354,6 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
           style={{
             left: '-2px',
             top: '-24px',
-            backgroundColor: 'rgba(17, 24, 39, 0.9)',
             padding: '4px 8px',
             borderRadius: '4px 4px 0 0',
             border: `2px dashed ${borderColor}`,
@@ -381,7 +380,7 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
           }}
         >
           <div
-            className="text-sm font-medium text-gray-300 cursor-text select-none"
+            className="text-sm font-medium text-primary cursor-text select-none"
             style={{ pointerEvents: 'auto' }}
             title="Double-click to rename, right-click to change color"
           >
@@ -393,7 +392,7 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
         {showColorPicker && (
           <div
             ref={colorPickerRef}
-            className="absolute bg-gray-800 border border-gray-700 rounded shadow-lg p-2 z-50"
+            className="absolute bg-surface border border-border rounded shadow-lg p-2 z-50"
             style={{
               left: '0px',
               top: '24px',
@@ -405,7 +404,7 @@ export default function GroupBoundary({ group }: GroupBoundaryProps) {
               {PRESET_COLORS.map((color) => (
                 <button
                   key={color.value}
-                  className="w-6 h-6 rounded border border-gray-600 hover:border-gray-400 transition-colors"
+                  className="w-6 h-6 rounded border border-border hover:border-secondary transition-colors"
                   style={{ backgroundColor: color.value }}
                   onClick={() => handleColorSelect(color.value)}
                   title={color.name}

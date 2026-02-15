@@ -110,7 +110,7 @@ export default function PropertyEditorPopup({
   const renderEditor = () => {
     if (type === 'code') {
       return (
-        <div className="bg-gray-900 border border-gray-700 rounded overflow-hidden">
+        <div className="bg-canvas border border-border rounded overflow-hidden">
           <Editor
             height="400px"
             defaultLanguage="javascript"
@@ -138,7 +138,7 @@ export default function PropertyEditorPopup({
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           rows={10}
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono"
+          className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-primary text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none font-mono"
         />
       );
     }
@@ -154,7 +154,7 @@ export default function PropertyEditorPopup({
           placeholder={placeholder}
           min={min}
           max={max}
-          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-primary text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       );
     }
@@ -168,7 +168,7 @@ export default function PropertyEditorPopup({
         onChange={(e) => setEditValue(e.target.value)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
-        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-primary text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
       />
     );
   };
@@ -178,14 +178,14 @@ export default function PropertyEditorPopup({
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       onClick={handleBackdropClick}
     >
-      <div className={`bg-gray-800 border border-gray-700 rounded-lg shadow-xl ${getMaxWidth()} w-full mx-4 overflow-hidden flex flex-col`}>
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
-          <h2 className="text-lg font-semibold text-white">
+      <div className={`bg-surface border border-border rounded-lg shadow-xl ${getMaxWidth()} w-full mx-4 overflow-hidden flex flex-col`}>
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <h2 className="text-lg font-semibold text-primary">
             Edit {label}
           </h2>
           <button
             onClick={handleCancel}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-secondary hover:text-primary transition-colors"
           >
             <X size={20} />
           </button>
@@ -194,21 +194,21 @@ export default function PropertyEditorPopup({
         <div className="p-4 flex-1">
           {renderEditor()}
           {type === 'textarea' && (
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="text-xs text-secondary mt-2">
               Press Ctrl+Enter (Cmd+Enter on Mac) to save
             </p>
           )}
           {type === 'code' && (
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="text-xs text-secondary mt-2">
               Press Escape to cancel
             </p>
           )}
         </div>
 
-        <div className="p-4 border-t border-gray-700 flex justify-end gap-2">
+        <div className="p-4 border-t border-border flex justify-end gap-2">
           <button
             onClick={handleCancel}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+            className="px-4 py-2 bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded transition-colors"
           >
             Cancel
           </button>

@@ -229,7 +229,7 @@ export default function CanvasSearchOverlay({ position, flowPosition, onClose, o
   return (
     <div
       ref={overlayRef}
-      className="absolute z-50 bg-gray-800 border border-gray-700 rounded-lg shadow-xl"
+      className="absolute z-50 bg-surface border border-border rounded-lg shadow-xl"
       style={{
         left: `${adjustedX}px`,
         top: `${adjustedY}px`,
@@ -243,9 +243,9 @@ export default function CanvasSearchOverlay({ position, flowPosition, onClose, o
       onMouseDown={(e) => e.stopPropagation()}
     >
       {/* Search Input */}
-      <div className="p-3 border-b border-gray-700">
+      <div className="p-3 border-b border-border">
         <div className="relative">
-          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary">
             <Search size={16} />
           </div>
           <input
@@ -254,12 +254,12 @@ export default function CanvasSearchOverlay({ position, flowPosition, onClose, o
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search nodes..."
-            className="w-full pl-10 pr-8 py-2 bg-gray-700 text-gray-200 placeholder-gray-400 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            className="w-full pl-10 pr-8 py-2 bg-surfaceHighlight text-primary placeholder-secondary rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-secondary hover:text-primary transition-colors"
               aria-label="Clear search"
             >
               <X size={16} />
@@ -271,7 +271,7 @@ export default function CanvasSearchOverlay({ position, flowPosition, onClose, o
       {/* Node List */}
       <div className="overflow-y-auto flex-1" style={{ maxHeight: '400px' }}>
         {filteredNodes.length === 0 ? (
-          <div className="p-4 text-center text-gray-400 text-sm">
+          <div className="p-4 text-center text-secondary text-sm">
             No nodes found
           </div>
         ) : (
@@ -284,7 +284,7 @@ export default function CanvasSearchOverlay({ position, flowPosition, onClose, o
                 <button
                   key={node.type}
                   onClick={() => handleNodeClick(node.type)}
-                  className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-gray-700 text-left transition-colors text-sm text-gray-200"
+                  className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-surfaceHighlight text-left transition-colors text-sm text-primary"
                 >
                   {/* Icon */}
                   {iconConfig ? (

@@ -53,14 +53,14 @@ export default function ScriptEditorPopup({ node, onSave, onClose }: ScriptEdito
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       onClick={handleBackdropClick}
     >
-      <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[85vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+      <div className="bg-surface border border-border rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[85vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-border">
           <h2 className="text-lg font-semibold text-white">
             JavaScript Script Editor
           </h2>
           <button
             onClick={handleCancel}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-secondary hover:text-primary transition-colors"
           >
             <X size={20} />
           </button>
@@ -68,7 +68,7 @@ export default function ScriptEditorPopup({ node, onSave, onClose }: ScriptEdito
         
         <div className="overflow-y-auto p-4 flex-1">
           <div className="mb-4">
-            <div className="bg-gray-900 border border-gray-700 rounded overflow-hidden">
+            <div className="bg-canvas border border-border rounded overflow-hidden">
               <Editor
                 height="400px"
                 defaultLanguage="javascript"
@@ -92,9 +92,9 @@ export default function ScriptEditorPopup({ node, onSave, onClose }: ScriptEdito
             <strong>Variable Interpolation:</strong> You can use variables from previous nodes using <code className="bg-blue-800 px-1 rounded">${'{'}data.nodeId.property{'}'}</code> or <code className="bg-blue-800 px-1 rounded">${'{'}variables.variableName{'}'}</code> syntax.
           </div>
 
-          <div className="mt-3 p-3 bg-gray-900 border border-gray-700 rounded text-xs text-gray-300">
+          <div className="mt-3 p-3 bg-canvas border border-border rounded text-xs text-primary">
             <strong>Example usage:</strong>
-            <pre className="mt-2 text-xs bg-gray-800 p-2 rounded overflow-x-auto">
+            <pre className="mt-2 text-xs bg-surface p-2 rounded overflow-x-auto">
 {`// Set mobile user agent (iPhone example)
 Object.defineProperty(navigator, 'userAgent', {
   get: () => 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1'
@@ -113,10 +113,10 @@ document.cookie = 'sessionId=abc123; path=/';
           </div>
         </div>
 
-        <div className="p-4 border-t border-gray-700 flex justify-end gap-2">
+        <div className="p-4 border-t border-border flex justify-end gap-2">
           <button
             onClick={handleCancel}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+            className="px-4 py-2 bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded transition-colors"
           >
             Cancel
           </button>

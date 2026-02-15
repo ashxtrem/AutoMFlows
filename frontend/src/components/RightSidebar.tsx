@@ -189,7 +189,7 @@ export default function RightSidebar() {
 
   return (
     <div 
-      className="bg-gray-800 border-l border-gray-700 overflow-y-auto relative flex z-30 flex-shrink-0 h-full"
+      className="bg-surface border-l border-border overflow-y-auto relative flex z-30 flex-shrink-0 h-full"
       style={{ width: `${width}px`, minWidth: `${MIN_WIDTH}px` }}
       data-testid="right-sidebar"
       data-tour="right-sidebar"
@@ -207,10 +207,10 @@ export default function RightSidebar() {
       <div className="p-4 flex-1">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-semibold text-white">{nodeLabel} | Node Properties</h2>
+            <h2 className="text-lg font-semibold text-primary">{nodeLabel} | Node Properties</h2>
             <button
               onClick={() => window.open(getWikiUrl(selectedNode.data.type), '_blank')}
-              className="text-gray-400 hover:text-blue-400 p-1 transition-colors"
+              className="text-secondary hover:text-blue-400 p-1 transition-colors"
               aria-label="Open node documentation"
               title="View node documentation"
             >
@@ -219,7 +219,7 @@ export default function RightSidebar() {
           </div>
           <button
             onClick={() => setSelectedNode(null)}
-            className="text-gray-400 hover:text-white p-1"
+            className="text-secondary hover:text-primary p-1"
             aria-label="Close"
           >
             <X size={20} />

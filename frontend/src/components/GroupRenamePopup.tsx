@@ -76,14 +76,14 @@ export default function GroupRenamePopup({
       data-modal="true"
     >
       <div
-        className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl max-w-md w-full mx-4"
+        className="bg-surface border border-border rounded-lg shadow-xl max-w-md w-full mx-4"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+        <div className="flex items-center justify-between p-4 border-b border-border">
           <h2 className="text-lg font-semibold text-white">Rename Group</h2>
           <button
             onClick={handleCancel}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-secondary hover:text-primary transition-colors"
             aria-label="Close"
           >
             <X size={20} />
@@ -91,7 +91,7 @@ export default function GroupRenamePopup({
         </div>
 
         <div className="p-4">
-          <label className="block text-sm font-medium text-gray-300 mb-2">
+          <label className="block text-sm font-medium text-primary mb-2">
             Group Name
           </label>
           <input
@@ -104,18 +104,18 @@ export default function GroupRenamePopup({
                 handleSave();
               }
             }}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-primary placeholder-secondary focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="Enter group name"
           />
-          <p className="text-xs text-gray-400 mt-2">
+          <p className="text-xs text-secondary mt-2">
             Press Enter to save, Escape to cancel
           </p>
         </div>
 
-        <div className="p-4 border-t border-gray-700 flex justify-end gap-2">
+        <div className="p-4 border-t border-border flex justify-end gap-2">
           <button
             onClick={handleCancel}
-            className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+            className="px-4 py-2 bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded transition-colors"
           >
             Cancel
           </button>
