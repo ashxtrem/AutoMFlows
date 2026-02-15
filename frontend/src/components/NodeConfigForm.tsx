@@ -58,7 +58,7 @@ export default function NodeConfigForm({ node }: NodeConfigFormProps) {
     if (Object.values(NodeType).includes(nodeType as NodeType)) {
       switch (nodeType as NodeType) {
         case NodeType.START:
-          return <div className="text-gray-400 text-sm">Start node has no configuration.</div>;
+          return <div className="text-secondary text-sm">Start node has no configuration.</div>;
         case NodeType.OPEN_BROWSER:
           return <OpenBrowserConfig node={node} onChange={handleChange} />;
         case NodeType.CONTEXT_MANIPULATE:
@@ -100,7 +100,7 @@ export default function NodeConfigForm({ node }: NodeConfigFormProps) {
         case NodeType.BOOLEAN_VALUE:
           return <BooleanValueConfig node={node} onChange={handleChange} />;
         case NodeType.INPUT_VALUE:
-          return <div className="text-gray-400 text-sm">Input Value node is configured directly on the node.</div>;
+          return <div className="text-secondary text-sm">Input Value node is configured directly on the node.</div>;
         case NodeType.VERIFY:
           return <VerifyConfig node={node} onChange={handleChange} />;
         case NodeType.API_REQUEST:
@@ -119,7 +119,7 @@ export default function NodeConfigForm({ node }: NodeConfigFormProps) {
         case NodeType.CSV_HANDLE:
           return <CsvHandleConfig node={node} onChange={handleChange} />;
         default:
-          return <div className="text-gray-400 text-sm">No configuration available.</div>;
+          return <div className="text-secondary text-sm">No configuration available.</div>;
       }
     }
 
@@ -155,17 +155,17 @@ export default function NodeConfigForm({ node }: NodeConfigFormProps) {
       if (nodeDef.defaultData) {
         return (
           <div className="space-y-4">
-            <div className="text-gray-400 text-sm mb-4">{nodeDef.description || 'Configure this node'}</div>
+            <div className="text-secondary text-sm mb-4">{nodeDef.description || 'Configure this node'}</div>
             {Object.entries(nodeDef.defaultData).map(([key, value]) => (
               <div key={key}>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-primary mb-1">
                   {key}
                 </label>
                 <input
                   type="text"
                   value={node.data[key] || value || ''}
                   onChange={(e) => handleChange(key, e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-gray-200"
+                  className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-primary"
                   placeholder={String(value)}
                 />
               </div>
@@ -174,10 +174,10 @@ export default function NodeConfigForm({ node }: NodeConfigFormProps) {
         );
       }
       
-      return <div className="text-gray-400 text-sm">No configuration available for this plugin node.</div>;
+      return <div className="text-secondary text-sm">No configuration available for this plugin node.</div>;
     }
 
-    return <div className="text-gray-400 text-sm">No configuration available.</div>;
+    return <div className="text-secondary text-sm">No configuration available.</div>;
   };
 
   return (
@@ -192,7 +192,7 @@ export default function NodeConfigForm({ node }: NodeConfigFormProps) {
                 This node type is deprecated and will be removed in a future version.
               </div>
               <div className="text-yellow-200 text-sm">
-                <strong>Migration:</strong> Use <code className="bg-gray-800 px-1 py-0.5 rounded">{migrationSuggestion.newType}</code> node with action="{migrationSuggestion.action}" instead.
+                <strong>Migration:</strong> Use <code className="bg-surface px-1 py-0.5 rounded">{migrationSuggestion.newType}</code> node with action="{migrationSuggestion.action}" instead.
               </div>
             </div>
           </div>

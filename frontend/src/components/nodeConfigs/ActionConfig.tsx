@@ -36,7 +36,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1">Action</label>
+        <label className="block text-sm font-medium text-primary mb-1">Action</label>
         <select
           value={getPropertyValue('action', 'click')}
           onChange={(e) => {
@@ -57,7 +57,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
             }
           }}
           disabled={isPropertyDisabled('action')}
-          className={getInputClassName('action', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+          className={getInputClassName('action', 'w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-sm')}
         >
           <option value="click">Click</option>
           <option value="doubleClick">Double Click</option>
@@ -66,31 +66,31 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
           <option value="dragAndDrop">Drag and Drop</option>
         </select>
         {isPropertyDisabled('action') && (
-          <div className="mt-1 text-xs text-gray-500 italic">
+          <div className="mt-1 text-xs text-secondary italic">
             This property is converted to input. Connect a node to provide the value.
           </div>
         )}
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
+        <label className="block text-sm font-medium text-primary mb-1">Selector Type</label>
         <select
           value={getPropertyValue('selectorType', 'css')}
           onChange={(e) => onChange('selectorType', e.target.value)}
           disabled={isPropertyDisabled('selectorType')}
-          className={getInputClassName('selectorType', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+          className={getInputClassName('selectorType', 'w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-sm')}
         >
           {SELECTOR_TYPE_OPTIONS.map(option => (
             <option key={option.value} value={option.value}>{option.label}</option>
           ))}
         </select>
         {isPropertyDisabled('selectorType') && (
-          <div className="mt-1 text-xs text-gray-500 italic">
+          <div className="mt-1 text-xs text-secondary italic">
             This property is converted to input. Connect a node to provide the value.
           </div>
         )}
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1">Selector</label>
+        <label className="block text-sm font-medium text-primary mb-1">Selector</label>
         <div className="flex items-center gap-2">
           <input
             type="text"
@@ -98,14 +98,14 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
             onChange={(e) => onChange('selector', e.target.value)}
             placeholder={getSelectorPlaceholder(getPropertyValue('selectorType', 'css'))}
             disabled={isPropertyDisabled('selector')}
-            className={getInputClassName('selector', 'flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+            className={getInputClassName('selector', 'flex-1 px-3 py-2 bg-surfaceHighlight border border-border rounded text-sm')}
           />
           {!isPropertyDisabled('selector') && (
             <SelectorFinderButton nodeId={node.id} fieldName="selector" />
           )}
         </div>
         {isPropertyDisabled('selector') && (
-          <div className="mt-1 text-xs text-gray-500 italic">
+          <div className="mt-1 text-xs text-secondary italic">
             This property is converted to input. Connect a node to provide the value.
           </div>
         )}
@@ -119,11 +119,11 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
       {/* Action-specific properties */}
       {(action === 'click' || action === 'rightClick') && (
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">Button</label>
+          <label className="block text-sm font-medium text-primary mb-1">Button</label>
           <select
             value={data.button || 'left'}
             onChange={(e) => onChange('button', e.target.value)}
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+            className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-sm"
           >
             <option value="left">Left</option>
             <option value="right">Right</option>
@@ -134,14 +134,14 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
       
       {(action === 'hover' || action === 'doubleClick') && (
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">Delay (ms)</label>
+          <label className="block text-sm font-medium text-primary mb-1">Delay (ms)</label>
           <input
             type="number"
             value={data.delay || 0}
             onChange={(e) => onChange('delay', parseInt(e.target.value, 10) || 0)}
             placeholder="0"
             min="0"
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+            className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-sm"
           />
           <div className="mt-1 text-xs text-gray-400">
             {action === 'hover' ? 'Delay before hover operation' : 'Delay between clicks for double click'}
@@ -152,11 +152,11 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
       {action === 'dragAndDrop' && (
         <>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Target Selector Type</label>
+            <label className="block text-sm font-medium text-primary mb-1">Target Selector Type</label>
             <select
               value={data.targetSelectorType || 'css'}
               onChange={(e) => onChange('targetSelectorType', e.target.value)}
-              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+              className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-sm"
             >
               {SELECTOR_TYPE_OPTIONS.map(option => (
                 <option key={option.value} value={option.value}>{option.label}</option>
@@ -167,14 +167,14 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
             </div>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Target Selector</label>
+            <label className="block text-sm font-medium text-primary mb-1">Target Selector</label>
             <div className="flex items-center gap-2">
               <input
                 type="text"
                 value={data.targetSelector || ''}
                 onChange={(e) => onChange('targetSelector', e.target.value)}
                 placeholder="#target or //div[@id='target']"
-                className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+                className="flex-1 px-3 py-2 bg-surfaceHighlight border border-border rounded text-sm"
               />
               <SelectorFinderButton nodeId={node.id} fieldName="targetSelector" />
             </div>
@@ -186,23 +186,23 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
             <div className="text-xs text-gray-400 mb-2">Or use coordinates (if target selector is empty):</div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Target X</label>
+                <label className="block text-sm font-medium text-primary mb-1">Target X</label>
                 <input
                   type="number"
                   value={data.targetX !== undefined ? data.targetX : ''}
                   onChange={(e) => onChange('targetX', e.target.value ? parseInt(e.target.value, 10) : undefined)}
                   placeholder="X coordinate"
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+                  className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Target Y</label>
+                <label className="block text-sm font-medium text-primary mb-1">Target Y</label>
                 <input
                   type="number"
                   value={data.targetY !== undefined ? data.targetY : ''}
                   onChange={(e) => onChange('targetY', e.target.value ? parseInt(e.target.value, 10) : undefined)}
                   placeholder="Y coordinate"
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm"
+                  className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-sm"
                 />
               </div>
             </div>
@@ -214,22 +214,22 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
+        <label className="block text-sm font-medium text-primary mb-1">Timeout (ms)</label>
         <input
           type="number"
           value={getPropertyValue('timeout', 30000)}
           onChange={(e) => onChange('timeout', parseInt(e.target.value, 10))}
           disabled={isPropertyDisabled('timeout')}
-          className={getInputClassName('timeout', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+          className={getInputClassName('timeout', 'w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-sm')}
         />
         {isPropertyDisabled('timeout') && (
-          <div className="mt-1 text-xs text-gray-500 italic">
+          <div className="mt-1 text-xs text-secondary italic">
             This property is converted to input. Connect a node to provide the value.
           </div>
         )}
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1">Fail Silently</label>
+        <label className="block text-sm font-medium text-primary mb-1">Fail Silently</label>
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
@@ -248,7 +248,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
         <button
           type="button"
           onClick={() => setShowAdvanced(!showAdvanced)}
-          className="w-full flex items-center justify-between text-sm font-medium text-gray-300 hover:text-white transition-colors"
+          className="w-full flex items-center justify-between text-sm font-medium text-primary hover:text-white transition-colors"
         >
           <span>Advanced Waiting Options</span>
           <span className="text-gray-400">{showAdvanced ? '▼' : '▶'}</span>
@@ -265,7 +265,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
                   onChange={(e) => onChange('waitAfterOperation', e.target.checked)}
                   className="rounded"
                 />
-                <span className="text-sm font-medium text-gray-300">
+                <span className="text-sm font-medium text-primary">
                   Wait After Operation
                 </span>
               </label>
@@ -278,7 +278,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
 
             {/* Wait for Selector */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-primary mb-1">
                 Wait for Selector (Optional)
               </label>
               <div className="flex gap-2">
@@ -287,12 +287,12 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
                   value={data.waitForSelector || ''}
                   onChange={(e) => onChange('waitForSelector', e.target.value)}
                   placeholder=".my-class or //div[@id='myId']"
-                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                  className="flex-1 px-3 py-2 bg-surfaceHighlight border border-border rounded text-white text-sm"
                 />
                 <select
                   value={data.waitForSelectorType || 'css'}
                   onChange={(e) => onChange('waitForSelectorType', e.target.value)}
-                  className="px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                  className="px-3 py-2 bg-surfaceHighlight border border-border rounded text-white text-sm"
                 >
                   {SELECTOR_TYPE_OPTIONS.map(option => (
                     <option key={option.value} value={option.value}>{option.label}</option>
@@ -305,7 +305,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
                   value={data.waitForSelectorTimeout || data.timeout || 30000}
                   onChange={(e) => onChange('waitForSelectorTimeout', parseInt(e.target.value, 10) || undefined)}
                   placeholder="Timeout (ms)"
-                  className="w-32 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-xs"
+                  className="w-32 px-2 py-1 bg-surfaceHighlight border border-border rounded text-white text-xs"
                 />
                 <span className="text-xs text-gray-400">Timeout for selector wait</span>
               </div>
@@ -316,7 +316,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
 
             {/* Wait for URL Pattern */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-primary mb-1">
                 Wait for URL Pattern (Optional)
               </label>
               <input
@@ -341,7 +341,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
                   value={data.waitForUrlTimeout || data.timeout || 30000}
                   onChange={(e) => onChange('waitForUrlTimeout', parseInt(e.target.value, 10) || undefined)}
                   placeholder="Timeout (ms)"
-                  className="w-32 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-xs"
+                  className="w-32 px-2 py-1 bg-surfaceHighlight border border-border rounded text-white text-xs"
                 />
                 <span className="text-xs text-gray-400">Timeout for URL pattern wait</span>
               </div>
@@ -352,7 +352,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
 
             {/* Wait for JavaScript Condition */}
             <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-primary mb-1">
                 Wait for JavaScript Condition (Optional)
               </label>
               <textarea
@@ -360,7 +360,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
                 onChange={(e) => onChange('waitForCondition', e.target.value)}
                 placeholder="() => document.querySelector('.loaded') !== null"
                 rows={3}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm font-mono text-xs"
+                className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-white text-sm font-mono text-xs"
               />
               <div className="mt-1 flex items-center gap-2">
                 <input
@@ -368,7 +368,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
                   value={data.waitForConditionTimeout || data.timeout || 30000}
                   onChange={(e) => onChange('waitForConditionTimeout', parseInt(e.target.value, 10) || undefined)}
                   placeholder="Timeout (ms)"
-                  className="w-32 px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-xs"
+                  className="w-32 px-2 py-1 bg-surfaceHighlight border border-border rounded text-white text-xs"
                 />
                 <span className="text-xs text-gray-400">Timeout for condition wait</span>
               </div>
@@ -380,13 +380,13 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
             {/* Wait Strategy */}
             {(data.waitForSelector || data.waitForUrl || data.waitForCondition) && (
               <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-primary mb-1">
                   Wait Strategy
                 </label>
                 <select
                   value={data.waitStrategy || 'parallel'}
                   onChange={(e) => onChange('waitStrategy', e.target.value)}
-                  className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                  className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-white text-sm"
                 >
                   <option value="parallel">Parallel - Wait for all conditions simultaneously</option>
                   <option value="sequential">Sequential - Wait for each condition in order</option>
@@ -407,7 +407,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
         <button
           type="button"
           onClick={() => setShowRetry(!showRetry)}
-          className="w-full flex items-center justify-between text-sm font-medium text-gray-300 hover:text-white transition-colors"
+          className="w-full flex items-center justify-between text-sm font-medium text-primary hover:text-white transition-colors"
         >
           <span>Retry Configuration</span>
           <span className="text-gray-400">{showRetry ? '▼' : '▶'}</span>
@@ -423,18 +423,18 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
                   onChange={(e) => onChange('retryEnabled', e.target.checked)}
                   className="rounded"
                 />
-                <span className="text-sm text-gray-300">Enable Retry</span>
+                <span className="text-sm text-primary">Enable Retry</span>
               </label>
             </div>
 
             {data.retryEnabled && (
               <>
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Retry Strategy</label>
+                  <label className="block text-sm font-medium text-primary mb-1">Retry Strategy</label>
                   <select
                     value={data.retryStrategy || 'count'}
                     onChange={(e) => onChange('retryStrategy', e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                    className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-white text-sm"
                   >
                     <option value="count">Retry Count - Retry fixed number of times</option>
                     <option value="untilCondition">Retry Until Condition - Retry until condition is met</option>
@@ -443,7 +443,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
 
                 {data.retryStrategy === 'count' ? (
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-primary mb-1">
                       Retry Count
                       <span className="ml-2 text-xs text-gray-400">(supports ${'{variables.key}'})</span>
                     </label>
@@ -467,7 +467,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
                               }
                             }}
                             min="1"
-                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                            className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-white text-sm"
                             placeholder="3 or ${variables.key}"
                           />
                           <div className="mt-1 text-xs text-gray-400">
@@ -480,7 +480,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
                 ) : (
                   <>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">Condition Type</label>
+                      <label className="block text-sm font-medium text-primary mb-1">Condition Type</label>
                       <select
                         value={data.retryUntilCondition?.type || 'selector'}
                         onChange={(e) => onChange('retryUntilCondition', {
@@ -488,7 +488,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
                           type: e.target.value,
                           value: data.retryUntilCondition?.value || '',
                         })}
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                        className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-white text-sm"
                       >
                         <option value="selector">Selector</option>
                         <option value="url">URL Pattern</option>
@@ -496,7 +496,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                      <label className="block text-sm font-medium text-primary mb-1">
                         Condition Value
                       </label>
                       {data.retryUntilCondition?.type === 'javascript' ? (
@@ -508,7 +508,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
                           })}
                           placeholder="() => document.querySelector('.loaded') !== null"
                           rows={3}
-                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm font-mono text-xs"
+                          className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-white text-sm font-mono text-xs"
                         />
                       ) : (
                         <input
@@ -519,21 +519,21 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
                             value: e.target.value,
                           })}
                           placeholder={data.retryUntilCondition?.type === 'url' ? '/pattern/ or exact-url' : '.my-class or //div[@id="myId"]'}
-                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                          className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-white text-sm"
                         />
                       )}
                     </div>
                     {data.retryUntilCondition?.type === 'selector' && (
                       <>
                         <div>
-                          <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
+                          <label className="block text-sm font-medium text-primary mb-1">Selector Type</label>
                           <select
                             value={data.retryUntilCondition?.selectorType || 'css'}
                             onChange={(e) => onChange('retryUntilCondition', {
                               ...data.retryUntilCondition,
                               selectorType: e.target.value,
                             })}
-                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                            className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-white text-sm"
                           >
                             {SELECTOR_TYPE_OPTIONS.map(option => (
                               <option key={option.value} value={option.value}>{option.label}</option>
@@ -541,14 +541,14 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-300 mb-1">Visibility</label>
+                          <label className="block text-sm font-medium text-primary mb-1">Visibility</label>
                           <select
                             value={data.retryUntilCondition?.visibility || 'visible'}
                             onChange={(e) => onChange('retryUntilCondition', {
                               ...data.retryUntilCondition,
                               visibility: e.target.value,
                             })}
-                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                            className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-white text-sm"
                           >
                             <option value="visible">Visible - Retry until element becomes visible</option>
                             <option value="invisible">Invisible - Retry until element becomes invisible</option>
@@ -562,7 +562,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
                       </>
                     )}
                     <div>
-                      <label className="block text-sm font-medium text-gray-300 mb-1">
+                      <label className="block text-sm font-medium text-primary mb-1">
                         Max Retry Timeout (ms)
                         <span className="ml-2 text-xs text-gray-400">(supports ${'{variables.key}'})</span>
                       </label>
@@ -596,7 +596,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
                                   });
                                 }
                               }}
-                              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                              className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-white text-sm"
                               placeholder="30000 or ${variables.key}"
                             />
                             <div className="mt-1 text-xs text-gray-400">
@@ -610,7 +610,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
                 )}
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-primary mb-1">
                     Retry Delay (ms)
                     <span className="ml-2 text-xs text-gray-400">(supports ${'{variables.key}'})</span>
                   </label>
@@ -634,7 +634,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
                             }
                           }}
                           min="0"
-                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                          className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-white text-sm"
                           placeholder="1000 or ${variables.key}"
                         />
                         <div className="mt-1 text-xs text-gray-400">
@@ -646,11 +646,11 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">Delay Strategy</label>
+                  <label className="block text-sm font-medium text-primary mb-1">Delay Strategy</label>
                   <select
                     value={data.retryDelayStrategy || 'fixed'}
                     onChange={(e) => onChange('retryDelayStrategy', e.target.value)}
-                    className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                    className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-white text-sm"
                   >
                     <option value="fixed">Fixed - Constant delay</option>
                     <option value="exponential">Exponential - Delay increases with each retry</option>
@@ -659,7 +659,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
 
                 {data.retryDelayStrategy === 'exponential' && (
                   <div>
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-primary mb-1">
                       Max Delay (ms) - Optional
                       <span className="ml-2 text-xs text-gray-400">(supports ${'{variables.key}'})</span>
                     </label>
@@ -684,7 +684,7 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
                             }}
                             placeholder="No limit or ${variables.key}"
                             min="0"
-                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                            className="w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-white text-sm"
                           />
                           <div className="mt-1 text-xs text-gray-400">
                             Maximum delay cap for exponential backoff (leave empty for no limit). Supports variable interpolation: ${'{variables.key}'} or ${'{data.key.path}'}

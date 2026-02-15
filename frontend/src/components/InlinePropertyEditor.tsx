@@ -24,12 +24,12 @@ export function InlineTextInput({ label, value, onChange, placeholder, onOpenPop
 
   return (
     <div 
-      className="flex items-center gap-1 cursor-text hover:bg-gray-700/50 rounded px-1 py-0.5 min-w-0"
+      className="flex items-center gap-1 cursor-text hover:bg-surfaceHighlight/50 rounded px-1 py-0.5 min-w-0"
       onClick={handleClick}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      <span className="text-xs text-gray-400 min-w-[60px] flex-shrink-0">{label}:</span>
-      <span className="text-xs text-gray-200 flex-1 truncate min-w-0" title={value || placeholder || 'empty'}>{value || <span className="text-gray-500 italic">{placeholder || 'empty'}</span>}</span>
+      <span className="text-xs text-secondary min-w-[60px] flex-shrink-0">{label}:</span>
+      <span className="text-xs text-primary flex-1 truncate min-w-0" title={value || placeholder || 'empty'}>{value || <span className="text-secondary italic">{placeholder || 'empty'}</span>}</span>
     </div>
   );
 }
@@ -44,12 +44,12 @@ export function InlineNumberInput({ label, value, onChange, placeholder, min, ma
 
   return (
     <div 
-      className="flex items-center gap-1 cursor-text hover:bg-gray-700/50 rounded px-1 py-0.5 min-w-0"
+      className="flex items-center gap-1 cursor-text hover:bg-surfaceHighlight/50 rounded px-1 py-0.5 min-w-0"
       onClick={handleClick}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      <span className="text-xs text-gray-400 min-w-[60px] flex-shrink-0">{label}:</span>
-      <span className="text-xs text-gray-200 flex-1 truncate min-w-0">{value ?? <span className="text-gray-500 italic">{placeholder || '0'}</span>}</span>
+      <span className="text-xs text-secondary min-w-[60px] flex-shrink-0">{label}:</span>
+      <span className="text-xs text-primary flex-1 truncate min-w-0">{value ?? <span className="text-secondary italic">{placeholder || '0'}</span>}</span>
     </div>
   );
 }
@@ -76,13 +76,13 @@ export function InlineSelect({ label, value, onChange, options = [] }: Omit<Inli
   if (isEditing) {
     return (
       <div className="flex items-center gap-1">
-        <span className="text-xs text-gray-400 min-w-[60px]">{label}:</span>
+        <span className="text-xs text-secondary min-w-[60px]">{label}:</span>
         <select
           ref={selectRef}
           value={value || ''}
           onChange={handleChange}
           onBlur={handleBlur}
-          className="flex-1 px-2 py-1 bg-gray-700 border border-blue-500 rounded text-xs text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+          className="flex-1 px-2 py-1 bg-surfaceHighlight border border-blue-500 rounded text-xs text-primary focus:outline-none focus:ring-1 focus:ring-blue-500"
           onClick={(e) => e.stopPropagation()}
           onMouseDown={(e) => e.stopPropagation()}
         >
@@ -100,15 +100,15 @@ export function InlineSelect({ label, value, onChange, options = [] }: Omit<Inli
 
   return (
     <div 
-      className="flex items-center gap-1 cursor-pointer hover:bg-gray-700/50 rounded px-1 py-0.5 min-w-0"
+      className="flex items-center gap-1 cursor-pointer hover:bg-surfaceHighlight/50 rounded px-1 py-0.5 min-w-0"
       onClick={(e) => {
         e.stopPropagation();
         setIsEditing(true);
       }}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      <span className="text-xs text-gray-400 min-w-[60px] flex-shrink-0">{label}:</span>
-      <span className="text-xs text-gray-200 flex-1 truncate min-w-0" title={selectedOption?.label || value || 'select'}>{selectedOption?.label || value || <span className="text-gray-500 italic">select</span>}</span>
+      <span className="text-xs text-secondary min-w-[60px] flex-shrink-0">{label}:</span>
+      <span className="text-xs text-primary flex-1 truncate min-w-0" title={selectedOption?.label || value || 'select'}>{selectedOption?.label || value || <span className="text-secondary italic">select</span>}</span>
     </div>
   );
 }
@@ -125,12 +125,12 @@ export function InlineTextarea({ label, value, onChange, placeholder, onOpenPopu
 
   return (
     <div 
-      className="flex flex-col gap-1 cursor-text hover:bg-gray-700/50 rounded px-1 py-0.5 min-w-0"
+      className="flex flex-col gap-1 cursor-text hover:bg-surfaceHighlight/50 rounded px-1 py-0.5 min-w-0"
       onClick={handleClick}
       onMouseDown={(e) => e.stopPropagation()}
     >
-      <span className="text-xs text-gray-400">{label}:</span>
-      <span className="text-xs text-gray-200 line-clamp-2 min-w-0" title={displayValue || placeholder || 'empty'}>{displayValue || <span className="text-gray-500 italic">{placeholder || 'empty'}</span>}</span>
+      <span className="text-xs text-secondary">{label}:</span>
+      <span className="text-xs text-primary line-clamp-2 min-w-0" title={displayValue || placeholder || 'empty'}>{displayValue || <span className="text-secondary italic">{placeholder || 'empty'}</span>}</span>
     </div>
   );
 }
@@ -138,7 +138,7 @@ export function InlineTextarea({ label, value, onChange, placeholder, onOpenPopu
 export function InlineCheckbox({ label, value, onChange }: Omit<InlinePropertyEditorProps, 'type'>) {
   return (
     <div 
-      className="flex items-center gap-2 cursor-pointer hover:bg-gray-700/50 rounded px-1 py-0.5"
+      className="flex items-center gap-2 cursor-pointer hover:bg-surfaceHighlight/50 rounded px-1 py-0.5"
       onClick={(e) => {
         e.stopPropagation();
         onChange(!value);
@@ -158,7 +158,7 @@ export function InlineCheckbox({ label, value, onChange }: Omit<InlinePropertyEd
           className="custom-checkbox"
         />
       </div>
-      <span className="text-xs text-gray-400">{label}</span>
+      <span className="text-xs text-secondary">{label}</span>
     </div>
   );
 }

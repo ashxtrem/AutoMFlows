@@ -112,15 +112,15 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
       onClick={handleBackdropClick}
     >
-      <div className="bg-gray-800 border border-red-500 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
+      <div className="bg-surface border border-red-500 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden flex flex-col">
+        <div className="flex items-center justify-between p-4 border-b border-border">
           <div className="flex items-center gap-2">
             <AlertCircle className="text-red-500" size={20} />
             <h2 className="text-lg font-semibold text-white">Node Execution Error</h2>
           </div>
           <button
             onClick={(e) => handleCloseClick(e)}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-secondary hover:text-primary transition-colors"
           >
             <X size={20} />
           </button>
@@ -128,11 +128,11 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
         
         <div className="overflow-y-auto p-4 flex-1 space-y-4">
           {/* Node Info */}
-          <div className="bg-gray-700 rounded p-3 border border-gray-600">
+          <div className="bg-surfaceHighlight rounded p-3 border border-border">
             <div className="text-sm font-medium text-white mb-2">
               Failed Node: <span className="text-red-400">{nodeLabel}</span>
             </div>
-            <div className="text-xs text-gray-400">
+            <div className="text-xs text-secondary">
               Node ID: <span className="font-mono">{nodeId}</span>
             </div>
           </div>
@@ -140,20 +140,20 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
           {/* Error Message */}
           <div className="bg-red-900/30 border border-red-500/50 rounded p-3">
             <div className="text-sm font-medium text-red-400 mb-1">Error Message</div>
-            <div className="text-sm text-gray-300 whitespace-pre-wrap">{error.message}</div>
+            <div className="text-sm text-primary whitespace-pre-wrap">{error.message}</div>
           </div>
 
           {/* Trace Logs */}
           {error.traceLogs && error.traceLogs.length > 0 && (
-            <div className="bg-gray-700 rounded p-3 border border-gray-600">
+            <div className="bg-surfaceHighlight rounded p-3 border border-border">
               <div className="flex items-center gap-2 mb-2">
-                <FileText className="text-gray-400" size={16} />
+                <FileText className="text-secondary" size={16} />
                 <div className="text-sm font-medium text-white">
                   Trace Logs ({error.traceLogs.length} entries)
                 </div>
               </div>
-              <div className="bg-gray-900 rounded p-3 max-h-96 overflow-y-auto">
-                <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap">
+              <div className="bg-canvas rounded p-3 max-h-96 overflow-y-auto">
+                <pre className="text-xs text-primary font-mono whitespace-pre-wrap">
                   {error.traceLogs.join('\n')}
                 </pre>
               </div>
@@ -165,12 +165,12 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
             <div className="space-y-4">
               {/* Page URL */}
               {error.debugInfo.pageUrl && (
-                <div className="bg-gray-700 rounded p-3 border border-gray-600">
+                <div className="bg-surfaceHighlight rounded p-3 border border-border">
                   <div className="flex items-center gap-2 mb-2">
                     <Globe className="text-blue-400" size={16} />
                     <div className="text-sm font-medium text-white">Current Page URL</div>
                   </div>
-                  <div className="text-sm text-gray-300 break-all font-mono bg-gray-900 rounded p-2">
+                  <div className="text-sm text-primary break-all font-mono bg-canvas rounded p-2">
                     {error.debugInfo.pageUrl}
                   </div>
                 </div>
@@ -179,7 +179,7 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
               {/* Screenshots */}
               {error.debugInfo.screenshotPaths && 
                (error.debugInfo.screenshotPaths.pre || error.debugInfo.screenshotPaths.post) && (
-                <div className="bg-gray-700 rounded p-3 border border-gray-600">
+                <div className="bg-surfaceHighlight rounded p-3 border border-border">
                   <button
                     onClick={() => toggleSection('screenshots')}
                     className="flex items-center justify-between w-full mb-2 text-left"
@@ -196,22 +196,22 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
                       </div>
                     </div>
                     {expandedSections.screenshots ? (
-                      <ChevronUp className="text-gray-400" size={16} />
+                      <ChevronUp className="text-secondary" size={16} />
                     ) : (
-                      <ChevronDown className="text-gray-400" size={16} />
+                      <ChevronDown className="text-secondary" size={16} />
                     )}
                   </button>
                   {expandedSections.screenshots && (
                     <div className="space-y-3 mt-2">
                       {error.debugInfo.screenshotPaths.pre && (
-                        <div className="bg-gray-900 rounded p-3 border border-gray-600">
-                          <div className="text-xs font-medium text-gray-400 mb-2 uppercase">Pre-execution Screenshot</div>
+                        <div className="bg-canvas rounded p-3 border border-border">
+                          <div className="text-xs font-medium text-secondary mb-2 uppercase">Pre-execution Screenshot</div>
                           {getScreenshotUrl(error.debugInfo.screenshotPaths.pre) ? (
                             <div className="space-y-2">
                               <img 
                                 src={getScreenshotUrl(error.debugInfo.screenshotPaths.pre)!} 
                                 alt="Pre-execution screenshot"
-                                className="max-w-full h-auto rounded border border-gray-700"
+                                className="max-w-full h-auto rounded border border-border"
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement;
                                   target.style.display = 'none';
@@ -231,19 +231,19 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
                               </a>
                             </div>
                           ) : (
-                            <div className="text-xs text-gray-500">Screenshot path: {error.debugInfo.screenshotPaths.pre}</div>
+                            <div className="text-xs text-secondary">Screenshot path: {error.debugInfo.screenshotPaths.pre}</div>
                           )}
                         </div>
                       )}
                       {error.debugInfo.screenshotPaths.post && (
-                        <div className="bg-gray-900 rounded p-3 border border-gray-600">
-                          <div className="text-xs font-medium text-gray-400 mb-2 uppercase">Post-execution Screenshot</div>
+                        <div className="bg-canvas rounded p-3 border border-border">
+                          <div className="text-xs font-medium text-secondary mb-2 uppercase">Post-execution Screenshot</div>
                           {getScreenshotUrl(error.debugInfo.screenshotPaths.post) ? (
                             <div className="space-y-2">
                               <img 
                                 src={getScreenshotUrl(error.debugInfo.screenshotPaths.post)!} 
                                 alt="Post-execution screenshot"
-                                className="max-w-full h-auto rounded border border-gray-700"
+                                className="max-w-full h-auto rounded border border-border"
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement;
                                   target.style.display = 'none';
@@ -263,7 +263,7 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
                               </a>
                             </div>
                           ) : (
-                            <div className="text-xs text-gray-500">Screenshot path: {error.debugInfo.screenshotPaths.post}</div>
+                            <div className="text-xs text-secondary">Screenshot path: {error.debugInfo.screenshotPaths.post}</div>
                           )}
                         </div>
                       )}
@@ -274,7 +274,7 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
 
               {/* Similar Selectors */}
               {error.debugInfo.similarSelectors && error.debugInfo.similarSelectors.length > 0 && (
-                <div className="bg-gray-700 rounded p-3 border border-gray-600">
+                <div className="bg-surfaceHighlight rounded p-3 border border-border">
                   <button
                     onClick={() => toggleSection('similarSelectors')}
                     className="flex items-center justify-between w-full mb-2 text-left"
@@ -286,9 +286,9 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
                       </div>
                     </div>
                     {expandedSections.similarSelectors ? (
-                      <ChevronUp className="text-gray-400" size={16} />
+                      <ChevronUp className="text-secondary" size={16} />
                     ) : (
-                      <ChevronDown className="text-gray-400" size={16} />
+                      <ChevronDown className="text-secondary" size={16} />
                     )}
                   </button>
                   {expandedSections.similarSelectors && (
@@ -296,30 +296,30 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
                       {error.debugInfo.similarSelectors.map((suggestion: SelectorSuggestion, index: number) => (
                         <div
                           key={index}
-                          className="bg-gray-900 rounded p-3 border border-gray-600"
+                          className="bg-canvas rounded p-3 border border-border"
                         >
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 mb-1">
-                                <code className="text-xs font-mono text-green-400 bg-gray-800 px-2 py-1 rounded">
+                                <code className="text-xs font-mono text-green-400 bg-surface px-2 py-1 rounded">
                                   {suggestion.selector}
                                 </code>
-                                <span className="text-xs text-gray-500">
+                                <span className="text-xs text-secondary">
                                   ({suggestion.selectorType})
                                 </span>
                               </div>
-                              <div className="text-xs text-gray-400 mb-1">
+                              <div className="text-xs text-secondary mb-1">
                                 {suggestion.reason}
                               </div>
                               {suggestion.elementInfo && (
-                                <div className="text-xs text-gray-500 font-mono">
+                                <div className="text-xs text-secondary font-mono">
                                   Element: {suggestion.elementInfo}
                                 </div>
                               )}
                             </div>
                             <button
                               onClick={() => copyToClipboard(suggestion.selector)}
-                              className="flex-shrink-0 p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded transition-colors"
+                              className="flex-shrink-0 p-1.5 text-secondary hover:text-primary hover:bg-gray-800 rounded transition-colors"
                               title="Copy selector"
                             >
                               <Copy size={14} />
@@ -334,7 +334,7 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
 
               {/* Page Source */}
               {error.debugInfo.pageSource && (
-                <div className="bg-gray-700 rounded p-3 border border-gray-600">
+                <div className="bg-surfaceHighlight rounded p-3 border border-border">
                   <div className="flex items-center justify-between mb-2">
                     <button
                       onClick={() => toggleSection('pageSource')}
@@ -345,9 +345,9 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
                         Page Source
                       </div>
                       {expandedSections.pageSource ? (
-                        <ChevronUp className="text-gray-400" size={16} />
+                        <ChevronUp className="text-secondary" size={16} />
                       ) : (
-                        <ChevronDown className="text-gray-400" size={16} />
+                        <ChevronDown className="text-secondary" size={16} />
                       )}
                     </button>
                     <div className="flex items-center gap-2">
@@ -358,12 +358,12 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
                             placeholder="Search..."
                             value={pageSourceSearch}
                             onChange={(e) => setPageSourceSearch(e.target.value)}
-                            className="text-xs bg-gray-900 text-white px-2 py-1 rounded border border-gray-600 focus:outline-none focus:border-blue-500"
+                            className="text-xs bg-gray-900 text-white px-2 py-1 rounded border border-border focus:outline-none focus:border-blue-500"
                             style={{ width: '150px' }}
                           />
                           <button
                             onClick={() => copyToClipboard(error.debugInfo!.pageSource || '')}
-                            className="p-1.5 text-gray-400 hover:text-white hover:bg-gray-800 rounded transition-colors"
+                            className="p-1.5 text-secondary hover:text-primary hover:bg-gray-800 rounded transition-colors"
                             title="Copy page source"
                           >
                             <Copy size={14} />
@@ -373,15 +373,15 @@ export default function NodeErrorPopup({ nodeId, error, onClose }: NodeErrorPopu
                     </div>
                   </div>
                   {expandedSections.pageSource && (
-                    <div className="bg-gray-900 rounded p-3 max-h-96 overflow-y-auto mt-2">
+                    <div className="bg-canvas rounded p-3 max-h-96 overflow-y-auto mt-2">
                       {pageSourceSearch ? (
-                        <div className="text-xs text-gray-300 font-mono whitespace-pre-wrap">
+                        <div className="text-xs text-primary font-mono whitespace-pre-wrap">
                           {filteredPageSource.split('\n').map((line, i) => (
                             <div key={i} className="whitespace-pre">{highlightSearchText(line, pageSourceSearch)}</div>
                           ))}
                         </div>
                       ) : (
-                        <pre className="text-xs text-gray-300 font-mono whitespace-pre-wrap">
+                        <pre className="text-xs text-primary font-mono whitespace-pre-wrap">
                           {error.debugInfo.pageSource}
                         </pre>
                       )}

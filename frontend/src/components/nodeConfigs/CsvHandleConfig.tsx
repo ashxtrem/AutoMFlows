@@ -15,12 +15,12 @@ export default function CsvHandleConfig({ node, onChange }: CsvHandleConfigProps
   return (
     <div className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1">Action</label>
+        <label className="block text-sm font-medium text-primary mb-1">Action</label>
         <select
           value={getPropertyValue('action', 'write')}
           onChange={(e) => onChange('action', e.target.value as 'write' | 'append' | 'read')}
           disabled={isPropertyDisabled('action')}
-          className={getInputClassName('action', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+          className={getInputClassName('action', 'w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-sm')}
         >
           <option value="write">Write (create/overwrite)</option>
           <option value="append">Append rows</option>
@@ -29,7 +29,7 @@ export default function CsvHandleConfig({ node, onChange }: CsvHandleConfigProps
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1">
+        <label className="block text-sm font-medium text-primary mb-1">
           File path
           {(action === 'write' || action === 'append') && ' (e.g. ${data.outputDirectory}/products.csv)'}
         </label>
@@ -39,42 +39,42 @@ export default function CsvHandleConfig({ node, onChange }: CsvHandleConfigProps
           onChange={(e) => onChange('filePath', e.target.value)}
           placeholder={action === 'read' ? '/path/to/file.csv' : '${data.outputDirectory}/out.csv'}
           disabled={isPropertyDisabled('filePath')}
-          className={getInputClassName('filePath', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+          className={getInputClassName('filePath', 'w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-sm')}
         />
       </div>
 
       {(action === 'write' || action === 'append') && (
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">Data source (context key)</label>
+          <label className="block text-sm font-medium text-primary mb-1">Data source (context key)</label>
           <input
             type="text"
             value={getPropertyValue('dataSource', '')}
             onChange={(e) => onChange('dataSource', e.target.value)}
             placeholder="e.g. products"
             disabled={isPropertyDisabled('dataSource')}
-            className={getInputClassName('dataSource', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+            className={getInputClassName('dataSource', 'w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-sm')}
           />
-          <p className="text-xs text-gray-500 mt-1">Context key holding an array of objects or rows.</p>
+          <p className="text-xs text-secondary mt-1">Context key holding an array of objects or rows.</p>
         </div>
       )}
 
       {action === 'read' && (
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">Context key (store result)</label>
+          <label className="block text-sm font-medium text-primary mb-1">Context key (store result)</label>
           <input
             type="text"
             value={getPropertyValue('contextKey', 'csvData')}
             onChange={(e) => onChange('contextKey', e.target.value)}
             placeholder="csvData"
             disabled={isPropertyDisabled('contextKey')}
-            className={getInputClassName('contextKey', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+            className={getInputClassName('contextKey', 'w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-sm')}
           />
         </div>
       )}
 
       {(action === 'write' || action === 'append') && (
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">Headers (optional, comma-separated)</label>
+          <label className="block text-sm font-medium text-primary mb-1">Headers (optional, comma-separated)</label>
           <input
             type="text"
             value={Array.isArray(data.headers) ? data.headers.join(', ') : ''}
@@ -84,20 +84,20 @@ export default function CsvHandleConfig({ node, onChange }: CsvHandleConfigProps
             }}
             placeholder="name, price, url"
             disabled={isPropertyDisabled('headers')}
-            className={getInputClassName('headers', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+            className={getInputClassName('headers', 'w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-sm')}
           />
         </div>
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-300 mb-1">Delimiter (optional)</label>
+        <label className="block text-sm font-medium text-primary mb-1">Delimiter (optional)</label>
         <input
           type="text"
           value={getPropertyValue('delimiter', ',')}
           onChange={(e) => onChange('delimiter', e.target.value || undefined)}
           placeholder=","
           disabled={isPropertyDisabled('delimiter')}
-          className={getInputClassName('delimiter', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-sm')}
+          className={getInputClassName('delimiter', 'w-full px-3 py-2 bg-surfaceHighlight border border-border rounded text-sm')}
         />
       </div>
     </div>

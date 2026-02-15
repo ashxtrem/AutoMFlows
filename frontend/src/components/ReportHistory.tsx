@@ -127,7 +127,7 @@ export default function ReportHistory() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen bg-gray-900 text-white">
+      <div className="flex items-center justify-center h-screen bg-canvas text-primary">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p>Loading reports...</p>
@@ -137,25 +137,25 @@ export default function ReportHistory() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-6">
+    <div className="min-h-screen bg-canvas text-primary p-6">
       <div className="max-w-7xl mx-auto">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-2xl font-bold">Report History</h1>
           <div className="flex items-center gap-4">
             {/* Search Bar */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-secondary" size={18} />
               <input
                 type="text"
                 placeholder="Search reports..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="pl-10 pr-4 py-2 bg-surface border border-border rounded text-primary placeholder-secondary focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               {searchQuery && (
                 <button
                   onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white"
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-secondary hover:text-primary"
                 >
                   <X size={18} />
                 </button>
@@ -176,15 +176,15 @@ export default function ReportHistory() {
         {/* Delete All Confirmation */}
         {deleteAllConfirm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-gray-800 border border-gray-700 rounded-lg shadow-xl p-6 max-w-md">
+            <div className="bg-surface border border-border rounded-lg shadow-xl p-6 max-w-md">
               <h3 className="text-lg font-semibold text-white mb-4">Delete All Reports?</h3>
-              <p className="text-gray-300 mb-6">
+              <p className="text-primary mb-6">
                 This will permanently delete all report folders. This action cannot be undone.
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setDeleteAllConfirm(false)}
-                  className="flex-1 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors"
+                  className="flex-1 px-4 py-2 bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded transition-colors"
                 >
                   Cancel
                 </button>
@@ -201,14 +201,14 @@ export default function ReportHistory() {
 
         {/* Reports Table */}
         {filteredReports.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
+          <div className="text-center py-12 text-secondary">
             {searchQuery ? 'No reports found matching your search.' : 'No reports available.'}
           </div>
         ) : (
-          <div className="bg-gray-800 border border-gray-700 rounded-lg overflow-hidden">
+          <div className="bg-surface border border-border rounded-lg overflow-hidden">
             <table className="w-full">
               <thead>
-                <tr className="bg-gray-700 border-b border-gray-600">
+                <tr className="bg-surfaceHighlight border-b border-border">
                   <th className="px-4 py-3 text-left text-sm font-semibold">Workflow Timestamp</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold">Created At</th>
                   <th className="px-4 py-3 text-left text-sm font-semibold">Reports</th>
@@ -217,7 +217,7 @@ export default function ReportHistory() {
               </thead>
               <tbody>
                 {filteredReports.map((report) => (
-                  <tr key={report.folderName} className="border-b border-gray-700 hover:bg-gray-750">
+                  <tr key={report.folderName} className="border-b border-border hover:bg-surfaceHighlight">
                     <td className="px-4 py-3 text-sm">{report.folderName}</td>
                     <td className="px-4 py-3 text-sm">{formatDate(report.createdAt)}</td>
                     <td className="px-4 py-3 text-sm">
@@ -256,14 +256,14 @@ export default function ReportHistory() {
                             return null;
                           })
                         ) : (
-                          <span className="text-gray-400">No reports</span>
+                          <span className="text-secondary">No reports</span>
                         )}
                       </div>
                     </td>
                     <td className="px-4 py-3">
                       {deleteConfirm === report.folderName ? (
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-gray-400">Confirm?</span>
+                          <span className="text-xs text-secondary">Confirm?</span>
                           <button
                             onClick={() => handleDelete(report.folderName)}
                             className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
@@ -272,7 +272,7 @@ export default function ReportHistory() {
                           </button>
                           <button
                             onClick={() => setDeleteConfirm(null)}
-                            className="px-2 py-1 bg-gray-600 hover:bg-gray-700 text-white text-xs rounded transition-colors"
+                            className="px-2 py-1 bg-surfaceHighlight hover:bg-surfaceHighlight text-primary text-xs rounded transition-colors"
                           >
                             No
                           </button>

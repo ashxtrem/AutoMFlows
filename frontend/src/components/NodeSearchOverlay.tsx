@@ -78,7 +78,7 @@ export default function NodeSearchOverlay({
     <div
       ref={overlayRef}
       data-search-overlay
-      className="absolute z-[60] bg-gray-800 border border-gray-700 rounded-lg shadow-xl"
+      className="absolute z-[60] bg-surface border border-border rounded-lg shadow-xl"
       style={{
         top: '10px',
         right: '10px',
@@ -89,11 +89,11 @@ export default function NodeSearchOverlay({
       onMouseDown={(e) => e.stopPropagation()}
     >
       {/* Header */}
-      <div className="p-3 border-b border-gray-700 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-200">Search Nodes</h3>
+      <div className="p-3 border-b border-border flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-primary">Search Nodes</h3>
         <button
           onClick={onClose}
-          className="text-gray-400 hover:text-gray-200 transition-colors p-1"
+          className="text-secondary hover:text-primary transition-colors p-1"
           aria-label="Close search"
         >
           <X size={16} />
@@ -101,10 +101,10 @@ export default function NodeSearchOverlay({
       </div>
 
       {/* Search Input */}
-      <div className="p-3 border-b border-gray-700">
+      <div className="p-3 border-b border-border">
         <div className="relative flex gap-2">
           <div className="relative flex-1">
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary">
               <Search size={16} />
             </div>
             <input
@@ -114,12 +114,12 @@ export default function NodeSearchOverlay({
               value={searchQuery}
               onChange={(e) => onSearchQueryChange(e.target.value)}
               placeholder="Search nodes..."
-              className="w-full pl-10 pr-8 py-2 bg-gray-700 text-gray-200 placeholder-gray-400 rounded-md border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+              className="w-full pl-10 pr-8 py-2 bg-surfaceHighlight text-primary placeholder-gray-400 rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
             />
             {searchQuery && (
               <button
                 onClick={() => onSearchQueryChange('')}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 transition-colors"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-secondary hover:text-primary transition-colors"
                 aria-label="Clear search"
               >
                 <X size={16} />
@@ -129,7 +129,7 @@ export default function NodeSearchOverlay({
           <button
             onClick={onSearch}
             disabled={!canSearch}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-700 disabled:text-gray-500 disabled:cursor-not-allowed text-white rounded-md text-sm font-medium transition-colors"
+            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-surfaceHighlight disabled:text-gray-500 disabled:cursor-not-allowed text-white rounded-md text-sm font-medium transition-colors"
           >
             Search
           </button>
@@ -138,7 +138,7 @@ export default function NodeSearchOverlay({
 
       {/* Match Count */}
       <div className="p-3">
-        <div className="text-xs text-gray-400">{matchText}</div>
+        <div className="text-xs text-secondary">{matchText}</div>
         {searchExecuted && matchCount > 0 && (
           <div className="mt-2 text-xs text-gray-500">
             Press Enter to navigate to matches

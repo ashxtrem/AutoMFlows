@@ -18,18 +18,18 @@
 }
 
 .theme-light {
-  --bg-primary: #F9FAFB;
+  --bg-primary: #F3F4F6;
   --bg-secondary: #F3F4F6;
   --bg-tertiary: #E5E7EB;
-  --text-primary: #1F2937;
-  --text-secondary: #6B7280;
-  --border-color: #E5E7EB;
+  --text-primary: #111827;
+  --text-secondary: #4B5563;
+  --border-color: #D1D5DB;
   --accent-color: #2563EB;
   --node-bg: #FFFFFF;
   --node-border: #E5E7EB;
-  --node-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --header-bg: #374151;
-  --grid-color: rgba(229, 231, 235, 0.4);
+  --node-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  --header-bg: #F9FAFB;
+  --grid-color: #9CA3AF;
 }
 
 .theme-dark {
@@ -182,11 +182,24 @@ body {
   color: var(--text-primary) !important;
 }
 
-/* Node header styling */
-.theme-light .react-flow__node-custom [class*="header"],
+/* Node header styling - generic header/title (e.g. other UI) */
+.theme-light .react-flow__node-custom [class*="header"]:not(.custom-node-header),
 .theme-light .react-flow__node-custom [class*="title"] {
   background-color: var(--header-bg) !important;
   color: #ffffff !important;
+}
+
+/* Node header - theme-driven (dark: dark bg + white text; light: light bg + dark text) */
+.theme-dark .react-flow__node-custom .custom-node-header {
+  background-color: var(--header-bg);
+  border-bottom: 1px solid var(--border-color);
+  color: #ffffff;
+}
+
+.theme-light .react-flow__node-custom .custom-node-header {
+  background-color: var(--header-bg);
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-primary) !important;
 }
 
 /* Property text visibility in light theme - override inline styles */
@@ -266,13 +279,29 @@ body {
 }
 
 .theme-light .react-flow__background path {
-  stroke: #E5E7EB !important;
-  opacity: 0.4;
+  stroke: var(--grid-color) !important;
+  opacity: 0.6;
 }
 
 /* Canvas background for dark theme */
 .theme-dark .react-flow-canvas {
   background-color: var(--bg-primary) !important;
+}
+
+/* Group header - theme-aware (light: light bg + dark text; dark: dark bg + white text) */
+.group-header {
+  background-color: var(--header-bg);
+  color: #ffffff;
+}
+
+.theme-light .group-header {
+  background-color: var(--header-bg) !important;
+  color: var(--text-primary) !important;
+}
+
+.theme-dark .group-header {
+  background-color: var(--header-bg);
+  color: #ffffff;
 }
 
 #root {

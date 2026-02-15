@@ -349,7 +349,7 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
   return (
     <div
       ref={menuRef}
-      className="fixed bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 min-w-[180px]"
+      className="fixed bg-surface border border-border rounded-lg shadow-xl z-50 min-w-[180px]"
       style={{ left: `${adjustedX}px`, top: `${adjustedY}px` }}
       onMouseLeave={(e) => {
         // Only close submenus if mouse is not moving to submenu
@@ -369,29 +369,29 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
           <>
             <button
               onClick={handleProperties}
-              className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-2"
+              className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surfaceHighlight flex items-center gap-2"
             >
               <Settings size={16} />
               Properties
             </button>
-            <div className="border-t border-gray-700 my-1" />
+            <div className="border-t border-border my-1" />
             <button
               onClick={handleCopy}
-              className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-2"
+              className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surfaceHighlight flex items-center gap-2"
             >
               <Copy size={16} />
               Copy
             </button>
             <button
               onClick={handleBypass}
-              className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-2"
+              className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surfaceHighlight flex items-center gap-2"
             >
               <SkipForward size={16} />
               Bypass
             </button>
             <button
               onClick={handleReload}
-              className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-2"
+              className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surfaceHighlight flex items-center gap-2"
             >
               <RotateCw size={16} />
               Reload Node
@@ -409,7 +409,7 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
                 }}
               >
                 <button
-                  className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center justify-between gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surfaceHighlight flex items-center justify-between gap-2"
                 >
                   <div className="flex items-center gap-2">
                     <Plug size={16} />
@@ -420,7 +420,7 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
                 {showConvertInputSubmenu && (
                   <div
                     ref={convertInputSubmenuRef}
-                    className="absolute top-0 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 py-2 min-w-[200px] max-h-[400px] overflow-y-auto"
+                    className="absolute top-0 bg-surface border border-border rounded-lg shadow-xl z-50 py-2 min-w-[200px] max-h-[400px] overflow-y-auto"
                     style={{ 
                       [submenuOnRight ? 'left' : 'right']: '100%',
                       transform: submenuY !== 0 ? `translateY(${submenuY}px)` : undefined
@@ -435,7 +435,7 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
                         <button
                           key={prop.name}
                           onClick={() => handlePropertyConversion(prop.name)}
-                          className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-3"
+                          className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surfaceHighlight flex items-center gap-3"
                         >
                           <span>{prop.label}</span>
                           {isInput && (
@@ -460,7 +460,7 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
               }}
             >
               <button
-                className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center justify-between gap-2"
+                className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surfaceHighlight flex items-center justify-between gap-2"
               >
                 <div className="flex items-center gap-2">
                   <Palette size={16} />
@@ -471,7 +471,7 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
               {showColorSubmenu && (
                 <div
                   ref={colorSubmenuRef}
-                  className="absolute top-0 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 py-2 min-w-[200px] max-h-[400px] overflow-y-auto"
+                  className="absolute top-0 bg-surface border border-border rounded-lg shadow-xl z-50 py-2 min-w-[200px] max-h-[400px] overflow-y-auto"
                   style={{ 
                     [submenuOnRight ? 'left' : 'right']: '100%',
                     transform: submenuY !== 0 ? `translateY(${submenuY}px)` : undefined
@@ -483,10 +483,10 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
                     <button
                       key={color.value}
                       onClick={() => handleColorSelect(color.value)}
-                      className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-3"
+                      className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surfaceHighlight flex items-center gap-3"
                     >
                       <div
-                        className="w-5 h-5 rounded border border-gray-600"
+                        className="w-5 h-5 rounded border border-border"
                         style={{ backgroundColor: color.value }}
                       />
                       <span>{color.name}</span>
@@ -502,7 +502,7 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
               <>
                 <button
                   onClick={handleCreateGroup}
-                  className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surfaceHighlight flex items-center gap-2"
                 >
                   <FolderPlus size={16} />
                   Group
@@ -519,7 +519,7 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
                   }}
                 >
                   <button
-                    className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center justify-between gap-2"
+                    className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surfaceHighlight flex items-center justify-between gap-2"
                   >
                     <div className="flex items-center gap-2">
                       <LayoutGrid size={16} />
@@ -530,7 +530,7 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
                   {showArrangeSubmenu && (
                     <div
                       ref={arrangeSubmenuRef}
-                      className="absolute top-0 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 py-2 min-w-[200px]"
+                      className="absolute top-0 bg-surface border border-border rounded-lg shadow-xl z-50 py-2 min-w-[200px]"
                       style={{ 
                         [submenuOnRight ? 'left' : 'right']: '100%',
                         transform: submenuY !== 0 ? `translateY(${submenuY}px)` : undefined
@@ -540,13 +540,13 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
                     >
                       <button
                         onClick={() => handleArrange('horizontal')}
-                        className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-2"
+                        className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surfaceHighlight flex items-center gap-2"
                       >
                         Horizontal
                       </button>
                       <button
                         onClick={() => handleArrange('vertical')}
-                        className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-2"
+                        className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surfaceHighlight flex items-center gap-2"
                       >
                         Vertical
                       </button>
@@ -555,10 +555,10 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
                 </div>
               </>
             )}
-            <div className="border-t border-gray-700 my-1" />
+            <div className="border-t border-border my-1" />
             <button
               onClick={handleDelete}
-              className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-gray-700 flex items-center gap-2"
+              className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-surfaceHighlight flex items-center gap-2"
             >
               <Trash2 size={16} />
               Delete
@@ -568,7 +568,7 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
           <>
             <button
               onClick={handleAddNode}
-              className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-2"
+              className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surfaceHighlight flex items-center gap-2"
             >
               <Plus size={16} />
               Add Node
@@ -576,7 +576,7 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
             {clipboard && (
               <button
                 onClick={handlePaste}
-                className="w-full px-4 py-2 text-left text-sm text-white hover:bg-gray-700 flex items-center gap-2"
+                className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surfaceHighlight flex items-center gap-2"
               >
                 <Copy size={16} />
                 Paste

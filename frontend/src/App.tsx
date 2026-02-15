@@ -232,13 +232,13 @@ function App() {
 
   return (
     <ReactFlowProvider>
-      <div className="flex flex-col h-screen bg-gray-900 text-gray-100 relative">
+      <div className="flex flex-col h-screen bg-canvas text-primary relative">
         {/* Global loader overlay */}
         {canvasReloading && (
-          <div className="absolute inset-0 bg-gray-900/80 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-canvas/80 backdrop-blur-sm z-50 flex items-center justify-center">
             <div className="flex flex-col items-center gap-3">
               <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-              <p className="text-gray-200 text-sm">Updating canvas...</p>
+              <p className="text-primary text-sm">Updating canvas...</p>
             </div>
           </div>
         )}
