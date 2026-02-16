@@ -34,13 +34,14 @@ const TOUR_STEPS: Step[] = [
           <li>Categories: Browser, Interaction, API, Database, etc.</li>
           <li>Search functionality to find nodes quickly</li>
           <li>Collapsible sidebar to maximize canvas space</li>
+          <li>Use the book icon to open the documentation wiki</li>
         </ul>
         <p className="text-gray-400 text-xs italic mt-2">
           💡 Try searching for 'browser' to see browser-related nodes
         </p>
       </div>
     ),
-    placement: 'right',
+    placement: 'bottom',
     disableBeacon: false,
     disableOverlayClose: false,
     spotlightPadding: 4,
@@ -59,6 +60,7 @@ const TOUR_STEPS: Step[] = [
           <li>Click nodes to select and configure them</li>
           <li>Pan and zoom to navigate large workflows</li>
           <li>Right-click for context menu options</li>
+          <li>Ctrl/Cmd+F to search for nodes on the canvas</li>
         </ul>
       </div>
     ),
@@ -104,7 +106,6 @@ const TOUR_STEPS: Step[] = [
           <li>Red stop button when running</li>
           <li>Yellow pause indicator when paused at breakpoints</li>
           <li>Failed node navigation button appears when errors occur</li>
-          <li>Keyboard shortcut: Space bar (when canvas focused)</li>
         </ul>
       </div>
     ),
@@ -174,10 +175,11 @@ const TOUR_STEPS: Step[] = [
           <li><code className="bg-gray-700 px-1 rounded">Ctrl/Cmd + B</code> - Toggle breakpoint mode</li>
           <li><code className="bg-gray-700 px-1 rounded">Ctrl/Cmd + Shift + F</code> - Navigate to failed node</li>
           <li><code className="bg-gray-700 px-1 rounded">Ctrl/Cmd + H</code> - Open report history</li>
-          <li><code className="bg-gray-700 px-1 rounded">Space</code> - Run workflow (when canvas focused)</li>
+          <li><code className="bg-gray-700 px-1 rounded">Ctrl/Cmd + F</code> - Find node on canvas</li>
+          <li><code className="bg-gray-700 px-1 rounded">Ctrl/Cmd + Shift + L</code> - Toggle follow mode</li>
         </ul>
         <p className="text-gray-400 text-xs italic mt-2">
-          💡 Open the menu and click "Keyboard Shortcuts" for the full list
+          💡 Select all, copy, paste, duplicate, delete, save/open – see Menu → Keyboard Shortcuts for the full list
         </p>
       </div>
     ),
