@@ -1,1207 +1,1253 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AutoMFlows Node Documentation</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        slate: { 850: '#1e293b', 900: '#0f172a' },
+                        primary: '#38bdf8',
+                        accent: '#818cf8'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'ui-sans-serif', 'system-ui'],
+                        mono: ['Fira Code', 'ui-monospace', 'monospace']
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --bg-primary: #111827;
-            --bg-secondary: #1f2937;
-            --bg-tertiary: #374151;
-            --text-primary: #f9fafb;
-            --text-secondary: #d1d5db;
-            --text-muted: #9ca3af;
-            --accent: #60a5fa;
-            --accent-hover: #93c5fd;
-            --border: #374151;
-            --code-bg: #1f2937;
-            --code-border: #4b5563;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--bg-primary);
-            color: var(--text-primary);
-            line-height: 1.6;
-            overflow-x: hidden;
-        }
-
-        .container {
-            display: flex;
-            min-height: 100vh;
-        }
-
-        /* Sidebar Navigation */
-        .sidebar {
-            width: 280px;
-            background-color: var(--bg-secondary);
-            border-right: 1px solid var(--border);
-            position: fixed;
-            height: 100vh;
-            overflow-y: auto;
-            padding: 20px;
-            z-index: 100;
-        }
-
-        .sidebar-header {
-            margin-bottom: 30px;
-        }
-
-        .sidebar-header h1 {
-            font-size: 24px;
-            color: var(--text-primary);
-            margin-bottom: 10px;
-        }
-
-        .sidebar-header p {
-            color: var(--text-muted);
-            font-size: 14px;
-        }
-
-        .search-box {
-            margin-bottom: 20px;
-        }
-
-        .search-box input {
-            width: 100%;
-            padding: 10px 12px;
-            background-color: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            color: var(--text-primary);
-            font-size: 14px;
-        }
-
-        .search-box input:focus {
-            outline: none;
-            border-color: var(--accent);
-        }
-
-        .nav-section {
-            margin-bottom: 25px;
-        }
-
-        .nav-section-title {
-            font-size: 12px;
-            font-weight: 600;
-            text-transform: uppercase;
-            color: var(--text-muted);
-            margin-bottom: 10px;
-            letter-spacing: 0.5px;
-        }
-
-        .nav-link {
-            display: block;
-            padding: 8px 12px;
-            color: var(--text-secondary);
-            text-decoration: none;
-            border-radius: 4px;
-            margin-bottom: 4px;
-            transition: all 0.2s;
-            font-size: 14px;
-        }
-
-        .nav-link:hover {
-            background-color: var(--bg-tertiary);
-            color: var(--accent);
-        }
-
-        .nav-link.active {
-            background-color: var(--bg-tertiary);
-            color: var(--accent);
-            font-weight: 500;
-        }
-
-        /* Main Content */
-        .main-content {
-            flex: 1;
-            margin-left: 280px;
-            padding: 40px;
-            max-width: 1200px;
-        }
-
-        .node-section {
-            margin-bottom: 60px;
-            scroll-margin-top: 20px;
-        }
-
-        .node-header {
-            border-bottom: 2px solid var(--border);
-            padding-bottom: 15px;
-            margin-bottom: 25px;
-        }
-
-        .node-title {
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 8px;
-        }
-
-        .node-subtitle {
-            font-size: 18px;
-            color: var(--text-secondary);
-            margin-bottom: 15px;
-        }
-
-        .node-description {
-            font-size: 16px;
-            color: var(--text-secondary);
-            line-height: 1.8;
-        }
-
-        .section-title {
-            font-size: 24px;
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-top: 30px;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .use-case-list,
-        .config-list {
-            list-style: none;
-            margin-left: 0;
-        }
-
-        .use-case-list li,
-        .config-list li {
-            padding: 12px 0;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .use-case-list li:last-child,
-        .config-list li:last-child {
-            border-bottom: none;
-        }
-
-        .use-case-title {
-            font-weight: 600;
-            color: var(--accent);
-            margin-bottom: 5px;
-        }
-
-        .use-case-description {
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-
-        .config-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: start;
-        }
-
-        .config-name {
-            font-weight: 600;
-            color: var(--text-primary);
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-        }
-
-        .config-type {
-            color: var(--text-muted);
-            font-size: 12px;
-            font-style: italic;
-        }
-
-        .config-description {
-            color: var(--text-secondary);
-            font-size: 14px;
-            margin-top: 5px;
-            flex: 1;
-        }
-
-        code {
-            background-color: var(--code-bg);
-            border: 1px solid var(--code-border);
-            border-radius: 4px;
-            padding: 2px 6px;
-            font-family: 'Courier New', monospace;
-            font-size: 13px;
-            color: var(--accent);
-        }
-
-        pre {
-            background-color: var(--code-bg);
-            border: 1px solid var(--code-border);
-            border-radius: 6px;
-            padding: 16px;
-            overflow-x: auto;
-            margin: 15px 0;
-        }
-
-        pre code {
-            background: none;
-            border: none;
-            padding: 0;
-            color: var(--text-secondary);
-        }
-
-        .example-box {
-            background-color: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            padding: 20px;
-            margin: 20px 0;
-        }
-
-        .example-title {
-            font-weight: 600;
-            color: var(--accent);
-            margin-bottom: 10px;
-        }
-
-        .related-nodes {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-top: 15px;
-        }
-
-        .related-node-link {
-            display: inline-block;
-            padding: 6px 12px;
-            background-color: var(--bg-tertiary);
-            border: 1px solid var(--border);
-            border-radius: 4px;
-            color: var(--accent);
-            text-decoration: none;
-            font-size: 13px;
-            transition: all 0.2s;
-        }
-
-        .related-node-link:hover {
-            background-color: var(--bg-secondary);
-            border-color: var(--accent);
-        }
-
-        .intro-section {
-            margin-bottom: 60px;
-            padding: 30px;
-            background-color: var(--bg-secondary);
-            border-radius: 8px;
-            border: 1px solid var(--border);
-        }
-
-        .intro-section h1 {
-            font-size: 36px;
-            margin-bottom: 15px;
-        }
-
-        .intro-section p {
-            font-size: 16px;
-            color: var(--text-secondary);
-            line-height: 1.8;
-            margin-bottom: 15px;
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .sidebar {
-                transform: translateX(-100%);
-                transition: transform 0.3s;
-            }
-
-            .sidebar.open {
-                transform: translateX(0);
-            }
-
-            .main-content {
-                margin-left: 0;
-                padding: 20px;
-            }
-
-            .mobile-menu-toggle {
-                position: fixed;
-                top: 20px;
-                left: 20px;
-                z-index: 101;
-                background-color: var(--bg-secondary);
-                border: 1px solid var(--border);
-                color: var(--text-primary);
-                padding: 10px 15px;
-                border-radius: 6px;
-                cursor: pointer;
-            }
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .highlight {
-            background-color: rgba(96, 165, 250, 0.2);
-            padding: 2px 4px;
-            border-radius: 3px;
-        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+        .glass-sidebar { background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); }
+        .wiki-image { cursor: pointer; transition: opacity 0.2s; }
+        .wiki-image:hover { opacity: 0.9; }
+        #image-modal { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(0,0,0,0.9); align-items: center; justify-content: center; overflow: auto; }
+        #image-modal.open { display: flex; }
+        #image-modal-content { max-width: 95vw; max-height: 95vh; object-fit: contain; transition: transform 0.2s; transform-origin: center center; }
+        #image-modal-close { position: fixed; top: 1rem; right: 1rem; z-index: 10001; background: rgba(255,255,255,0.2); color: white; border: none; width: 40px; height: 40px; border-radius: 8px; cursor: pointer; font-size: 1.25rem; }
+        #image-modal-close:hover { background: rgba(255,255,255,0.3); }
+        .image-modal-zoom-btn { position: fixed; bottom: 1rem; z-index: 10001; background: rgba(255,255,255,0.2); color: white; border: none; width: 44px; height: 44px; border-radius: 8px; cursor: pointer; font-size: 1.25rem; }
+        .image-modal-zoom-btn:hover { background: rgba(255,255,255,0.3); }
+        #image-modal-zoom-in { right: 5rem; }
+        #image-modal-zoom-out { right: 1rem; }
+        #image-modal-zoom-reset { right: 2.5rem; font-size: 0.875rem; width: auto; padding: 0 0.75rem; }
     </style>
 </head>
-<body>
-    <div class="container">
-        <!-- Sidebar Navigation -->
-        <nav class="sidebar" id="sidebar">
-            <div class="sidebar-header">
-                <h1>AutoMFlows</h1>
-                <p>Node Documentation</p>
-            </div>
-            
-            <div class="search-box">
-                <input type="text" id="searchInput" placeholder="Search nodes...">
-            </div>
+<body class="bg-slate-900 text-slate-200 font-sans h-screen flex overflow-hidden">
 
-            <a href="#intro" class="nav-link" data-section="intro">Introduction</a>
+    <button id="mobile-menu-btn" class="fixed top-4 right-4 z-50 md:hidden bg-primary text-slate-900 p-2 rounded-lg shadow-lg" aria-label="Toggle menu">
+        <i class="fas fa-bars"></i>
+    </button>
 
-            <div class="nav-section">
-                <div class="nav-section-title">Start</div>
-                <a href="#node-start" class="nav-link" data-section="node-start">Start</a>
+    <aside id="sidebar" class="w-72 glass-sidebar border-r border-slate-700 flex flex-col fixed md:relative h-full transition-transform transform -translate-x-full md:translate-x-0 z-40">
+        <div class="p-6 border-b border-slate-700">
+            <h1 class="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
+                <i class="fas fa-network-wired text-primary"></i>
+                AutoMFlows
+            </h1>
+            <p class="text-xs text-slate-400 mt-1 uppercase tracking-widest font-semibold">Node Reference</p>
+        </div>
+
+        <div class="p-4">
+            <div class="relative group">
+                <i class="fas fa-search absolute left-3 top-3 text-slate-500 group-focus-within:text-primary transition-colors"></i>
+                <input type="text" id="searchInput"
+                    class="w-full bg-slate-800 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary placeholder-slate-500 transition-all"
+                    placeholder="Search nodes (Cmd+K)...">
+                <div class="absolute right-2 top-2 text-xs bg-slate-700 px-1.5 py-0.5 rounded text-slate-400 hidden md:block">&#8984;K</div>
             </div>
+        </div>
 
-            <div class="nav-section">
-                <div class="nav-section-title">Browser</div>
-                <a href="#node-openBrowser" class="nav-link" data-section="node-openBrowser">Open Browser</a>
-                <a href="#node-contextManipulate" class="nav-link" data-section="node-contextManipulate">Context Manipulate</a>
-                <a href="#node-navigation" class="nav-link" data-section="node-navigation">Navigation</a>
-                <a href="#node-keyboard" class="nav-link" data-section="node-keyboard">Keyboard</a>
-                <a href="#node-scroll" class="nav-link" data-section="node-scroll">Scroll</a>
-                <a href="#node-dialog" class="nav-link" data-section="node-dialog">Dialog</a>
-                <a href="#node-download" class="nav-link" data-section="node-download">Download</a>
-                <a href="#node-iframe" class="nav-link" data-section="node-iframe">Iframe</a>
-            </div>
-
-            <div class="nav-section">
-                <div class="nav-section-title">Interaction</div>
-                <a href="#node-action" class="nav-link" data-section="node-action">Action</a>
-                <a href="#node-formInput" class="nav-link" data-section="node-formInput">Form Input</a>
-                <a href="#node-type" class="nav-link" data-section="node-type">Type</a>
+        <nav class="flex-1 overflow-y-auto px-4 pb-8 space-y-6">
+            <div>
+                <a href="#intro" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium hover:bg-slate-800 hover:text-primary transition-colors text-slate-400" data-section="intro">
+                    <i class="fas fa-book w-5 text-center"></i> Introduction
+                </a>
             </div>
 
             <div class="nav-section">
-                <div class="nav-section-title">Storage</div>
-                <a href="#node-storage" class="nav-link" data-section="node-storage">Storage</a>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-3">Start</h3>
+                <div class="space-y-1">
+                    <div><a href="#node-start" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-start"><i class="fas fa-play w-5 text-center text-emerald-400"></i> Start</a></div>
+                </div>
             </div>
 
             <div class="nav-section">
-                <div class="nav-section-title">Data</div>
-                <a href="#node-elementQuery" class="nav-link" data-section="node-elementQuery">Element Query</a>
-                <a href="#node-screenshot" class="nav-link" data-section="node-screenshot">Screenshot</a>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-3">Browser</h3>
+                <div class="space-y-1">
+                    <div><a href="#node-openBrowser" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-openBrowser"><i class="fab fa-chrome w-5 text-center"></i> Open Browser</a></div>
+                    <div><a href="#node-contextManipulate" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-contextManipulate"><i class="fas fa-cog w-5 text-center"></i> Context Manipulate</a></div>
+                    <div><a href="#node-navigation" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-navigation"><i class="fas fa-compass w-5 text-center"></i> Navigation</a></div>
+                    <div><a href="#node-keyboard" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-keyboard"><i class="fas fa-keyboard w-5 text-center"></i> Keyboard</a></div>
+                    <div><a href="#node-scroll" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-scroll"><i class="fas fa-arrows-alt-v w-5 text-center"></i> Scroll</a></div>
+                    <div><a href="#node-dialog" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-dialog"><i class="fas fa-comment-alt w-5 text-center"></i> Dialog</a></div>
+                    <div><a href="#node-download" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-download"><i class="fas fa-download w-5 text-center"></i> Download</a></div>
+                    <div><a href="#node-iframe" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-iframe"><i class="fas fa-window-maximize w-5 text-center"></i> Iframe</a></div>
+                </div>
             </div>
 
             <div class="nav-section">
-                <div class="nav-section-title">Verification</div>
-                <a href="#node-verify" class="nav-link" data-section="node-verify">Verify</a>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-3">Interaction</h3>
+                <div class="space-y-1">
+                    <div><a href="#node-action" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-action"><i class="fas fa-mouse-pointer w-5 text-center"></i> Action</a></div>
+                    <div><a href="#node-formInput" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-formInput"><i class="fas fa-edit w-5 text-center"></i> Form Input</a></div>
+                    <div><a href="#node-type" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-type"><i class="fas fa-keyboard w-5 text-center"></i> Type</a></div>
+                </div>
             </div>
 
             <div class="nav-section">
-                <div class="nav-section-title">API</div>
-                <a href="#node-apiRequest" class="nav-link" data-section="node-apiRequest">API Request</a>
-                <a href="#node-apiCurl" class="nav-link" data-section="node-apiCurl">API cURL</a>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-3">Storage</h3>
+                <div class="space-y-1">
+                    <div><a href="#node-storage" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-storage"><i class="fas fa-database w-5 text-center"></i> Storage</a></div>
+                </div>
             </div>
 
             <div class="nav-section">
-                <div class="nav-section-title">Database</div>
-                <a href="#node-dbConnect" class="nav-link" data-section="node-dbConnect">DB Connect</a>
-                <a href="#node-dbDisconnect" class="nav-link" data-section="node-dbDisconnect">DB Disconnect</a>
-                <a href="#node-dbQuery" class="nav-link" data-section="node-dbQuery">DB Query</a>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-3">Data</h3>
+                <div class="space-y-1">
+                    <div><a href="#node-elementQuery" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-elementQuery"><i class="fas fa-search w-5 text-center"></i> Element Query</a></div>
+                    <div><a href="#node-screenshot" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-screenshot"><i class="fas fa-camera w-5 text-center"></i> Screenshot</a></div>
+                </div>
             </div>
 
             <div class="nav-section">
-                <div class="nav-section-title">Control</div>
-                <a href="#node-wait" class="nav-link" data-section="node-wait">Wait</a>
-                <a href="#node-loop" class="nav-link" data-section="node-loop">Loop</a>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-3">Verification</h3>
+                <div class="space-y-1">
+                    <div><a href="#node-verify" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-verify"><i class="fas fa-check-circle w-5 text-center"></i> Verify</a></div>
+                </div>
             </div>
 
             <div class="nav-section">
-                <div class="nav-section-title">Code</div>
-                <a href="#node-javascriptCode" class="nav-link" data-section="node-javascriptCode">JavaScript Code</a>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-3">API</h3>
+                <div class="space-y-1">
+                    <div><a href="#node-apiRequest" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-apiRequest"><i class="fas fa-cloud w-5 text-center text-purple-400"></i> API Request</a></div>
+                    <div><a href="#node-apiCurl" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-apiCurl"><i class="fas fa-terminal w-5 text-center"></i> API cURL</a></div>
+                </div>
             </div>
 
             <div class="nav-section">
-                <div class="nav-section-title">Values</div>
-                <a href="#node-intValue" class="nav-link" data-section="node-intValue">Int Value</a>
-                <a href="#node-stringValue" class="nav-link" data-section="node-stringValue">String Value</a>
-                <a href="#node-booleanValue" class="nav-link" data-section="node-booleanValue">Boolean Value</a>
-                <a href="#node-inputValue" class="nav-link" data-section="node-inputValue">Input Value</a>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-3">Database</h3>
+                <div class="space-y-1">
+                    <div><a href="#node-dbConnect" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-dbConnect"><i class="fas fa-plug w-5 text-center"></i> DB Connect</a></div>
+                    <div><a href="#node-dbDisconnect" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-dbDisconnect"><i class="fas fa-unlink w-5 text-center"></i> DB Disconnect</a></div>
+                    <div><a href="#node-dbQuery" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-dbQuery"><i class="fas fa-database w-5 text-center"></i> DB Query</a></div>
+                </div>
             </div>
 
             <div class="nav-section">
-                <div class="nav-section-title">Configuration</div>
-                <a href="#node-loadConfigFile" class="nav-link" data-section="node-loadConfigFile">Load Config File</a>
-                <a href="#node-selectConfigFile" class="nav-link" data-section="node-selectConfigFile">Select Config File</a>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-3">Control</h3>
+                <div class="space-y-1">
+                    <div><a href="#node-wait" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-wait"><i class="fas fa-clock w-5 text-center"></i> Wait</a></div>
+                    <div><a href="#node-loop" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-loop"><i class="fas fa-sync w-5 text-center text-amber-400"></i> Loop</a></div>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-3">Code</h3>
+                <div class="space-y-1">
+                    <div><a href="#node-javascriptCode" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-javascriptCode"><i class="fab fa-js w-5 text-center"></i> JavaScript Code</a></div>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-3">Values</h3>
+                <div class="space-y-1">
+                    <div><a href="#node-intValue" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-intValue"><i class="fas fa-hashtag w-5 text-center"></i> Int Value</a></div>
+                    <div><a href="#node-stringValue" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-stringValue"><i class="fas fa-font w-5 text-center"></i> String Value</a></div>
+                    <div><a href="#node-booleanValue" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-booleanValue"><i class="fas fa-toggle-on w-5 text-center"></i> Boolean Value</a></div>
+                    <div><a href="#node-inputValue" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-inputValue"><i class="fas fa-sign-in-alt w-5 text-center"></i> Input Value</a></div>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-3">Configuration</h3>
+                <div class="space-y-1">
+                    <div><a href="#node-loadConfigFile" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-loadConfigFile"><i class="fas fa-file-import w-5 text-center"></i> Load Config File</a></div>
+                    <div><a href="#node-selectConfigFile" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-selectConfigFile"><i class="fas fa-file-alt w-5 text-center"></i> Select Config File</a></div>
+                    <div><a href="#node-setConfig" class="nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" data-section="node-setConfig"><i class="fas fa-puzzle-piece w-5 text-center"></i> Set Config (Plugin)</a></div>
+                </div>
             </div>
 
             <div class="nav-section" id="pluginNodesSection" style="display: none;">
-                <div class="nav-section-title">Plugins</div>
-                <div id="pluginNodesList"></div>
+                <h3 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 px-3">Plugins</h3>
+                <div id="pluginNodesList" class="space-y-1"></div>
             </div>
         </nav>
+    </aside>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Introduction Section -->
-            <section id="intro" class="intro-section">
-                <h1>Welcome to AutoMFlows Documentation</h1>
-                <p>
-                    AutoMFlows is a powerful automation tool that allows you to create complex workflows using a visual node-based interface. 
-                    This documentation provides comprehensive information about all available nodes, their use cases, and configuration options.
-                </p>
-                <p>
-                    Each node represents a specific action or operation in your automation workflow. You can connect nodes together to create 
-                    sophisticated automation sequences for web automation, API testing, database operations, and more.
-                </p>
-                <p>
-                    Use the navigation sidebar to explore different node categories, or search for specific nodes using the search box above.
-                </p>
+    <main class="flex-1 overflow-y-auto scroll-smooth relative" id="main-content">
+        <div class="max-w-4xl mx-auto px-6 py-12 md:px-12 md:py-16">
+
+            <section id="intro" class="mb-20">
+                <div class="bg-gradient-to-r from-slate-800 to-slate-900 border border-slate-700 rounded-2xl p-8 shadow-2xl">
+                    <h1 class="text-4xl font-extrabold text-white mb-4 tracking-tight">Welcome to AutoMFlows Documentation</h1>
+                    <p class="text-lg text-slate-400 leading-relaxed mb-4">
+                        AutoMFlows is a powerful automation tool that allows you to create complex workflows using a visual node-based interface.
+                        This documentation provides comprehensive information about all available nodes, their use cases, and configuration options.
+                    </p>
+                    <p class="text-lg text-slate-400 leading-relaxed mb-4">
+                        Each node represents a specific action or operation in your automation workflow. You can connect nodes together to create
+                        sophisticated automation sequences for web automation, API testing, database operations, and more.
+                    </p>
+                    <p class="text-lg text-slate-400 leading-relaxed mb-6">
+                        Use the navigation sidebar to explore different node categories, or search for specific nodes using the search box above.
+                    </p>
+                    <div class="flex gap-4">
+                        <a href="#node-start" class="bg-primary hover:bg-sky-400 text-slate-900 px-5 py-2.5 rounded-lg font-semibold transition-all">Getting Started</a>
+                        <a href="#node-apiRequest" class="bg-slate-700 hover:bg-slate-600 text-white px-5 py-2.5 rounded-lg font-medium transition-all">View API</a>
+                    </div>
+                </div>
             </section>
 
-            <!-- Node Sections -->
             <!-- Start Node -->
-            <section id="node-start" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Start</h2>
-                    <p class="node-subtitle">The entry point of your workflow</p>
+            <section id="node-start" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-emerald-500 rounded-full"></span>
+                            Start
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">The entry point of your workflow</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-bold uppercase rounded-full border border-emerald-500/20">Core</span>
                 </div>
-                <p class="node-description">
-                    The Start node marks the beginning of your automation workflow. It defines global settings that apply to the entire workflow execution.
-                </p>
-                
-                <h3 class="section-title">Use Cases</h3>
-                <ul class="use-case-list">
-                    <li>
-                        <div class="use-case-title">Workflow Initialization</div>
-                        <div class="use-case-description">Configure browser settings, recording options, and execution parameters before starting automation.</div>
+                <p class="text-slate-300 mb-6">The Start node marks the beginning of your automation workflow. It defines global settings that apply to the entire workflow execution.</p>
+
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <img src="node-screenshots/Start.png" alt="Start node" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-64 bg-slate-800">
+                    </div>
+                </div>
+
+                <h3 class="text-xl font-semibold text-white mb-4 border-b border-slate-700 pb-2">Use Cases</h3>
+                <ul class="space-y-4 mb-8">
+                    <li class="border-b border-slate-700 pb-4 last:border-0">
+                        <div class="font-semibold text-primary mb-1">Workflow Initialization</div>
+                        <div class="text-slate-400 text-sm">Configure browser settings, recording options, and execution parameters before starting automation.</div>
                     </li>
-                    <li>
-                        <div class="use-case-title">Session Recording</div>
-                        <div class="use-case-description">Enable video recording to capture the entire automation session for debugging and documentation.</div>
+                    <li class="border-b border-slate-700 pb-4 last:border-0">
+                        <div class="font-semibold text-primary mb-1">Session Recording</div>
+                        <div class="text-slate-400 text-sm">Enable video recording to capture the entire automation session for debugging and documentation.</div>
                     </li>
-                    <li>
-                        <div class="use-case-title">Screenshot Configuration</div>
-                        <div class="use-case-description">Set up automatic screenshots for all nodes or specific timing (pre/post execution).</div>
+                    <li class="border-b border-slate-700 pb-4 last:border-0">
+                        <div class="font-semibold text-primary mb-1">Screenshot Configuration</div>
+                        <div class="text-slate-400 text-sm">Set up automatic screenshots for all nodes or specific timing (pre/post execution).</div>
                     </li>
                 </ul>
 
-                <h3 class="section-title">Configuration Options</h3>
-                <ul class="config-list">
-                    <li>
-                        <div class="config-item">
-                            <div>
-                                <span class="config-name">recordSession</span>
-                                <span class="config-type">boolean</span>
-                                <div class="config-description">Enable video recording of the automation session</div>
-                            </div>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="config-item">
-                            <div>
-                                <span class="config-name">screenshotAllNodes</span>
-                                <span class="config-type">boolean</span>
-                                <div class="config-description">Take screenshots automatically for all nodes</div>
-                            </div>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="config-item">
-                            <div>
-                                <span class="config-name">screenshotTiming</span>
-                                <span class="config-type">'pre' | 'post' | 'both'</span>
-                                <div class="config-description">When to capture screenshots relative to node execution</div>
-                            </div>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="config-item">
-                            <div>
-                                <span class="config-name">slowMo</span>
-                                <span class="config-type">number</span>
-                                <div class="config-description">Delay in milliseconds between node executions (useful for debugging)</div>
-                            </div>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="config-item">
-                            <div>
-                                <span class="config-name">scrollThenAction</span>
-                                <span class="config-type">boolean</span>
-                                <div class="config-description">Enable smooth scroll to elements before performing actions</div>
-                            </div>
-                        </div>
-                    </li>
-                </ul>
+                <h3 class="text-xl font-semibold text-white mb-4 border-b border-slate-700 pb-2">Configuration Options</h3>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-baseline"><code class="text-primary font-mono text-sm bg-slate-800 px-2 py-0.5 rounded">recordSession</code><span class="text-xs font-mono text-purple-400 bg-purple-400/10 px-2 py-0.5 rounded">boolean</span></div>
+                        <p class="text-sm text-slate-400">Enable video recording of the automation session</p>
+                        <div class="flex justify-between items-baseline"><code class="text-primary font-mono text-sm bg-slate-800 px-2 py-0.5 rounded">screenshotAllNodes</code><span class="text-xs font-mono text-purple-400 bg-purple-400/10 px-2 py-0.5 rounded">boolean</span></div>
+                        <p class="text-sm text-slate-400">Take screenshots automatically for all nodes</p>
+                        <div class="flex justify-between items-baseline"><code class="text-primary font-mono text-sm bg-slate-800 px-2 py-0.5 rounded">screenshotTiming</code><span class="text-xs font-mono text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded">'pre' | 'post' | 'both'</span></div>
+                        <p class="text-sm text-slate-400">When to capture screenshots relative to node execution</p>
+                        <div class="flex justify-between items-baseline"><code class="text-primary font-mono text-sm bg-slate-800 px-2 py-0.5 rounded">slowMo</code><span class="text-xs font-mono text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">number</span></div>
+                        <p class="text-sm text-slate-400">Delay in milliseconds between node executions (useful for debugging)</p>
+                        <div class="flex justify-between items-baseline"><code class="text-primary font-mono text-sm bg-slate-800 px-2 py-0.5 rounded">scrollThenAction</code><span class="text-xs font-mono text-purple-400 bg-purple-400/10 px-2 py-0.5 rounded">boolean</span></div>
+                        <p class="text-sm text-slate-400">Enable smooth scroll to elements before performing actions</p>
+                    </div>
+                    <pre class="rounded-xl border border-slate-700 bg-slate-800 p-4 overflow-x-auto"><code class="language-json">{
+  "id": "start_1",
+  "type": "start",
+  "data": {
+    "recordSession": true,
+    "slowMo": 100,
+    "screenshotAllNodes": false
+  }
+}</code></pre>
+                </div>
             </section>
 
             <!-- Open Browser Node -->
-            <section id="node-openBrowser" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Open Browser</h2>
-                    <p class="node-subtitle">Launch and configure a browser instance</p>
+            <section id="node-openBrowser" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-primary rounded-full"></span>
+                            Open Browser
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Launch and configure a browser instance</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-blue-500/10 text-blue-400 text-xs font-bold uppercase rounded-full border border-blue-500/20">Browser</span>
                 </div>
-                <p class="node-description">
-                    The Open Browser node initializes a browser instance with customizable settings. This is typically the first node 
-                    after Start in browser automation workflows.
-                </p>
-                
-                <h3 class="section-title">Use Cases</h3>
-                <ul class="use-case-list">
-                    <li>
-                        <div class="use-case-title">Browser Initialization</div>
-                        <div class="use-case-description">Launch Chromium, Firefox, or WebKit browsers with specific configurations.</div>
-                    </li>
-                    <li>
-                        <div class="use-case-title">Viewport Configuration</div>
-                        <div class="use-case-description">Set custom viewport dimensions or maximize the browser window.</div>
-                    </li>
-                    <li>
-                        <div class="use-case-title">Stealth Mode</div>
-                        <div class="use-case-description">Enable stealth mode to avoid detection by anti-bot systems.</div>
-                    </li>
-                    <li>
-                        <div class="use-case-title">Script Injection</div>
-                        <div class="use-case-description">Inject JavaScript code into all pages loaded by the browser.</div>
-                    </li>
+                <p class="text-slate-300 mb-6">The Open Browser node initializes a browser instance with customizable settings. This is typically the first node after Start in browser automation workflows.</p>
+
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/Open-browser-1.png" alt="Open Browser 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Open-browser-2.png" alt="Open Browser 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Open-browser-3.png" alt="Open Browser 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Open-browser-4.png" alt="Open Browser 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Open-browser-5.png" alt="Open Browser 5" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Open-browser-6.png" alt="Open Browser 6" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Open-browser-7.png" alt="Open Browser 7" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
+
+                <h3 class="text-xl font-semibold text-white mb-4 border-b border-slate-700 pb-2">Use Cases</h3>
+                <ul class="space-y-4 mb-8">
+                    <li class="border-b border-slate-700 pb-4 last:border-0"><div class="font-semibold text-primary mb-1">Browser Initialization</div><div class="text-slate-400 text-sm">Launch Chromium, Firefox, or WebKit browsers with specific configurations.</div></li>
+                    <li class="border-b border-slate-700 pb-4 last:border-0"><div class="font-semibold text-primary mb-1">Viewport Configuration</div><div class="text-slate-400 text-sm">Set custom viewport dimensions or maximize the browser window.</div></li>
+                    <li class="border-b border-slate-700 pb-4 last:border-0"><div class="font-semibold text-primary mb-1">Stealth Mode</div><div class="text-slate-400 text-sm">Enable stealth mode to avoid detection by anti-bot systems.</div></li>
+                    <li class="border-b border-slate-700 pb-4 last:border-0"><div class="font-semibold text-primary mb-1">Script Injection</div><div class="text-slate-400 text-sm">Inject JavaScript code into all pages loaded by the browser.</div></li>
                 </ul>
 
-                <h3 class="section-title">Configuration Options</h3>
-                <ul class="config-list">
-                    <li>
-                        <div class="config-item">
-                            <div>
-                                <span class="config-name">headless</span>
-                                <span class="config-type">boolean</span>
-                                <div class="config-description">Run browser in headless mode (no visible window)</div>
-                            </div>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="config-item">
-                            <div>
-                                <span class="config-name">browser</span>
-                                <span class="config-type">'chromium' | 'firefox' | 'webkit'</span>
-                                <div class="config-description">Select the browser engine to use</div>
-                            </div>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="config-item">
-                            <div>
-                                <span class="config-name">viewportWidth / viewportHeight</span>
-                                <span class="config-type">number</span>
-                                <div class="config-description">Set browser viewport dimensions</div>
-                            </div>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="config-item">
-                            <div>
-                                <span class="config-name">maxWindow</span>
-                                <span class="config-type">boolean</span>
-                                <div class="config-description">Maximize the browser window</div>
-                            </div>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="config-item">
-                            <div>
-                                <span class="config-name">stealthMode</span>
-                                <span class="config-type">boolean</span>
-                                <div class="config-description">Enable stealth mode to avoid detection</div>
-                            </div>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="config-item">
-                            <div>
-                                <span class="config-name">jsScript</span>
-                                <span class="config-type">string</span>
-                                <div class="config-description">JavaScript code to inject into all pages</div>
-                            </div>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="config-item">
-                            <div>
-                                <span class="config-name">capabilities</span>
-                                <span class="config-type">object</span>
-                                <div class="config-description">Browser context options (permissions, geolocation, etc.)</div>
-                            </div>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="config-item">
-                            <div>
-                                <span class="config-name">launchOptions</span>
-                                <span class="config-type">object</span>
-                                <div class="config-description">Browser launch options (args, executablePath, etc.)</div>
-                            </div>
-                        </div>
-                    </li>
-                </ul>
+                <h3 class="text-xl font-semibold text-white mb-4 border-b border-slate-700 pb-2">Configuration Options</h3>
+                <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+                    <table class="w-full text-left border-collapse">
+                        <thead><tr class="bg-slate-900/50 border-b border-slate-700 text-xs uppercase text-slate-500">
+                            <th class="p-4 font-semibold">Parameter</th><th class="p-4 font-semibold">Type</th><th class="p-4 font-semibold">Description</th>
+                        </tr></thead>
+                        <tbody class="divide-y divide-slate-700">
+                            <tr class="hover:bg-slate-700/30"><td class="p-4 font-mono text-primary text-sm">headless</td><td class="p-4"><span class="text-xs font-mono text-purple-400 bg-purple-400/10 px-2 py-0.5 rounded">boolean</span></td><td class="p-4 text-sm text-slate-300">Run browser in headless mode (no visible window)</td></tr>
+                            <tr class="hover:bg-slate-700/30"><td class="p-4 font-mono text-primary text-sm">browser</td><td class="p-4"><span class="text-xs font-mono text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded">'chromium' | 'firefox' | 'webkit'</span></td><td class="p-4 text-sm text-slate-300">Select the browser engine to use</td></tr>
+                            <tr class="hover:bg-slate-700/30"><td class="p-4 font-mono text-primary text-sm">viewportWidth / viewportHeight</td><td class="p-4"><span class="text-xs font-mono text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded">number</span></td><td class="p-4 text-sm text-slate-300">Set browser viewport dimensions</td></tr>
+                            <tr class="hover:bg-slate-700/30"><td class="p-4 font-mono text-primary text-sm">maxWindow</td><td class="p-4"><span class="text-xs font-mono text-purple-400 bg-purple-400/10 px-2 py-0.5 rounded">boolean</span></td><td class="p-4 text-sm text-slate-300">Maximize the browser window</td></tr>
+                            <tr class="hover:bg-slate-700/30"><td class="p-4 font-mono text-primary text-sm">stealthMode</td><td class="p-4"><span class="text-xs font-mono text-purple-400 bg-purple-400/10 px-2 py-0.5 rounded">boolean</span></td><td class="p-4 text-sm text-slate-300">Enable stealth mode to avoid detection</td></tr>
+                            <tr class="hover:bg-slate-700/30"><td class="p-4 font-mono text-primary text-sm">jsScript</td><td class="p-4"><span class="text-xs font-mono text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">string</span></td><td class="p-4 text-sm text-slate-300">JavaScript code to inject into all pages</td></tr>
+                            <tr class="hover:bg-slate-700/30"><td class="p-4 font-mono text-primary text-sm">capabilities</td><td class="p-4"><span class="text-xs font-mono text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded">object</span></td><td class="p-4 text-sm text-slate-300">Browser context options (permissions, geolocation, etc.)</td></tr>
+                            <tr class="hover:bg-slate-700/30"><td class="p-4 font-mono text-primary text-sm">launchOptions</td><td class="p-4"><span class="text-xs font-mono text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded">object</span></td><td class="p-4 text-sm text-slate-300">Browser launch options (args, executablePath, etc.)</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </section>
 
-            <!-- Continue with other nodes... Due to length, I'll create a template and generate all nodes -->
-            
             <!-- Navigation Node -->
-            <section id="node-navigation" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Navigation</h2>
-                    <p class="node-subtitle">Navigate to URLs and wait for conditions</p>
+            <section id="node-navigation" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-primary rounded-full"></span>
+                            Navigation
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Navigate to URLs and wait for conditions</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-blue-500/10 text-blue-400 text-xs font-bold uppercase rounded-full border border-blue-500/20">Browser</span>
                 </div>
-                <p class="node-description">
-                    Navigate to a specific URL and optionally wait for various conditions before proceeding.
-                </p>
-                
-                <h3 class="section-title">Use Cases</h3>
-                <ul class="use-case-list">
-                    <li>
-                        <div class="use-case-title">Page Navigation</div>
-                        <div class="use-case-description">Navigate to web pages and wait for them to load completely.</div>
-                    </li>
-                    <li>
-                        <div class="use-case-title">Conditional Waiting</div>
-                        <div class="use-case-description">Wait for selectors, URLs, or JavaScript conditions before proceeding.</div>
-                    </li>
-                    <li>
-                        <div class="use-case-title">Retry Logic</div>
-                        <div class="use-case-description">Implement retry strategies for unreliable network conditions.</div>
-                    </li>
+                <p class="text-slate-300 mb-6">Navigate to a specific URL and optionally wait for various conditions before proceeding.</p>
+
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/Navigate-1.png" alt="Navigation 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Navigate-2.png" alt="Navigation 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Navigate-3.png" alt="Navigation 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Navigate-4.png" alt="Navigation 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Navigate-5.png" alt="Navigation 5" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Navigate-6.png" alt="Navigation 6" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Navigate-7.png" alt="Navigation 7" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
+
+                <h3 class="text-xl font-semibold text-white mb-4 border-b border-slate-700 pb-2">Use Cases</h3>
+                <ul class="space-y-4 mb-8">
+                    <li class="border-b border-slate-700 pb-4 last:border-0"><div class="font-semibold text-primary mb-1">Page Navigation</div><div class="text-slate-400 text-sm">Navigate to web pages and wait for them to load completely.</div></li>
+                    <li class="border-b border-slate-700 pb-4 last:border-0"><div class="font-semibold text-primary mb-1">Conditional Waiting</div><div class="text-slate-400 text-sm">Wait for selectors, URLs, or JavaScript conditions before proceeding.</div></li>
+                    <li class="border-b border-slate-700 pb-4 last:border-0"><div class="font-semibold text-primary mb-1">Retry Logic</div><div class="text-slate-400 text-sm">Implement retry strategies for unreliable network conditions.</div></li>
                 </ul>
 
-                <h3 class="section-title">Configuration Options</h3>
-                <ul class="config-list">
-                    <li>
-                        <div class="config-item">
-                            <div>
-                                <span class="config-name">url</span>
-                                <span class="config-type">string</span>
-                                <div class="config-description">The URL to navigate to</div>
-                            </div>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="config-item">
-                            <div>
-                                <span class="config-name">waitUntil</span>
-                                <span class="config-type">'load' | 'domcontentloaded' | 'networkidle' | 'commit'</span>
-                                <div class="config-description">When to consider navigation successful</div>
-                            </div>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="config-item">
-                            <div>
-                                <span class="config-name">waitForSelector</span>
-                                <span class="config-type">string</span>
-                                <div class="config-description">Wait for a specific selector to appear</div>
-                            </div>
-                        </div>
-                    </li>
-                    <li>
-                        <div class="config-item">
-                            <div>
-                                <span class="config-name">retryEnabled</span>
-                                <span class="config-type">boolean</span>
-                                <div class="config-description">Enable retry logic for failed navigations</div>
-                            </div>
-                        </div>
-                    </li>
+                <h3 class="text-xl font-semibold text-white mb-4 border-b border-slate-700 pb-2">Configuration Options</h3>
+                <ul class="space-y-4">
+                    <li><div class="flex justify-between items-baseline"><code class="text-primary font-mono text-sm bg-slate-800 px-2 py-0.5 rounded">url</code><span class="text-xs font-mono text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">string</span></div><p class="text-sm text-slate-400 mt-1">The URL to navigate to</p></li>
+                    <li><div class="flex justify-between items-baseline"><code class="text-primary font-mono text-sm bg-slate-800 px-2 py-0.5 rounded">waitUntil</code><span class="text-xs font-mono text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded">'load' | 'domcontentloaded' | 'networkidle' | 'commit'</span></div><p class="text-sm text-slate-400 mt-1">When to consider navigation successful</p></li>
+                    <li><div class="flex justify-between items-baseline"><code class="text-primary font-mono text-sm bg-slate-800 px-2 py-0.5 rounded">waitForSelector</code><span class="text-xs font-mono text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded">string</span></div><p class="text-sm text-slate-400 mt-1">Wait for a specific selector to appear</p></li>
+                    <li><div class="flex justify-between items-baseline"><code class="text-primary font-mono text-sm bg-slate-800 px-2 py-0.5 rounded">retryEnabled</code><span class="text-xs font-mono text-purple-400 bg-purple-400/10 px-2 py-0.5 rounded">boolean</span></div><p class="text-sm text-slate-400 mt-1">Enable retry logic for failed navigations</p></li>
                 </ul>
             </section>
 
             <!-- Action Node -->
-            <section id="node-action" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Action</h2>
-                    <p class="node-subtitle">Perform actions on page elements</p>
+            <section id="node-action" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-accent rounded-full"></span>
+                            Action
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Perform actions on page elements</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-indigo-500/10 text-indigo-400 text-xs font-bold uppercase rounded-full border border-indigo-500/20">Interaction</span>
                 </div>
-                <p class="node-description">
-                    Perform various actions like click, double-click, hover, or other interactions on page elements.
-                </p>
-                
-                <h3 class="section-title">Use Cases</h3>
-                <ul class="use-case-list">
-                    <li>
-                        <div class="use-case-title">Element Interaction</div>
-                        <div class="use-case-description">Click buttons, links, or any clickable elements on the page.</div>
-                    </li>
-                    <li>
-                        <div class="use-case-title">Hover Actions</div>
-                        <div class="use-case-description">Trigger hover effects to reveal dropdown menus or tooltips.</div>
-                    </li>
-                    <li>
-                        <div class="use-case-title">Complex Interactions</div>
-                        <div class="use-case-description">Perform double-clicks, right-clicks, or force clicks.</div>
-                    </li>
+                <p class="text-slate-300 mb-6">Perform various actions like click, double-click, hover, or other interactions on page elements.</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/Action- (1).png" alt="Action 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Action- (2).png" alt="Action 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Action- (3).png" alt="Action 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Action- (4).png" alt="Action 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Action- (5).png" alt="Action 5" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Action- (6).png" alt="Action 6" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Action- (7).png" alt="Action 7" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Action- (8).png" alt="Action 8" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Action- (9).png" alt="Action 9" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Action- (10).png" alt="Action 10" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Action- (11).png" alt="Action 11" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Action- (12).png" alt="Action 12" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Action- (13).png" alt="Action 13" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-4 border-b border-slate-700 pb-2">Use Cases</h3>
+                <ul class="space-y-4">
+                    <li class="border-b border-slate-700 pb-4 last:border-0"><div class="font-semibold text-primary mb-1">Element Interaction</div><div class="text-slate-400 text-sm">Click buttons, links, or any clickable elements on the page.</div></li>
+                    <li class="border-b border-slate-700 pb-4 last:border-0"><div class="font-semibold text-primary mb-1">Hover Actions</div><div class="text-slate-400 text-sm">Trigger hover effects to reveal dropdown menus or tooltips.</div></li>
+                    <li class="border-b border-slate-700 pb-4 last:border-0"><div class="font-semibold text-primary mb-1">Complex Interactions</div><div class="text-slate-400 text-sm">Perform double-clicks, right-clicks, or force clicks.</div></li>
                 </ul>
             </section>
 
             <!-- Type Node -->
-            <section id="node-type" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Type</h2>
-                    <p class="node-subtitle">Type text into input fields</p>
+            <section id="node-type" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-accent rounded-full"></span>
+                            Type
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Type text into input fields</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-indigo-500/10 text-indigo-400 text-xs font-bold uppercase rounded-full border border-indigo-500/20">Interaction</span>
                 </div>
-                <p class="node-description">
-                    Type text into input fields, textareas, or contenteditable elements with customizable typing speed.
-                </p>
-                
-                <h3 class="section-title">Use Cases</h3>
-                <ul class="use-case-list">
-                    <li>
-                        <div class="use-case-title">Form Filling</div>
-                        <div class="use-case-description">Fill out forms with text input.</div>
-                    </li>
-                    <li>
-                        <div class="use-case-title">Search Queries</div>
-                        <div class="use-case-description">Enter search terms into search boxes.</div>
-                    </li>
-                    <li>
-                        <div class="use-case-title">Realistic Typing</div>
-                        <div class="use-case-description">Simulate human-like typing with delays between keystrokes.</div>
-                    </li>
+                <p class="text-slate-300 mb-6">Type text into input fields, textareas, or contenteditable elements with customizable typing speed.</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/Type- (1).png" alt="Type 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Type- (2).png" alt="Type 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Type- (3).png" alt="Type 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Type- (4).png" alt="Type 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Type- (5).png" alt="Type 5" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-4 border-b border-slate-700 pb-2">Use Cases</h3>
+                <ul class="space-y-4">
+                    <li class="border-b border-slate-700 pb-4 last:border-0"><div class="font-semibold text-primary mb-1">Form Filling</div><div class="text-slate-400 text-sm">Fill out forms with text input.</div></li>
+                    <li class="border-b border-slate-700 pb-4 last:border-0"><div class="font-semibold text-primary mb-1">Search Queries</div><div class="text-slate-400 text-sm">Enter search terms into search boxes.</div></li>
+                    <li class="border-b border-slate-700 pb-4 last:border-0"><div class="font-semibold text-primary mb-1">Realistic Typing</div><div class="text-slate-400 text-sm">Simulate human-like typing with delays between keystrokes.</div></li>
                 </ul>
             </section>
 
             <!-- Element Query Node -->
-            <section id="node-elementQuery" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Element Query</h2>
-                    <p class="node-subtitle">Query and extract data from page elements</p>
+            <section id="node-elementQuery" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-accent rounded-full"></span>
+                            Element Query
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Query and extract data from page elements</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-indigo-500/10 text-indigo-400 text-xs font-bold uppercase rounded-full border border-indigo-500/20">Data</span>
                 </div>
-                <p class="node-description">
-                    Find elements on the page and extract their text content, attributes, or other properties.
-                </p>
-                
-                <h3 class="section-title">Use Cases</h3>
-                <ul class="use-case-list">
-                    <li>
-                        <div class="use-case-title">Data Extraction</div>
-                        <div class="use-case-description">Extract text, attributes, or HTML from page elements.</div>
-                    </li>
-                    <li>
-                        <div class="use-case-title">Element Validation</div>
-                        <div class="use-case-description">Check if elements exist or have specific properties.</div>
-                    </li>
-                    <li>
-                        <div class="use-case-title">Dynamic Content</div>
-                        <div class="use-case-description">Query elements that are dynamically loaded.</div>
-                    </li>
+                <p class="text-slate-300 mb-6">Find elements on the page and extract their text content, attributes, or other properties.</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/Element-Query- (1).png" alt="Element Query 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Element-Query- (2).png" alt="Element Query 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Element-Query- (3).png" alt="Element Query 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Element-Query- (4).png" alt="Element Query 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Element-Query- (5).png" alt="Element Query 5" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
+                <h3 class="text-xl font-semibold text-white mb-4 border-b border-slate-700 pb-2">Use Cases</h3>
+                <ul class="space-y-4">
+                    <li class="border-b border-slate-700 pb-4 last:border-0"><div class="font-semibold text-primary mb-1">Data Extraction</div><div class="text-slate-400 text-sm">Extract text, attributes, or HTML from page elements.</div></li>
+                    <li class="border-b border-slate-700 pb-4 last:border-0"><div class="font-semibold text-primary mb-1">Element Validation</div><div class="text-slate-400 text-sm">Check if elements exist or have specific properties.</div></li>
+                    <li class="border-b border-slate-700 pb-4 last:border-0"><div class="font-semibold text-primary mb-1">Dynamic Content</div><div class="text-slate-400 text-sm">Query elements that are dynamically loaded.</div></li>
                 </ul>
             </section>
 
             <!-- Form Input Node -->
-            <section id="node-formInput" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Form Input</h2>
-                    <p class="node-subtitle">Fill form inputs with values</p>
+            <section id="node-formInput" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-accent rounded-full"></span>
+                            Form Input
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Fill form inputs with values</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-indigo-500/10 text-indigo-400 text-xs font-bold uppercase rounded-full border border-indigo-500/20">Interaction</span>
                 </div>
-                <p class="node-description">
-                    Fill various types of form inputs including text, select dropdowns, checkboxes, and radio buttons.
-                </p>
+                <p class="text-slate-300 mb-6">Fill various types of form inputs including text, select dropdowns, checkboxes, and radio buttons.</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/Form-Input- (1).png" alt="Form Input 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Form-Input- (2).png" alt="Form Input 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Form-Input- (3).png" alt="Form Input 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Form-Input- (4).png" alt="Form Input 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Form-Input- (5).png" alt="Form Input 5" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Form-Input- (6).png" alt="Form Input 6" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Form-Input- (7).png" alt="Form Input 7" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Form-Input- (8).png" alt="Form Input 8" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
             </section>
 
             <!-- Screenshot Node -->
-            <section id="node-screenshot" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Screenshot</h2>
-                    <p class="node-subtitle">Capture screenshots of pages or elements</p>
+            <section id="node-screenshot" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-accent rounded-full"></span>
+                            Screenshot
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Capture screenshots of pages or elements</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-indigo-500/10 text-indigo-400 text-xs font-bold uppercase rounded-full border border-indigo-500/20">Data</span>
                 </div>
-                <p class="node-description">
-                    Take screenshots of the entire page, viewport, or specific elements for documentation and debugging.
-                </p>
+                <p class="text-slate-300 mb-6">Take screenshots of the entire page, viewport, or specific elements for documentation and debugging.</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/Screenshot- (1).png" alt="Screenshot 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Screenshot- (2).png" alt="Screenshot 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Screenshot- (3).png" alt="Screenshot 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Screenshot- (4).png" alt="Screenshot 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Screenshot- (5).png" alt="Screenshot 5" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Screenshot- (6).png" alt="Screenshot 6" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Screenshot- (7).png" alt="Screenshot 7" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Screenshot- (8).png" alt="Screenshot 8" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Screenshot- (9).png" alt="Screenshot 9" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
             </section>
 
             <!-- Wait Node -->
-            <section id="node-wait" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Wait</h2>
-                    <p class="node-subtitle">Wait for a specified duration or condition</p>
+            <section id="node-wait" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-amber-500 rounded-full"></span>
+                            Wait
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Wait for a specified duration or condition</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-amber-500/10 text-amber-400 text-xs font-bold uppercase rounded-full border border-amber-500/20">Control</span>
                 </div>
-                <p class="node-description">
-                    Pause workflow execution for a fixed duration or until a specific condition is met.
-                </p>
+                <p class="text-slate-300 mb-6">Pause workflow execution for a fixed duration or until a specific condition is met.</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/Wait- (1).png" alt="Wait 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Wait- (2).png" alt="Wait 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Wait- (3).png" alt="Wait 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Wait- (4).png" alt="Wait 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Wait- (5).png" alt="Wait 5" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Wait- (6).png" alt="Wait 6" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Wait- (7).png" alt="Wait 7" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Wait- (8).png" alt="Wait 8" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Wait- (9).png" alt="Wait 9" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Wait- (10).png" alt="Wait 10" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Wait- (11).png" alt="Wait 11" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
             </section>
 
             <!-- JavaScript Code Node -->
-            <section id="node-javascriptCode" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">JavaScript Code</h2>
-                    <p class="node-subtitle">Execute custom JavaScript code</p>
+            <section id="node-javascriptCode" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-amber-500 rounded-full"></span>
+                            JavaScript Code
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Execute custom JavaScript code</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-amber-500/10 text-amber-400 text-xs font-bold uppercase rounded-full border border-amber-500/20">Code</span>
                 </div>
-                <p class="node-description">
-                    Execute custom JavaScript code in the browser context or Node.js context for advanced automation logic.
-                </p>
+                <p class="text-slate-300 mb-6">Execute custom JavaScript code in the browser context or Node.js context for advanced automation logic.</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/JavaScript- (1).png" alt="JavaScript Code 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/JavaScript- (2).png" alt="JavaScript Code 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/JavaScript- (3).png" alt="JavaScript Code 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
             </section>
 
             <!-- Loop Node -->
-            <section id="node-loop" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Loop</h2>
-                    <p class="node-subtitle">Repeat a sequence of nodes</p>
+            <section id="node-loop" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-amber-500 rounded-full"></span>
+                            Loop
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Repeat a sequence of nodes</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-amber-500/10 text-amber-400 text-xs font-bold uppercase rounded-full border border-amber-500/20">Control</span>
                 </div>
-                <p class="node-description">
-                    Create loops to repeat a sequence of nodes a specified number of times or until a condition is met.
-                </p>
+                <p class="text-slate-300 mb-6">Create loops to repeat a sequence of nodes a specified number of times or until a condition is met.</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/Loop- (1).png" alt="Loop 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Loop- (2).png" alt="Loop 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Loop- (3).png" alt="Loop 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Loop- (4).png" alt="Loop 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Loop- (5).png" alt="Loop 5" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
             </section>
 
             <!-- Storage Node -->
-            <section id="node-storage" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Storage</h2>
-                    <p class="node-subtitle">Manage browser storage</p>
+            <section id="node-storage" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-accent rounded-full"></span>
+                            Storage
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Manage browser storage</p>
+                    </div>
                 </div>
-                <p class="node-description">
-                    Set, get, or clear browser storage including localStorage, sessionStorage, and cookies.
-                </p>
+                <p class="text-slate-300 mb-6">Set, get, or clear browser storage including localStorage, sessionStorage, and cookies.</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/Storage- (1).png" alt="Storage 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Storage- (2).png" alt="Storage 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Storage- (3).png" alt="Storage 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Storage- (4).png" alt="Storage 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Storage- (5).png" alt="Storage 5" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Storage- (6).png" alt="Storage 6" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Storage- (7).png" alt="Storage 7" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Storage- (8).png" alt="Storage 8" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Storage- (9).png" alt="Storage 9" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Storage- (10).png" alt="Storage 10" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Storage- (11).png" alt="Storage 11" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
             </section>
 
             <!-- Keyboard Node -->
-            <section id="node-keyboard" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Keyboard</h2>
-                    <p class="node-subtitle">Simulate keyboard input</p>
+            <section id="node-keyboard" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-primary rounded-full"></span>
+                            Keyboard
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Simulate keyboard input</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-blue-500/10 text-blue-400 text-xs font-bold uppercase rounded-full border border-blue-500/20">Browser</span>
                 </div>
-                <p class="node-description">
-                    Simulate keyboard events including key presses, shortcuts, and special key combinations.
-                </p>
+                <p class="text-slate-300 mb-6">Simulate keyboard events including key presses, shortcuts, and special key combinations.</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/Keyboard- (1).png" alt="Keyboard 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Keyboard- (2).png" alt="Keyboard 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Keyboard- (3).png" alt="Keyboard 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Keyboard- (4).png" alt="Keyboard 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Keyboard- (5).png" alt="Keyboard 5" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Keyboard- (6).png" alt="Keyboard 6" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Keyboard- (7).png" alt="Keyboard 7" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Keyboard- (8).png" alt="Keyboard 8" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Keyboard- (9).png" alt="Keyboard 9" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
             </section>
 
             <!-- Scroll Node -->
-            <section id="node-scroll" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Scroll</h2>
-                    <p class="node-subtitle">Scroll the page or elements</p>
+            <section id="node-scroll" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-primary rounded-full"></span>
+                            Scroll
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Scroll the page or elements</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-blue-500/10 text-blue-400 text-xs font-bold uppercase rounded-full border border-blue-500/20">Browser</span>
                 </div>
-                <p class="node-description">
-                    Scroll the page or specific elements to bring content into view.
-                </p>
+                <p class="text-slate-300 mb-6">Scroll the page or specific elements to bring content into view.</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/Scroll- (1).png" alt="Scroll 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Scroll- (2).png" alt="Scroll 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Scroll- (3).png" alt="Scroll 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Scroll- (4).png" alt="Scroll 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Scroll- (5).png" alt="Scroll 5" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Scroll- (6).png" alt="Scroll 6" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
             </section>
 
             <!-- Dialog Node -->
-            <section id="node-dialog" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Dialog</h2>
-                    <p class="node-subtitle">Handle browser dialogs</p>
+            <section id="node-dialog" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-primary rounded-full"></span>
+                            Dialog
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Handle browser dialogs</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-blue-500/10 text-blue-400 text-xs font-bold uppercase rounded-full border border-blue-500/20">Browser</span>
                 </div>
-                <p class="node-description">
-                    Handle browser dialogs like alerts, confirms, and prompts.
-                </p>
+                <p class="text-slate-300 mb-6">Handle browser dialogs like alerts, confirms, and prompts.</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/Dialog- (1).png" alt="Dialog 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Dialog- (2).png" alt="Dialog 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Dialog- (3).png" alt="Dialog 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Dialog- (4).png" alt="Dialog 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Dialog- (5).png" alt="Dialog 5" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Dialog- (6).png" alt="Dialog 6" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
             </section>
 
             <!-- Download Node -->
-            <section id="node-download" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Download</h2>
-                    <p class="node-subtitle">Handle file downloads</p>
+            <section id="node-download" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-primary rounded-full"></span>
+                            Download
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Handle file downloads</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-blue-500/10 text-blue-400 text-xs font-bold uppercase rounded-full border border-blue-500/20">Browser</span>
                 </div>
-                <p class="node-description">
-                    Monitor and handle file downloads from the browser.
-                </p>
+                <p class="text-slate-300 mb-6">Monitor and handle file downloads from the browser.</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/Download- (1).png" alt="Download 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Download- (2).png" alt="Download 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Download- (3).png" alt="Download 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Download- (4).png" alt="Download 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Download- (5).png" alt="Download 5" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
             </section>
 
             <!-- Iframe Node -->
-            <section id="node-iframe" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Iframe</h2>
-                    <p class="node-subtitle">Work with iframes</p>
+            <section id="node-iframe" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-primary rounded-full"></span>
+                            Iframe
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Work with iframes</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-blue-500/10 text-blue-400 text-xs font-bold uppercase rounded-full border border-blue-500/20">Browser</span>
                 </div>
-                <p class="node-description">
-                    Access and interact with content inside iframes.
-                </p>
+                <p class="text-slate-300 mb-6">Access and interact with content inside iframes.</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/IFrame- (1).png" alt="Iframe 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/IFrame- (2).png" alt="Iframe 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/IFrame- (3).png" alt="Iframe 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/IFrame- (4).png" alt="Iframe 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/IFrame- (5).png" alt="Iframe 5" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
             </section>
 
             <!-- Verify Node -->
-            <section id="node-verify" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Verify</h2>
-                    <p class="node-subtitle">Verify conditions and assertions</p>
+            <section id="node-verify" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-emerald-500 rounded-full"></span>
+                            Verify
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Verify conditions and assertions</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-bold uppercase rounded-full border border-emerald-500/20">Verification</span>
                 </div>
-                <p class="node-description">
-                    Verify conditions, element states, or values and fail the workflow if verification fails.
-                </p>
+                <p class="text-slate-300 mb-6">Verify conditions, element states, or values and fail the workflow if verification fails.</p>
+
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/Verify-1.png" alt="Verify 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Verify-2.png" alt="Verify 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Verify-3.png" alt="Verify 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Verify-4.png" alt="Verify 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Verify-5.png" alt="Verify 5" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Verify-6.png" alt="Verify 6" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
             </section>
 
             <!-- API Request Node -->
-            <section id="node-apiRequest" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">API Request</h2>
-                    <p class="node-subtitle">Make HTTP API requests</p>
+            <section id="node-apiRequest" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-purple-500 rounded-full"></span>
+                            API Request
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Make HTTP API requests</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-purple-500/10 text-purple-400 text-xs font-bold uppercase rounded-full border border-purple-500/20">Backend</span>
                 </div>
-                <p class="node-description">
-                    Make HTTP requests (GET, POST, PUT, DELETE, etc.) to REST APIs and handle responses.
-                </p>
+                <p class="text-slate-300 mb-6">Make HTTP requests (GET, POST, PUT, DELETE, etc.) to REST APIs and handle responses. Response data is stored in the <code class="text-primary bg-slate-800 px-1.5 py-0.5 rounded text-sm">context.response</code> variable for subsequent nodes.</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/Api-Request- (1).png" alt="API Request 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Api-Request- (2).png" alt="API Request 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Api-Request- (3).png" alt="API Request 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
+                <pre class="rounded-xl border border-slate-700 bg-slate-800 p-4 overflow-x-auto"><code class="language-json">{
+  "url": "https://api.example.com/v1/users",
+  "method": "POST",
+  "headers": { "Authorization": "Bearer {token}" },
+  "body": "{ \"name\": \"John Doe\" }"
+}</code></pre>
             </section>
 
             <!-- API cURL Node -->
-            <section id="node-apiCurl" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">API cURL</h2>
-                    <p class="node-subtitle">Execute cURL commands</p>
+            <section id="node-apiCurl" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-purple-500 rounded-full"></span>
+                            API cURL
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Execute cURL commands</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-purple-500/10 text-purple-400 text-xs font-bold uppercase rounded-full border border-purple-500/20">Backend</span>
                 </div>
-                <p class="node-description">
-                    Execute cURL commands directly for complex API interactions.
-                </p>
+                <p class="text-slate-300 mb-6">Execute cURL commands directly for complex API interactions.</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/API-Curl- (1).png" alt="API cURL 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/API-Curl- (2).png" alt="API cURL 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
             </section>
 
             <!-- DB Connect Node -->
-            <section id="node-dbConnect" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">DB Connect</h2>
-                    <p class="node-subtitle">Connect to a database</p>
+            <section id="node-dbConnect" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-purple-500 rounded-full"></span>
+                            DB Connect
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Connect to a database</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-purple-500/10 text-purple-400 text-xs font-bold uppercase rounded-full border border-purple-500/20">Database</span>
                 </div>
-                <p class="node-description">
-                    Establish a connection to a database (MySQL, PostgreSQL, SQLite, etc.).
-                </p>
+                <p class="text-slate-300 mb-6">Establish a connection to a database (MySQL, PostgreSQL, SQLite, etc.).</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/DB- (1).png" alt="DB Connect 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/DB- (2).png" alt="DB Connect 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/DB- (3).png" alt="DB Connect 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/DB- (4).png" alt="DB Connect 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
             </section>
 
             <!-- DB Disconnect Node -->
-            <section id="node-dbDisconnect" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">DB Disconnect</h2>
-                    <p class="node-subtitle">Close database connection</p>
+            <section id="node-dbDisconnect" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-purple-500 rounded-full"></span>
+                            DB Disconnect
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Close database connection</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-purple-500/10 text-purple-400 text-xs font-bold uppercase rounded-full border border-purple-500/20">Database</span>
                 </div>
-                <p class="node-description">
-                    Close an active database connection.
-                </p>
+                <p class="text-slate-300">Close an active database connection.</p>
             </section>
 
             <!-- DB Query Node -->
-            <section id="node-dbQuery" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">DB Query</h2>
-                    <p class="node-subtitle">Execute database queries</p>
+            <section id="node-dbQuery" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-purple-500 rounded-full"></span>
+                            DB Query
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Execute database queries</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-purple-500/10 text-purple-400 text-xs font-bold uppercase rounded-full border border-purple-500/20">Database</span>
                 </div>
-                <p class="node-description">
-                    Execute SQL queries against a connected database and retrieve results.
-                </p>
+                <p class="text-slate-300">Execute SQL queries against a connected database and retrieve results.</p>
             </section>
 
             <!-- Context Manipulate Node -->
-            <section id="node-contextManipulate" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Context Manipulate</h2>
-                    <p class="node-subtitle">Manipulate browser context</p>
+            <section id="node-contextManipulate" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-primary rounded-full"></span>
+                            Context Manipulate
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Manipulate browser context</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-blue-500/10 text-blue-400 text-xs font-bold uppercase rounded-full border border-blue-500/20">Browser</span>
                 </div>
-                <p class="node-description">
-                    Modify browser context settings like permissions, geolocation, or other context options.
-                </p>
+                <p class="text-slate-300 mb-6">Modify browser context settings like permissions, geolocation, or other context options.</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/Context- (1).png" alt="Context Manipulate 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Context- (2).png" alt="Context Manipulate 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Context- (3).png" alt="Context Manipulate 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Context- (4).png" alt="Context Manipulate 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Context- (5).png" alt="Context Manipulate 5" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Context- (6).png" alt="Context Manipulate 6" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Context- (7).png" alt="Context Manipulate 7" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Context- (8).png" alt="Context Manipulate 8" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Context- (9).png" alt="Context Manipulate 9" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Context- (10).png" alt="Context Manipulate 10" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Context- (11).png" alt="Context Manipulate 11" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Context- (12).png" alt="Context Manipulate 12" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Context- (13).png" alt="Context Manipulate 13" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Context- (14).png" alt="Context Manipulate 14" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Context- (15).png" alt="Context Manipulate 15" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
             </section>
 
             <!-- Int Value Node -->
-            <section id="node-intValue" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Int Value</h2>
-                    <p class="node-subtitle">Create integer values</p>
+            <section id="node-intValue" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-slate-500 rounded-full"></span>
+                            Int Value
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Create integer values</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-slate-500/10 text-slate-400 text-xs font-bold uppercase rounded-full border border-slate-500/20">Values</span>
                 </div>
-                <p class="node-description">
-                    Create integer constant values to use in workflows.
-                </p>
+                <p class="text-slate-300 mb-6">Create integer constant values to use in workflows.</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference (Value Nodes)</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/Value-nodes- (1).png" alt="Value nodes 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Value-nodes- (2).png" alt="Value nodes 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Value-nodes- (3).png" alt="Value nodes 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Value-nodes- (4).png" alt="Value nodes 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
             </section>
 
             <!-- String Value Node -->
-            <section id="node-stringValue" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">String Value</h2>
-                    <p class="node-subtitle">Create string values</p>
+            <section id="node-stringValue" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-slate-500 rounded-full"></span>
+                            String Value
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Create string values</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-slate-500/10 text-slate-400 text-xs font-bold uppercase rounded-full border border-slate-500/20">Values</span>
                 </div>
-                <p class="node-description">
-                    Create string constant values to use in workflows.
-                </p>
+                <p class="text-slate-300">Create string constant values to use in workflows.</p>
             </section>
 
             <!-- Boolean Value Node -->
-            <section id="node-booleanValue" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Boolean Value</h2>
-                    <p class="node-subtitle">Create boolean values</p>
+            <section id="node-booleanValue" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-slate-500 rounded-full"></span>
+                            Boolean Value
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Create boolean values</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-slate-500/10 text-slate-400 text-xs font-bold uppercase rounded-full border border-slate-500/20">Values</span>
                 </div>
-                <p class="node-description">
-                    Create boolean constant values to use in workflows.
-                </p>
+                <p class="text-slate-300">Create boolean constant values to use in workflows.</p>
             </section>
 
             <!-- Input Value Node -->
-            <section id="node-inputValue" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Input Value</h2>
-                    <p class="node-subtitle">Accept input values</p>
+            <section id="node-inputValue" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-slate-500 rounded-full"></span>
+                            Input Value
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Accept input values</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-slate-500/10 text-slate-400 text-xs font-bold uppercase rounded-full border border-slate-500/20">Values</span>
                 </div>
-                <p class="node-description">
-                    Accept input values from workflow execution context or user input.
-                </p>
+                <p class="text-slate-300">Accept input values from workflow execution context or user input.</p>
             </section>
 
             <!-- Load Config File Node -->
-            <section id="node-loadConfigFile" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Load Config File</h2>
-                    <p class="node-subtitle">Load configuration from file</p>
+            <section id="node-loadConfigFile" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-slate-500 rounded-full"></span>
+                            Load Config File
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Load configuration from file</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-slate-500/10 text-slate-400 text-xs font-bold uppercase rounded-full border border-slate-500/20">Configuration</span>
                 </div>
-                <p class="node-description">
-                    Load configuration data from JSON files to use throughout the workflow.
-                </p>
+                <p class="text-slate-300 mb-6">Load configuration data from JSON files to use throughout the workflow.</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/Load-Config- (1).png" alt="Load Config 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Load-Config- (2).png" alt="Load Config 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Load-Config- (3).png" alt="Load Config 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Load-Config- (4).png" alt="Load Config 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
             </section>
 
             <!-- Select Config File Node -->
-            <section id="node-selectConfigFile" class="node-section">
-                <div class="node-header">
-                    <h2 class="node-title">Select Config File</h2>
-                    <p class="node-subtitle">Select and load configuration file</p>
+            <section id="node-selectConfigFile" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-slate-500 rounded-full"></span>
+                            Select Config File
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Select and load configuration file</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-slate-500/10 text-slate-400 text-xs font-bold uppercase rounded-full border border-slate-500/20">Configuration</span>
                 </div>
-                <p class="node-description">
-                    Dynamically select and load configuration files based on conditions or user input.
-                </p>
+                <p class="text-slate-300">Dynamically select and load configuration files based on conditions or user input.</p>
             </section>
-        </main>
+
+            <section id="node-setConfig" class="node-section mb-16 scroll-mt-8">
+                <div class="flex items-center justify-between mb-6 border-b border-slate-700 pb-4">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white flex items-center gap-3">
+                            <span class="w-2 h-8 bg-accent rounded-full"></span>
+                            Set Config
+                        </h2>
+                        <p class="text-slate-400 mt-2 ml-5">Set configuration values (Plugin)</p>
+                    </div>
+                    <span class="hidden md:inline-block px-3 py-1 bg-indigo-500/10 text-indigo-400 text-xs font-bold uppercase rounded-full border border-indigo-500/20">Plugin</span>
+                </div>
+                <p class="text-slate-300 mb-6">Set configuration values for use in workflows. Available via the reusable-node plugin.</p>
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-white mb-3">Visual Reference</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                        <img src="node-screenshots/Set-Config- (1).png" alt="Set Config 1" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Set-Config- (2).png" alt="Set Config 2" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Set-Config- (3).png" alt="Set Config 3" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                        <img src="node-screenshots/Set-Config- (4).png" alt="Set Config 4" class="wiki-image rounded-xl border border-slate-700 object-contain max-h-48 bg-slate-800">
+                    </div>
+                </div>
+            </section>
+
+            <footer class="mt-20 pt-10 border-t border-slate-800 text-center text-slate-500 text-sm">
+                <p>&copy; 2024 AutoMFlows Documentation. Built with <i class="fab fa-html5"></i> & Tailwind CSS.</p>
+            </footer>
+        </div>
+    </main>
+
+    <div id="image-modal" class="flex items-center justify-center" role="dialog" aria-modal="true" aria-label="Image preview">
+        <button id="image-modal-close" type="button" aria-label="Close"><i class="fas fa-times"></i></button>
+        <img id="image-modal-content" src="" alt="Full size preview">
+        <button id="image-modal-zoom-in" class="image-modal-zoom-btn" type="button" aria-label="Zoom in"><i class="fas fa-search-plus"></i></button>
+        <button id="image-modal-zoom-out" class="image-modal-zoom-btn" type="button" aria-label="Zoom out"><i class="fas fa-search-minus"></i></button>
+        <button id="image-modal-zoom-reset" class="image-modal-zoom-btn" type="button" aria-label="Reset zoom">1:1</button>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script>if (typeof Prism !== 'undefined') Prism.highlightAll();</script>
+
     <script>
-        // Search functionality
+        // Mobile Menu Toggle
+        const mobileBtn = document.getElementById('mobile-menu-btn');
+        const sidebar = document.getElementById('sidebar');
+        mobileBtn.addEventListener('click', () => sidebar.classList.toggle('-translate-x-full'));
+
+        // Active Link Highlight on Scroll (main is scroll container)
+        const main = document.getElementById('main-content');
+        const sections = document.querySelectorAll('.node-section, #intro');
+        const navLinks = document.querySelectorAll('.nav-item');
+
+        main.addEventListener('scroll', () => {
+            let current = '';
+            const scrollTop = main.scrollTop;
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (scrollTop >= sectionTop - 100) current = section.id;
+            });
+            navLinks.forEach(link => {
+                link.classList.remove('bg-slate-800/50', 'text-primary');
+                link.classList.add('text-slate-400');
+                const href = link.getAttribute('href') || '';
+                if (href === '#' + current) {
+                    link.classList.add('bg-slate-800/50', 'text-primary');
+                    link.classList.remove('text-slate-400');
+                }
+            });
+        });
+
+        // Search Functionality
         const searchInput = document.getElementById('searchInput');
-        const navLinks = document.querySelectorAll('.nav-link');
-        const nodeSections = document.querySelectorAll('.node-section');
+        document.addEventListener('keydown', (e) => {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+                e.preventDefault();
+                searchInput.focus();
+            }
+        });
 
         searchInput.addEventListener('input', (e) => {
             const query = e.target.value.toLowerCase().trim();
-            
-            navLinks.forEach(link => {
-                const text = link.textContent.toLowerCase();
-                const sectionId = link.getAttribute('data-section');
-                const section = document.getElementById(sectionId || link.getAttribute('href').substring(1));
-                
-                if (query === '' || text.includes(query) || (section && section.textContent.toLowerCase().includes(query))) {
-                    link.style.display = 'block';
-                } else {
-                    link.style.display = 'none';
-                }
+            const nodeSections = document.querySelectorAll('.node-section');
+            const introSection = document.getElementById('intro');
+
+            if (query === '') {
+                nodeSections.forEach(s => s.style.display = 'block');
+                introSection.style.display = 'block';
+                document.querySelectorAll('.nav-item').forEach(link => {
+                    const wrap = link.parentElement;
+                    if (wrap) wrap.style.display = 'block';
+                });
+                document.querySelectorAll('.nav-section').forEach(ns => ns.style.display = 'block');
+                return;
+            }
+
+            nodeSections.forEach(section => {
+                const text = section.innerText.toLowerCase();
+                section.style.display = text.includes(query) ? 'block' : 'none';
+            });
+            introSection.style.display = introSection.innerText.toLowerCase().includes(query) ? 'block' : 'none';
+
+            document.querySelectorAll('.nav-item').forEach(link => {
+                const sectionId = link.getAttribute('data-section') || link.getAttribute('href')?.replace('#', '');
+                const section = document.getElementById(sectionId);
+                const linkText = link.textContent.toLowerCase();
+                const sectionText = section ? section.innerText.toLowerCase() : '';
+                const matches = linkText.includes(query) || sectionText.includes(query);
+                const wrap = link.parentElement;
+                if (wrap) wrap.style.display = matches ? 'block' : 'none';
             });
 
-            // Highlight search results
-            if (query) {
-                nodeSections.forEach(section => {
-                    const content = section.textContent.toLowerCase();
-                    if (content.includes(query)) {
-                        section.style.display = 'block';
-                    } else {
-                        // Only hide if it's not the intro section
-                        if (section.id !== 'intro') {
-                            section.style.display = 'none';
-                        }
-                    }
+            document.querySelectorAll('.nav-section').forEach(navSection => {
+                const anyVisible = Array.from(navSection.querySelectorAll('.nav-item')).some(link => {
+                    const w = link.parentElement;
+                    return w && w.style.display !== 'none';
                 });
-            } else {
-                nodeSections.forEach(section => {
-                    section.style.display = 'block';
-                });
-            }
+                navSection.style.display = anyVisible ? 'block' : 'none';
+            });
         });
 
-        // Active link highlighting
-        function updateActiveLink() {
-            const hash = window.location.hash || '#intro';
-            navLinks.forEach(link => {
-                link.classList.remove('active');
-                if (link.getAttribute('href') === hash) {
-                    link.classList.add('active');
-                }
-            });
-        }
-
-        // Smooth scroll on hash change
+        // Hash change: scroll to section
         function scrollToSection() {
             const hash = window.location.hash;
             if (hash) {
-                const element = document.querySelector(hash);
-                if (element) {
-                    setTimeout(() => {
-                        element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        updateActiveLink();
-                    }, 100);
-                }
-            } else {
-                // Scroll to top if no hash
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                updateActiveLink();
+                const el = document.querySelector(hash);
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
         }
-
-        // Handle hash changes
-        window.addEventListener('hashchange', () => {
-            scrollToSection();
-        });
-
-        // Initial scroll on load
+        window.addEventListener('hashchange', scrollToSection);
         window.addEventListener('load', () => {
             scrollToSection();
+            main.dispatchEvent(new Event('scroll'));
         });
 
-        // Update active link on scroll
-        let scrollTimeout;
-        window.addEventListener('scroll', () => {
-            clearTimeout(scrollTimeout);
-            scrollTimeout = setTimeout(() => {
-                const sections = document.querySelectorAll('.node-section, #intro');
-                let current = '';
-                
-                sections.forEach(section => {
-                    const rect = section.getBoundingClientRect();
-                    if (rect.top <= 100) {
-                        current = section.id;
-                    }
-                });
-
-                if (current) {
-                    navLinks.forEach(link => {
-                        link.classList.remove('active');
-                        if (link.getAttribute('href') === `#${current}`) {
-                            link.classList.add('active');
-                        }
-                    });
-                }
-            }, 100);
-        });
-
-        // Mobile menu toggle
-        if (window.innerWidth <= 768) {
-            const sidebar = document.getElementById('sidebar');
-            const toggle = document.createElement('button');
-            toggle.className = 'mobile-menu-toggle';
-            toggle.textContent = '☰ Menu';
-            toggle.onclick = () => {
-                sidebar.classList.toggle('open');
-            };
-            document.body.appendChild(toggle);
-        }
-
-        // Load plugin nodes dynamically (if available)
-        // This would be populated by querying the plugin registry
-        // For now, we'll leave it as a placeholder structure
+        // Plugin nodes
         function addPluginNode(nodeType, nodeLabel) {
             const pluginSection = document.getElementById('pluginNodesSection');
             const pluginList = document.getElementById('pluginNodesList');
-            
             if (pluginSection && pluginList) {
                 pluginSection.style.display = 'block';
                 const link = document.createElement('a');
-                link.href = `#node-${nodeType.replace(/\./g, '-')}`;
-                link.className = 'nav-link';
-                link.setAttribute('data-section', `node-${nodeType.replace(/\./g, '-')}`);
-                link.textContent = nodeLabel;
-                pluginList.appendChild(link);
+                link.href = '#node-' + nodeType.replace(/\./g, '-');
+                link.className = 'nav-item flex items-center gap-3 px-3 py-2 rounded-md text-sm text-slate-400 hover:bg-slate-800 hover:text-white transition-colors';
+                link.setAttribute('data-section', 'node-' + nodeType.replace(/\./g, '-'));
+                link.innerHTML = '<i class="fas fa-puzzle-piece w-5 text-center"></i> ' + nodeLabel;
+                const wrap = document.createElement('div');
+                wrap.appendChild(link);
+                pluginList.appendChild(wrap);
             }
         }
 
-        // Example: Add plugin nodes (this would be called from the main app)
-        // addPluginNode('setConfig.setConfig', 'Set Config');
+        // Image modal with zoom
+        (function() {
+            const modal = document.getElementById('image-modal');
+            const modalImg = document.getElementById('image-modal-content');
+            const closeBtn = document.getElementById('image-modal-close');
+            const zoomInBtn = document.getElementById('image-modal-zoom-in');
+            const zoomOutBtn = document.getElementById('image-modal-zoom-out');
+            const zoomResetBtn = document.getElementById('image-modal-zoom-reset');
+
+            let scale = 1;
+            const minScale = 0.5, maxScale = 5, step = 0.25;
+
+            function openModal(src) {
+                modalImg.src = src;
+                scale = 1;
+                modalImg.style.transform = 'scale(1)';
+                modal.classList.add('open');
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeModal() {
+                modal.classList.remove('open');
+                document.body.style.overflow = '';
+            }
+
+            function setZoom(s) {
+                scale = Math.max(minScale, Math.min(maxScale, s));
+                modalImg.style.transform = 'scale(' + scale + ')';
+            }
+
+            document.querySelectorAll('.wiki-image').forEach(img => {
+                img.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    openModal(img.src || img.getAttribute('src'));
+                });
+            });
+
+            closeBtn.addEventListener('click', closeModal);
+            modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+            zoomInBtn.addEventListener('click', () => setZoom(scale + step));
+            zoomOutBtn.addEventListener('click', () => setZoom(scale - step));
+            zoomResetBtn.addEventListener('click', () => setZoom(1));
+
+            modalImg.addEventListener('wheel', (e) => {
+                e.preventDefault();
+                setZoom(scale + (e.deltaY > 0 ? -step : step));
+            }, { passive: false });
+        })();
     </script>
 </body>
 </html>
