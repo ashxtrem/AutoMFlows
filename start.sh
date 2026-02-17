@@ -57,9 +57,11 @@ kill_port() {
 }
 
 # Stop any existing processes on backend and frontend ports
-echo -e "${YELLOW}🛑 Stopping any existing processes on ports 3003 and 5173...${NC}"
+echo -e "${YELLOW}🛑 Stopping any existing processes on ports 3003, 3004, 5173, 5174...${NC}"
 kill_port 3003
+kill_port 3004
 kill_port 5173
+kill_port 5174
 
 # Step 1: Install dependencies
 echo -e "${BLUE}📦 Installing dependencies...${NC}"

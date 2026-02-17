@@ -94,9 +94,11 @@ function Stop-Port {
 }
 
 # Stop any existing processes on backend and frontend ports
-Write-Host '[Stop] Stopping any existing processes on ports 3003 and 5173...' -ForegroundColor Yellow
+Write-Host '[Stop] Stopping any existing processes on ports 3003, 3004, 5173, 5174...' -ForegroundColor Yellow
 Stop-Port -Port 3003
+Stop-Port -Port 3004
 Stop-Port -Port 5173
+Stop-Port -Port 5174
 
 # Step 1: Install dependencies
 Write-Host '[Packages] Installing dependencies...' -ForegroundColor Blue
