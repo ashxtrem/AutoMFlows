@@ -68,6 +68,8 @@ export interface StartNodeData {
   recordSession?: boolean; // Enable video recording
   screenshotAllNodes?: boolean; // Enable screenshots on all nodes
   screenshotTiming?: 'pre' | 'post' | 'both'; // When to take screenshots
+  snapshotAllNodes?: boolean; // Enable accessibility snapshots on all nodes
+  snapshotTiming?: 'pre' | 'post' | 'both'; // When to take accessibility snapshots
   slowMo?: number; // Delay in milliseconds between node executions
   scrollThenAction?: boolean; // Enable smooth scroll to elements before actions on UI nodes
 }
@@ -1176,6 +1178,14 @@ export interface SelectorSuggestion {
   elementInfo?: string; // e.g., "button#submit-btn.login-button"
 }
 
+export interface AccessibilityNode {
+  role?: string;
+  name?: string;
+  value?: string;
+  level?: number;
+  children?: AccessibilityNode[];
+}
+
 export interface PageDebugInfo {
   pageUrl?: string;
   pageSource?: string;
@@ -1185,6 +1195,7 @@ export interface PageDebugInfo {
     post?: string;
     failure?: string;
   };
+  accessibilityTree?: AccessibilityNode; // Accessibility tree for role-based selector hints
   executionFolderName?: string; // Folder name for constructing screenshot URLs
 }
 
@@ -1260,6 +1271,11 @@ export interface ReportConfig {
 export interface ScreenshotConfig {
   enabled: boolean;
   timing: 'pre' | 'post' | 'both'; // When to take screenshots
+}
+
+export interface SnapshotConfig {
+  enabled: boolean;
+  timing: 'pre' | 'post' | 'both'; // When to take accessibility snapshots
 }
 
 export interface BreakpointConfig {

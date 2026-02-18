@@ -49,6 +49,14 @@ export async function generateAllureReport(
               type: 'image/png',
             }))
           : []),
+        // Accessibility snapshot attachments
+        ...(node.accessibilitySnapshotPaths 
+          ? Object.entries(node.accessibilitySnapshotPaths).map(([timing, snapshotPath]) => ({
+              name: `accessibility-snapshot-${timing}`,
+              source: path.basename(snapshotPath),
+              type: 'application/json',
+            }))
+          : []),
         // Video attachment
         ...(node.videoPath ? [{
           name: 'video-recording',
@@ -77,6 +85,22 @@ export async function generateAllureReport(
       });
     } catch (error: any) {
       console.warn('Failed to copy screenshots for Allure report:', error.message);
+    }
+  }
+
+  // Copy accessibility snapshots to allure results directory
+  if (metadata.snapshotsDirectory && fs.existsSync(metadata.snapshotsDirectory)) {
+    try {
+      const snapshotFiles = fs.readdirSync(metadata.snapshotsDirectory);
+      snapshotFiles.forEach(file => {
+        if (file.endsWith('.json')) {
+          const srcPath = path.join(metadata.snapshotsDirectory, file);
+          const destPath = path.join(resultsDir, file);
+          fs.copyFileSync(srcPath, destPath);
+        }
+      });
+    } catch (error: any) {
+      console.warn('Failed to copy accessibility snapshots for Allure report:', error.message);
     }
   }
 

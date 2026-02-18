@@ -1,4 +1,4 @@
-import { Workflow, ExecutionStatus, ExecutionEventType, ExecutionEvent, BaseNode, Edge, NodeType, PropertyDataType, ScreenshotConfig, ReportConfig, StartNodeData, BreakpointConfig } from '@automflows/shared';
+import { Workflow, ExecutionStatus, ExecutionEventType, ExecutionEvent, BaseNode, Edge, NodeType, PropertyDataType, ScreenshotConfig, SnapshotConfig, ReportConfig, StartNodeData, BreakpointConfig } from '@automflows/shared';
 import { Server } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
 import { WorkflowParser } from '../parser';
@@ -21,6 +21,7 @@ import * as fs from 'fs';
 import { extractWorkflowName, isUINode, extractSelectorInfo } from './utils';
 import { shouldTriggerBreakpoint } from './breakpoints';
 import { takeNodeScreenshot } from './screenshots';
+import { takeNodeAccessibilitySnapshot } from './accessibilitySnapshots';
 import { generateReports } from './reporting';
 import { recordVideos } from './videos';
 import { resolvePropertyInputs } from './resolvePropertyInputs';
@@ -45,6 +46,7 @@ export class Executor {
   private traceLogs: boolean;
   private nodeTraceLogs: Map<string, string[]> = new Map(); // Store trace logs per node
   private screenshotConfig?: ScreenshotConfig;
+  private snapshotConfig?: SnapshotConfig;
   private reportConfig?: ReportConfig;
   private executionTracker?: ExecutionTracker;
   private recordSession: boolean;
@@ -101,7 +103,7 @@ export class Executor {
     this.parser = new WorkflowParser(this.workflow);
     this.context = new ContextManager();
     
-    // Extract Start node and read screenshot config and slowmo from it
+    // Extract Start node and read screenshot config, snapshot config, and slowmo from it
     const startNode = workflow.nodes.find(node => node.type === NodeType.START);
     if (startNode) {
       const startNodeData = startNode.data as StartNodeData;
@@ -113,6 +115,16 @@ export class Executor {
       } else {
         this.screenshotConfig = undefined;
       }
+      // Snapshot config: enabled when snapshotAllNodes or builderModeEnabled
+      if (startNodeData.snapshotAllNodes || builderModeEnabled) {
+        this.snapshotConfig = {
+          enabled: true,
+          // Use snapshotTiming only; default to 'post' (do not fall back to screenshotTiming)
+          timing: startNodeData.snapshotTiming ?? 'post'
+        };
+      } else {
+        this.snapshotConfig = undefined;
+      }
       // Extract slowmo setting from Start node
       this.slowMo = startNodeData.slowMo || 0;
       // Extract scrollThenAction setting from Start node and store in context
@@ -121,6 +133,7 @@ export class Executor {
     } else {
       // Fallback to passed screenshotConfig if no Start node found
       this.screenshotConfig = screenshotConfig;
+      this.snapshotConfig = builderModeEnabled ? { enabled: true, timing: 'post' } : undefined;
       this.slowMo = 0;
       this.context.setData('scrollThenAction', false);
     }
@@ -129,8 +142,8 @@ export class Executor {
     if (playwrightManager) {
       this.playwright = playwrightManager;
     } else {
-      // Initialize execution tracker if screenshots, reporting, or recording is enabled
-      const shouldCreateTracker = (this.screenshotConfig?.enabled) || (reportConfig?.enabled) || recordSession;
+      // Initialize execution tracker if screenshots, snapshots, reporting, or recording is enabled
+      const shouldCreateTracker = (this.screenshotConfig?.enabled) || (this.snapshotConfig?.enabled) || (reportConfig?.enabled) || recordSession;
       if (shouldCreateTracker) {
         // Use report config output path if available, otherwise default to './output'
         // Path will be resolved relative to project root in ExecutionTracker
@@ -163,12 +176,17 @@ export class Executor {
 
     // If PlaywrightManager was provided, still create ExecutionTracker if needed for reports
     if (playwrightManager) {
-      const shouldCreateTracker = (this.screenshotConfig?.enabled) || (reportConfig?.enabled) || recordSession;
+      const shouldCreateTracker = (this.screenshotConfig?.enabled) || (this.snapshotConfig?.enabled) || (reportConfig?.enabled) || recordSession;
       if (shouldCreateTracker) {
         const outputPath = reportConfig?.outputPath || './output';
         this.executionTracker = new ExecutionTracker(this.executionId, workflow, outputPath, this.workflowFileName);
         this.context.setData('outputDirectory', this.executionTracker.getOutputDirectory());
         this.context.setData('screenshotsDirectory', this.executionTracker.getScreenshotsDirectory());
+        // Configure PlaywrightManager to use report-specific screenshots folder
+        this.playwright.setScreenshotsDirectory(this.executionTracker.getScreenshotsDirectory());
+        // Configure video recording to use report-specific videos folder
+        this.playwright.setVideosDirectory(this.executionTracker.getVideosDirectory());
+        this.playwright.setRecordSession(this.recordSession);
       }
     }
 
@@ -711,6 +729,11 @@ export class Executor {
             (this.screenshotConfig.timing === 'pre' || this.screenshotConfig.timing === 'both')) {
           await takeNodeScreenshot(nodeId, 'pre', this.context, this.playwright, this.executionTracker);
         }
+        // Take pre-execution accessibility snapshot if enabled
+        if (this.snapshotConfig?.enabled && 
+            (this.snapshotConfig.timing === 'pre' || this.snapshotConfig.timing === 'both')) {
+          await takeNodeAccessibilitySnapshot(nodeId, 'pre', this.context, this.executionTracker);
+        }
 
         try {
           // Resolve property input connections before execution
@@ -967,6 +990,11 @@ export class Executor {
               (this.screenshotConfig.timing === 'post' || this.screenshotConfig.timing === 'both')) {
             await takeNodeScreenshot(nodeId, 'post', this.context, this.playwright, this.executionTracker);
           }
+          // Take post-execution accessibility snapshot if enabled
+          if (this.snapshotConfig?.enabled && 
+              (this.snapshotConfig.timing === 'post' || this.snapshotConfig.timing === 'both')) {
+            await takeNodeAccessibilitySnapshot(nodeId, 'post', this.context, this.executionTracker);
+          }
 
           // Record node completion in tracker
           if (this.executionTracker) {
@@ -1001,7 +1029,7 @@ export class Executor {
           // Get trace logs for this node
           const traceLogs = this.nodeTraceLogs.get(nodeId) || [];
           
-          // Take failure screenshot if browser is open (before context closes)
+          // Take failure screenshot and snapshot if browser is open (before context closes)
           if (this.executionTracker) {
             try {
               const page = this.context.getPage();
@@ -1013,6 +1041,9 @@ export class Executor {
                   this.playwright,
                   this.executionTracker
                 );
+                if (this.snapshotConfig?.enabled) {
+                  await takeNodeAccessibilitySnapshot(nodeId, 'failure', this.context, this.executionTracker);
+                }
               }
             } catch (screenshotError: any) {
               // Don't fail execution if screenshot fails

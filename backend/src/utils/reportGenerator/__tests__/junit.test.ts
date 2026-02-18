@@ -22,6 +22,7 @@ describe('generateJUnitReport', () => {
       status: 'completed',
       outputDirectory: '/tmp/test-reports',
       screenshotsDirectory: '/tmp/test-reports/screenshots',
+      snapshotsDirectory: '/tmp/test-reports/snapshots',
       videosDirectory: '/tmp/test-reports/videos',
       nodes: [
         {

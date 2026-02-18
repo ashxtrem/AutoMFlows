@@ -28,7 +28,10 @@ export async function generateMarkdownReport(
       : node.status === 'bypassed' ? '⏭️'
       : '⏳';
 
-    return `| ${getNodeDisplayName(node)} | ${node.nodeType} | ${statusIcon} ${node.status} | ${nodeDuration}s | ${node.error || '-'} |`;
+    const screenshotCount = node.screenshotPaths ? Object.keys(node.screenshotPaths).length : 0;
+    const snapshotCount = node.accessibilitySnapshotPaths ? Object.keys(node.accessibilitySnapshotPaths).length : 0;
+
+    return `| ${getNodeDisplayName(node)} | ${node.nodeType} | ${statusIcon} ${node.status} | ${nodeDuration}s | ${screenshotCount} | ${snapshotCount} | ${node.error || '-'} |`;
   }).join('\n');
 
   const markdown = `# Workflow Execution Report
@@ -47,8 +50,8 @@ export async function generateMarkdownReport(
 
 ## Node Execution Details
 
-| Node | Type | Status | Duration | Error |
-|------|------|--------|----------|-------|
+| Node | Type | Status | Duration | Screenshots | Snapshots | Error |
+|------|------|--------|----------|-------------|-----------|-------|
 ${nodeRows}
 `;
 

@@ -22,6 +22,7 @@ describe('generateJSONReport', () => {
       status: 'completed',
       outputDirectory: '/tmp/test-reports',
       screenshotsDirectory: '/tmp/test-reports/screenshots',
+      snapshotsDirectory: '/tmp/test-reports/snapshots',
       videosDirectory: '/tmp/test-reports/videos',
       nodes: [
         {
@@ -103,6 +104,34 @@ describe('generateJSONReport', () => {
     const jsonContent = JSON.parse(writeCall[1]);
 
     expect(jsonContent.duration).toBeNull();
+  });
+
+  it('should include accessibilitySnapshotPaths in node data', async () => {
+    (fs.writeFileSync as jest.Mock).mockClear();
+
+    const metadataWithSnapshots: ExecutionMetadata = {
+      ...metadata,
+      nodes: [
+        {
+          ...metadata.nodes[0],
+          accessibilitySnapshotPaths: {
+            pre: '/tmp/snapshots/node1-pre.json',
+            post: '/tmp/snapshots/node1-post.json',
+          },
+        },
+        metadata.nodes[1],
+      ],
+    };
+    await generateJSONReport(metadataWithSnapshots, workflow, reportDir);
+
+    const writeCall = (fs.writeFileSync as jest.Mock).mock.calls[0];
+    const jsonContent = JSON.parse(writeCall[1]);
+
+    expect(jsonContent.nodes[0].accessibilitySnapshotPaths).toEqual({
+      pre: '/tmp/snapshots/node1-pre.json',
+      post: '/tmp/snapshots/node1-post.json',
+    });
+    expect(jsonContent.nodes[1].accessibilitySnapshotPaths).toBeUndefined();
   });
 
   it('should handle nodes without endTime', async () => {

@@ -15,6 +15,19 @@ export interface PageDebugInfo {
     pre?: string;
     post?: string;
   };
+  accessibilityTree?: {
+    role?: string;
+    name?: string;
+    value?: string;
+    level?: number;
+    children?: Array<{
+      role?: string;
+      name?: string;
+      value?: string;
+      level?: number;
+      children?: any[];
+    }>;
+  };
   executionFolderName?: string;
 }
 
@@ -302,6 +315,22 @@ export class DOMSelectorInference {
     // Parse HTML to extract relevant elements
     const relevantElements: OptimizedDOMContext['relevantElements'] = [];
 
+    // Add elements from accessibility tree (role + name for getByRole-style hints)
+    if (pageDebugInfo.accessibilityTree) {
+      const a11yElements = this.flattenAccessibilityTree(pageDebugInfo.accessibilityTree);
+      for (const node of a11yElements) {
+        if (node.role && ['button', 'link', 'textbox', 'combobox', 'heading', 'checkbox', 'radio'].includes(node.role)) {
+          const tag = node.role === 'link' ? 'a' : node.role === 'textbox' ? 'input' : node.role === 'combobox' ? 'select' : node.role;
+          relevantElements.push({
+            tag,
+            attributes: node.name ? { 'aria-label': node.name, role: node.role } : { role: node.role },
+            text: node.name,
+            role: node.role,
+          });
+        }
+      }
+    }
+
     if (pageDebugInfo.pageSource) {
       // Simple HTML parsing - extract interactive elements
       // This is a simplified version - in production, use proper HTML parser
@@ -348,7 +377,7 @@ export class DOMSelectorInference {
 
     return {
       pageUrl: pageDebugInfo.pageUrl || '',
-      relevantElements: relevantElements.slice(0, 50), // Limit to 50 elements
+      relevantElements: relevantElements.slice(0, 80), // Limit to 80 elements (increased to include a11y)
       similarSelectors: pageDebugInfo.similarSelectors?.map(s => ({
         selector: s.selector,
         selectorType: s.selectorType,
@@ -356,6 +385,23 @@ export class DOMSelectorInference {
       })),
       action,
     };
+  }
+
+  /**
+   * Flatten accessibility tree to array of interactive nodes
+   */
+  private static flattenAccessibilityTree(
+    node: PageDebugInfo['accessibilityTree'],
+    result: Array<{ role?: string; name?: string; value?: string; level?: number }> = []
+  ): Array<{ role?: string; name?: string; value?: string; level?: number }> {
+    if (!node) return result;
+    if (node.role && node.role !== 'WebArea' && node.role !== 'generic') {
+      result.push({ role: node.role, name: node.name, value: node.value, level: node.level });
+    }
+    for (const child of node.children || []) {
+      this.flattenAccessibilityTree(child, result);
+    }
+    return result;
   }
 
   private static extractId(html: string): string | undefined {

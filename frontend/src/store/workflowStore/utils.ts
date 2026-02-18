@@ -135,6 +135,8 @@ export function getDefaultNodeData(type: NodeType | string): any {
         recordSession: false,
         screenshotAllNodes: false,
         screenshotTiming: 'post',
+        snapshotAllNodes: false,
+        snapshotTiming: 'post',
         slowMo: 0,
         scrollThenAction: false,
       },

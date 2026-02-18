@@ -24,6 +24,7 @@ describe('generateAllureReport', () => {
       status: 'completed',
       outputDirectory: '/tmp/test-reports',
       screenshotsDirectory: '/tmp/test-reports/screenshots',
+      snapshotsDirectory: '/tmp/test-reports/snapshots',
       videosDirectory: '/tmp/test-reports/videos',
       nodes: [
         {
@@ -85,6 +86,39 @@ describe('generateAllureReport', () => {
     expect(resultJson.labels).toContainEqual({ name: 'testClass', value: 'action' });
   });
 
+  it('should include accessibility snapshot attachments in result JSON', async () => {
+    (fs.writeFileSync as jest.Mock).mockClear();
+    const metadataWithSnapshots: ExecutionMetadata = {
+      ...metadata,
+      nodes: [
+        {
+          ...metadata.nodes[0],
+          accessibilitySnapshotPaths: {
+            pre: '/tmp/snapshots/node1-pre.json',
+            post: '/tmp/snapshots/node1-post.json',
+          },
+        },
+      ],
+    };
+    await generateAllureReport(metadataWithSnapshots, workflow, reportDir);
+
+    const writeCall = (fs.writeFileSync as jest.Mock).mock.calls.find(
+      (call: any[]) => call[0].includes('result.json')
+    );
+    const resultJson = JSON.parse(writeCall[1]);
+
+    expect(resultJson.attachments).toContainEqual({
+      name: 'accessibility-snapshot-pre',
+      source: 'node1-pre.json',
+      type: 'application/json',
+    });
+    expect(resultJson.attachments).toContainEqual({
+      name: 'accessibility-snapshot-post',
+      source: 'node1-post.json',
+      type: 'application/json',
+    });
+  });
+
   it('should copy screenshots to results directory', async () => {
     (fs.existsSync as jest.Mock).mockImplementation((p: string) => {
       return p === metadata.screenshotsDirectory;
@@ -125,6 +159,7 @@ describe('generateAllureIndexHtml', () => {
       status: 'completed',
       outputDirectory: '/tmp/test-reports',
       screenshotsDirectory: '/tmp/test-reports/screenshots',
+      snapshotsDirectory: '/tmp/test-reports/snapshots',
       videosDirectory: '/tmp/test-reports/videos',
       nodes: [
         {

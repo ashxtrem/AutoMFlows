@@ -17,6 +17,14 @@ export interface PageDebugInfo {
   screenshotPaths?: {
     pre?: string;
     post?: string;
+    failure?: string;
+  };
+  accessibilityTree?: {
+    role?: string;
+    name?: string;
+    value?: string;
+    level?: number;
+    children?: any[];
   };
   executionFolderName?: string; // Folder name for constructing screenshot URLs
 }
@@ -429,11 +437,112 @@ export class PageDebugHelper {
           selectorType
         );
       }
+
+      // Capture accessibility tree for role-based selector hints
+      try {
+        const tree = await this.captureAccessibilityTree(page);
+        if (tree) debugInfo.accessibilityTree = tree;
+      } catch (error: any) {
+        console.warn(`Failed to capture accessibility tree: ${error.message}`);
+      }
     } catch (error: any) {
       console.warn(`Failed to capture debug info: ${error.message}`);
     }
 
     return debugInfo;
+  }
+
+  /**
+   * Capture accessibility tree from page (CDP for Chromium, DOM fallback for others)
+   */
+  private static async captureAccessibilityTree(page: any): Promise<PageDebugInfo['accessibilityTree'] | undefined> {
+    try {
+      const cdp = await page.context().newCDPSession(page);
+      await cdp.send('Accessibility.enable');
+      const { nodes } = await cdp.send('Accessibility.getFullAXTree');
+      await cdp.detach();
+      return this.buildTreeFromCDPNodes(nodes || []) ?? undefined;
+    } catch {
+      return (await this.buildTreeFromDOM(page)) ?? undefined;
+    }
+  }
+
+  private static buildTreeFromCDPNodes(nodes: any[]): PageDebugInfo['accessibilityTree'] | null {
+    if (!nodes || nodes.length === 0) return null;
+    const nodeMap = new Map<string, any>();
+    for (const node of nodes) nodeMap.set(node.nodeId, { ...node });
+    let rootNode: any = null;
+    for (const node of nodes) {
+      if (!node.parentId || !nodeMap.has(node.parentId)) {
+        rootNode = node;
+        break;
+      }
+    }
+    if (!rootNode) rootNode = nodes[0];
+
+    function buildNode(cdpNode: any): any {
+      const result: any = {};
+      if (cdpNode.role?.value) result.role = String(cdpNode.role.value);
+      if (cdpNode.name?.value) result.name = String(cdpNode.name.value);
+      if (cdpNode.value?.value !== undefined) result.value = String(cdpNode.value.value);
+      const levelProp = cdpNode.properties?.find((p: any) => p.name === 'level');
+      if (levelProp?.value?.value !== undefined) result.level = Number(levelProp.value.value);
+      const childIds = cdpNode.childIds || [];
+      if (childIds.length > 0) {
+        result.children = childIds
+          .map((id: string) => nodeMap.get(id))
+          .filter(Boolean)
+          .map((child: any) => buildNode(child));
+      }
+      return result;
+    }
+    return buildNode(rootNode);
+  }
+
+  private static async buildTreeFromDOM(page: any): Promise<PageDebugInfo['accessibilityTree'] | null> {
+    return page.evaluate(() => {
+      const IMPLICIT_ROLES: Record<string, string> = {
+        a: 'link', button: 'button', input: 'textbox', textarea: 'textbox', select: 'combobox',
+        h1: 'heading', h2: 'heading', h3: 'heading', h4: 'heading', h5: 'heading', h6: 'heading',
+        nav: 'navigation', main: 'main', header: 'banner', footer: 'contentinfo',
+      };
+      function getRole(el: Element): string {
+        const role = el.getAttribute('role');
+        if (role) return role.toLowerCase();
+        return IMPLICIT_ROLES[el.tagName.toLowerCase()] || 'generic';
+      }
+      function getName(el: Element): string {
+        const ariaLabel = el.getAttribute('aria-label');
+        if (ariaLabel) return ariaLabel;
+        const title = el.getAttribute('title');
+        if (title) return title;
+        const tag = el.tagName.toLowerCase();
+        if (tag === 'input' || tag === 'textarea') {
+          const id = (el as HTMLInputElement).id;
+          if (id) {
+            const label = document.querySelector('label[for="' + id + '"]');
+            if (label) return label.textContent?.trim() || '';
+          }
+        }
+        if (['button', 'a', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tag)) {
+          return el.textContent?.trim()?.substring(0, 100) || '';
+        }
+        return '';
+      }
+      const selector = 'a, button, input, textarea, select, [role], h1, h2, h3, h4, h5, h6, nav, main, header, footer, article';
+      const elements = document.querySelectorAll(selector);
+      const children: any[] = [];
+      for (const el of elements) {
+        const result: any = { role: getRole(el) };
+        const name = getName(el);
+        if (name) result.name = name;
+        if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
+          if (el.value) result.value = el.value;
+        }
+        children.push(result);
+      }
+      return { role: 'WebArea', name: document.title || '', children };
+    });
   }
 }
 

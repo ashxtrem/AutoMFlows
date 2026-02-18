@@ -32,6 +32,8 @@ export function generateHTMLContent(
 
     const hasScreenshots = node.screenshotPaths && Object.keys(node.screenshotPaths).length > 0;
     const screenshotCount = hasScreenshots && node.screenshotPaths ? Object.keys(node.screenshotPaths).length : 0;
+    const hasAccessibilitySnapshots = node.accessibilitySnapshotPaths && Object.keys(node.accessibilitySnapshotPaths).length > 0;
+    const snapshotCount = hasAccessibilitySnapshots && node.accessibilitySnapshotPaths ? Object.keys(node.accessibilitySnapshotPaths).length : 0;
     const hasVideo = !!node.videoPath;
     
     // Get workflow node for properties
@@ -47,6 +49,14 @@ export function generateHTMLContent(
         </button>`
       : '-';
     
+    // Accessibility snapshot toggle button
+    const snapshotToggle = hasAccessibilitySnapshots
+      ? `<button class="snapshot-toggle" onclick="toggleSnapshots(${index})" aria-expanded="false">
+          <span class="toggle-icon">▼</span>
+          Snapshots (${snapshotCount})
+        </button>`
+      : '-';
+
     // Video toggle button
     const videoToggle = hasVideo
       ? `<button class="video-toggle" onclick="toggleVideo(${index})" aria-expanded="false">
@@ -80,6 +90,23 @@ export function generateHTMLContent(
                 <div class="screenshot-label">${timingLabel}</div>
                 <img src="${relativePath}" alt="Screenshot ${timing}" class="screenshot-image" loading="lazy" />
                 <a href="${relativePath}" target="_blank" class="screenshot-link">Open in new tab</a>
+              </div>
+            `;
+          })
+          .join('')
+      : '';
+
+    // Accessibility snapshot content (links to JSON files)
+    const snapshotContent = hasAccessibilitySnapshots && node.accessibilitySnapshotPaths
+      ? Object.entries(node.accessibilitySnapshotPaths)
+          .filter(([_, p]) => p)
+          .map(([timing, snapshotPath]) => {
+            const relativePath = getRelativePath(snapshotPath);
+            const timingLabel = timing === 'failure' ? 'FAILURE' : timing.toUpperCase();
+            return `
+              <div class="snapshot-item">
+                <div class="snapshot-label">${timingLabel}</div>
+                <a href="${relativePath}" target="_blank" class="snapshot-link">View JSON</a>
               </div>
             `;
           })
@@ -234,6 +261,14 @@ export function generateHTMLContent(
             </div>
           </div>
         ` : ''}
+        ${hasAccessibilitySnapshots ? `
+          <div class="detail-section">
+            <h4 class="detail-section-title">Accessibility Snapshots</h4>
+            <div class="snapshot-container">
+              ${snapshotContent}
+            </div>
+          </div>
+        ` : ''}
         ${hasVideo ? `
           <div class="detail-section">
             <h4 class="detail-section-title">Video</h4>
@@ -245,7 +280,7 @@ export function generateHTMLContent(
       </div>
     `;
 
-    const hasDetails = hasProperties || node.status === 'error' || (node.traceLogs && node.traceLogs.length > 0) || node.debugInfo || hasScreenshots || hasVideo;
+    const hasDetails = hasProperties || node.status === 'error' || (node.traceLogs && node.traceLogs.length > 0) || node.debugInfo || hasScreenshots || hasAccessibilitySnapshots || hasVideo;
 
     return `
       <tr class="node-row ${hasDetails ? 'expandable' : ''}" ${hasDetails ? `onclick="toggleRow(${index})" style="cursor: pointer;"` : ''}>
@@ -258,24 +293,32 @@ export function generateHTMLContent(
         <td>${nodeDuration}s</td>
         <td>${node.error ? escapeHtml(node.error.substring(0, 50)) + (node.error.length > 50 ? '...' : '') : '-'}</td>
         <td>${screenshotToggle}</td>
+        <td>${snapshotToggle}</td>
         <td>${videoToggle}</td>
       </tr>
       ${hasDetails ? `
         <tr class="details-row" id="details-row-${index}" style="display: none;">
-          <td colspan="7" class="details-cell">
+          <td colspan="8" class="details-cell">
             ${expandableContent}
           </td>
         </tr>
       ` : ''}
       <tr class="screenshot-row" id="screenshot-row-${index}" style="display: none;">
-        <td colspan="7" class="screenshot-cell">
+        <td colspan="8" class="screenshot-cell">
           <div class="screenshot-container">
             ${screenshotContent}
           </div>
         </td>
       </tr>
+      <tr class="snapshot-row" id="snapshot-row-${index}" style="display: none;">
+        <td colspan="8" class="snapshot-cell">
+          <div class="snapshot-container">
+            ${snapshotContent}
+          </div>
+        </td>
+      </tr>
       <tr class="video-row" id="video-row-${index}" style="display: none;">
-        <td colspan="7" class="video-cell">
+        <td colspan="8" class="video-cell">
           <div class="video-container">
             ${videoContent}
           </div>
@@ -341,7 +384,7 @@ export function generateHTMLContent(
       padding: 12px;
       border-bottom: 1px solid #3a3a3a;
     }
-    tr:hover:not(.details-row):not(.screenshot-row):not(.video-row) { background: #333; }
+    tr:hover:not(.details-row):not(.screenshot-row):not(.snapshot-row):not(.video-row) { background: #333; }
     .node-row.expandable:hover { background: #333; }
     .expand-icon {
       display: inline-block;
@@ -365,7 +408,7 @@ export function generateHTMLContent(
     .badge-running { background: #3b82f6; color: #fff; }
     a { color: #4a9eff; text-decoration: none; }
     a:hover { text-decoration: underline; }
-    .screenshot-toggle, .video-toggle {
+    .screenshot-toggle, .snapshot-toggle, .video-toggle {
       background: #4a9eff;
       color: #fff;
       border: none;
@@ -382,12 +425,14 @@ export function generateHTMLContent(
       background: #10b981;
     }
     .screenshot-toggle:hover { background: #3a8eef; }
+    .snapshot-toggle:hover { background: #3a8eef; }
     .video-toggle:hover { background: #059669; }
     .toggle-icon {
       transition: transform 0.2s;
       font-size: 10px;
     }
     .screenshot-toggle[aria-expanded="true"] .toggle-icon,
+    .snapshot-toggle[aria-expanded="true"] .toggle-icon,
     .video-toggle[aria-expanded="true"] .toggle-icon {
       transform: rotate(180deg);
     }
@@ -611,6 +656,42 @@ export function generateHTMLContent(
       text-align: center;
       padding: 4px;
     }
+    .snapshot-row {
+      background: #252525;
+    }
+    .snapshot-cell {
+      padding: 0 !important;
+      border-bottom: 2px solid #3a3a3a;
+    }
+    .snapshot-container {
+      padding: 20px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+    }
+    .snapshot-item {
+      background: #1f1f1f;
+      border-radius: 8px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .snapshot-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .snapshot-link {
+      color: #4a9eff;
+      text-decoration: none;
+      font-size: 13px;
+    }
+    .snapshot-link:hover {
+      text-decoration: underline;
+    }
     .screenshot-link:hover {
       text-decoration: underline;
     }
@@ -736,6 +817,21 @@ export function generateHTMLContent(
         button.setAttribute('aria-expanded', 'false');
       }
     }
+
+    function toggleSnapshots(index) {
+      event.stopPropagation();
+      const row = document.getElementById('snapshot-row-' + index);
+      const button = event.target.closest('.snapshot-toggle');
+      if (row && button) {
+        if (row.style.display === 'none') {
+          row.style.display = '';
+          button.setAttribute('aria-expanded', 'true');
+        } else {
+          row.style.display = 'none';
+          button.setAttribute('aria-expanded', 'false');
+        }
+      }
+    }
     
     // Make screenshots clickable to open in new tab
     document.addEventListener('DOMContentLoaded', function() {
@@ -784,6 +880,7 @@ export function generateHTMLContent(
           <th>Duration</th>
           <th>Error</th>
           <th>Screenshots</th>
+          <th>Snapshots</th>
           <th>Video</th>
         </tr>
       </thead>

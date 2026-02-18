@@ -10,11 +10,13 @@ export async function generateCSVReport(
   reportDir: string
 ): Promise<void> {
   const testNodes = getTestNodes(metadata, workflow);
-  const headers = ['Node ID', 'Node Label', 'Node Type', 'Status', 'Start Time', 'End Time', 'Duration (ms)', 'Error'];
+  const headers = ['Node ID', 'Node Label', 'Node Type', 'Status', 'Start Time', 'End Time', 'Duration (ms)', 'Screenshot Count', 'Snapshot Count', 'Error'];
   const rows = testNodes.map(node => {
     const duration = node.endTime && node.startTime
       ? node.endTime - node.startTime
       : '';
+    const screenshotCount = node.screenshotPaths ? Object.keys(node.screenshotPaths).length : 0;
+    const snapshotCount = node.accessibilitySnapshotPaths ? Object.keys(node.accessibilitySnapshotPaths).length : 0;
     return [
       node.nodeId,
       node.nodeLabel || '',
@@ -23,6 +25,8 @@ export async function generateCSVReport(
       new Date(node.startTime).toISOString(),
       node.endTime ? new Date(node.endTime).toISOString() : '',
       duration.toString(),
+      screenshotCount.toString(),
+      snapshotCount.toString(),
       node.error || '',
     ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(',');
   });

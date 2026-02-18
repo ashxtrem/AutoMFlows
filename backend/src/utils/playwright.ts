@@ -46,6 +46,17 @@ export class PlaywrightManager {
     }
   }
 
+  setVideosDirectory(directory: string): void {
+    this.videosDir = directory;
+    if (!fs.existsSync(this.videosDir)) {
+      fs.mkdirSync(this.videosDir, { recursive: true });
+    }
+  }
+
+  setRecordSession(enabled: boolean): void {
+    this.recordSession = enabled;
+  }
+
   /**
    * Set logger for capturing browser console logs
    * @param logger - Logger instance

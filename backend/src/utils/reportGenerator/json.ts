@@ -31,6 +31,7 @@ export async function generateJSONReport(
       status: node.status,
       error: node.error,
       screenshotPaths: node.screenshotPaths,
+      accessibilitySnapshotPaths: node.accessibilitySnapshotPaths,
     })),
   };
 
