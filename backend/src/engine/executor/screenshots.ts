@@ -23,6 +23,12 @@ export async function takeNodeScreenshot(
       return; // Page is closed, skip screenshot
     }
 
+    // Ensure PlaywrightManager uses report-specific screenshots folder (defense-in-depth)
+    const screenshotsDirectory = context.getData('screenshotsDirectory');
+    if (screenshotsDirectory && playwright.setScreenshotsDirectory) {
+      playwright.setScreenshotsDirectory(screenshotsDirectory);
+    }
+
     const fileName = `${nodeId}-${timing}-${Date.now()}.png`;
     const screenshotPath = await playwright.takeScreenshot(fileName, false);
     

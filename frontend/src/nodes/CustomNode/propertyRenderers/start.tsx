@@ -30,6 +30,25 @@ export const renderStartProperties: PropertyRenderer = ({ renderData, handleProp
           ]}
         />
       ), 2)}
+      {renderPropertyRow('snapshotAllNodes', (
+        <InlineCheckbox
+          label="Accessibility Snapshot All Nodes"
+          value={renderData.snapshotAllNodes || false}
+          onChange={(value) => handlePropertyChange('snapshotAllNodes', value)}
+        />
+      ), 2.5)}
+      {renderData.snapshotAllNodes && renderPropertyRow('snapshotTiming', (
+        <InlineSelect
+          label="Snapshot Timing"
+          value={renderData.snapshotTiming || 'post'}
+          onChange={(value) => handlePropertyChange('snapshotTiming', value)}
+          options={[
+            { label: 'Pre', value: 'pre' },
+            { label: 'Post', value: 'post' },
+            { label: 'Both', value: 'both' },
+          ]}
+        />
+      ), 2.6)}
       {renderPropertyRow('slowMo', (
         <InlineNumberInput
           label="Slowmo (ms)"

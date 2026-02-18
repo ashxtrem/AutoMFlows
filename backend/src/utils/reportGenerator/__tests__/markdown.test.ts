@@ -22,6 +22,7 @@ describe('generateMarkdownReport', () => {
       status: 'completed',
       outputDirectory: '/tmp/test-reports',
       screenshotsDirectory: '/tmp/test-reports/screenshots',
+      snapshotsDirectory: '/tmp/test-reports/snapshots',
       videosDirectory: '/tmp/test-reports/videos',
       nodes: [
         {
@@ -91,7 +92,7 @@ describe('generateMarkdownReport', () => {
     const markdown = writeCall[1];
 
     expect(markdown).toContain('## Node Execution Details');
-    expect(markdown).toContain('| Node | Type | Status | Duration | Error |');
+    expect(markdown).toContain('| Node | Type | Status | Duration | Screenshots | Snapshots | Error |');
     expect(markdown).toContain('✅ completed');
     expect(markdown).toContain('❌ error');
   });

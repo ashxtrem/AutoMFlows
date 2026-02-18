@@ -15,6 +15,7 @@ describe('screenshots', () => {
   beforeEach(() => {
     mockContext = {
       getPage: jest.fn().mockReturnValue(createMockPage()),
+      getData: jest.fn().mockReturnValue(undefined),
     } as any;
 
     mockPlaywright = {

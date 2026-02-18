@@ -16,6 +16,11 @@ export interface NodeExecutionEvent {
     post?: string;
     failure?: string;
   };
+  accessibilitySnapshotPaths?: {
+    pre?: string;
+    post?: string;
+    failure?: string;
+  };
   videoPath?: string;
   traceLogs?: string[];
   debugInfo?: PageDebugInfo;
@@ -29,6 +34,7 @@ export interface ExecutionMetadata {
   status: 'running' | 'completed' | 'error' | 'stopped';
   outputDirectory: string;
   screenshotsDirectory: string;
+  snapshotsDirectory: string;
   videosDirectory: string;
   nodes: NodeExecutionEvent[];
 }
@@ -37,6 +43,7 @@ export class ExecutionTracker {
   private metadata: ExecutionMetadata;
   private outputDirectory: string;
   private screenshotsDirectory: string;
+  private snapshotsDirectory: string;
   private videosDirectory: string;
   private workflow: Workflow; // Store workflow to access node properties like isTest
 
@@ -57,6 +64,7 @@ export class ExecutionTracker {
     const resolvedOutputPath = resolveFromProjectRoot(outputPath);
     this.outputDirectory = path.resolve(resolvedOutputPath, folderName);
     this.screenshotsDirectory = path.join(this.outputDirectory, 'screenshots');
+    this.snapshotsDirectory = path.join(this.outputDirectory, 'snapshots');
     this.videosDirectory = path.join(this.outputDirectory, 'videos');
 
     // Create directories
@@ -65,6 +73,9 @@ export class ExecutionTracker {
     }
     if (!fs.existsSync(this.screenshotsDirectory)) {
       fs.mkdirSync(this.screenshotsDirectory, { recursive: true });
+    }
+    if (!fs.existsSync(this.snapshotsDirectory)) {
+      fs.mkdirSync(this.snapshotsDirectory, { recursive: true });
     }
     if (!fs.existsSync(this.videosDirectory)) {
       fs.mkdirSync(this.videosDirectory, { recursive: true });
@@ -77,6 +88,7 @@ export class ExecutionTracker {
       status: 'running',
       outputDirectory: this.outputDirectory,
       screenshotsDirectory: this.screenshotsDirectory,
+      snapshotsDirectory: this.snapshotsDirectory,
       videosDirectory: this.videosDirectory,
       nodes: [],
     };
@@ -103,6 +115,10 @@ export class ExecutionTracker {
 
   getScreenshotsDirectory(): string {
     return this.screenshotsDirectory;
+  }
+
+  getSnapshotsDirectory(): string {
+    return this.snapshotsDirectory;
   }
 
   getVideosDirectory(): string {
@@ -162,6 +178,18 @@ export class ExecutionTracker {
       // If node event doesn't exist yet (shouldn't happen, but handle gracefully),
       // log a warning. This can happen if screenshot is taken before node start is recorded.
       console.warn(`Cannot record screenshot for node ${nodeId}: node event not found. Screenshot path: ${screenshotPath}`);
+    }
+  }
+
+  recordAccessibilitySnapshot(nodeId: string, snapshotPath: string, timing: 'pre' | 'post' | 'failure'): void {
+    const nodeEvent = this.metadata.nodes.find(n => n.nodeId === nodeId);
+    if (nodeEvent) {
+      if (!nodeEvent.accessibilitySnapshotPaths) {
+        nodeEvent.accessibilitySnapshotPaths = {};
+      }
+      nodeEvent.accessibilitySnapshotPaths[timing] = snapshotPath;
+    } else {
+      console.warn(`Cannot record accessibility snapshot for node ${nodeId}: node event not found. Path: ${snapshotPath}`);
     }
   }
 

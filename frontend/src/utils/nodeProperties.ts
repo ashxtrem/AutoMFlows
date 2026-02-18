@@ -238,6 +238,8 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
           { name: 'recordSession', label: 'Record Session', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
           { name: 'screenshotAllNodes', label: 'Screenshot All Nodes', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
           { name: 'screenshotTiming', label: 'Screenshot Timing', dataType: PropertyDataType.STRING, required: false, defaultValue: 'post' },
+          { name: 'snapshotAllNodes', label: 'Accessibility Snapshot All Nodes', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+          { name: 'snapshotTiming', label: 'Snapshot Timing', dataType: PropertyDataType.STRING, required: false, defaultValue: 'post' },
         ];
       
       case NodeType.CONTEXT_MANIPULATE:

@@ -9,6 +9,11 @@ vi.mock('../../utils/nodeArrangement', () => ({
   arrangeNodesHorizontal: vi.fn((nodes) => nodes),
 }));
 
+// Break circular dependency: arrangement -> Canvas -> workflowStore -> arrangement
+vi.mock('../../../components/Canvas', () => ({
+  getReactFlowSetNodes: vi.fn(() => null),
+}));
+
 type TestStore = ReturnType<typeof getInitialState> & ArrangementSlice & { saveToHistory: () => void };
 
 describe('WorkflowStore Arrangement Slice', () => {

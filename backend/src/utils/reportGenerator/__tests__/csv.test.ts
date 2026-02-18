@@ -22,6 +22,7 @@ describe('generateCSVReport', () => {
       status: 'completed',
       outputDirectory: '/tmp/test-reports',
       screenshotsDirectory: '/tmp/test-reports/screenshots',
+      snapshotsDirectory: '/tmp/test-reports/snapshots',
       videosDirectory: '/tmp/test-reports/videos',
       nodes: [
         {
@@ -74,6 +75,8 @@ describe('generateCSVReport', () => {
     expect(csvContent).toContain('Start Time');
     expect(csvContent).toContain('End Time');
     expect(csvContent).toContain('Duration (ms)');
+    expect(csvContent).toContain('Screenshot Count');
+    expect(csvContent).toContain('Snapshot Count');
     expect(csvContent).toContain('Error');
   });
 

@@ -61,6 +61,7 @@ describe('ReportGenerator Utils', () => {
         status: 'completed',
         outputDirectory: '/tmp',
         screenshotsDirectory: '/tmp/screenshots',
+        snapshotsDirectory: '/tmp/snapshots',
         videosDirectory: '/tmp/videos',
         nodes: [
           {
@@ -94,6 +95,7 @@ describe('ReportGenerator Utils', () => {
         status: 'completed',
         outputDirectory: '/tmp',
         screenshotsDirectory: '/tmp/screenshots',
+        snapshotsDirectory: '/tmp/snapshots',
         videosDirectory: '/tmp/videos',
         nodes: [
           {
@@ -127,6 +129,7 @@ describe('ReportGenerator Utils', () => {
         status: 'completed',
         outputDirectory: '/tmp',
         screenshotsDirectory: '/tmp/screenshots',
+        snapshotsDirectory: '/tmp/snapshots',
         videosDirectory: '/tmp/videos',
         nodes: [
           {
@@ -173,6 +176,7 @@ describe('ReportGenerator Utils', () => {
         status: 'completed',
         outputDirectory: '/tmp',
         screenshotsDirectory: '/tmp/screenshots',
+        snapshotsDirectory: '/tmp/snapshots',
         videosDirectory: '/tmp/videos',
         nodes: [
           {
