@@ -4,6 +4,9 @@
 
 AutoMFlows is a web-based visual workflow builder for browser automation, inspired by n8n and ComfyUI. Create complex web automation workflows using a drag-and-drop node-based interface without writing code.
 https://github.com/ashxtrem/AutoMFlows
+
+![AutoMFlows workflow builder](frontend/public/main.png)
+
 ## Features
 
 - **Visual Workflow Editor**: Drag-and-drop node-based interface
