@@ -6,7 +6,7 @@ import AssessmentIcon from '@mui/icons-material/Assessment';
 import MenuIcon from '@mui/icons-material/Menu';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PlayCircleFilledWhiteTwoToneIcon from '@mui/icons-material/PlayCircleFilledWhiteTwoTone';
-import { Eye, EyeOff, ChevronDown } from 'lucide-react';
+import { Eye, EyeOff, ChevronDown, FolderOpen } from 'lucide-react';
 import { useWorkflowStore } from '../store/workflowStore';
 import { getSampleTemplate } from '../utils/sampleTemplate';
 import { useSettingsStore } from '../store/settingsStore';
@@ -25,7 +25,7 @@ import MemoryManagementSubmenu from './MemoryManagementSubmenu';
 import KeyBindingsModal from './KeyBindingsModal';
 import { useNotificationStore } from '../store/notificationStore';
 import Tooltip from './Tooltip';
-import { getBackendBaseUrl } from '../utils/getBackendPort';
+import { getBackendPort, getBackendBaseUrl } from '../utils/getBackendPort';
 
 const STORAGE_KEY_TRACE_LOGS = 'automflows_trace_logs';
 
@@ -714,6 +714,30 @@ export default function TopBar() {
               <AssessmentIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
               Report History
             </button>
+            <button
+              onClick={() => {
+                setIsMenuOpen(false);
+                const url = window.location.origin + '/workflows';
+                window.open(url, '_blank');
+              }}
+              className="w-full px-4 py-2.5 bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded flex items-center gap-3 text-sm transition-colors"
+              title="Go to Workflow Library & Batch Runner"
+            >
+              <FolderOpen size={18} className="flex-shrink-0" />
+              Workflow Library
+            </button>
+            <button
+              onClick={async () => {
+                setIsMenuOpen(false);
+                const port = await getBackendPort();
+                window.open(`${getBackendBaseUrl(port)}/api-docs`, '_blank');
+              }}
+              className="w-full px-4 py-2.5 bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded flex items-center gap-3 text-sm transition-colors"
+              title="Open API documentation (Swagger)"
+            >
+              <MenuIcon sx={{ fontSize: '18px', color: '#ffffff' }} className="flex-shrink-0" />
+              API Docs
+            </button>
           </div>
 
           {/* Divider */}
@@ -875,6 +899,17 @@ export default function TopBar() {
                   className="w-full px-3 py-2 text-sm bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded-md transition-colors text-left"
                 >
                   Memory Management
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsSettingsSubmenuOpen(false);
+                    window.location.href = window.location.origin + '/workflows';
+                  }}
+                  className="w-full px-3 py-2 text-sm bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded-md transition-colors text-left flex items-center gap-2"
+                >
+                  <FolderOpen size={16} />
+                  Workflow Library
                 </button>
               </div>
 

@@ -8,8 +8,7 @@ vi.mock('../../store/workflowStore');
 vi.mock('reactflow');
 
 describe('useShortcutNavigation', () => {
-  const mockSetCenter = vi.fn();
-  const mockGetViewport = vi.fn(() => ({ zoom: 1, x: 0, y: 0 }));
+  const mockFitView = vi.fn();
   const mockSetNodes = vi.fn();
   const mockNodes = [
     {
@@ -32,8 +31,7 @@ describe('useShortcutNavigation', () => {
       return selector ? selector(state) : state;
     });
     (useReactFlow as any).mockReturnValue({
-      setCenter: mockSetCenter,
-      getViewport: mockGetViewport,
+      fitView: mockFitView,
       setNodes: mockSetNodes,
       getNodes: mockGetNodes,
     });

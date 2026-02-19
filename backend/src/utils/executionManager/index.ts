@@ -509,15 +509,20 @@ export class ExecutionManager {
 
     const wasRunning = execution.status === ExecutionStatus.RUNNING;
     const wasQueued = execution.status === ExecutionStatus.IDLE;
+    const inQueue = this.queue.some((item) => item.executionId === executionId);
+    // Single executions start with IDLE and are never queued; executor is running
+    const wasSingleRunning = wasQueued && !inQueue;
 
-    if (wasRunning) {
-      // Stop running execution
+    if (wasRunning || wasSingleRunning) {
+      // Stop running execution (batch RUNNING or single IDLE-not-queued)
       await execution.executor.stop();
       execution.status = ExecutionStatus.STOPPED;
       execution.endTime = Date.now();
-      this.activeWorkers--;
-      
-      // Decrement batch active workers count
+      if (wasRunning) {
+        this.activeWorkers--;
+      }
+
+      // Decrement batch active workers count (batch executions only)
       if (execution.batchId) {
         const currentBatchActive = this.batchActiveWorkers.get(execution.batchId) || 0;
         if (currentBatchActive > 0) {

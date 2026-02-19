@@ -632,6 +632,90 @@ export default function workflowRoutes(io: Server) {
 
   /**
    * @swagger
+   * /api/workflows/scan:
+   *   get:
+   *     summary: Scan folder for workflow files
+   *     description: Preview workflows in a folder without executing. Returns validation status for each discovered file.
+   *     tags: [Workflows]
+   *     parameters:
+   *       - in: query
+   *         name: folderPath
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: Path to folder containing workflow JSON files (relative or absolute)
+   *       - in: query
+   *         name: recursive
+   *         schema:
+   *           type: boolean
+   *           default: false
+   *         description: Scan subdirectories
+   *       - in: query
+   *         name: pattern
+   *         schema:
+   *           type: string
+   *           default: "*.json"
+   *         description: Glob pattern for file matching
+   *     responses:
+   *       200:
+   *         description: Scan results with workflow validation status
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: array
+   *               items:
+   *                 $ref: '#/components/schemas/WorkflowFileInfo'
+   *       400:
+   *         description: Bad request - folderPath parameter missing
+   *       404:
+   *         description: Folder not found
+   *       500:
+   *         description: Internal server error
+   */
+  router.get('/scan', (req: Request, res: Response) => {
+    try {
+      const { folderPath, recursive, pattern } = req.query;
+
+      if (!folderPath || typeof folderPath !== 'string') {
+        return res.status(400).json({
+          error: 'folderPath query parameter is required',
+        });
+      }
+
+      const recursiveBool = String(recursive) === 'true';
+      const patternStr = (typeof pattern === 'string' ? pattern : undefined) || '*.json';
+
+      const results = WorkflowScanner.scanFolder(folderPath, {
+        recursive: recursiveBool,
+        pattern: patternStr,
+      });
+
+      // Return sanitized results (exclude full workflow object for invalid items to reduce payload)
+      const sanitized = results.map((r) => ({
+        fileName: r.fileName,
+        filePath: r.filePath,
+        isValid: r.isValid,
+        validationErrors: r.validationErrors,
+        workflow: r.isValid ? r.workflow : undefined,
+      }));
+
+      res.json(sanitized);
+    } catch (error: any) {
+      if (error.message?.includes('Folder not found') || error.message?.includes('Path is not a directory')) {
+        return res.status(404).json({
+          error: error.message,
+        });
+      }
+      console.error('Scan folder error:', error);
+      res.status(500).json({
+        error: 'Failed to scan folder',
+        message: error.message,
+      });
+    }
+  });
+
+  /**
+   * @swagger
    * /api/workflows/execution/batch/{batchId}:
    *   get:
    *     summary: Get batch execution status
