@@ -1,1 +1,1562 @@
-{"nodes":[{"id":"start-1","type":"start","position":{"x":100,"y":200},"data":{"type":"start","label":"Start","isTest":false,"recordSession":false,"screenshotAllNodes":false,"screenshotTiming":"post","isPinned":false,"searchHighlighted":false,"isMinimized":false,"width":284,"slowMo":1000,"bypass":false,"breakpoint":false,"scrollThenAction":true}},{"id":"setConfig-1","type":"setConfig.setConfig","position":{"x":100,"y":450},"data":{"type":"setConfig.setConfig","label":"Set Booking.com Config","config":{"from":"Delhi","to":"Mumbai","date":"2026-03-15","numberOfTravelers":2,"directFiltersOnly":true,"addHotel":false},"isTest":false,"isPinned":false,"searchHighlighted":false,"isMinimized":false,"width":228,"bypass":false,"breakpoint":false}},{"id":"openBrowser-1","type":"openBrowser","position":{"x":100,"y":700},"data":{"headless":false,"viewportWidth":390,"viewportHeight":844,"maxWindow":false,"browser":"chromium","stealthMode":true,"capabilities":{"isMobile":true,"userAgent":"Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1","viewport":{"width":390,"height":844},"hasTouch":true},"isTest":false,"type":"openBrowser","label":"Open Browser (iPhone 12 Pro)","isPinned":false,"isMinimized":false,"width":280,"searchHighlighted":false,"jsScript":"// Mobile Viewport Emulation Script\n// iPhone 12 Pro dimensions (390x844)\n\n(function() {\n  'use strict';\n\n  const MOBILE_WIDTH = 390;\n  const MOBILE_HEIGHT = 844;\n  const MOBILE_USER_AGENT = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1';\n\n  Object.defineProperty(window, 'innerWidth', { get: () => MOBILE_WIDTH, configurable: true, enumerable: true });\n  Object.defineProperty(window, 'innerHeight', { get: () => MOBILE_HEIGHT, configurable: true, enumerable: true });\n  Object.defineProperty(window, 'outerWidth', { get: () => MOBILE_WIDTH, configurable: true, enumerable: true });\n  Object.defineProperty(window, 'outerHeight', { get: () => MOBILE_HEIGHT, configurable: true, enumerable: true });\n  Object.defineProperty(screen, 'width', { get: () => MOBILE_WIDTH, configurable: true, enumerable: true });\n  Object.defineProperty(screen, 'height', { get: () => MOBILE_HEIGHT, configurable: true, enumerable: true });\n  Object.defineProperty(screen, 'availWidth', { get: () => MOBILE_WIDTH, configurable: true, enumerable: true });\n  Object.defineProperty(screen, 'availHeight', { get: () => MOBILE_HEIGHT - 44, configurable: true, enumerable: true });\n  Object.defineProperty(navigator, 'userAgent', { get: () => MOBILE_USER_AGENT, configurable: true, enumerable: true });\n  Object.defineProperty(navigator, 'platform', { get: () => 'iPhone', configurable: true, enumerable: true });\n  Object.defineProperty(navigator, 'maxTouchPoints', { get: () => 5, configurable: true, enumerable: true });\n  Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 6, configurable: true, enumerable: true });\n  if ('deviceMemory' in navigator) { Object.defineProperty(navigator, 'deviceMemory', { get: () => 4, configurable: true, enumerable: true }); }\n  if ('connection' in navigator) {\n    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;\n    if (connection) { Object.defineProperty(connection, 'effectiveType', { get: () => '4g', configurable: true, enumerable: true }); }\n  }\n  if (!('ontouchstart' in window)) { Object.defineProperty(window, 'ontouchstart', { get: () => null, set: () => {}, configurable: true, enumerable: true }); }\n  const originalMatchMedia = window.matchMedia;\n  window.matchMedia = function(query) {\n    if (query.includes('max-width')) {\n      const match = query.match(/max-width:\\s*(\\d+)px/);\n      if (match && parseInt(match[1]) >= MOBILE_WIDTH) {\n        return { matches: true, media: query, onchange: null, addListener: function() {}, removeListener: function() {}, addEventListener: function() {}, removeEventListener: function() {}, dispatchEvent: function() { return true; } };\n      }\n    }\n    return originalMatchMedia.call(window, query);\n  };\n  if (document.documentElement) {\n    let viewportMeta = document.querySelector('meta[name=\"viewport\"]');\n    if (!viewportMeta) { viewportMeta = document.createElement('meta'); viewportMeta.setAttribute('name', 'viewport'); document.head.appendChild(viewportMeta); }\n    viewportMeta.setAttribute('content', `width=${MOBILE_WIDTH}, initial-scale=1.0, maximum-scale=1.0, user-scalable=no`);\n  }\n  console.log(`[Mobile Emulation] Viewport set to ${MOBILE_WIDTH}x${MOBILE_HEIGHT}`);\n})();\n","bypass":false,"breakpoint":false}},{"id":"navigate-1","type":"navigation","position":{"x":100,"y":950},"data":{"type":"navigation","label":"Navigate to Booking.com","action":"navigate","url":"https://www.booking.com/","timeout":60000,"waitUntil":"load","isTest":true,"isPinned":false,"searchHighlighted":false,"width":252,"isMinimized":false}},{"id":"wait-1","type":"wait","position":{"x":100,"y":1200},"data":{"type":"wait","label":"Wait for page load","waitType":"timeout","value":3000,"timeout":30000,"isTest":true,"isPinned":false,"searchHighlighted":false,"isMinimized":false,"width":212,"breakpoint":false}},{"id":"click-flight-tab-1","type":"action","position":{"x":100,"y":1450},"data":{"type":"action","label":"Click Flight Tab","action":"click","selector":"//*[@id=\"flights\"]","selectorType":"xpath","timeout":30000,"isTest":true,"isPinned":false,"isMinimized":false,"width":296.9765625,"searchHighlighted":false,"bypass":false,"failSilently":false,"breakpoint":false}},{"id":"wait-flight-form-1","type":"wait","position":{"x":100,"y":1700},"data":{"type":"wait","label":"Wait for Flight Form","waitType":"timeout","value":2000,"timeout":30000,"isTest":true,"isPinned":false,"searchHighlighted":false,"isMinimized":false,"width":212,"breakpoint":false}},{"id":"runReusable-fillFrom","type":"reusable.runReusable","position":{"x":100,"y":1850},"data":{"type":"reusable.runReusable","label":"Run Reusable: fillFrom","contextName":"fillFrom"}},{"id":"runReusable-fillTo","type":"reusable.runReusable","position":{"x":100,"y":2050},"data":{"type":"reusable.runReusable","label":"Run Reusable: fillTo","contextName":"fillTo"}},{"id":"runReusable-selectDate","type":"reusable.runReusable","position":{"x":100,"y":2250},"data":{"type":"reusable.runReusable","label":"Run Reusable: selectDate","contextName":"selectDate"}},{"id":"runReusable-setPassengers","type":"reusable.runReusable","position":{"x":100,"y":2450},"data":{"type":"reusable.runReusable","label":"Run Reusable: setPassengers","contextName":"setPassengers"}},{"id":"reusable-fillFrom","type":"reusable.reusable","position":{"x":-200,"y":1950},"data":{"type":"reusable.reusable","label":"Reusable: fillFrom","contextName":"fillFrom"}},{"id":"end-fillFrom","type":"reusable.end","position":{"x":401,"y":1000},"data":{"type":"reusable.end","label":"End"}},{"id":"fill-from-1","type":"action","position":{"x":100,"y":1950},"data":{"type":"action","label":"Fill From Airport","action":"click","selector":"//button[@data-ui-name='input_location_from_segment_0']","selectorType":"xpath","value":"{{config.from}}","timeout":30000,"isTest":true,"isPinned":false,"isMinimized":false,"width":296.9765625,"searchHighlighted":false}},{"id":"wait-1771063097632-0","type":"wait","position":{"x":100,"y":2200},"data":{"type":"wait","label":"Wait for Flight Form","waitType":"timeout","value":2000,"timeout":30000,"isTest":true,"isPinned":false,"searchHighlighted":false,"isMinimized":false,"width":212,"breakpoint":false}},{"id":"type-1771063302096","type":"type","position":{"x":100,"y":2450},"data":{"type":"type","label":"Type","selector":"role:combobox","selectorType":"getByRole","inputMethod":"fill","text":"${data.from}","delay":0,"timeout":30000,"isTest":true,"searchHighlighted":false,"isPinned":false}},{"id":"keyboard-1771063464943","type":"keyboard","position":{"x":401.9765625,"y":200},"data":{"type":"keyboard","label":"Keyboard","action":"press","key":"Enter","timeout":30000,"isTest":true,"searchHighlighted":false,"isPinned":false}},{"id":"wait-1771063925087","type":"wait","position":{"x":401.9765625,"y":450},"data":{"type":"wait","label":"Wait","waitType":"timeout","value":1000,"timeout":30000,"isTest":true,"breakpoint":false,"searchHighlighted":false,"isPinned":false}},{"id":"action-1771064904103","type":"action","position":{"x":401.9765625,"y":700},"data":{"type":"action","label":"Action","action":"click","selector":"//ul[@id='flights-searchbox_suggestions']/li[1]","selectorType":"xpath","timeout":30000,"isTest":true,"searchHighlighted":false,"isPinned":false,"breakpoint":false}},{"id":"wait-1771064937775-0","type":"wait","position":{"x":401.9765625,"y":950},"data":{"type":"wait","label":"Wait","waitType":"timeout","value":1000,"timeout":30000,"isTest":true,"breakpoint":false,"searchHighlighted":false,"isPinned":false}},{"id":"reusable-fillTo","type":"reusable.reusable","position":{"x":-200,"y":1200},"data":{"type":"reusable.reusable","label":"Reusable: fillTo","contextName":"fillTo"}},{"id":"end-fillTo","type":"reusable.end","position":{"x":401,"y":2500},"data":{"type":"reusable.end","label":"End"}},{"id":"click-to-1","type":"action","position":{"x":401.9765625,"y":1200},"data":{"type":"action","label":"Click To Destination","action":"click","selector":"//button[@data-ui-name='input_location_to_segment_0']","selectorType":"xpath","timeout":30000,"isTest":true,"isPinned":false,"isMinimized":false,"width":296,"searchHighlighted":false,"bypass":false,"failSilently":false,"breakpoint":false}},{"id":"wait-after-to-click-1","type":"wait","position":{"x":401.9765625,"y":1450},"data":{"type":"wait","label":"Wait for To dropdown","waitType":"timeout","value":2000,"timeout":30000,"isTest":true,"isPinned":false,"searchHighlighted":false,"isMinimized":false,"width":212,"breakpoint":false}},{"id":"type-to-1","type":"type","position":{"x":401.9765625,"y":1700},"data":{"type":"type","label":"Type To destination","selector":"role:combobox","selectorType":"getByRole","inputMethod":"fill","text":"${data.to}","delay":0,"timeout":30000,"isTest":true,"searchHighlighted":false,"isPinned":false}},{"id":"keyboard-to-1","type":"keyboard","position":{"x":401.9765625,"y":1950},"data":{"type":"keyboard","label":"Press Enter","action":"press","key":"Enter","timeout":30000,"isTest":true,"searchHighlighted":false,"isPinned":false}},{"id":"wait-to-suggestions-1","type":"wait","position":{"x":401.9765625,"y":2200},"data":{"type":"wait","label":"Wait for suggestions","waitType":"timeout","value":1000,"timeout":30000,"isTest":true,"breakpoint":false,"searchHighlighted":false,"isPinned":false}},{"id":"click-to-suggestion-1","type":"action","position":{"x":401.9765625,"y":2450},"data":{"type":"action","label":"Select first To suggestion","action":"click","selector":"//ul[@id='flights-searchbox_suggestions']/li[1]","selectorType":"xpath","timeout":30000,"isTest":true,"searchHighlighted":false,"isPinned":false,"bypass":false,"failSilently":false,"breakpoint":false}},{"id":"reusable-selectDate","type":"reusable.reusable","position":{"x":600,"y":200},"data":{"type":"reusable.reusable","label":"Reusable: selectDate","contextName":"selectDate"}},{"id":"end-selectDate","type":"reusable.end","position":{"x":703.953125,"y":1000},"data":{"type":"reusable.end","label":"End"}},{"id":"click-date-1","type":"action","position":{"x":703.953125,"y":200},"data":{"type":"action","label":"Click Date Field","action":"click","selector":"//button[contains(@class,'date') or contains(@aria-label,'date') or contains(@data-ui-name,'date')]","selectorType":"xpath","timeout":30000,"isTest":true,"searchHighlighted":false,"isPinned":false,"bypass":false,"failSilently":false,"breakpoint":false}},{"id":"wait-date-picker-1","type":"wait","position":{"x":703.953125,"y":450},"data":{"type":"wait","label":"Wait for Date Picker","waitType":"timeout","value":2000,"timeout":30000,"isTest":true,"breakpoint":false,"searchHighlighted":false,"isPinned":false}},{"id":"select-date-1","type":"action","position":{"x":704,"y":624},"data":{"type":"action","label":"Select Date (March 15)","action":"doubleClick","selector":"//span[@data-ui-name='calendar_cell_${data.date}']","selectorType":"xpath","timeout":30000,"isTest":true,"searchHighlighted":false,"isPinned":false,"bypass":false,"failSilently":false,"breakpoint":false,"delay":1000}},{"id":"wait-after-date-select-1","type":"wait","position":{"x":703.953125,"y":825},"data":{"type":"wait","label":"Wait after date selection","waitType":"timeout","value":500,"timeout":30000,"isTest":true,"breakpoint":false,"searchHighlighted":false,"isPinned":false}},{"id":"close-date-picker-1","type":"action","position":{"x":703.953125,"y":950},"data":{"type":"action","label":"Close Date Picker","action":"click","selector":"//button[contains(text(),\"Done\") or contains(@aria-label,\"Done\") or contains(@data-ui-name,\"done\") or contains(@data-ui-name,\"close\")]","selectorType":"xpath","timeout":30000,"isTest":true,"searchHighlighted":false,"isPinned":false,"bypass":false,"failSilently":false,"breakpoint":false}},{"id":"reusable-setPassengers","type":"reusable.reusable","position":{"x":600,"y":1200},"data":{"type":"reusable.reusable","label":"Reusable: setPassengers","contextName":"setPassengers"}},{"id":"end-setPassengers","type":"reusable.end","position":{"x":703.953125,"y":2000},"data":{"type":"reusable.end","label":"End"}},{"id":"click-pax-1","type":"action","position":{"x":703.953125,"y":1200},"data":{"type":"action","label":"Click Passengers Field","action":"click","selector":"//button[@data-ui-name='button_occupancy']","selectorType":"xpath","timeout":30000,"isTest":true,"searchHighlighted":false,"isPinned":false,"bypass":false,"failSilently":false,"breakpoint":false}},{"id":"wait-pax-dropdown-1","type":"wait","position":{"x":703.953125,"y":1450},"data":{"type":"wait","label":"Wait for Passengers Dropdown","waitType":"timeout","value":2000,"timeout":30000,"isTest":true,"breakpoint":false,"searchHighlighted":false,"isPinned":false}},{"id":"set-pax-1","type":"action","position":{"x":703.953125,"y":1700},"data":{"type":"action","label":"Set Passengers to 2","action":"click","selector":"//button[@data-ui-name='button_occupancy_adults_plus']","selectorType":"xpath","timeout":30000,"isTest":true,"searchHighlighted":false,"isPinned":false,"bypass":false,"failSilently":false,"breakpoint":false}},{"id":"close-pax-dropdown-1","type":"action","position":{"x":703.953125,"y":1950},"data":{"type":"action","label":"Close Passengers Dropdown","action":"click","selector":"//button[contains(text(),\"Done\") or contains(@aria-label,\"Done\") or contains(@data-ui-name,\"done\") or contains(@data-ui-name,\"close\")]","selectorType":"xpath","timeout":30000,"isTest":true,"searchHighlighted":false,"isPinned":false,"bypass":false,"failSilently":false,"breakpoint":false}},{"id":"wait-before-search-1","type":"wait","position":{"x":703.953125,"y":2200},"data":{"type":"wait","label":"Wait before search","waitType":"timeout","value":2000,"timeout":30000,"isTest":true,"breakpoint":false,"searchHighlighted":false,"isPinned":false}},{"id":"wait-for-search-btn-1","type":"wait","position":{"x":848,"y":2512},"data":{"type":"wait","label":"Wait for Search button","waitType":"selector","value":"//button[@data-ui-name='button_search_submit']","selectorType":"xpath","timeout":20000,"isTest":true,"breakpoint":false,"searchHighlighted":false,"isPinned":false}},{"id":"click-search-1","type":"action","position":{"x":1005.9296875,"y":200},"data":{"type":"action","label":"Click Search","action":"click","selector":"//button[@data-ui-name='button_search_submit']","selectorType":"xpath","timeout":45000,"isTest":true,"searchHighlighted":false,"isPinned":false,"bypass":false,"failSilently":false,"breakpoint":false}},{"id":"wait-for-results-1","type":"wait","position":{"x":1005.9296875,"y":450},"data":{"type":"wait","label":"Wait for Search Results","waitType":"selector","value":"//div[contains(@class,'flight') or contains(@class,'result') or contains(@data-testid,'flight')]","selectorType":"xpath","timeout":60000,"isTest":true,"breakpoint":false,"searchHighlighted":false,"isPinned":false}},{"id":"wait-1771073370203","type":"wait","position":{"x":1005.9296875,"y":700},"data":{"type":"wait","label":"Wait","waitType":"timeout","value":1000,"timeout":30000,"isTest":true,"breakpoint":true,"searchHighlighted":false,"isPinned":false}},{"id":"shortcut.shortcut-1771062742648","type":"shortcut.shortcut","position":{"x":-112,"y":208},"data":{"type":"shortcut.shortcut","label":"Shortcut","shortcut":"s","isTest":false,"width":199,"height":50,"isMinimized":true,"searchHighlighted":false,"bypass":false,"isPinned":false,"breakpoint":false}},{"id":"action-1771077082474","type":"action","position":{"x":928,"y":2240},"data":{"type":"action","label":"Action","action":"click","selector":"//span[normalize-space()='Direct flights only']","selectorType":"xpath","timeout":30000,"isTest":true,"searchHighlighted":false}}],"edges":[{"id":"e1","source":"start-1","target":"setConfig-1","sourceHandle":"output","targetHandle":"input"},{"id":"e2","source":"setConfig-1","target":"openBrowser-1","sourceHandle":"output","targetHandle":"input"},{"id":"e3","source":"openBrowser-1","target":"navigate-1","sourceHandle":"output","targetHandle":"input"},{"id":"e4","source":"navigate-1","target":"wait-1","sourceHandle":"output","targetHandle":"input"},{"id":"e5","source":"wait-1","target":"click-flight-tab-1","sourceHandle":"output","targetHandle":"input"},{"id":"e6","source":"click-flight-tab-1","target":"wait-flight-form-1","sourceHandle":"output","targetHandle":"input"},{"id":"e7-main","source":"wait-flight-form-1","target":"runReusable-fillFrom","sourceHandle":"output","targetHandle":"input"},{"id":"e-run1","source":"runReusable-fillFrom","target":"runReusable-fillTo","sourceHandle":"output","targetHandle":"input"},{"id":"e-run2","source":"runReusable-fillTo","target":"runReusable-selectDate","sourceHandle":"output","targetHandle":"input"},{"id":"e-run3","source":"runReusable-selectDate","target":"runReusable-setPassengers","sourceHandle":"output","targetHandle":"input"},{"id":"e-run4","source":"runReusable-setPassengers","target":"wait-before-search-1","sourceHandle":"output","targetHandle":"input"},{"id":"def-fillFrom-start","source":"reusable-fillFrom","target":"fill-from-1","sourceHandle":"output","targetHandle":"input"},{"id":"reactflow__edge-fill-from-1output-wait-1771063097632-0driver","source":"fill-from-1","target":"wait-1771063097632-0","sourceHandle":"output","targetHandle":"driver"},{"id":"reactflow__edge-wait-1771063097632-0output-type","source":"wait-1771063097632-0","target":"type-1771063302096","sourceHandle":"output","targetHandle":"driver"},{"id":"reactflow__edge-type-1771063302096output-keyboard-1771063464943driver","source":"type-1771063302096","target":"keyboard-1771063464943","sourceHandle":"output","targetHandle":"driver"},{"id":"edge-keyboard-1771063464943-output-wait-1771063925087-input","source":"keyboard-1771063464943","target":"wait-1771063925087","sourceHandle":"output","targetHandle":"input"},{"id":"edge-wait-1771063925087-output-action-1771064904103-input","source":"wait-1771063925087","target":"action-1771064904103","sourceHandle":"output","targetHandle":"input"},{"id":"reactflow__edge-action-1771064904103output-wait-1771064937775-0driver","source":"action-1771064904103","target":"wait-1771064937775-0","sourceHandle":"output","targetHandle":"driver"},{"id":"edge-wait-1771064937775-0-to-end-fillFrom","source":"wait-1771064937775-0","target":"end-fillFrom","sourceHandle":"output","targetHandle":"input"},{"id":"def-fillTo-start","source":"reusable-fillTo","target":"click-to-1","sourceHandle":"output","targetHandle":"input"},{"id":"edge-click-to-1-to-wait-after-to-click-1","source":"click-to-1","target":"wait-after-to-click-1","sourceHandle":"output","targetHandle":"driver"},{"id":"edge-wait-after-to-click-1-to-type-to-1","source":"wait-after-to-click-1","target":"type-to-1","sourceHandle":"output","targetHandle":"driver"},{"id":"edge-type-to-1-to-keyboard-to-1","source":"type-to-1","target":"keyboard-to-1","sourceHandle":"output","targetHandle":"driver"},{"id":"edge-keyboard-to-1-to-wait-to-suggestions-1","source":"keyboard-to-1","target":"wait-to-suggestions-1","sourceHandle":"output","targetHandle":"input"},{"id":"edge-wait-to-suggestions-1-to-click-to-suggestion-1","source":"wait-to-suggestions-1","target":"click-to-suggestion-1","sourceHandle":"output","targetHandle":"input"},{"id":"edge-click-to-suggestion-1-to-end-fillTo","source":"click-to-suggestion-1","target":"end-fillTo","sourceHandle":"output","targetHandle":"input"},{"id":"def-selectDate-start","source":"reusable-selectDate","target":"click-date-1","sourceHandle":"output","targetHandle":"input"},{"id":"edge-click-date-1-to-wait-date-picker-1","source":"click-date-1","target":"wait-date-picker-1","sourceHandle":"output","targetHandle":"input"},{"id":"edge-wait-date-picker-1-to-select-date-1","source":"wait-date-picker-1","target":"select-date-1","sourceHandle":"output","targetHandle":"input"},{"id":"edge-select-date-1-to-wait-after-date-select-1","source":"select-date-1","target":"wait-after-date-select-1","sourceHandle":"output","targetHandle":"input"},{"id":"wait-after-date-select-1-close-date-picker-1","source":"wait-after-date-select-1","target":"close-date-picker-1","sourceHandle":"output","targetHandle":"input"},{"id":"edge-close-date-picker-1-to-end-selectDate","source":"close-date-picker-1","target":"end-selectDate","sourceHandle":"output","targetHandle":"input"},{"id":"def-setPassengers-start","source":"reusable-setPassengers","target":"click-pax-1","sourceHandle":"output","targetHandle":"input"},{"id":"edge-click-pax-1-to-wait-pax-dropdown-1","source":"click-pax-1","target":"wait-pax-dropdown-1","sourceHandle":"output","targetHandle":"input"},{"id":"edge-wait-pax-dropdown-1-to-set-pax-1","source":"wait-pax-dropdown-1","target":"set-pax-1","sourceHandle":"output","targetHandle":"input"},{"id":"edge-set-pax-1-to-close-pax-dropdown-1","source":"set-pax-1","target":"close-pax-dropdown-1","sourceHandle":"output","targetHandle":"input"},{"id":"edge-close-pax-dropdown-1-to-end-setPassengers","source":"close-pax-dropdown-1","target":"end-setPassengers","sourceHandle":"output","targetHandle":"input"},{"id":"edge-wait-before-search-1-to-action","source":"wait-before-search-1","target":"action-1771077082474","sourceHandle":"output","targetHandle":"driver"},{"id":"reactflow__edge-action-1771077082474output-wait-for-search-btn-1driver","source":"action-1771077082474","target":"wait-for-search-btn-1","sourceHandle":"output","targetHandle":"driver"},{"id":"edge-wait-for-search-btn-1-to-click-search-1","source":"wait-for-search-btn-1","target":"click-search-1","sourceHandle":"output","targetHandle":"input"},{"id":"edge-click-search-1-to-wait-for-results-1","source":"click-search-1","target":"wait-for-results-1","sourceHandle":"output","targetHandle":"input"},{"id":"edge-wait-for-results-1-output-wait-1771073370203-input","source":"wait-for-results-1","target":"wait-1771073370203","sourceHandle":"output","targetHandle":"input"},{"id":"edge-shortcut.shortcut-output-type","source":"shortcut.shortcut-1771062742648","target":"type-1771063302096","sourceHandle":"output","targetHandle":"input"}],"groups":[]}
+{
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 200
+      },
+      "data": {
+        "type": "start",
+        "label": "Start",
+        "isTest": false,
+        "recordSession": false,
+        "screenshotAllNodes": true,
+        "screenshotTiming": "post",
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 284,
+        "slowMo": 1000,
+        "bypass": false,
+        "breakpoint": false,
+        "scrollThenAction": true,
+        "snapshotAllNodes": true
+      }
+    },
+    {
+      "id": "setConfig-1",
+      "type": "setConfig.setConfig",
+      "position": {
+        "x": 401.9765625,
+        "y": 200
+      },
+      "data": {
+        "type": "setConfig.setConfig",
+        "label": "Set Booking.com Config",
+        "config": {
+          "from": "Delhi",
+          "to": "Mumbai",
+          "date": "2026-03-15",
+          "numberOfTravelers": 2,
+          "directFiltersOnly": true,
+          "addHotel": false
+        },
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 228,
+        "bypass": false,
+        "breakpoint": false
+      }
+    },
+    {
+      "id": "openBrowser-1",
+      "type": "openBrowser",
+      "position": {
+        "x": 703.953125,
+        "y": 200
+      },
+      "data": {
+        "headless": false,
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "maxWindow": false,
+        "browser": "chromium",
+        "stealthMode": true,
+        "capabilities": {
+          "isMobile": true,
+          "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "hasTouch": true
+        },
+        "isTest": false,
+        "type": "openBrowser",
+        "label": "Open Browser (iPhone 12 Pro)",
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 280,
+        "searchHighlighted": false,
+        "jsScript": "// Mobile Viewport Emulation Script\n// iPhone 12 Pro dimensions (390x844)\n\n(function() {\n  'use strict';\n\n  const MOBILE_WIDTH = 390;\n  const MOBILE_HEIGHT = 844;\n  const MOBILE_USER_AGENT = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1';\n\n  Object.defineProperty(window, 'innerWidth', { get: () => MOBILE_WIDTH, configurable: true, enumerable: true });\n  Object.defineProperty(window, 'innerHeight', { get: () => MOBILE_HEIGHT, configurable: true, enumerable: true });\n  Object.defineProperty(window, 'outerWidth', { get: () => MOBILE_WIDTH, configurable: true, enumerable: true });\n  Object.defineProperty(window, 'outerHeight', { get: () => MOBILE_HEIGHT, configurable: true, enumerable: true });\n  Object.defineProperty(screen, 'width', { get: () => MOBILE_WIDTH, configurable: true, enumerable: true });\n  Object.defineProperty(screen, 'height', { get: () => MOBILE_HEIGHT, configurable: true, enumerable: true });\n  Object.defineProperty(screen, 'availWidth', { get: () => MOBILE_WIDTH, configurable: true, enumerable: true });\n  Object.defineProperty(screen, 'availHeight', { get: () => MOBILE_HEIGHT - 44, configurable: true, enumerable: true });\n  Object.defineProperty(navigator, 'userAgent', { get: () => MOBILE_USER_AGENT, configurable: true, enumerable: true });\n  Object.defineProperty(navigator, 'platform', { get: () => 'iPhone', configurable: true, enumerable: true });\n  Object.defineProperty(navigator, 'maxTouchPoints', { get: () => 5, configurable: true, enumerable: true });\n  Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 6, configurable: true, enumerable: true });\n  if ('deviceMemory' in navigator) { Object.defineProperty(navigator, 'deviceMemory', { get: () => 4, configurable: true, enumerable: true }); }\n  if ('connection' in navigator) {\n    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;\n    if (connection) { Object.defineProperty(connection, 'effectiveType', { get: () => '4g', configurable: true, enumerable: true }); }\n  }\n  if (!('ontouchstart' in window)) { Object.defineProperty(window, 'ontouchstart', { get: () => null, set: () => {}, configurable: true, enumerable: true }); }\n  const originalMatchMedia = window.matchMedia;\n  window.matchMedia = function(query) {\n    if (query.includes('max-width')) {\n      const match = query.match(/max-width:\\s*(\\d+)px/);\n      if (match && parseInt(match[1]) >= MOBILE_WIDTH) {\n        return { matches: true, media: query, onchange: null, addListener: function() {}, removeListener: function() {}, addEventListener: function() {}, removeEventListener: function() {}, dispatchEvent: function() { return true; } };\n      }\n    }\n    return originalMatchMedia.call(window, query);\n  };\n  if (document.documentElement) {\n    let viewportMeta = document.querySelector('meta[name=\"viewport\"]');\n    if (!viewportMeta) { viewportMeta = document.createElement('meta'); viewportMeta.setAttribute('name', 'viewport'); document.head.appendChild(viewportMeta); }\n    viewportMeta.setAttribute('content', `width=${MOBILE_WIDTH}, initial-scale=1.0, maximum-scale=1.0, user-scalable=no`);\n  }\n  console.log(`[Mobile Emulation] Viewport set to ${MOBILE_WIDTH}x${MOBILE_HEIGHT}`);\n})();\n",
+        "bypass": false,
+        "breakpoint": false
+      }
+    },
+    {
+      "id": "navigate-1",
+      "type": "navigation",
+      "position": {
+        "x": 1005.9296875,
+        "y": 200
+      },
+      "data": {
+        "type": "navigation",
+        "label": "Navigate to Booking.com",
+        "action": "navigate",
+        "url": "https://www.booking.com/",
+        "timeout": 60000,
+        "waitUntil": "load",
+        "isTest": true,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "width": 252,
+        "isMinimized": false
+      }
+    },
+    {
+      "id": "wait-1",
+      "type": "wait",
+      "position": {
+        "x": 1307.90625,
+        "y": 200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for page load",
+        "waitType": "timeout",
+        "value": 3000,
+        "timeout": 30000,
+        "isTest": true,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212,
+        "breakpoint": false
+      }
+    },
+    {
+      "id": "click-flight-tab-1",
+      "type": "action",
+      "position": {
+        "x": 1609.8828125,
+        "y": 200
+      },
+      "data": {
+        "type": "action",
+        "label": "Click Flight Tab",
+        "action": "click",
+        "selector": "//*[@id=\"flights\"]",
+        "selectorType": "xpath",
+        "timeout": 30000,
+        "isTest": true,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 296.9765625,
+        "searchHighlighted": false,
+        "bypass": false,
+        "failSilently": false,
+        "breakpoint": false
+      }
+    },
+    {
+      "id": "wait-flight-form-1",
+      "type": "wait",
+      "position": {
+        "x": 100,
+        "y": 450
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for Flight Form",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": true,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212,
+        "breakpoint": false
+      }
+    },
+    {
+      "id": "runReusable-fillFrom",
+      "type": "reusable.runReusable",
+      "position": {
+        "x": 401.9765625,
+        "y": 450
+      },
+      "data": {
+        "type": "reusable.runReusable",
+        "label": "Run Reusable: fillFrom",
+        "contextName": "fillFrom",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "runReusable-fillTo",
+      "type": "reusable.runReusable",
+      "position": {
+        "x": 703.953125,
+        "y": 450
+      },
+      "data": {
+        "type": "reusable.runReusable",
+        "label": "Run Reusable: fillTo",
+        "contextName": "fillTo",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "runReusable-selectDate",
+      "type": "reusable.runReusable",
+      "position": {
+        "x": 1005.9296875,
+        "y": 450
+      },
+      "data": {
+        "type": "reusable.runReusable",
+        "label": "Run Reusable: selectDate",
+        "contextName": "selectDate",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "runReusable-setPassengers",
+      "type": "reusable.runReusable",
+      "position": {
+        "x": 1307.90625,
+        "y": 450
+      },
+      "data": {
+        "type": "reusable.runReusable",
+        "label": "Run Reusable: setPassengers",
+        "contextName": "setPassengers",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "wait-before-search-1",
+      "type": "wait",
+      "position": {
+        "x": 1609.8828125,
+        "y": 450
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait before search",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": true,
+        "breakpoint": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "formInput-1771333408569",
+      "type": "formInput",
+      "position": {
+        "x": 100,
+        "y": 700
+      },
+      "data": {
+        "type": "formInput",
+        "label": "Form Input",
+        "action": "check",
+        "selector": "//span[normalize-space()='Direct flights only']",
+        "selectorType": "xpath",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "force": true,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "wait-for-search-btn-1",
+      "type": "wait",
+      "position": {
+        "x": 401.9765625,
+        "y": 700
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for Search button",
+        "waitType": "selector",
+        "value": "//button[@data-ui-name='button_search_submit']",
+        "selectorType": "xpath",
+        "timeout": 20000,
+        "isTest": true,
+        "breakpoint": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "click-search-1",
+      "type": "action",
+      "position": {
+        "x": 703.953125,
+        "y": 700
+      },
+      "data": {
+        "type": "action",
+        "label": "Click Search",
+        "action": "click",
+        "selector": "//button[@data-ui-name='button_search_submit']",
+        "selectorType": "xpath",
+        "timeout": 45000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "bypass": false,
+        "failSilently": false,
+        "breakpoint": false
+      }
+    },
+    {
+      "id": "wait-for-results-1",
+      "type": "wait",
+      "position": {
+        "x": 1005.9296875,
+        "y": 700
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for Search Results",
+        "waitType": "selector",
+        "value": "//div[contains(@class,'flight') or contains(@class,'result') or contains(@data-testid,'flight')]",
+        "selectorType": "xpath",
+        "timeout": 60000,
+        "isTest": true,
+        "breakpoint": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "wait-1771073370203",
+      "type": "wait",
+      "position": {
+        "x": 1307.90625,
+        "y": 700
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait",
+        "waitType": "timeout",
+        "value": 1000,
+        "timeout": 30000,
+        "isTest": true,
+        "breakpoint": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "wait-for-flight-list",
+      "type": "wait",
+      "position": {
+        "x": 1609.8828125,
+        "y": 700
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for flight list loaded",
+        "waitType": "selector",
+        "value": "(//div[@data-testid='flight_card_segment_departure_time_0'])[1]",
+        "selectorType": "xpath",
+        "timeout": 60000,
+        "isTest": true,
+        "breakpoint": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "wait-stabilize-list",
+      "type": "wait",
+      "position": {
+        "x": 100,
+        "y": 950
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for list to stabilize",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": true,
+        "breakpoint": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "elemQuery-getCount",
+      "type": "elementQuery",
+      "position": {
+        "x": 401.9765625,
+        "y": 950
+      },
+      "data": {
+        "type": "elementQuery",
+        "label": "Get flight card count",
+        "action": "getCount",
+        "selector": "//div[@data-testid='flight_card_segment_departure_time_0']",
+        "selectorType": "xpath",
+        "timeout": 30000,
+        "outputVariable": "flightCardCount",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "jsInitFlightRows",
+      "type": "javascriptCode",
+      "position": {
+        "x": 703.953125,
+        "y": 950
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Init empty rows for CSV",
+        "code": "context.setData('flightRowsInit', []);",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "jsCreateIndices",
+      "type": "javascriptCode",
+      "position": {
+        "x": 1005.9296875,
+        "y": 950
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Create flight indices array",
+        "code": "const count = context.getData('flightCardCount') || 0;\nconst indices = Array.from({length: Math.min(count, 50)}, (_, i) => i);\ncontext.setData('flightIndices', indices);",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "csvWriteHeaders",
+      "type": "csvHandle",
+      "position": {
+        "x": 1307.90625,
+        "y": 950
+      },
+      "data": {
+        "type": "csvHandle",
+        "label": "Create CSV with headers",
+        "action": "write",
+        "filePath": "tests/output/flight_results.csv",
+        "dataSource": "flightRowsInit",
+        "headers": [
+          "index",
+          "airline",
+          "departure",
+          "arrival",
+          "price",
+          "duration",
+          "stops",
+          "rawText"
+        ],
+        "delimiter": ",",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "loopExtractFlights",
+      "type": "loop",
+      "position": {
+        "x": 1609.8828125,
+        "y": 950
+      },
+      "data": {
+        "type": "loop",
+        "label": "Loop over flight cards",
+        "mode": "forEach",
+        "arrayVariable": "flightIndices",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "jsSetCardIndex",
+      "type": "javascriptCode",
+      "position": {
+        "x": 100,
+        "y": 1200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set card index for XPath",
+        "code": "const idx = context.getVariable('index') || 0;\ncontext.setData('cardIndex', idx + 1);",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "elemQuery-getCardText",
+      "type": "elementQuery",
+      "position": {
+        "x": 401.9765625,
+        "y": 1200
+      },
+      "data": {
+        "type": "elementQuery",
+        "label": "Get flight card text",
+        "action": "getText",
+        "selector": "(//div[@data-testid='flight_card_segment_departure_time_0'])[${data.cardIndex}]/ancestor::button[1]",
+        "selectorType": "xpath",
+        "timeout": 10000,
+        "outputVariable": "cardText",
+        "failSilently": true,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "jsBuildRow",
+      "type": "javascriptCode",
+      "position": {
+        "x": 703.953125,
+        "y": 1200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Build CSV row",
+        "code": "const idx = context.getVariable('index') || 0;\nconst text = context.getData('cardText') || '';\nconst row = {\n  index: idx + 1,\n  airline: '',\n  departure: '',\n  arrival: '',\n  price: (text.match(/[\\d,]+\\s*(?:USD|EUR|INR|₹|\\$)/gi) || [text])[0] || '',\n  duration: '',\n  stops: (text.match(/direct|nonstop|\\d+\\s*stop/gi) || [''])[0] || '',\n  rawText: text.replace(/[\\r\\n]+/g, ' ').trim().substring(0, 500)\n};\ncontext.setData('flightRowToAppend', [row]);",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "csvAppend",
+      "type": "csvHandle",
+      "position": {
+        "x": 1005.9296875,
+        "y": 1200
+      },
+      "data": {
+        "type": "csvHandle",
+        "label": "Append flight to CSV",
+        "action": "append",
+        "filePath": "tests/output/flight_results.csv",
+        "dataSource": "flightRowToAppend",
+        "headers": [
+          "index",
+          "airline",
+          "departure",
+          "arrival",
+          "price",
+          "duration",
+          "stops",
+          "rawText"
+        ],
+        "delimiter": ",",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "reusable-fillFrom",
+      "type": "reusable.reusable",
+      "position": {
+        "x": 100,
+        "y": -99.5
+      },
+      "data": {
+        "type": "reusable.reusable",
+        "label": "Reusable: fillFrom",
+        "contextName": "fillFrom",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "reusable-fillTo",
+      "type": "reusable.reusable",
+      "position": {
+        "x": 401.9765625,
+        "y": -99.5
+      },
+      "data": {
+        "type": "reusable.reusable",
+        "label": "Reusable: fillTo",
+        "contextName": "fillTo",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "reusable-selectDate",
+      "type": "reusable.reusable",
+      "position": {
+        "x": 703.953125,
+        "y": -99.5
+      },
+      "data": {
+        "type": "reusable.reusable",
+        "label": "Reusable: selectDate",
+        "contextName": "selectDate",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "reusable-setPassengers",
+      "type": "reusable.reusable",
+      "position": {
+        "x": 1005.9296875,
+        "y": -99.5
+      },
+      "data": {
+        "type": "reusable.reusable",
+        "label": "Reusable: setPassengers",
+        "contextName": "setPassengers",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "end-fillFrom",
+      "type": "reusable.end",
+      "position": {
+        "x": 100,
+        "y": -460
+      },
+      "data": {
+        "type": "reusable.end",
+        "label": "End",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "fill-from-1",
+      "type": "action",
+      "position": {
+        "x": 401.9765625,
+        "y": -460
+      },
+      "data": {
+        "type": "action",
+        "label": "Fill From Airport",
+        "action": "click",
+        "selector": "//button[@data-ui-name='input_location_from_segment_0']",
+        "selectorType": "xpath",
+        "value": "{{config.from}}",
+        "timeout": 30000,
+        "isTest": true,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 296.9765625,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "wait-1771063097632-0",
+      "type": "wait",
+      "position": {
+        "x": 703.953125,
+        "y": -460
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for Flight Form",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": true,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212,
+        "breakpoint": false
+      }
+    },
+    {
+      "id": "type-1771063302096",
+      "type": "type",
+      "position": {
+        "x": 1005.9296875,
+        "y": -460
+      },
+      "data": {
+        "type": "type",
+        "label": "Type",
+        "selector": "role:combobox",
+        "selectorType": "getByRole",
+        "inputMethod": "fill",
+        "text": "${data.from}",
+        "delay": 0,
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "keyboard-1771063464943",
+      "type": "keyboard",
+      "position": {
+        "x": 1307.90625,
+        "y": -460
+      },
+      "data": {
+        "type": "keyboard",
+        "label": "Keyboard",
+        "action": "press",
+        "key": "Enter",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "wait-1771063925087",
+      "type": "wait",
+      "position": {
+        "x": 1609.8828125,
+        "y": -460
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait",
+        "waitType": "timeout",
+        "value": 1000,
+        "timeout": 30000,
+        "isTest": true,
+        "breakpoint": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "action-1771064904103",
+      "type": "action",
+      "position": {
+        "x": 1911.859375,
+        "y": -460
+      },
+      "data": {
+        "type": "action",
+        "label": "Action",
+        "action": "click",
+        "selector": "//ul[@id='flights-searchbox_suggestions']/li[1]",
+        "selectorType": "xpath",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "breakpoint": false
+      }
+    },
+    {
+      "id": "wait-1771064937775-0",
+      "type": "wait",
+      "position": {
+        "x": 2213.8359375,
+        "y": -460
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait",
+        "waitType": "timeout",
+        "value": 1000,
+        "timeout": 30000,
+        "isTest": true,
+        "breakpoint": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "end-fillTo",
+      "type": "reusable.end",
+      "position": {
+        "x": 2515.8125,
+        "y": -460
+      },
+      "data": {
+        "type": "reusable.end",
+        "label": "End",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "click-to-1",
+      "type": "action",
+      "position": {
+        "x": 2817.7890625,
+        "y": -460
+      },
+      "data": {
+        "type": "action",
+        "label": "Click To Destination",
+        "action": "click",
+        "selector": "//button[@data-ui-name='input_location_to_segment_0']",
+        "selectorType": "xpath",
+        "timeout": 30000,
+        "isTest": true,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 296,
+        "searchHighlighted": false,
+        "bypass": false,
+        "failSilently": false,
+        "breakpoint": false
+      }
+    },
+    {
+      "id": "wait-after-to-click-1",
+      "type": "wait",
+      "position": {
+        "x": 3119.765625,
+        "y": -460
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for To dropdown",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": true,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212,
+        "breakpoint": false
+      }
+    },
+    {
+      "id": "type-to-1",
+      "type": "type",
+      "position": {
+        "x": 3421.7421875,
+        "y": -460
+      },
+      "data": {
+        "type": "type",
+        "label": "Type To destination",
+        "selector": "role:combobox",
+        "selectorType": "getByRole",
+        "inputMethod": "fill",
+        "text": "${data.to}",
+        "delay": 0,
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "keyboard-to-1",
+      "type": "keyboard",
+      "position": {
+        "x": 3723.71875,
+        "y": -460
+      },
+      "data": {
+        "type": "keyboard",
+        "label": "Press Enter",
+        "action": "press",
+        "key": "Enter",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "wait-to-suggestions-1",
+      "type": "wait",
+      "position": {
+        "x": 4025.6953125,
+        "y": -460
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for suggestions",
+        "waitType": "timeout",
+        "value": 1000,
+        "timeout": 30000,
+        "isTest": true,
+        "breakpoint": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "click-to-suggestion-1",
+      "type": "action",
+      "position": {
+        "x": 4327.671875,
+        "y": -460
+      },
+      "data": {
+        "type": "action",
+        "label": "Select first To suggestion",
+        "action": "click",
+        "selector": "//ul[@id='flights-searchbox_suggestions']/li[1]",
+        "selectorType": "xpath",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "bypass": false,
+        "failSilently": false,
+        "breakpoint": false
+      }
+    },
+    {
+      "id": "end-selectDate",
+      "type": "reusable.end",
+      "position": {
+        "x": 4629.6484375,
+        "y": -460
+      },
+      "data": {
+        "type": "reusable.end",
+        "label": "End",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "click-date-1",
+      "type": "action",
+      "position": {
+        "x": 4931.625,
+        "y": -460
+      },
+      "data": {
+        "type": "action",
+        "label": "Click Date Field",
+        "action": "click",
+        "selector": "//button[contains(@class,'date') or contains(@aria-label,'date') or contains(@data-ui-name,'date')]",
+        "selectorType": "xpath",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "bypass": false,
+        "failSilently": false,
+        "breakpoint": false
+      }
+    },
+    {
+      "id": "wait-date-picker-1",
+      "type": "wait",
+      "position": {
+        "x": 5233.6015625,
+        "y": -460
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for Date Picker",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": true,
+        "breakpoint": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "select-date-1",
+      "type": "action",
+      "position": {
+        "x": 5535.578125,
+        "y": -460
+      },
+      "data": {
+        "type": "action",
+        "label": "Select Date (March 15)",
+        "action": "doubleClick",
+        "selector": "//span[@data-ui-name='calendar_cell_${data.date}']",
+        "selectorType": "xpath",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "bypass": false,
+        "failSilently": false,
+        "breakpoint": false,
+        "delay": 1000
+      }
+    },
+    {
+      "id": "wait-after-date-select-1",
+      "type": "wait",
+      "position": {
+        "x": 5837.5546875,
+        "y": -460
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait after date selection",
+        "waitType": "timeout",
+        "value": 500,
+        "timeout": 30000,
+        "isTest": true,
+        "breakpoint": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "close-date-picker-1",
+      "type": "action",
+      "position": {
+        "x": 6139.53125,
+        "y": -460
+      },
+      "data": {
+        "type": "action",
+        "label": "Close Date Picker",
+        "action": "click",
+        "selector": "//button[contains(text(),\"Done\") or contains(@aria-label,\"Done\") or contains(@data-ui-name,\"done\") or contains(@data-ui-name,\"close\")]",
+        "selectorType": "xpath",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "bypass": false,
+        "failSilently": false,
+        "breakpoint": false
+      }
+    },
+    {
+      "id": "end-setPassengers",
+      "type": "reusable.end",
+      "position": {
+        "x": 6441.5078125,
+        "y": -460
+      },
+      "data": {
+        "type": "reusable.end",
+        "label": "End",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "click-pax-1",
+      "type": "action",
+      "position": {
+        "x": 6743.484375,
+        "y": -460
+      },
+      "data": {
+        "type": "action",
+        "label": "Click Passengers Field",
+        "action": "click",
+        "selector": "//button[@data-ui-name='button_occupancy']",
+        "selectorType": "xpath",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "bypass": false,
+        "failSilently": false,
+        "breakpoint": false
+      }
+    },
+    {
+      "id": "wait-pax-dropdown-1",
+      "type": "wait",
+      "position": {
+        "x": 7045.4609375,
+        "y": -460
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for Passengers Dropdown",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": true,
+        "breakpoint": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "set-pax-1",
+      "type": "action",
+      "position": {
+        "x": 7347.4375,
+        "y": -460
+      },
+      "data": {
+        "type": "action",
+        "label": "Set Passengers to 2",
+        "action": "click",
+        "selector": "//button[@data-ui-name='button_occupancy_adults_plus']",
+        "selectorType": "xpath",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "bypass": false,
+        "failSilently": false,
+        "breakpoint": false
+      }
+    },
+    {
+      "id": "close-pax-dropdown-1",
+      "type": "action",
+      "position": {
+        "x": 7649.4140625,
+        "y": -460
+      },
+      "data": {
+        "type": "action",
+        "label": "Close Passengers Dropdown",
+        "action": "click",
+        "selector": "//button[contains(text(),\"Done\") or contains(@aria-label,\"Done\") or contains(@data-ui-name,\"done\") or contains(@data-ui-name,\"close\")]",
+        "selectorType": "xpath",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "bypass": false,
+        "failSilently": false,
+        "breakpoint": false
+      }
+    },
+    {
+      "id": "shortcut.shortcut-1771062742648",
+      "type": "shortcut.shortcut",
+      "position": {
+        "x": 7951.390625,
+        "y": -460
+      },
+      "data": {
+        "type": "shortcut.shortcut",
+        "label": "Shortcut",
+        "shortcut": "s",
+        "isTest": false,
+        "width": 199,
+        "height": 50,
+        "isMinimized": true,
+        "searchHighlighted": false,
+        "bypass": false,
+        "isPinned": false,
+        "breakpoint": false
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "start-1",
+      "target": "setConfig-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e2",
+      "source": "setConfig-1",
+      "target": "openBrowser-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e3",
+      "source": "openBrowser-1",
+      "target": "navigate-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e4",
+      "source": "navigate-1",
+      "target": "wait-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e5",
+      "source": "wait-1",
+      "target": "click-flight-tab-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e6",
+      "source": "click-flight-tab-1",
+      "target": "wait-flight-form-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e7-main",
+      "source": "wait-flight-form-1",
+      "target": "runReusable-fillFrom",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e-run1",
+      "source": "runReusable-fillFrom",
+      "target": "runReusable-fillTo",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e-run2",
+      "source": "runReusable-fillTo",
+      "target": "runReusable-selectDate",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e-run3",
+      "source": "runReusable-selectDate",
+      "target": "runReusable-setPassengers",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e-run4",
+      "source": "runReusable-setPassengers",
+      "target": "wait-before-search-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "def-fillFrom-start",
+      "source": "reusable-fillFrom",
+      "target": "fill-from-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "reactflow__edge-fill-from-1output-wait-1771063097632-0driver",
+      "source": "fill-from-1",
+      "target": "wait-1771063097632-0",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-wait-1771063097632-0output-type",
+      "source": "wait-1771063097632-0",
+      "target": "type-1771063302096",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-type-1771063302096output-keyboard-1771063464943driver",
+      "source": "type-1771063302096",
+      "target": "keyboard-1771063464943",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-keyboard-1771063464943-output-wait-1771063925087-input",
+      "source": "keyboard-1771063464943",
+      "target": "wait-1771063925087",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-1771063925087-output-action-1771064904103-input",
+      "source": "wait-1771063925087",
+      "target": "action-1771064904103",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "reactflow__edge-action-1771064904103output-wait-1771064937775-0driver",
+      "source": "action-1771064904103",
+      "target": "wait-1771064937775-0",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-1771064937775-0-to-end-fillFrom",
+      "source": "wait-1771064937775-0",
+      "target": "end-fillFrom",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "def-fillTo-start",
+      "source": "reusable-fillTo",
+      "target": "click-to-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-click-to-1-to-wait-after-to-click-1",
+      "source": "click-to-1",
+      "target": "wait-after-to-click-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-after-to-click-1-to-type-to-1",
+      "source": "wait-after-to-click-1",
+      "target": "type-to-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-type-to-1-to-keyboard-to-1",
+      "source": "type-to-1",
+      "target": "keyboard-to-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-keyboard-to-1-to-wait-to-suggestions-1",
+      "source": "keyboard-to-1",
+      "target": "wait-to-suggestions-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-to-suggestions-1-to-click-to-suggestion-1",
+      "source": "wait-to-suggestions-1",
+      "target": "click-to-suggestion-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-click-to-suggestion-1-to-end-fillTo",
+      "source": "click-to-suggestion-1",
+      "target": "end-fillTo",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "def-selectDate-start",
+      "source": "reusable-selectDate",
+      "target": "click-date-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-click-date-1-to-wait-date-picker-1",
+      "source": "click-date-1",
+      "target": "wait-date-picker-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-date-picker-1-to-select-date-1",
+      "source": "wait-date-picker-1",
+      "target": "select-date-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-select-date-1-to-wait-after-date-select-1",
+      "source": "select-date-1",
+      "target": "wait-after-date-select-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "wait-after-date-select-1-close-date-picker-1",
+      "source": "wait-after-date-select-1",
+      "target": "close-date-picker-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-close-date-picker-1-to-end-selectDate",
+      "source": "close-date-picker-1",
+      "target": "end-selectDate",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "def-setPassengers-start",
+      "source": "reusable-setPassengers",
+      "target": "click-pax-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-click-pax-1-to-wait-pax-dropdown-1",
+      "source": "click-pax-1",
+      "target": "wait-pax-dropdown-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-pax-dropdown-1-to-set-pax-1",
+      "source": "wait-pax-dropdown-1",
+      "target": "set-pax-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-set-pax-1-to-close-pax-dropdown-1",
+      "source": "set-pax-1",
+      "target": "close-pax-dropdown-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-close-pax-dropdown-1-to-end-setPassengers",
+      "source": "close-pax-dropdown-1",
+      "target": "end-setPassengers",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-before-search-1-to-action",
+      "source": "wait-before-search-1",
+      "target": "formInput-1771333408569",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-wait-for-search-btn-1-to-click-search-1",
+      "source": "wait-for-search-btn-1",
+      "target": "click-search-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-click-search-1-to-wait-for-results-1",
+      "source": "click-search-1",
+      "target": "wait-for-results-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-for-results-1-output-wait-1771073370203-input",
+      "source": "wait-for-results-1",
+      "target": "wait-1771073370203",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-1771073370203-to-wait-for-flight-list",
+      "source": "wait-1771073370203",
+      "target": "wait-for-flight-list",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-for-flight-list-to-wait-stabilize",
+      "source": "wait-for-flight-list",
+      "target": "wait-stabilize-list",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-wait-stabilize-to-elemQuery-getCount",
+      "source": "wait-stabilize-list",
+      "target": "elemQuery-getCount",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-elemQuery-getCount-to-jsInitFlightRows",
+      "source": "elemQuery-getCount",
+      "target": "jsInitFlightRows",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-jsInitFlightRows-to-jsCreateIndices",
+      "source": "jsInitFlightRows",
+      "target": "jsCreateIndices",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-jsCreateIndices-to-csvWriteHeaders",
+      "source": "jsCreateIndices",
+      "target": "csvWriteHeaders",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-csvWriteHeaders-to-loopExtractFlights",
+      "source": "csvWriteHeaders",
+      "target": "loopExtractFlights",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-loopExtractFlights-to-jsSetCardIndex",
+      "source": "loopExtractFlights",
+      "target": "jsSetCardIndex",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-jsSetCardIndex-to-elemQuery-getCardText",
+      "source": "jsSetCardIndex",
+      "target": "elemQuery-getCardText",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-elemQuery-getCardText-to-jsBuildRow",
+      "source": "elemQuery-getCardText",
+      "target": "jsBuildRow",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-jsBuildRow-to-csvAppend",
+      "source": "jsBuildRow",
+      "target": "csvAppend",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-shortcut.shortcut-output-type",
+      "source": "shortcut.shortcut-1771062742648",
+      "target": "type-1771063302096",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "reactflow__edge-formInput-1771333408569output-wait-for-search-btn-1driver",
+      "source": "formInput-1771333408569",
+      "target": "wait-for-search-btn-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    }
+  ],
+  "groups": []
+}

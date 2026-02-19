@@ -1,0 +1,392 @@
+{
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 200
+      },
+      "data": {
+        "type": "start",
+        "label": "Start",
+        "recordSession": false,
+        "screenshotAllNodes": false,
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "openBrowser-1",
+      "type": "openBrowser",
+      "position": {
+        "x": 100,
+        "y": 463
+      },
+      "data": {
+        "type": "openBrowser",
+        "label": "Open Browser",
+        "headless": false,
+        "browser": "chromium",
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false,
+        "maxWindow": false,
+        "capabilities": {
+          "isMobile": true
+        }
+      }
+    },
+    {
+      "id": "navigation-1",
+      "type": "navigation",
+      "position": {
+        "x": 100,
+        "y": 726
+      },
+      "data": {
+        "type": "navigation",
+        "label": "Navigate to IsThereAnyDeal",
+        "action": "navigate",
+        "url": "https://isthereanydeal.com/deals/#sort:cut",
+        "waitUntil": "networkidle",
+        "timeout": 60000,
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "wait-1",
+      "type": "wait",
+      "position": {
+        "x": 100,
+        "y": 989
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for deals to load",
+        "waitType": "timeout",
+        "value": 5000,
+        "timeout": 30000,
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "elemQuery-getCount",
+      "type": "elementQuery",
+      "position": {
+        "x": 100,
+        "y": 1252
+      },
+      "data": {
+        "type": "elementQuery",
+        "label": "Get deal card count",
+        "action": "getCount",
+        "selector": "main a[href*='itad.link']",
+        "selectorType": "css",
+        "timeout": 30000,
+        "outputVariable": "dealCount",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "jsCreateIndices",
+      "type": "javascriptCode",
+      "position": {
+        "x": 100,
+        "y": 1515
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Create deal indices array",
+        "code": "const count = context.getData('dealCount') || 0;\nconst indices = Array.from({length: Math.min(count, 100)}, (_, i) => i);\ncontext.setData('dealIndices', indices);",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "jsInitRows",
+      "type": "javascriptCode",
+      "position": {
+        "x": 350,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Init empty rows for CSV",
+        "code": "context.setData('dealRowsInit', []);",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "csvWriteHeaders",
+      "type": "csvHandle",
+      "position": {
+        "x": 350,
+        "y": 463
+      },
+      "data": {
+        "type": "csvHandle",
+        "label": "Create CSV with headers",
+        "action": "write",
+        "filePath": "output/isthereanydeal-deals.csv",
+        "dataSource": "dealRowsInit",
+        "headers": [
+          "title",
+          "price",
+          "discountPercent",
+          "link"
+        ],
+        "delimiter": ",",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "loopExtractDeals",
+      "type": "loop",
+      "position": {
+        "x": 350,
+        "y": 726
+      },
+      "data": {
+        "type": "loop",
+        "label": "Loop over deal cards",
+        "mode": "forEach",
+        "arrayVariable": "dealIndices",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "jsSetCardIndex",
+      "type": "javascriptCode",
+      "position": {
+        "x": 350,
+        "y": 989
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set card index for XPath",
+        "code": "const idx = context.getVariable('index') || 0;\ncontext.setData('cardIndex', idx + 1);",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "elemQuery-getPriceText",
+      "type": "elementQuery",
+      "position": {
+        "x": 350,
+        "y": 1252
+      },
+      "data": {
+        "type": "elementQuery",
+        "label": "Get price link text",
+        "action": "getText",
+        "selector": "(//main//a[contains(@href,'itad.link')])[${data.cardIndex}]",
+        "selectorType": "xpath",
+        "timeout": 10000,
+        "outputVariable": "priceText",
+        "failSilently": true,
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "elemQuery-getLink",
+      "type": "elementQuery",
+      "position": {
+        "x": 350,
+        "y": 1515
+      },
+      "data": {
+        "type": "elementQuery",
+        "label": "Get deal link",
+        "action": "getAttribute",
+        "attributeName": "href",
+        "selector": "(//main//a[contains(@href,'itad.link')])[${data.cardIndex}]",
+        "selectorType": "xpath",
+        "timeout": 10000,
+        "outputVariable": "link",
+        "failSilently": true,
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "jsGetTitle",
+      "type": "javascriptCode",
+      "position": {
+        "x": 600,
+        "y": 200
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Get deal title",
+        "code": "const cardIndex = context.getData('cardIndex');\nconst title = await context.page.evaluate((idx) => {\n  const priceLinks = document.querySelectorAll('main a[href*=\"itad.link\"]');\n  const a = priceLinks[idx - 1];\n  if (!a) return '';\n  let parent = a.parentElement;\n  for (let i = 0; i < 10 && parent; i++) {\n    const titleLink = parent.querySelector(':scope > a[href*=\"/game/\"][href*=\"/info/\"]');\n    if (titleLink && titleLink.textContent?.trim() && !titleLink.querySelector('img')) {\n      return titleLink.textContent.replace(/\\s*\\d+d\\s+\\d+h\\s+\\d+m\\s*$/g, '').trim();\n    }\n    parent = parent.parentElement;\n  }\n  return '';\n}, cardIndex);\ncontext.setData('titleText', title);",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "jsBuildRow",
+      "type": "javascriptCode",
+      "position": {
+        "x": 600,
+        "y": 463
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Build CSV row",
+        "code": "const priceText = context.getData('priceText') || '';\nconst titleText = (context.getData('titleText') || '').replace(/\\s*\\d+d\\s+\\d+h\\s+\\d+m\\s*$/g, '').trim();\nconst link = context.getData('link') || '';\nconst priceMatch = priceText.match(/[₹$€][\\s\\d,]+\\.?\\d*/);\nconst discountMatch = priceText.match(/-?\\d+%/);\nconst row = {\n  title: titleText || 'Unknown',\n  price: priceMatch ? priceMatch[0].trim() : priceText,\n  discountPercent: discountMatch ? discountMatch[0] : '',\n  link\n};\ncontext.setData('dealRowToAppend', [row]);",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "csvAppend",
+      "type": "csvHandle",
+      "position": {
+        "x": 600,
+        "y": 726
+      },
+      "data": {
+        "type": "csvHandle",
+        "label": "Append deal to CSV",
+        "action": "append",
+        "filePath": "output/isthereanydeal-deals.csv",
+        "dataSource": "dealRowToAppend",
+        "headers": [
+          "title",
+          "price",
+          "discountPercent",
+          "link"
+        ],
+        "delimiter": ",",
+        "isPinned": false,
+        "isTest": true,
+        "searchHighlighted": false
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "start-1",
+      "target": "openBrowser-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e2",
+      "source": "openBrowser-1",
+      "target": "navigation-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e3",
+      "source": "navigation-1",
+      "target": "wait-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e4",
+      "source": "wait-1",
+      "target": "elemQuery-getCount",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e5",
+      "source": "elemQuery-getCount",
+      "target": "jsCreateIndices",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e6",
+      "source": "jsCreateIndices",
+      "target": "jsInitRows",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e7",
+      "source": "jsInitRows",
+      "target": "csvWriteHeaders",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e8",
+      "source": "csvWriteHeaders",
+      "target": "loopExtractDeals",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e9",
+      "source": "loopExtractDeals",
+      "target": "jsSetCardIndex",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e10",
+      "source": "jsSetCardIndex",
+      "target": "elemQuery-getPriceText",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e11",
+      "source": "elemQuery-getPriceText",
+      "target": "elemQuery-getLink",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e12",
+      "source": "elemQuery-getLink",
+      "target": "jsGetTitle",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e13",
+      "source": "jsGetTitle",
+      "target": "jsBuildRow",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e14",
+      "source": "jsBuildRow",
+      "target": "csvAppend",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    }
+  ],
+  "groups": []
+}

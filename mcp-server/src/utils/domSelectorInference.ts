@@ -388,6 +388,134 @@ export class DOMSelectorInference {
   }
 
   /**
+   * Infer getByRole selector from accessibility tree.
+   * Used when building workflows from snapshots - prefers role+name for accurate locators.
+   */
+  static inferSelectorFromAccessibilityTree(
+    tree: { role?: string; name?: string; value?: string; level?: number; children?: any[] },
+    action: string,
+    target?: string
+  ): SelectorOption[] {
+    const elements = this.flattenAccessibilityTree(tree);
+    const interactiveRoles = [
+      'button',
+      'link',
+      'textbox',
+      'combobox',
+      'heading',
+      'checkbox',
+      'radio',
+      'img',
+      'menuitem',
+      'tab',
+      'option',
+    ];
+
+    const keywords = this.extractKeywords(
+      [action, target || ''].join(' ').toLowerCase()
+    );
+    const selectors: SelectorOption[] = [];
+
+    for (const node of elements) {
+      if (!node.role || !interactiveRoles.includes(node.role)) continue;
+
+      const score = this.elementMatchesIntentFromA11y(node, keywords, action);
+      if (score > 0) {
+        const selector = this.buildGetByRoleSelector(node);
+        if (selector) {
+          selectors.push({
+            selector,
+            type: 'getByRole',
+            quality: score > 0.7 ? 'high' : score > 0.4 ? 'medium' : 'low',
+            reason: `Role "${node.role}"${node.name ? ` with name "${node.name}"` : ''}`,
+          });
+        }
+      }
+    }
+
+    return selectors
+      .sort((a, b) => {
+        const qualityOrder = { high: 3, medium: 2, low: 1 };
+        return qualityOrder[b.quality] - qualityOrder[a.quality];
+      })
+      .slice(0, 5);
+  }
+
+  /**
+   * Match element from accessibility tree to action intent
+   */
+  private static elementMatchesIntentFromA11y(
+    node: { role?: string; name?: string; value?: string },
+    keywords: string[],
+    action: string
+  ): number {
+    let score = 0;
+    const nameLower = (node.name || '').toLowerCase();
+    const valueLower = (node.value || '').toLowerCase();
+
+    // Role matches action type
+    if (action === 'click') {
+      if (['button', 'link', 'checkbox', 'radio', 'menuitem', 'tab'].includes(node.role || '')) {
+        score += 0.3;
+      }
+    }
+    if (action === 'type') {
+      if (['textbox', 'combobox'].includes(node.role || '')) {
+        score += 0.3;
+      }
+    }
+
+    // Name or value contains keywords
+    for (const kw of keywords) {
+      if (nameLower.includes(kw)) {
+        score += 0.5;
+        break;
+      }
+      if (valueLower.includes(kw)) {
+        score += 0.3;
+        break;
+      }
+    }
+
+    // Common target mappings
+    const targetMappings: Record<string, string[]> = {
+      login: ['login', 'sign in', 'signin', 'log in'],
+      register: ['register', 'sign up', 'signup', 'create account'],
+      search: ['search', 'q', 'query'],
+      submit: ['submit', 'send', 'go', 'search'],
+      'add to cart': ['add to cart', 'add to basket', 'buy', 'purchase'],
+    };
+
+    for (const [targetKey, aliases] of Object.entries(targetMappings)) {
+      if (keywords.some((k) => targetKey.includes(k) || aliases.some((a) => a.includes(k)))) {
+        if (aliases.some((a) => nameLower.includes(a) || valueLower.includes(a))) {
+          score += 0.6;
+          break;
+        }
+      }
+    }
+
+    return Math.min(score, 1.0);
+  }
+
+  /**
+   * Build getByRole selector string: role:button,name:Login
+   */
+  private static buildGetByRoleSelector(node: {
+    role?: string;
+    name?: string;
+    value?: string;
+  }): string | null {
+    if (!node.role) return null;
+    const role = node.role.toLowerCase();
+    const name = node.name?.trim();
+    if (name && name.length > 0 && name.length < 100) {
+      return `role:${role},name:${name}`;
+    }
+    return `role:${role}`;
+  }
+
+  /**
    * Flatten accessibility tree to array of interactive nodes
    */
   private static flattenAccessibilityTree(
