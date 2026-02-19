@@ -4,6 +4,9 @@ import { RequestAnalyzer } from '../utils/requestAnalyzer.js';
 import { WorkflowModifier } from '../utils/workflowModifier.js';
 import { WorkflowValidator } from '../utils/workflowValidator.js';
 import { WorkflowBuilder } from '../utils/workflowBuilder.js';
+import { loadSnapshotsFromDir, findElementInSnapshot } from '../utils/snapshotWorkflowBuilder.js';
+import { BackendClient } from '../utils/backendClient.js';
+import { DOMSelectorInference } from '../utils/domSelectorInference.js';
 
 export interface ExtendWorkflowParams {
   workflow: Workflow;
@@ -11,10 +14,12 @@ export interface ExtendWorkflowParams {
   modificationType?: 'add' | 'update' | 'insert' | 'add_assertion' | 'auto'; // Optional hint
   targetNodeId?: string; // Optional: specific node to modify or insert after
   position?: 'before' | 'after' | 'end'; // For insertions
+  snapshotsPath?: string; // Path to snapshot dir (e.g. output/start-1771430710449/snapshots)
+  executionId?: string; // Fetch DOM from failed execution for selector inference
 }
 
 export async function extendWorkflow(params: ExtendWorkflowParams): Promise<Workflow> {
-  const { workflow, userRequest, modificationType, targetNodeId, position } = params;
+  const { workflow, userRequest, modificationType, targetNodeId, position, snapshotsPath, executionId } = params;
 
   // Try LLM-based extension first
   const llmProvider = getLLMProvider();
@@ -38,16 +43,35 @@ export async function extendWorkflow(params: ExtendWorkflowParams): Promise<Work
   }
 
   // Fallback to rule-based extension
-  return extendWorkflowRuleBased(workflow, userRequest, modificationType, targetNodeId, position);
+  return extendWorkflowRuleBased(workflow, userRequest, modificationType, targetNodeId, position, snapshotsPath, executionId);
 }
 
-function extendWorkflowRuleBased(
+function isSelectorRelatedRequest(userRequest: string): boolean {
+  const lower = userRequest.toLowerCase();
+  return (
+    lower.includes('selector') ||
+    lower.includes('fix') ||
+    lower.includes('click') ||
+    lower.includes('button') ||
+    lower.includes('element') ||
+    lower.includes('locator')
+  );
+}
+
+function isInteractionNode(node: BaseNode): boolean {
+  const interactionTypes = ['action', 'type', 'formInput', 'elementQuery', 'verify'];
+  return interactionTypes.includes(node.type);
+}
+
+async function extendWorkflowRuleBased(
   workflow: Workflow,
   userRequest: string,
   modificationType?: 'add' | 'update' | 'insert' | 'add_assertion' | 'auto',
   targetNodeId?: string,
-  position?: 'before' | 'after' | 'end'
-): Workflow {
+  position?: 'before' | 'after' | 'end',
+  snapshotsPath?: string,
+  executionId?: string
+): Promise<Workflow> {
   // Parse the modification request
   const parsed = RequestAnalyzer.parseModificationRequest(userRequest, workflow);
   const modType = modificationType || parsed.modificationType;
@@ -60,7 +84,7 @@ function extendWorkflowRuleBased(
       break;
     
     case 'update':
-      modifiedWorkflow = handleUpdateNode(workflow, userRequest, parsed, targetNodeId);
+      modifiedWorkflow = await handleUpdateNode(workflow, userRequest, parsed, targetNodeId, snapshotsPath, executionId);
       break;
     
     case 'insert':
@@ -74,7 +98,7 @@ function extendWorkflowRuleBased(
     case 'auto':
       // Try to determine from request
       if (parsed.modificationType !== 'auto') {
-        return extendWorkflowRuleBased(workflow, userRequest, parsed.modificationType, targetNodeId, position);
+        return extendWorkflowRuleBased(workflow, userRequest, parsed.modificationType, targetNodeId, position, snapshotsPath, executionId);
       }
       // Default to add if unclear
       modifiedWorkflow = handleAddNode(workflow, userRequest, parsed, targetNodeId, position);
@@ -118,47 +142,101 @@ function handleAddNode(
   }
 }
 
-function handleUpdateNode(
+async function handleUpdateNode(
   workflow: Workflow,
   userRequest: string,
   parsed: ReturnType<typeof RequestAnalyzer.parseModificationRequest>,
-  targetNodeId?: string
-): Workflow {
+  targetNodeId?: string,
+  snapshotsPath?: string,
+  executionId?: string
+): Promise<Workflow> {
   const target = parsed.targetNode || {};
-  const nodeId = targetNodeId || target.nodeId;
+  let nodeId = targetNodeId || target.nodeId;
   const newNodeConfig = parsed.newNodeConfig || {};
 
   if (!nodeId) {
     // Try to find node by description
     const insertionPoint = WorkflowModifier.findInsertionPoint(workflow, target.description || userRequest);
     if (insertionPoint) {
-      const nodeToUpdate = insertionPoint.nodeId;
-      
-      // Update selector if provided
-      if (newNodeConfig.selector) {
-        return WorkflowModifier.updateNodeSelector(workflow, nodeToUpdate, newNodeConfig.selector);
-      }
-      
-      // Update other properties
-      for (const [key, value] of Object.entries(newNodeConfig)) {
-        if (key !== 'nodeType') {
-          workflow = WorkflowModifier.updateNodeProperty(workflow, nodeToUpdate, key, value);
-        }
-      }
-      
-      return workflow;
+      nodeId = insertionPoint.nodeId;
     }
-    
+  }
+
+  if (!nodeId) {
     throw new Error('Could not determine which node to update');
   }
 
-  // Update specific node
-  if (newNodeConfig.selector) {
-    return WorkflowModifier.updateNodeSelector(workflow, nodeId, newNodeConfig.selector);
+  const nodeToUpdate = workflow.nodes.find((n) => n.id === nodeId);
+  if (!nodeToUpdate) {
+    throw new Error(`Node ${nodeId} not found`);
   }
 
-  // Update other properties
   let modifiedWorkflow = workflow;
+
+  const useSnapshotForSelector =
+    (snapshotsPath || executionId) &&
+    isSelectorRelatedRequest(userRequest) &&
+    isInteractionNode(nodeToUpdate) &&
+    (nodeToUpdate.data as any)?.selector &&
+    !newNodeConfig.selector;
+
+  if (useSnapshotForSelector) {
+    const nodeData = nodeToUpdate.data as any;
+    const action = nodeData.label || `${nodeToUpdate.type} element`;
+    const targetDesc = action.replace(/^(click|type|fill|submit)\s+/i, '').trim() || undefined;
+
+    if (executionId) {
+      try {
+        const backendClient = new BackendClient();
+        const pageDebugInfo = await backendClient.getCapturedDOM(executionId);
+        if (pageDebugInfo) {
+          const domContext = DOMSelectorInference.convertToOptimizedContext(pageDebugInfo, action);
+          const inferredSelectors = DOMSelectorInference.inferSelectorRuleBased(
+            action,
+            domContext,
+            nodeToUpdate.type
+          );
+          if (inferredSelectors.length > 0) {
+            const best = inferredSelectors[0];
+            modifiedWorkflow = WorkflowModifier.updateNodeSelector(modifiedWorkflow, nodeId, best.selector);
+            modifiedWorkflow = WorkflowModifier.updateNodeProperty(
+              modifiedWorkflow,
+              nodeId,
+              'selectorType',
+              best.type
+            );
+          }
+        }
+      } catch (err: any) {
+        console.warn('DOM-based selector inference failed:', err.message);
+      }
+    } else if (snapshotsPath) {
+      try {
+        const snapshots = loadSnapshotsFromDir(snapshotsPath);
+        const latestTree = snapshots.get('latest');
+        if (latestTree) {
+          const actionType = nodeToUpdate.type === 'type' ? 'type' : 'click';
+          const match = findElementInSnapshot(latestTree, actionType, targetDesc);
+          if (match) {
+            modifiedWorkflow = WorkflowModifier.updateNodeSelector(modifiedWorkflow, nodeId, match.selector);
+            modifiedWorkflow = WorkflowModifier.updateNodeProperty(
+              modifiedWorkflow,
+              nodeId,
+              'selectorType',
+              match.selectorType
+            );
+          }
+        }
+      } catch (err: any) {
+        console.warn('Snapshot-based selector inference failed:', err.message);
+      }
+    }
+  }
+
+  if (newNodeConfig.selector) {
+    modifiedWorkflow = WorkflowModifier.updateNodeSelector(modifiedWorkflow, nodeId, newNodeConfig.selector);
+  }
+
   for (const [key, value] of Object.entries(newNodeConfig)) {
     if (key !== 'nodeType') {
       modifiedWorkflow = WorkflowModifier.updateNodeProperty(modifiedWorkflow, nodeId, key, value);
@@ -283,6 +361,25 @@ function createNodeFromConfig(
       (baseNode.data as any).domain = 'browser';
       (baseNode.data as any).verificationType = 'visible';
       (baseNode.data as any).selector = config.selector;
+      break;
+    
+    case 'javascriptCode':
+      (baseNode.data as any).code = config.code || '// Add your code here\ncontext.setData("result", null);';
+      break;
+    
+    case 'csvHandle':
+      (baseNode.data as any).action = 'write';
+      (baseNode.data as any).filePath = config.filePath || '${data.outputDirectory}/output.csv';
+      (baseNode.data as any).dataSource = config.dataSource || 'data';
+      (baseNode.data as any).headers = config.headers || ['value'];
+      (baseNode.data as any).delimiter = ',';
+      break;
+    
+    case 'elementQuery':
+      (baseNode.data as any).action = config.action || 'getText';
+      (baseNode.data as any).selector = config.selector || '';
+      (baseNode.data as any).selectorType = config.selectorType || 'css';
+      (baseNode.data as any).outputVariable = config.outputVariable || 'text';
       break;
   }
 

@@ -354,6 +354,45 @@ export class RequestAnalyzer {
   }
 
   /**
+   * Extract node ID from request (e.g. "node js-extract-deals", "the JavaScript Code node")
+   */
+  static extractNodeIdFromRequest(
+    userRequest: string,
+    workflow: import('@automflows/shared').Workflow
+  ): string | undefined {
+    // Match explicit node ID: "node js-extract-deals", "node js-extract-deals to", "update js-extract-deals"
+    const nodeIdPatterns = [
+      /(?:node|update)\s+([a-zA-Z0-9_-]+)(?:\s|$|\.|,)/i,
+      /(?:node\s+)?([a-zA-Z][a-zA-Z0-9_-]*)\s+(?:to|with|and)/i,
+    ];
+    for (const pattern of nodeIdPatterns) {
+      const match = userRequest.match(pattern);
+      if (match) {
+        const candidate = match[1];
+        if (workflow.nodes.some((n) => n.id === candidate)) {
+          return candidate;
+        }
+      }
+    }
+
+    // Match by type description: "the JavaScript Code node", "the JavaScript node", "csv node"
+    const typePatterns: Array<{ pattern: RegExp; type: string }> = [
+      { pattern: /(?:the\s+)?javascript\s+(?:code\s+)?node/i, type: 'javascriptCode' },
+      { pattern: /(?:the\s+)?csv\s+(?:handle\s+)?node/i, type: 'csvHandle' },
+      { pattern: /(?:the\s+)?element\s+query\s+node/i, type: 'elementQuery' },
+      { pattern: /(?:the\s+)?extract(?:ion)?\s+node/i, type: 'javascriptCode' },
+    ];
+    for (const { pattern, type } of typePatterns) {
+      if (pattern.test(userRequest)) {
+        const match = workflow.nodes.find((n) => n.type === type);
+        if (match) return match.id;
+      }
+    }
+
+    return undefined;
+  }
+
+  /**
    * Parses modification request to extract target node information
    */
   static extractTargetNode(userRequest: string, workflow: import('@automflows/shared').Workflow): {
@@ -382,6 +421,12 @@ export class RequestAnalyzer {
       'dashboard', 'home', 'page',
     ];
     
+    // Try explicit node ID first
+    const explicitNodeId = this.extractNodeIdFromRequest(userRequest, workflow);
+    if (explicitNodeId) {
+      return { nodeId: explicitNodeId, description: explicitNodeId, position };
+    }
+
     for (const keyword of nodeKeywords) {
       if (requestLower.includes(keyword)) {
         // Try to find matching node
@@ -418,6 +463,13 @@ export class RequestAnalyzer {
     selector?: string;
     text?: string;
     url?: string;
+    headers?: string[];
+    dataSource?: string;
+    filePath?: string;
+    code?: string;
+    action?: string;
+    outputVariable?: string;
+    selectorType?: string;
     config?: Record<string, any>;
   } {
     const requestLower = userRequest.toLowerCase();
@@ -460,11 +512,39 @@ export class RequestAnalyzer {
       }
     }
     
+    // Extract headers (CSV columns): "headers: title, price, discountPercent" or "add columns discountPercent, link"
+    const headersPatterns = [
+      /headers?[:\s]+\[([^\]]+)\]/i,
+      /headers?[:\s]+["']([^"']+)["']/i,
+      /(?:include|add)\s+columns?\s+([a-zA-Z0-9_,\s]+)/i,
+      /columns?\s*[:\s]+\s*\[([^\]]+)\]/i,
+    ];
+    for (const pattern of headersPatterns) {
+      const match = userRequest.match(pattern);
+      if (match) {
+        const raw = match[1];
+        config.headers = raw.split(/[,;]/).map((s) => s.trim()).filter(Boolean);
+        break;
+      }
+    }
+    
+    // Extract dataSource: "dataSource: deals" or "from deals"
+    const dataSourceMatch = userRequest.match(/(?:dataSource|data\s+source|from)\s*[:\s]+\s*["']?([a-zA-Z0-9_]+)["']?/i);
+    if (dataSourceMatch) {
+      config.dataSource = dataSourceMatch[1];
+    }
+    
+    // Extract filePath: "filePath: output/x.csv" or "to output/x.csv"
+    const filePathMatch = userRequest.match(/(?:filePath|file\s*path|to|save\s+to)\s*[:\s]+\s*["']?([a-zA-Z0-9_/.\-${}]+)["']?/i);
+    if (filePathMatch) {
+      config.filePath = filePathMatch[1];
+    }
+    
     // Determine node type
     if (requestLower.includes('navigate') || requestLower.includes('goto') || config.url) {
       config.nodeType = 'navigation';
     } else if (requestLower.includes('click')) {
-      config.nodeType = 'click';
+      config.nodeType = 'action';
     } else if (requestLower.includes('type') || requestLower.includes('fill') || requestLower.includes('input')) {
       config.nodeType = 'type';
     } else if (requestLower.includes('api') || requestLower.includes('request')) {
@@ -473,6 +553,29 @@ export class RequestAnalyzer {
       config.nodeType = 'verify';
     } else if (requestLower.includes('wait')) {
       config.nodeType = 'wait';
+    } else if (requestLower.includes('javascript') || requestLower.includes('extract') || requestLower.includes('code')) {
+      config.nodeType = 'javascriptCode';
+    } else if (requestLower.includes('csv') || config.headers) {
+      config.nodeType = 'csvHandle';
+    } else if (requestLower.includes('element') || requestLower.includes('query')) {
+      config.nodeType = 'elementQuery';
+    }
+    
+    // Extract elementQuery action: "change to getAllText", "use getCount"
+    if (config.nodeType === 'elementQuery') {
+      if (requestLower.includes('getalltext') || requestLower.includes('get all text')) {
+        config.action = 'getAllText';
+      } else if (requestLower.includes('getcount') || requestLower.includes('get count')) {
+        config.action = 'getCount';
+      } else if (requestLower.includes('gettext') || requestLower.includes('get text')) {
+        config.action = 'getText';
+      } else if (requestLower.includes('getattribute')) {
+        config.action = 'getAttribute';
+      }
+      const outputVarMatch = userRequest.match(/outputVariable[:\s]+["']?([a-zA-Z0-9_]+)["']?/i);
+      if (outputVarMatch) {
+        config.outputVariable = outputVarMatch[1];
+      }
     }
     
     return config;

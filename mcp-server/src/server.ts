@@ -18,6 +18,7 @@ import { fixWorkflow } from './tools/fixWorkflow.js';
 import { validateWorkflow } from './tools/validateWorkflow.js';
 import { extendWorkflow } from './tools/extendWorkflow.js';
 import { createAndExecuteWorkflow } from './tools/createAndExecuteWorkflow.js';
+import { createWorkflowViaSnapshots } from './tools/createWorkflowViaSnapshots.js';
 
 // Load configuration
 loadConfig();
@@ -345,6 +346,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               enum: ['before', 'after', 'end'],
               description: 'Optional: Position for insertion (before, after, or end)',
             },
+            snapshotsPath: {
+              type: 'string',
+              description: 'Optional: Path to snapshot directory for selector inference (e.g. output/start-1771430710449/snapshots)',
+            },
+            executionId: {
+              type: 'string',
+              description: 'Optional: Execution ID to fetch captured DOM for selector inference (from failed run)',
+            },
           },
           required: ['workflow', 'userRequest'],
         },
@@ -383,6 +392,38 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             useLLMForSelectors: {
               type: 'boolean',
               description: 'Use LLM for selector inference (default: false, uses rule-based)',
+              default: false,
+            },
+          },
+          required: ['userRequest', 'useCase'],
+        },
+      },
+      {
+        name: 'create_workflow_via_snapshots',
+        description: 'Create a workflow with two options: (1) Guess selectors - faster, uses create_workflow or create_and_execute_workflow; (2) Use snapshots - builds from accessibility snapshots with accurate getByRole locators. Asks user to choose if preferredMode not specified.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            userRequest: {
+              type: 'string',
+              description: 'User request describing what the workflow should do',
+            },
+            useCase: {
+              type: 'string',
+              description: 'Use case description for the workflow',
+            },
+            preferredMode: {
+              type: 'string',
+              enum: ['guess', 'snapshots'],
+              description: 'Optional: "guess" for faster creation with inferred selectors, "snapshots" for accurate getByRole locators from accessibility snapshots. If omitted, prompts user to choose.',
+            },
+            snapshotsPath: {
+              type: 'string',
+              description: 'Required when preferredMode=snapshots. Path to snapshot directory (e.g. output/start-1771430710449/snapshots)',
+            },
+            executeImmediately: {
+              type: 'boolean',
+              description: 'When preferredMode=guess: run create_and_execute_workflow if true, else create_workflow',
               default: false,
             },
           },
@@ -525,6 +566,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           modificationType: args.modificationType as any,
           targetNodeId: args.targetNodeId as string | undefined,
           position: args.position as any,
+          snapshotsPath: args.snapshotsPath as string | undefined,
+          executionId: args.executionId as string | undefined,
         });
         return {
           content: [
@@ -545,6 +588,36 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           breakpointFor: args.breakpointFor as 'all' | 'marked' | undefined,
           useLLMForSelectors: args.useLLMForSelectors as boolean | undefined,
         });
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'create_workflow_via_snapshots': {
+        const result = await createWorkflowViaSnapshots({
+          userRequest: args.userRequest as string,
+          useCase: args.useCase as string,
+          preferredMode: args.preferredMode as 'guess' | 'snapshots' | undefined,
+          snapshotsPath: args.snapshotsPath as string | undefined,
+          executeImmediately: args.executeImmediately as boolean | undefined,
+        });
+
+        if ('needsModeSelection' in result && result.needsModeSelection) {
+          return {
+            content: [
+              {
+                type: 'text',
+                text: result.message,
+              },
+            ],
+          };
+        }
+
         return {
           content: [
             {
