@@ -19,6 +19,18 @@ export type SelectorType =
   | 'getByTitle' 
   | 'getByAltText';
 
+// Selector modifiers - Playwright-native features for nth, hasText, has, chained locators, shadow DOM
+export interface SelectorModifiers {
+  nth?: number;                    // .nth(n) -- select nth matching element (0 = first, -1 = last)
+  filterText?: string;             // .filter({ hasText }) -- filter by text content
+  filterTextRegex?: boolean;       // treat filterText as regex
+  filterSelector?: string;         // .filter({ has: locator }) -- filter by child selector
+  filterSelectorType?: SelectorType;
+  chainSelector?: string;          // .locator() -- scoped sub-query
+  chainSelectorType?: SelectorType;
+  pierceShadow?: boolean;          // CSS pierces shadow DOM by default; false = restrict to light DOM
+}
+
 // Node Types
 export enum NodeType {
   START = 'start',
@@ -40,6 +52,9 @@ export enum NodeType {
   DB_CONNECT = 'dbConnect',
   DB_DISCONNECT = 'dbDisconnect',
   DB_QUERY = 'dbQuery',
+  DB_TRANSACTION_BEGIN = 'dbTransactionBegin',
+  DB_TRANSACTION_COMMIT = 'dbTransactionCommit',
+  DB_TRANSACTION_ROLLBACK = 'dbTransactionRollback',
   ACTION = 'action',
   ELEMENT_QUERY = 'elementQuery',
   FORM_INPUT = 'formInput',
@@ -100,6 +115,7 @@ export interface NavigateNodeData {
   referer?: string;
   waitForSelector?: string;
   waitForSelectorType?: SelectorType;
+  waitForSelectorModifiers?: SelectorModifiers;
   waitForSelectorTimeout?: number;
   waitForUrl?: string; // Supports regex patterns
   waitForUrlTimeout?: number;
@@ -114,6 +130,7 @@ export interface NavigateNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
+    selectorModifiers?: SelectorModifiers;
     visibility?: 'visible' | 'invisible';
     timeout?: number | string;
   };
@@ -142,6 +159,7 @@ export interface NavigationNodeData {
   // Advanced Waiting Options
   waitForSelector?: string;
   waitForSelectorType?: SelectorType;
+  waitForSelectorModifiers?: SelectorModifiers;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -157,6 +175,7 @@ export interface NavigationNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
+    selectorModifiers?: SelectorModifiers;
     visibility?: 'visible' | 'invisible';
     timeout?: number | string;
   };
@@ -181,11 +200,13 @@ export interface KeyboardNodeData {
   shortcut?: string; // For shortcut action (e.g., "Control+C", "Meta+V")
   selector?: string; // Optional - focus element first before action
   selectorType?: SelectorType; // Selector type
+  selectorModifiers?: SelectorModifiers;
   delay?: number; // For type action - delay between keystrokes
   clearFirst?: boolean; // For type/insertText actions - clear field before typing
   // Advanced Waiting Options
   waitForSelector?: string;
   waitForSelectorType?: SelectorType;
+  waitForSelectorModifiers?: SelectorModifiers;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -201,6 +222,7 @@ export interface KeyboardNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
+    selectorModifiers?: SelectorModifiers;
     visibility?: 'visible' | 'invisible';
     timeout?: number | string;
   };
@@ -222,6 +244,7 @@ export interface ScrollNodeData {
   // Action-specific properties
   selector?: string; // For scrollToElement action
   selectorType?: SelectorType; // For scrollToElement action
+  selectorModifiers?: SelectorModifiers;
   x?: number; // For scrollToPosition action
   y?: number; // For scrollToPosition action
   deltaX?: number; // For scrollBy action
@@ -229,6 +252,7 @@ export interface ScrollNodeData {
   // Advanced Waiting Options
   waitForSelector?: string;
   waitForSelectorType?: SelectorType;
+  waitForSelectorModifiers?: SelectorModifiers;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -244,6 +268,7 @@ export interface ScrollNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
+    selectorModifiers?: SelectorModifiers;
     visibility?: 'visible' | 'invisible';
     timeout?: number | string;
   };
@@ -261,10 +286,12 @@ export interface ScrollNodeData {
 export interface ClickNodeData {
   selector: string;
   selectorType?: SelectorType;
+  selectorModifiers?: SelectorModifiers;
   timeout?: number;
   failSilently?: boolean;
   waitForSelector?: string;
   waitForSelectorType?: SelectorType;
+  waitForSelectorModifiers?: SelectorModifiers;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -279,6 +306,7 @@ export interface ClickNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
+    selectorModifiers?: SelectorModifiers;
     visibility?: 'visible' | 'invisible';
     timeout?: number | string;
   };
@@ -296,6 +324,7 @@ export interface ClickNodeData {
 export interface TypeNodeData {
   selector: string;
   selectorType?: SelectorType;
+  selectorModifiers?: SelectorModifiers;
   text: string;
   inputMethod?: 'fill' | 'type' | 'pressSequentially' | 'append' | 'prepend' | 'direct';
   delay?: number; // Delay between keystrokes for type/pressSequentially methods (in ms)
@@ -304,6 +333,7 @@ export interface TypeNodeData {
   failSilently?: boolean;
   waitForSelector?: string;
   waitForSelectorType?: SelectorType;
+  waitForSelectorModifiers?: SelectorModifiers;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -318,6 +348,7 @@ export interface TypeNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
+    selectorModifiers?: SelectorModifiers;
     visibility?: 'visible' | 'invisible';
     timeout?: number | string;
   };
@@ -336,6 +367,7 @@ export interface ActionNodeData {
   action: 'click' | 'doubleClick' | 'rightClick' | 'hover' | 'dragAndDrop';
   selector: string;
   selectorType?: SelectorType;
+  selectorModifiers?: SelectorModifiers;
   timeout?: number;
   failSilently?: boolean;
   // Action-specific properties
@@ -343,11 +375,13 @@ export interface ActionNodeData {
   delay?: number; // For hover/doubleClick actions
   targetSelector?: string; // For dragAndDrop action - target element selector
   targetSelectorType?: SelectorType; // For dragAndDrop action - target selector type
+  targetSelectorModifiers?: SelectorModifiers; // For dragAndDrop action - target modifiers
   targetX?: number; // For dragAndDrop action - optional target X coordinate
   targetY?: number; // For dragAndDrop action - optional target Y coordinate
   // Advanced Waiting Options
   waitForSelector?: string;
   waitForSelectorType?: SelectorType;
+  waitForSelectorModifiers?: SelectorModifiers;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -363,6 +397,7 @@ export interface ActionNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
+    selectorModifiers?: SelectorModifiers;
     visibility?: 'visible' | 'invisible';
     timeout?: number | string;
   };
@@ -381,6 +416,7 @@ export interface ElementQueryNodeData {
   action: 'getText' | 'getAttribute' | 'getCount' | 'isVisible' | 'isEnabled' | 'isChecked' | 'getBoundingBox' | 'getAllText';
   selector: string;
   selectorType?: SelectorType;
+  selectorModifiers?: SelectorModifiers;
   timeout?: number;
   failSilently?: boolean;
   // Action-specific properties
@@ -389,6 +425,7 @@ export interface ElementQueryNodeData {
   // Advanced Waiting Options
   waitForSelector?: string;
   waitForSelectorType?: SelectorType;
+  waitForSelectorModifiers?: SelectorModifiers;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -404,6 +441,7 @@ export interface ElementQueryNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
+    selectorModifiers?: SelectorModifiers;
     visibility?: 'visible' | 'invisible';
     timeout?: number | string;
   };
@@ -422,6 +460,7 @@ export interface FormInputNodeData {
   action: 'select' | 'check' | 'uncheck' | 'upload';
   selector: string;
   selectorType?: SelectorType;
+  selectorModifiers?: SelectorModifiers;
   timeout?: number;
   failSilently?: boolean;
   // Action-specific properties
@@ -433,6 +472,7 @@ export interface FormInputNodeData {
   // Advanced Waiting Options
   waitForSelector?: string;
   waitForSelectorType?: SelectorType;
+  waitForSelectorModifiers?: SelectorModifiers;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -448,6 +488,7 @@ export interface FormInputNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
+    selectorModifiers?: SelectorModifiers;
     visibility?: 'visible' | 'invisible';
     timeout?: number | string;
   };
@@ -465,11 +506,13 @@ export interface FormInputNodeData {
 export interface GetTextNodeData {
   selector: string;
   selectorType?: SelectorType;
+  selectorModifiers?: SelectorModifiers;
   outputVariable?: string;
   timeout?: number;
   failSilently?: boolean;
   waitForSelector?: string;
   waitForSelectorType?: SelectorType;
+  waitForSelectorModifiers?: SelectorModifiers;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -484,6 +527,7 @@ export interface GetTextNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
+    selectorModifiers?: SelectorModifiers;
     visibility?: 'visible' | 'invisible';
     timeout?: number | string;
   };
@@ -506,6 +550,7 @@ export interface ScreenshotNodeData {
   // Action-specific properties
   selector?: string; // For element action
   selectorType?: SelectorType; // For element action
+  selectorModifiers?: SelectorModifiers;
   mask?: string[]; // For element/fullPage/viewport actions - selectors to mask
   format?: 'A4' | 'Letter'; // For pdf action
   margin?: { top?: number; right?: number; bottom?: number; left?: number }; // For pdf action
@@ -513,6 +558,7 @@ export interface ScreenshotNodeData {
   landscape?: boolean; // For pdf action
   waitForSelector?: string;
   waitForSelectorType?: SelectorType;
+  waitForSelectorModifiers?: SelectorModifiers;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -527,6 +573,7 @@ export interface ScreenshotNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
+    selectorModifiers?: SelectorModifiers;
     visibility?: 'visible' | 'invisible';
     timeout?: number | string;
   };
@@ -564,6 +611,7 @@ export interface StorageNodeData {
   // Advanced Waiting Options
   waitForSelector?: string;
   waitForSelectorType?: SelectorType;
+  waitForSelectorModifiers?: SelectorModifiers;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -579,6 +627,7 @@ export interface StorageNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
+    selectorModifiers?: SelectorModifiers;
     visibility?: 'visible' | 'invisible';
     timeout?: number | string;
   };
@@ -604,6 +653,7 @@ export interface DialogNodeData {
   // Advanced Waiting Options
   waitForSelector?: string;
   waitForSelectorType?: SelectorType;
+  waitForSelectorModifiers?: SelectorModifiers;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -619,6 +669,7 @@ export interface DialogNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
+    selectorModifiers?: SelectorModifiers;
     visibility?: 'visible' | 'invisible';
     timeout?: number | string;
   };
@@ -645,6 +696,7 @@ export interface DownloadNodeData {
   // Advanced Waiting Options
   waitForSelector?: string;
   waitForSelectorType?: SelectorType;
+  waitForSelectorModifiers?: SelectorModifiers;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -660,6 +712,7 @@ export interface DownloadNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
+    selectorModifiers?: SelectorModifiers;
     visibility?: 'visible' | 'invisible';
     timeout?: number | string;
   };
@@ -680,6 +733,8 @@ export interface IframeNodeData {
   failSilently?: boolean;
   // Action-specific properties
   selector?: string; // For switchToIframe/getIframeContent - iframe selector
+  selectorType?: SelectorType;
+  selectorModifiers?: SelectorModifiers;
   name?: string; // For switchToIframe - iframe name attribute
   url?: string; // For switchToIframe - iframe URL pattern
   contextKey?: string; // For switchToIframe - store iframe page reference (default: 'iframePage')
@@ -689,6 +744,7 @@ export interface IframeNodeData {
   // Advanced Waiting Options
   waitForSelector?: string;
   waitForSelectorType?: SelectorType;
+  waitForSelectorModifiers?: SelectorModifiers;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -704,6 +760,7 @@ export interface IframeNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
+    selectorModifiers?: SelectorModifiers;
     visibility?: 'visible' | 'invisible';
     timeout?: number | string;
   };
@@ -722,6 +779,7 @@ export interface WaitNodeData {
   waitType: 'timeout' | 'selector' | 'url' | 'condition' | 'api-response';
   value: number | string; // timeout in ms, selector string, URL pattern, JavaScript condition, or API response context key
   selectorType?: SelectorType;
+  selectorModifiers?: SelectorModifiers;
   timeout?: number;
   failSilently?: boolean;
   pause?: boolean; // When true, execution pauses at this wait node with 2-hour timeout override
@@ -740,6 +798,7 @@ export interface WaitNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
+    selectorModifiers?: SelectorModifiers;
     visibility?: 'visible' | 'invisible';
     timeout?: number | string;
   };
@@ -919,12 +978,14 @@ export interface SetConfigNodeData {
 }
 
 export interface DbConnectNodeData {
-  dbType: 'postgres' | 'mysql' | 'mongodb' | 'sqlite'; // Supports ${data.config.dbType}
+  dbType: 'postgres' | 'mysql' | 'mongodb' | 'sqlite' | 'oracle' | 'sqlserver' | 'redis'; // Supports ${data.config.dbType}
   host?: string; // Supports variable interpolation
+  server?: string; // For SQL Server - server/host (supports interpolation)
   port?: number | string; // Supports variable interpolation (parsed after interpolation)
   user?: string; // Supports variable interpolation
   password?: string; // Supports variable interpolation
   database?: string; // Supports variable interpolation
+  filePath?: string; // For SQLite - path to .db file (supports interpolation)
   connectionString?: string; // Optional alternative to individual fields (supports interpolation)
   configKey?: string; // Optional - load entire config object from context (e.g., 'env.db' loads from data.env.db)
   connectionKey?: string; // Context key to store connection (default: 'dbConnection', supports ${data.key})
@@ -940,6 +1001,39 @@ export interface DbConnectNodeData {
 
 export interface DbDisconnectNodeData {
   connectionKey?: string; // Which connection to disconnect (default: 'dbConnection', supports ${data.key})
+  failSilently?: boolean;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface DbTransactionBeginNodeData {
+  connectionKey?: string; // Which connection to use (default: 'dbConnection', supports ${data.key})
+  failSilently?: boolean;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface DbTransactionCommitNodeData {
+  connectionKey?: string; // Which connection to use (default: 'dbConnection', supports ${data.key})
+  failSilently?: boolean;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface DbTransactionRollbackNodeData {
+  connectionKey?: string; // Which connection to use (default: 'dbConnection', supports ${data.key})
   failSilently?: boolean;
   _inputConnections?: {
     [propertyName: string]: {
@@ -1001,6 +1095,7 @@ export interface VerifyNodeData {
   expectedText?: string;
   selector?: string;
   selectorType?: SelectorType;
+  selectorModifiers?: SelectorModifiers;
   attributeName?: string;
   elementCheck?: 'visible' | 'hidden' | 'exists' | 'notExists' | 'count' | 'enabled' | 'disabled' | 'selected' | 'checked';
   cookieName?: string;
@@ -1031,6 +1126,7 @@ export interface VerifyNodeData {
     type: 'selector' | 'url' | 'javascript';
     value: string;
     selectorType?: SelectorType;
+    selectorModifiers?: SelectorModifiers;
     visibility?: 'visible' | 'invisible';
     timeout?: number | string;
   };
@@ -1109,6 +1205,9 @@ export type NodeData =
   | DbConnectNodeData
   | DbDisconnectNodeData
   | DbQueryNodeData
+  | DbTransactionBeginNodeData
+  | DbTransactionCommitNodeData
+  | DbTransactionRollbackNodeData
   | CsvHandleNodeData
   | Record<string, any>; // Support custom plugin node data
 
@@ -1174,6 +1273,7 @@ export enum ExecutionEventType {
 export interface SelectorSuggestion {
   selector: string;
   selectorType: SelectorType;
+  selectorModifiers?: SelectorModifiers;
   reason: string; // e.g., "Similar ID found", "Class match", etc.
   elementInfo?: string; // e.g., "button#submit-btn.login-button"
 }
@@ -1221,6 +1321,7 @@ export interface RecordedAction {
   type: 'click' | 'type' | 'keyboard' | 'form-input' | 'navigation' | 'scroll' | 'hover';
   selector?: string;
   selectorType?: SelectorType;
+  selectorModifiers?: SelectorModifiers;
   value?: string; // For type actions
   key?: string; // For keyboard actions
   url?: string; // For navigation

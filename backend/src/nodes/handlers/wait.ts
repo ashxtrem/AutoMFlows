@@ -69,7 +69,7 @@ export class WaitHandler implements NodeHandler {
           // Use the user-specified timeout (pause already handled above)
           const timeout = data.timeout || 30000;
 
-          const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css');
+          const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css', data.selectorModifiers);
           await locator.waitFor({ timeout, state: 'visible' });
         } else if (data.waitType === 'url') {
           if (!page) {

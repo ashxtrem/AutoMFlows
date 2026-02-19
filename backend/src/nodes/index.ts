@@ -6,7 +6,7 @@ import { TypeHandler, ActionHandler, FormInputHandler, KeyboardHandler, ScrollHa
 import { JavaScriptCodeHandler, LoopHandler } from './logic';
 import { ApiRequestHandler, ApiCurlHandler } from './api';
 import { LoadConfigFileHandler, SelectConfigFileHandler } from './config';
-import { DbConnectHandler, DbDisconnectHandler, DbQueryHandler } from './database';
+import { DbConnectHandler, DbDisconnectHandler, DbQueryHandler, DbTransactionBeginHandler, DbTransactionCommitHandler, DbTransactionRollbackHandler } from './database';
 import { pluginRegistry } from '../plugins/registry';
 
 // Start node handler (no-op)
@@ -47,6 +47,9 @@ const handlers: NodeHandlerMap = {
   [NodeType.DB_CONNECT]: new DbConnectHandler(),
   [NodeType.DB_DISCONNECT]: new DbDisconnectHandler(),
   [NodeType.DB_QUERY]: new DbQueryHandler(),
+  [NodeType.DB_TRANSACTION_BEGIN]: new DbTransactionBeginHandler(),
+  [NodeType.DB_TRANSACTION_COMMIT]: new DbTransactionCommitHandler(),
+  [NodeType.DB_TRANSACTION_ROLLBACK]: new DbTransactionRollbackHandler(),
   [NodeType.CSV_HANDLE]: new CsvHandleHandler(),
 };
 

@@ -7,7 +7,7 @@
  */
 
 import { Page, Locator } from 'playwright';
-import { SelectorType } from '@automflows/shared';
+import { SelectorType, SelectorModifiers } from '@automflows/shared';
 
 export class LocatorHelper {
   /**
@@ -15,19 +15,35 @@ export class LocatorHelper {
    * @param page - Playwright page object
    * @param selector - Selector string (already interpolated)
    * @param selectorType - Type of selector (css, xpath, or Playwright locator method)
+   * @param modifiers - Optional selector modifiers (nth, filterText, filterSelector, chainSelector, pierceShadow)
    * @returns Playwright Locator
    */
-  static createLocator(page: Page, selector: string, selectorType: SelectorType | string = 'css'): Locator {
+  static createLocator(
+    page: Page,
+    selector: string,
+    selectorType: SelectorType | string = 'css',
+    modifiers?: SelectorModifiers
+  ): Locator {
     if (!selector || selector.trim() === '') {
       throw new Error('Selector cannot be empty');
     }
 
+    // pierceShadow: false = restrict to light DOM (css:light=); true/undefined = default (CSS pierces shadow)
+    if (modifiers?.pierceShadow === false && selectorType !== 'css') {
+      console.warn('[LocatorHelper] pierceShadow only applies to CSS selectors; XPath never pierces shadow DOM');
+    }
+
+    let locator: Locator;
     switch (selectorType) {
-      case 'css':
-        return page.locator(selector);
+      case 'css': {
+        const cssSelector = modifiers?.pierceShadow === false ? `css:light=${selector}` : selector;
+        locator = page.locator(cssSelector);
+        break;
+      }
 
       case 'xpath':
-        return page.locator(`xpath=${selector}`);
+        locator = page.locator(`xpath=${selector}`);
+        break;
 
       case 'getByRole': {
         const parts = selector.split(',');
@@ -67,7 +83,8 @@ export class LocatorHelper {
           throw new Error('Role is required for getByRole. Format: "role:button,name:Submit"');
         }
 
-        return page.getByRole(role as any, name ? { name, ...options } : options);
+        locator = page.getByRole(role as any, name ? { name, ...options } : options);
+        break;
       }
 
       case 'getByText': {
@@ -81,12 +98,14 @@ export class LocatorHelper {
           // Regex format
           const pattern = textValue.slice(1, -1);
           try {
-            return page.getByText(new RegExp(pattern));
+            locator = page.getByText(new RegExp(pattern));
           } catch (error: any) {
             throw new Error(`Invalid regex pattern in getByText: ${pattern}. Error: ${error.message}`);
           }
+        } else {
+          locator = page.getByText(textValue);
         }
-        return page.getByText(textValue);
+        break;
       }
 
       case 'getByLabel': {
@@ -95,7 +114,8 @@ export class LocatorHelper {
           throw new Error('Invalid getByLabel format. Expected "label:value"');
         }
         const labelValue = match[1].trim();
-        return page.getByLabel(labelValue);
+        locator = page.getByLabel(labelValue);
+        break;
       }
 
       case 'getByPlaceholder': {
@@ -104,7 +124,8 @@ export class LocatorHelper {
           throw new Error('Invalid getByPlaceholder format. Expected "placeholder:value"');
         }
         const placeholderValue = match[1].trim();
-        return page.getByPlaceholder(placeholderValue);
+        locator = page.getByPlaceholder(placeholderValue);
+        break;
       }
 
       case 'getByTestId': {
@@ -113,7 +134,8 @@ export class LocatorHelper {
           throw new Error('Invalid getByTestId format. Expected "testid:value"');
         }
         const testIdValue = match[1].trim();
-        return page.getByTestId(testIdValue);
+        locator = page.getByTestId(testIdValue);
+        break;
       }
 
       case 'getByTitle': {
@@ -122,7 +144,8 @@ export class LocatorHelper {
           throw new Error('Invalid getByTitle format. Expected "title:value"');
         }
         const titleValue = match[1].trim();
-        return page.getByTitle(titleValue);
+        locator = page.getByTitle(titleValue);
+        break;
       }
 
       case 'getByAltText': {
@@ -136,19 +159,52 @@ export class LocatorHelper {
           // Regex format
           const pattern = altValue.slice(1, -1);
           try {
-            return page.getByAltText(new RegExp(pattern));
+            locator = page.getByAltText(new RegExp(pattern));
           } catch (error: any) {
             throw new Error(`Invalid regex pattern in getByAltText: ${pattern}. Error: ${error.message}`);
           }
+        } else {
+          locator = page.getByAltText(altValue);
         }
-        return page.getByAltText(altValue);
+        break;
       }
 
       default:
         // Default to CSS selector for unknown types (backward compatibility)
         console.warn(`Unknown selector type "${selectorType}", defaulting to CSS selector`);
-        return page.locator(selector);
+        locator = page.locator(selector);
     }
+
+    return this.applyModifiers(page, locator, modifiers);
+  }
+
+  /**
+   * Apply selector modifiers (filterText, filterSelector, chainSelector, nth) to a locator
+   * Order: filter(hasText) -> filter(has) -> chain(.locator()) -> nth
+   */
+  private static applyModifiers(page: Page, locator: Locator, modifiers?: SelectorModifiers): Locator {
+    if (!modifiers) return locator;
+
+    if (modifiers.filterText) {
+      const hasText = modifiers.filterTextRegex
+        ? new RegExp(modifiers.filterText)
+        : modifiers.filterText;
+      locator = locator.filter({ hasText });
+    }
+    if (modifiers.filterSelector) {
+      const child = this.createLocator(page, modifiers.filterSelector, modifiers.filterSelectorType || 'css');
+      locator = locator.filter({ has: child });
+    }
+    if (modifiers.chainSelector) {
+      const chainSelector = modifiers.chainSelectorType === 'xpath'
+        ? `xpath=${modifiers.chainSelector}`
+        : modifiers.chainSelector;
+      locator = locator.locator(chainSelector);
+    }
+    if (modifiers.nth !== undefined) {
+      locator = locator.nth(modifiers.nth);
+    }
+    return locator;
   }
 
   /**
@@ -158,19 +214,21 @@ export class LocatorHelper {
    * @param selector - Selector string (already interpolated)
    * @param selectorType - Type of selector (css, xpath, etc.)
    * @param timeout - Timeout in milliseconds
+   * @param modifiers - Optional selector modifiers
    */
   static async scrollToElementSmooth(
     page: Page,
     selector: string,
     selectorType: SelectorType | string = 'css',
-    timeout: number = 30000
+    timeout: number = 30000,
+    modifiers?: SelectorModifiers
   ): Promise<void> {
     try {
       if (!selector || selector.trim() === '') {
         return; // No selector, nothing to scroll to
       }
 
-      const locator = this.createLocator(page, selector, selectorType);
+      const locator = this.createLocator(page, selector, selectorType, modifiers);
 
       // Check if element is already centered in viewport (more strict check)
       // We want to scroll to center the element even if it's partially visible

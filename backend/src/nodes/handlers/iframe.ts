@@ -31,6 +31,7 @@ export class IframeHandler implements NodeHandler {
           await WaitHelper.executeWaits(page, {
             waitForSelector: data.waitForSelector,
             waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorModifiers: data.waitForSelectorModifiers,
             waitForSelectorTimeout: data.waitForSelectorTimeout,
             waitForUrl: data.waitForUrl,
             waitForUrlTimeout: data.waitForUrlTimeout,
@@ -51,7 +52,7 @@ export class IframeHandler implements NodeHandler {
             if (data.selector) {
               const selector = VariableInterpolator.interpolateString(data.selector, context);
               // IframeNodeData doesn't have selectorType, default to CSS
-              const locator = LocatorHelper.createLocator(page, selector, 'css');
+              const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css', data.selectorModifiers);
               frame = await locator.contentFrame();
             } else if (data.name) {
               const name = VariableInterpolator.interpolateString(data.name, context);
@@ -90,7 +91,7 @@ export class IframeHandler implements NodeHandler {
             const iframeSelector = VariableInterpolator.interpolateString(data.iframeSelector, context);
             const contentSelector = VariableInterpolator.interpolateString(data.contentSelector, context);
             // IframeNodeData doesn't have selectorType, default to CSS
-            const iframeLocator = LocatorHelper.createLocator(page, iframeSelector, 'css');
+            const iframeLocator = LocatorHelper.createLocator(page, iframeSelector, data.selectorType || 'css', data.selectorModifiers);
             const iframeFrame = await iframeLocator.contentFrame();
             
             if (!iframeFrame) {
@@ -117,6 +118,7 @@ export class IframeHandler implements NodeHandler {
           await WaitHelper.executeWaits(page, {
             waitForSelector: data.waitForSelector,
             waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorModifiers: data.waitForSelectorModifiers,
             waitForSelectorTimeout: data.waitForSelectorTimeout,
             waitForUrl: data.waitForUrl,
             waitForUrlTimeout: data.waitForUrlTimeout,

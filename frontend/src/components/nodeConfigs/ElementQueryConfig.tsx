@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
 import RetryConfigSection from '../RetryConfigSection';
 import SelectorFinderButton from '../SelectorFinderButton';
+import SelectorModifiersEditor from '../SelectorModifiersEditor';
 import { getSelectorPlaceholder, getSelectorHelpText, SELECTOR_TYPE_OPTIONS } from '../../utils/selectorHelpers';
 
 interface ElementQueryConfigProps {
@@ -134,7 +135,7 @@ export default function ElementQueryConfig({ node, onChange }: ElementQueryConfi
           </div>
         )}
       </div>
-      
+      <SelectorModifiersEditor value={data.selectorModifiers} onChange={(v) => onChange('selectorModifiers', v)} />
       {/* Action-specific properties */}
       {action === 'getAttribute' && (
         <div>

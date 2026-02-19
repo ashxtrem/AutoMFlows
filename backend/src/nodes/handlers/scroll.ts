@@ -31,6 +31,7 @@ export class ScrollHandler implements NodeHandler {
           await WaitHelper.executeWaits(page, {
             waitForSelector: data.waitForSelector,
             waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorModifiers: data.waitForSelectorModifiers,
             waitForSelectorTimeout: data.waitForSelectorTimeout,
             waitForUrl: data.waitForUrl,
             waitForUrlTimeout: data.waitForUrlTimeout,
@@ -50,7 +51,7 @@ export class ScrollHandler implements NodeHandler {
               throw new Error('Selector is required for scrollToElement action');
             }
             const selector = VariableInterpolator.interpolateString(data.selector, context);
-            const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css');
+            const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css', data.selectorModifiers);
             await locator.scrollIntoViewIfNeeded({ timeout });
             break;
 
@@ -93,6 +94,7 @@ export class ScrollHandler implements NodeHandler {
           await WaitHelper.executeWaits(page, {
             waitForSelector: data.waitForSelector,
             waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorModifiers: data.waitForSelectorModifiers,
             waitForSelectorTimeout: data.waitForSelectorTimeout,
             waitForUrl: data.waitForUrl,
             waitForUrlTimeout: data.waitForUrlTimeout,

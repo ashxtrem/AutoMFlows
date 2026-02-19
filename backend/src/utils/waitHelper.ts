@@ -6,11 +6,12 @@
 import { ContextManager } from '../engine/context';
 import { VariableInterpolator } from './variableInterpolator';
 import { LocatorHelper } from './locatorHelper';
-import { SelectorType } from '@automflows/shared';
+import { SelectorType, SelectorModifiers } from '@automflows/shared';
 
 export interface WaitOptions {
   waitForSelector?: string;
   waitForSelectorType?: SelectorType;
+  waitForSelectorModifiers?: SelectorModifiers;
   waitForSelectorTimeout?: number;
   waitForUrl?: string;
   waitForUrlTimeout?: number;
@@ -33,6 +34,7 @@ export class WaitHelper {
     const {
       waitForSelector,
       waitForSelectorType,
+      waitForSelectorModifiers,
       waitForSelectorTimeout,
       waitForUrl,
       waitForUrlTimeout,
@@ -60,7 +62,8 @@ export class WaitHelper {
         selectorTimeout,
         failSilently,
         waitTiming,
-        context
+        context,
+        waitForSelectorModifiers
       );
       waitPromises.push(waitForSelectorPromise);
     }
@@ -128,7 +131,8 @@ export class WaitHelper {
     timeout: number,
     failSilently: boolean,
     waitTiming: 'before' | 'after' = 'before',
-    context?: ContextManager
+    context?: ContextManager,
+    modifiers?: SelectorModifiers
   ): Promise<void> {
     const timingLabel = waitTiming === 'after' ? 'after operation' : 'before operation';
     const traceLog = context?.getData('traceLog') as ((message: string) => void) | undefined;
@@ -143,27 +147,25 @@ export class WaitHelper {
     }
 
     try {
-      const locator = LocatorHelper.createLocator(page, selector, selectorType || 'css');
-      const element = locator.first();
-      
+      const locator = LocatorHelper.createLocator(page, selector, selectorType || 'css', modifiers);
+
       // Log initial state
       try {
-        const isVisible = await element.isVisible().catch(() => false);
+        const isVisible = await locator.isVisible().catch(() => false);
         const actualState = isVisible ? 'visible' : 'invisible';
         log(`Wait [selector]: selector: ${selector} | expected: visible | got: ${actualState} | timeout: ${timeout}ms`);
       } catch {
         // If we can't check visibility, log anyway
         log(`Wait [selector]: selector: ${selector} | expected: visible | got: checking... | timeout: ${timeout}ms`);
       }
-      
+
       await locator.waitFor({ timeout, state: 'visible' });
     } catch (error: any) {
       // Log final state on timeout
       if (error.message.includes('timeout')) {
         try {
-          const locator = LocatorHelper.createLocator(page, selector, selectorType || 'css');
-          const element = locator.first();
-          const isVisible = await element.isVisible().catch(() => false);
+          const locator = LocatorHelper.createLocator(page, selector, selectorType || 'css', modifiers);
+          const isVisible = await locator.isVisible().catch(() => false);
           const actualState = isVisible ? 'visible' : 'invisible';
           log(`Wait [selector]: selector: ${selector} | expected: visible | got: ${actualState} | timeout: ${timeout}ms (TIMEOUT)`);
         } catch {

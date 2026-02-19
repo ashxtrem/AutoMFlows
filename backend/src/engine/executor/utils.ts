@@ -1,4 +1,4 @@
-import { BaseNode, NodeType, Workflow } from '@automflows/shared';
+import { BaseNode, NodeType, Workflow, SelectorModifiers } from '@automflows/shared';
 
 /**
  * Extract workflow name from workflow
@@ -54,17 +54,18 @@ export function isUINode(node: BaseNode): boolean {
 /**
  * Extract selector information from node data
  */
-export function extractSelectorInfo(node: BaseNode): { selector?: string; selectorType?: 'css' | 'xpath' } {
+export function extractSelectorInfo(node: BaseNode): { selector?: string; selectorType?: 'css' | 'xpath'; selectorModifiers?: SelectorModifiers } {
   const nodeData = node.data as any;
   const nodeType = node.type;
 
   // Built-in nodes with selector property
-  if (nodeType === NodeType.ACTION || 
-      nodeType === NodeType.TYPE || 
+  if (nodeType === NodeType.ACTION ||
+      nodeType === NodeType.TYPE ||
       nodeType === NodeType.ELEMENT_QUERY) {
     return {
       selector: nodeData?.selector,
       selectorType: nodeData?.selectorType || 'css',
+      selectorModifiers: nodeData?.selectorModifiers,
     };
   }
 
@@ -73,6 +74,7 @@ export function extractSelectorInfo(node: BaseNode): { selector?: string; select
     return {
       selector: nodeData.waitForSelector,
       selectorType: nodeData.waitForSelectorType || 'css',
+      selectorModifiers: nodeData.waitForSelectorModifiers,
     };
   }
 
@@ -81,6 +83,7 @@ export function extractSelectorInfo(node: BaseNode): { selector?: string; select
     return {
       selector: typeof nodeData.value === 'string' ? nodeData.value : undefined,
       selectorType: nodeData.selectorType || 'css',
+      selectorModifiers: nodeData.selectorModifiers,
     };
   }
 
@@ -89,6 +92,7 @@ export function extractSelectorInfo(node: BaseNode): { selector?: string; select
     return {
       selector: nodeData.selector,
       selectorType: nodeData.selectorType || 'css',
+      selectorModifiers: nodeData.selectorModifiers,
     };
   }
 

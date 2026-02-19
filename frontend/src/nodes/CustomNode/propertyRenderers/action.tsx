@@ -1,4 +1,5 @@
 import { InlineTextInput, InlineNumberInput, InlineSelect, InlineTextarea } from '../../../components/InlinePropertyEditor';
+import SelectorModifiersEditor from '../../../components/SelectorModifiersEditor';
 import { getSelectorPlaceholder, SELECTOR_TYPE_OPTIONS } from '../../../utils/selectorHelpers';
 import { PropertyRenderer } from './types';
 
@@ -53,6 +54,13 @@ export const renderActionProperties: PropertyRenderer = ({ renderData, handlePro
           onOpenPopup={handleOpenPopup}
         />
       ), 2)}
+      {renderPropertyRow('selectorModifiers', (
+        <SelectorModifiersEditor
+          value={renderData.selectorModifiers}
+          onChange={(v) => handlePropertyChange('selectorModifiers', v)}
+          compact
+        />
+      ), 3)}
       {(action === 'click' || action === 'rightClick') && renderPropertyRow('button', (
         <InlineSelect
           label="Button"
@@ -96,6 +104,13 @@ export const renderActionProperties: PropertyRenderer = ({ renderData, handlePro
               onOpenPopup={handleOpenPopup}
             />
           ), 5)}
+          {renderPropertyRow('targetSelectorModifiers', (
+            <SelectorModifiersEditor
+              value={renderData.targetSelectorModifiers}
+              onChange={(v) => handlePropertyChange('targetSelectorModifiers', v)}
+              compact
+            />
+          ), 6)}
           {(renderData.targetX !== undefined || renderData.targetY !== undefined) && (
             <>
               {renderPropertyRow('targetX', (

@@ -59,3 +59,13 @@ export const SELECTOR_TYPE_OPTIONS = [
   { value: 'getByTitle', label: 'getByTitle' },
   { value: 'getByAltText', label: 'getByAltText' },
 ];
+
+/** Help text for selector modifier fields */
+export const SELECTOR_MODIFIER_LABELS = {
+  nth: 'Element index (0 = first, -1 = last)',
+  filterText: 'Filter by text content',
+  filterTextRegex: 'Treat as regex',
+  filterSelector: 'Filter by child selector',
+  chainSelector: 'Scoped sub-query',
+  pierceShadow: 'Pierce shadow DOM (CSS pierces by default)',
+} as const;

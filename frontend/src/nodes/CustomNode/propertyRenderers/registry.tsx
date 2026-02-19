@@ -67,6 +67,9 @@ export const propertyRendererRegistry: Record<string, PropertyRenderer> = {
   [NodeType.DB_CONNECT]: renderDbConnectProperties,
   [NodeType.DB_DISCONNECT]: renderDbDisconnectProperties,
   [NodeType.DB_QUERY]: renderDbQueryProperties,
+  [NodeType.DB_TRANSACTION_BEGIN]: renderDbDisconnectProperties,
+  [NodeType.DB_TRANSACTION_COMMIT]: renderDbDisconnectProperties,
+  [NodeType.DB_TRANSACTION_ROLLBACK]: renderDbDisconnectProperties,
   [NodeType.CSV_HANDLE]: renderCsvHandleProperties,
 };
 

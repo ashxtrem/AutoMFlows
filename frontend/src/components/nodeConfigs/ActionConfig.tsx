@@ -2,6 +2,7 @@ import { Node } from 'reactflow';
 import { useState } from 'react';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
 import SelectorFinderButton from '../SelectorFinderButton';
+import SelectorModifiersEditor from '../SelectorModifiersEditor';
 import { getSelectorPlaceholder, getSelectorHelpText, SELECTOR_TYPE_OPTIONS } from '../../utils/selectorHelpers';
 
 interface ActionConfigProps {
@@ -115,7 +116,11 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
           </div>
         )}
       </div>
-      
+      <SelectorModifiersEditor
+        value={data.selectorModifiers}
+        onChange={(v) => onChange('selectorModifiers', v)}
+      />
+
       {/* Action-specific properties */}
       {(action === 'click' || action === 'rightClick') && (
         <div>
@@ -182,6 +187,10 @@ export default function ActionConfig({ node, onChange }: ActionConfigProps) {
               Selector for the target element to drop on. Leave empty to use coordinates instead.
             </div>
           </div>
+          <SelectorModifiersEditor
+            value={data.targetSelectorModifiers}
+            onChange={(v) => onChange('targetSelectorModifiers', v)}
+          />
           <div className="border-t border-gray-600 pt-2 mt-2">
             <div className="text-xs text-gray-400 mb-2">Or use coordinates (if target selector is empty):</div>
             <div className="grid grid-cols-2 gap-2">

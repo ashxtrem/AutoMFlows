@@ -37,6 +37,7 @@ export class ActionHandler implements NodeHandler {
           await WaitHelper.executeWaits(page, {
             waitForSelector: data.waitForSelector,
             waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorModifiers: data.waitForSelectorModifiers,
             waitForSelectorTimeout: data.waitForSelectorTimeout,
             waitForUrl: data.waitForUrl,
             waitForUrlTimeout: data.waitForUrlTimeout,
@@ -53,7 +54,7 @@ export class ActionHandler implements NodeHandler {
         const scrollThenAction = context.getData('scrollThenAction');
         if (scrollThenAction && selector) {
           try {
-            await LocatorHelper.scrollToElementSmooth(page, selector, data.selectorType || 'css', timeout);
+            await LocatorHelper.scrollToElementSmooth(page, selector, data.selectorType || 'css', timeout, data.selectorModifiers);
           } catch (error: any) {
             // Log warning but continue execution
             console.warn(`[ActionHandler] Failed to scroll to element before action: ${error.message}`);
@@ -61,7 +62,7 @@ export class ActionHandler implements NodeHandler {
         }
 
         // Execute action based on action type
-        const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css');
+        const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css', data.selectorModifiers);
         
         switch (data.action) {
           case 'click':
@@ -102,7 +103,7 @@ export class ActionHandler implements NodeHandler {
             if (data.targetSelector) {
               // Drag to target element
               const targetSelector = VariableInterpolator.interpolateString(data.targetSelector, context);
-              const targetLocator = LocatorHelper.createLocator(page, targetSelector, data.targetSelectorType || 'css');
+              const targetLocator = LocatorHelper.createLocator(page, targetSelector, data.targetSelectorType || 'css', data.targetSelectorModifiers);
               
               await locator.dragTo(targetLocator, { timeout });
             } else {
@@ -137,6 +138,7 @@ export class ActionHandler implements NodeHandler {
           await WaitHelper.executeWaits(page, {
             waitForSelector: data.waitForSelector,
             waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorModifiers: data.waitForSelectorModifiers,
             waitForSelectorTimeout: data.waitForSelectorTimeout,
             waitForUrl: data.waitForUrl,
             waitForUrlTimeout: data.waitForUrlTimeout,

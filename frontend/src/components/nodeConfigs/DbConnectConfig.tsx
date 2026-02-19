@@ -12,6 +12,9 @@ const DB_TYPES = [
   { value: 'mysql', label: 'MySQL' },
   { value: 'mongodb', label: 'MongoDB' },
   { value: 'sqlite', label: 'SQLite' },
+  { value: 'oracle', label: 'Oracle' },
+  { value: 'sqlserver', label: 'SQL Server' },
+  { value: 'redis', label: 'Redis' },
 ];
 
 export default function DbConnectConfig({ node, onChange }: DbConnectConfigProps) {
@@ -57,19 +60,19 @@ export default function DbConnectConfig({ node, onChange }: DbConnectConfigProps
         </div>
       </div>
 
-      {data.dbType !== 'sqlite' && (
+      {data.dbType !== 'sqlite' && data.dbType !== 'redis' && (
         <>
           <div>
-            <label className="block text-sm font-medium text-gray-300 mb-1">Host</label>
+            <label className="block text-sm font-medium text-gray-300 mb-1">{data.dbType === 'sqlserver' ? 'Server' : 'Host'}</label>
             <input
               type="text"
-              value={getPropertyValue('host', '')}
-              onChange={(e) => onChange('host', e.target.value)}
+              value={data.dbType === 'sqlserver' ? getPropertyValue('server', '') : getPropertyValue('host', '')}
+              onChange={(e) => onChange(data.dbType === 'sqlserver' ? 'server' : 'host', e.target.value)}
               placeholder="localhost"
-              disabled={isPropertyDisabled('host')}
-              className={getInputClassName('host', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm')}
+              disabled={isPropertyDisabled(data.dbType === 'sqlserver' ? 'server' : 'host')}
+              className={getInputClassName(data.dbType === 'sqlserver' ? 'server' : 'host', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm')}
             />
-            {isPropertyDisabled('host') && (
+            {isPropertyDisabled(data.dbType === 'sqlserver' ? 'server' : 'host') && (
               <div className="mt-1 text-xs text-gray-500 italic">
                 This property is converted to input. Connect a node to provide the value.
               </div>
@@ -85,7 +88,7 @@ export default function DbConnectConfig({ node, onChange }: DbConnectConfigProps
               type="text"
               value={getPropertyValue('port', '')}
               onChange={(e) => onChange('port', e.target.value)}
-              placeholder={data.dbType === 'postgres' ? '5432' : data.dbType === 'mysql' ? '3306' : '27017'}
+              placeholder={data.dbType === 'postgres' ? '5432' : data.dbType === 'mysql' ? '3306' : data.dbType === 'oracle' ? '1521' : data.dbType === 'sqlserver' ? '1433' : '27017'}
               disabled={isPropertyDisabled('port')}
               className={getInputClassName('port', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm')}
             />
@@ -163,7 +166,48 @@ export default function DbConnectConfig({ node, onChange }: DbConnectConfigProps
         </div>
       )}
 
-      {data.dbType !== 'sqlite' && (
+      {data.dbType === 'redis' && (
+        <>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Host</label>
+            <input
+              type="text"
+              value={getPropertyValue('host', 'localhost')}
+              onChange={(e) => onChange('host', e.target.value)}
+              placeholder="localhost"
+              disabled={isPropertyDisabled('host')}
+              className={getInputClassName('host', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm')}
+            />
+            <div className="mt-1 text-xs text-gray-400">
+              Supports: {'${data.key.path}'} or {'${variables.key}'}
+            </div>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Port</label>
+            <input
+              type="text"
+              value={getPropertyValue('port', '6379')}
+              onChange={(e) => onChange('port', e.target.value)}
+              placeholder="6379"
+              disabled={isPropertyDisabled('port')}
+              className={getInputClassName('port', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm')}
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-1">Password (Optional)</label>
+            <input
+              type="password"
+              value={getPropertyValue('password', '')}
+              onChange={(e) => onChange('password', e.target.value)}
+              placeholder="password"
+              disabled={isPropertyDisabled('password')}
+              className={getInputClassName('password', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm')}
+            />
+          </div>
+        </>
+      )}
+
+      {data.dbType !== 'sqlite' && data.dbType !== 'redis' && (
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1">Database</label>
           <input
@@ -185,14 +229,14 @@ export default function DbConnectConfig({ node, onChange }: DbConnectConfigProps
         </div>
       )}
 
-      {(data.dbType === 'postgres' || data.dbType === 'mongodb') && (
+      {(data.dbType === 'postgres' || data.dbType === 'mongodb' || data.dbType === 'oracle') && (
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1">Connection String (Optional)</label>
           <input
             type="text"
             value={getPropertyValue('connectionString', '')}
             onChange={(e) => onChange('connectionString', e.target.value)}
-            placeholder={data.dbType === 'postgres' ? 'postgresql://user:password@host:port/database' : 'mongodb://user:password@host:port/database'}
+            placeholder={data.dbType === 'postgres' ? 'postgresql://user:password@host:port/database' : data.dbType === 'oracle' ? 'localhost:1521/ORCL' : 'mongodb://user:password@host:port/database'}
             disabled={isPropertyDisabled('connectionString')}
             className={getInputClassName('connectionString', 'w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm')}
           />

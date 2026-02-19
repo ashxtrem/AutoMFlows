@@ -70,8 +70,8 @@ export class BrowserTextStrategy extends BaseVerificationStrategy {
     let actualText: string;
     if (selector) {
       // Get text from specific element
-      const locator = LocatorHelper.createLocator(page, selector, selectorType);
-      actualText = (await locator.first().textContent({ timeout })) || '';
+      const locator = LocatorHelper.createLocator(page, selector, selectorType, config.selectorModifiers);
+      actualText = (await locator.textContent({ timeout })) || '';
     } else {
       // Get text from entire page body
       actualText = (await page.textContent('body', { timeout })) || '';
@@ -133,7 +133,7 @@ export class BrowserElementStrategy extends BaseVerificationStrategy {
       throw new Error('Selector is required for element verification');
     }
 
-    const locator = LocatorHelper.createLocator(page, selector, selectorType);
+    const locator = LocatorHelper.createLocator(page, selector, selectorType, config.selectorModifiers);
 
     let passed: boolean;
     let actualValue: any;
@@ -141,7 +141,7 @@ export class BrowserElementStrategy extends BaseVerificationStrategy {
 
     switch (elementCheck) {
       case 'visible':
-        const isVisible = await locator.first().isVisible({ timeout }).catch(() => false);
+        const isVisible = await locator.isVisible({ timeout }).catch(() => false);
         passed = isVisible;
         actualValue = isVisible;
         message = passed
@@ -150,7 +150,7 @@ export class BrowserElementStrategy extends BaseVerificationStrategy {
         break;
 
       case 'hidden':
-        const isHidden = await locator.first().isHidden({ timeout }).catch(() => false);
+        const isHidden = await locator.isHidden({ timeout }).catch(() => false);
         passed = isHidden;
         actualValue = !isHidden;
         message = passed
@@ -193,7 +193,7 @@ export class BrowserElementStrategy extends BaseVerificationStrategy {
         break;
 
       case 'enabled':
-        const isEnabled = await locator.first().isEnabled({ timeout }).catch(() => false);
+        const isEnabled = await locator.isEnabled({ timeout }).catch(() => false);
         passed = isEnabled;
         actualValue = isEnabled;
         message = passed
@@ -202,7 +202,7 @@ export class BrowserElementStrategy extends BaseVerificationStrategy {
         break;
 
       case 'disabled':
-        const isDisabled = !(await locator.first().isEnabled({ timeout }).catch(() => true));
+        const isDisabled = !(await locator.isEnabled({ timeout }).catch(() => true));
         passed = isDisabled;
         actualValue = !isDisabled;
         message = passed
@@ -211,7 +211,7 @@ export class BrowserElementStrategy extends BaseVerificationStrategy {
         break;
 
       case 'selected':
-        const isSelected = await locator.first().isChecked({ timeout }).catch(() => false);
+        const isSelected = await locator.isChecked({ timeout }).catch(() => false);
         passed = isSelected;
         actualValue = isSelected;
         message = passed
@@ -220,7 +220,7 @@ export class BrowserElementStrategy extends BaseVerificationStrategy {
         break;
 
       case 'checked':
-        const isChecked = await locator.first().isChecked({ timeout }).catch(() => false);
+        const isChecked = await locator.isChecked({ timeout }).catch(() => false);
         passed = isChecked;
         actualValue = isChecked;
         message = passed
@@ -279,7 +279,7 @@ export class BrowserAttributeStrategy extends BaseVerificationStrategy {
       throw new Error('Attribute name is required for attribute verification');
     }
 
-    const locator = LocatorHelper.createLocator(page, selector, selectorType).first();
+    const locator = LocatorHelper.createLocator(page, selector, selectorType, config.selectorModifiers);
 
     const actualValue = await locator.getAttribute(attributeName, { timeout });
 
@@ -344,7 +344,7 @@ export class BrowserFormFieldStrategy extends BaseVerificationStrategy {
       throw new Error('Expected value is required for form field verification');
     }
 
-    const locator = LocatorHelper.createLocator(page, selector, selectorType).first();
+    const locator = LocatorHelper.createLocator(page, selector, selectorType, config.selectorModifiers);
 
     const actualValue = await locator.inputValue({ timeout });
 
@@ -518,7 +518,7 @@ export class BrowserCssStrategy extends BaseVerificationStrategy {
       throw new Error('CSS property is required for CSS verification');
     }
 
-    const locator = LocatorHelper.createLocator(page, selector, selectorType).first();
+    const locator = LocatorHelper.createLocator(page, selector, selectorType, config.selectorModifiers);
 
     const actualValue = await locator.evaluate((el: HTMLElement, prop: string) => {
       return window.getComputedStyle(el).getPropertyValue(prop);

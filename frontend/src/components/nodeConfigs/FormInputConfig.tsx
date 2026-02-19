@@ -2,6 +2,7 @@ import { Node } from 'reactflow';
 import { useState } from 'react';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
 import SelectorFinderButton from '../SelectorFinderButton';
+import SelectorModifiersEditor from '../SelectorModifiersEditor';
 import RetryConfigSection from '../RetryConfigSection';
 import { getSelectorPlaceholder, getSelectorHelpText, SELECTOR_TYPE_OPTIONS } from '../../utils/selectorHelpers';
 
@@ -114,7 +115,7 @@ export default function FormInputConfig({ node, onChange }: FormInputConfigProps
           </div>
         )}
       </div>
-      
+      <SelectorModifiersEditor value={data.selectorModifiers} onChange={(v) => onChange('selectorModifiers', v)} />
       {/* Action-specific properties */}
       {action === 'select' && (
         <>

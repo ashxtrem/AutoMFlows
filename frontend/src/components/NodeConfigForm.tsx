@@ -28,6 +28,7 @@ import LoadConfigFileConfig from './nodeConfigs/LoadConfigFileConfig';
 import DbConnectConfig from './nodeConfigs/DbConnectConfig';
 import DbDisconnectConfig from './nodeConfigs/DbDisconnectConfig';
 import DbQueryConfig from './nodeConfigs/DbQueryConfig';
+import DbTransactionConfig from './nodeConfigs/DbTransactionConfig';
 import ContextManipulateConfig from './nodeConfigs/ContextManipulateConfig';
 import CsvHandleConfig from './nodeConfigs/CsvHandleConfig';
 import { frontendPluginRegistry } from '../plugins/registry';
@@ -116,6 +117,12 @@ export default function NodeConfigForm({ node }: NodeConfigFormProps) {
           return <DbDisconnectConfig node={node} onChange={handleChange} />;
         case NodeType.DB_QUERY:
           return <DbQueryConfig node={node} onChange={handleChange} />;
+        case NodeType.DB_TRANSACTION_BEGIN:
+          return <DbTransactionConfig node={node} onChange={handleChange} action="begin" />;
+        case NodeType.DB_TRANSACTION_COMMIT:
+          return <DbTransactionConfig node={node} onChange={handleChange} action="commit" />;
+        case NodeType.DB_TRANSACTION_ROLLBACK:
+          return <DbTransactionConfig node={node} onChange={handleChange} action="rollback" />;
         case NodeType.CSV_HANDLE:
           return <CsvHandleConfig node={node} onChange={handleChange} />;
         default:

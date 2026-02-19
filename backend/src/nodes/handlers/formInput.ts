@@ -37,6 +37,7 @@ export class FormInputHandler implements NodeHandler {
           await WaitHelper.executeWaits(page, {
             waitForSelector: data.waitForSelector,
             waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorModifiers: data.waitForSelectorModifiers,
             waitForSelectorTimeout: data.waitForSelectorTimeout,
             waitForUrl: data.waitForUrl,
             waitForUrlTimeout: data.waitForUrlTimeout,
@@ -53,7 +54,7 @@ export class FormInputHandler implements NodeHandler {
         const scrollThenAction = context.getData('scrollThenAction');
         if (scrollThenAction && selector) {
           try {
-            await LocatorHelper.scrollToElementSmooth(page, selector, data.selectorType || 'css', timeout);
+            await LocatorHelper.scrollToElementSmooth(page, selector, data.selectorType || 'css', timeout, data.selectorModifiers);
           } catch (error: any) {
             // Log warning but continue execution
             console.warn(`[FormInputHandler] Failed to scroll to element before action: ${error.message}`);
@@ -61,7 +62,7 @@ export class FormInputHandler implements NodeHandler {
         }
 
         // Execute action based on action type
-        const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css');
+        const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css', data.selectorModifiers);
 
         switch (data.action) {
           case 'select':
@@ -133,6 +134,7 @@ export class FormInputHandler implements NodeHandler {
           await WaitHelper.executeWaits(page, {
             waitForSelector: data.waitForSelector,
             waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorModifiers: data.waitForSelectorModifiers,
             waitForSelectorTimeout: data.waitForSelectorTimeout,
             waitForUrl: data.waitForUrl,
             waitForUrlTimeout: data.waitForUrlTimeout,
