@@ -58,7 +58,7 @@ describe('WaitHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#element', 'css');
+      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#element', 'css', undefined);
       expect(mockLocator.waitFor).toHaveBeenCalledWith({ timeout: 5000, state: 'visible' });
     });
 

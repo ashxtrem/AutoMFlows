@@ -63,6 +63,9 @@ const nodeIconMap: Record<NodeType, IconConfig> = {
   [NodeType.DB_CONNECT]: { icon: StorageIcon, color: '#4CAF50' },
   [NodeType.DB_DISCONNECT]: { icon: StorageIcon, color: '#F44336' },
   [NodeType.DB_QUERY]: { icon: StorageIcon, color: '#2196F3' },
+  [NodeType.DB_TRANSACTION_BEGIN]: { icon: StorageIcon, color: '#8BC34A' },
+  [NodeType.DB_TRANSACTION_COMMIT]: { icon: StorageIcon, color: '#4CAF50' },
+  [NodeType.DB_TRANSACTION_ROLLBACK]: { icon: StorageIcon, color: '#F44336' },
   [NodeType.CSV_HANDLE]: { icon: TableChartIcon, color: '#00BCD4' },
 };
 
@@ -105,6 +108,9 @@ function getNodeLabel(nodeType: NodeType | string): string {
       [NodeType.DB_CONNECT]: 'DB Connect',
       [NodeType.DB_DISCONNECT]: 'DB Disconnect',
       [NodeType.DB_QUERY]: 'DB Query',
+      [NodeType.DB_TRANSACTION_BEGIN]: 'DB Transaction Begin',
+      [NodeType.DB_TRANSACTION_COMMIT]: 'DB Transaction Commit',
+      [NodeType.DB_TRANSACTION_ROLLBACK]: 'DB Transaction Rollback',
       [NodeType.CONTEXT_MANIPULATE]: 'Context Manipulate',
       [NodeType.CSV_HANDLE]: 'CSV Handle',
     };

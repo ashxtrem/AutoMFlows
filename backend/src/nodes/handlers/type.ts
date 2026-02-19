@@ -38,6 +38,7 @@ export class TypeHandler implements NodeHandler {
           await WaitHelper.executeWaits(page, {
             waitForSelector: data.waitForSelector,
             waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorModifiers: data.waitForSelectorModifiers,
             waitForSelectorTimeout: data.waitForSelectorTimeout,
             waitForUrl: data.waitForUrl,
             waitForUrlTimeout: data.waitForUrlTimeout,
@@ -54,7 +55,7 @@ export class TypeHandler implements NodeHandler {
         const scrollThenAction = context.getData('scrollThenAction');
         if (scrollThenAction && selector) {
           try {
-            await LocatorHelper.scrollToElementSmooth(page, selector, data.selectorType || 'css', timeout);
+            await LocatorHelper.scrollToElementSmooth(page, selector, data.selectorType || 'css', timeout, data.selectorModifiers);
           } catch (error: any) {
             // Log warning but continue execution
             console.warn(`[TypeHandler] Failed to scroll to element before action: ${error.message}`);
@@ -63,7 +64,7 @@ export class TypeHandler implements NodeHandler {
 
         // Execute type operation based on inputMethod
         const inputMethod = data.inputMethod || 'fill'; // Default to 'fill' for backward compatibility
-        const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css');
+        const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css', data.selectorModifiers);
 
         switch (inputMethod) {
           case 'fill':
@@ -125,6 +126,7 @@ export class TypeHandler implements NodeHandler {
           await WaitHelper.executeWaits(page, {
             waitForSelector: data.waitForSelector,
             waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorModifiers: data.waitForSelectorModifiers,
             waitForSelectorTimeout: data.waitForSelectorTimeout,
             waitForUrl: data.waitForUrl,
             waitForUrlTimeout: data.waitForUrlTimeout,

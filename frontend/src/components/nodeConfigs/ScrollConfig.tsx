@@ -3,6 +3,7 @@ import { useState } from 'react';
 import RetryConfigSection from '../RetryConfigSection';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
 import SelectorFinderButton from '../SelectorFinderButton';
+import SelectorModifiersEditor from '../SelectorModifiersEditor';
 import { getSelectorPlaceholder, getSelectorHelpText, SELECTOR_TYPE_OPTIONS } from '../../utils/selectorHelpers';
 
 interface ScrollConfigProps {
@@ -114,6 +115,7 @@ export default function ScrollConfig({ node, onChange }: ScrollConfigProps) {
               ))}
             </select>
           </div>
+          <SelectorModifiersEditor value={data.selectorModifiers} onChange={(v) => onChange('selectorModifiers', v)} />
         </>
       )}
 

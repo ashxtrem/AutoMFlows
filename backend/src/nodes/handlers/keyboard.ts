@@ -31,6 +31,7 @@ export class KeyboardHandler implements NodeHandler {
           await WaitHelper.executeWaits(page, {
             waitForSelector: data.waitForSelector,
             waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorModifiers: data.waitForSelectorModifiers,
             waitForSelectorTimeout: data.waitForSelectorTimeout,
             waitForUrl: data.waitForUrl,
             waitForUrlTimeout: data.waitForUrlTimeout,
@@ -52,14 +53,14 @@ export class KeyboardHandler implements NodeHandler {
           const scrollThenAction = context.getData('scrollThenAction');
           if (scrollThenAction && selector) {
             try {
-              await LocatorHelper.scrollToElementSmooth(page, selector, data.selectorType || 'css', timeout);
+              await LocatorHelper.scrollToElementSmooth(page, selector, data.selectorType || 'css', timeout, data.selectorModifiers);
             } catch (error: any) {
               // Log warning but continue execution
               console.warn(`[KeyboardHandler] Failed to scroll to element before action: ${error.message}`);
             }
           }
           
-          locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css');
+          locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css', data.selectorModifiers);
           await locator.focus({ timeout });
         }
 
@@ -156,6 +157,7 @@ export class KeyboardHandler implements NodeHandler {
           await WaitHelper.executeWaits(page, {
             waitForSelector: data.waitForSelector,
             waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorModifiers: data.waitForSelectorModifiers,
             waitForSelectorTimeout: data.waitForSelectorTimeout,
             waitForUrl: data.waitForUrl,
             waitForUrlTimeout: data.waitForUrlTimeout,

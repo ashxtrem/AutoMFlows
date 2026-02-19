@@ -68,6 +68,7 @@ export class ElementQueryHandler implements NodeHandler {
           await WaitHelper.executeWaits(page, {
             waitForSelector: data.waitForSelector,
             waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorModifiers: data.waitForSelectorModifiers,
             waitForSelectorTimeout: data.waitForSelectorTimeout,
             waitForUrl: data.waitForUrl,
             waitForUrlTimeout: data.waitForUrlTimeout,
@@ -84,7 +85,7 @@ export class ElementQueryHandler implements NodeHandler {
         const scrollThenAction = context.getData('scrollThenAction');
         if (scrollThenAction && selector) {
           try {
-            await LocatorHelper.scrollToElementSmooth(page, selector, data.selectorType || 'css', timeout);
+            await LocatorHelper.scrollToElementSmooth(page, selector, data.selectorType || 'css', timeout, data.selectorModifiers);
           } catch (error: any) {
             // Log warning but continue execution
             console.warn(`[ElementQueryHandler] Failed to scroll to element before action: ${error.message}`);
@@ -93,7 +94,7 @@ export class ElementQueryHandler implements NodeHandler {
 
         // Execute action based on action type
         let queryResult: any;
-        const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css');
+        const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css', data.selectorModifiers);
 
         switch (data.action) {
           case 'getText':
@@ -160,6 +161,7 @@ export class ElementQueryHandler implements NodeHandler {
           await WaitHelper.executeWaits(page, {
             waitForSelector: data.waitForSelector,
             waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorModifiers: data.waitForSelectorModifiers,
             waitForSelectorTimeout: data.waitForSelectorTimeout,
             waitForUrl: data.waitForUrl,
             waitForUrlTimeout: data.waitForUrlTimeout,

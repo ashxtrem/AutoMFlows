@@ -281,6 +281,17 @@ export class WorkflowModifier {
   }
 
   /**
+   * Update selector modifiers for a node
+   */
+  static updateNodeSelectorModifiers(
+    workflow: Workflow,
+    nodeId: string,
+    modifiers: import('@automflows/shared').SelectorModifiers | undefined
+  ): Workflow {
+    return this.updateNodeProperty(workflow, nodeId, 'selectorModifiers', modifiers);
+  }
+
+  /**
    * Update a property of a node
    */
   static updateNodeProperty(

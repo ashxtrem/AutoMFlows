@@ -3,6 +3,7 @@ import RetryConfigSection from '../RetryConfigSection';
 import { VerificationDomain, BrowserVerificationType, MatchType, ComparisonOperator } from '@automflows/shared';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
 import SelectorFinderButton from '../SelectorFinderButton';
+import SelectorModifiersEditor from '../SelectorModifiersEditor';
 import { getSelectorPlaceholder, getSelectorHelpText, SELECTOR_TYPE_OPTIONS } from '../../utils/selectorHelpers';
 
 interface VerifyConfigProps {
@@ -175,6 +176,9 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
                 )}
               </div>
             )}
+            {data.selector && (
+              <SelectorModifiersEditor value={data.selectorModifiers} onChange={(v) => onChange('selectorModifiers', v)} />
+            )}
             <div>
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
@@ -222,6 +226,7 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
                 ))}
               </select>
             </div>
+            <SelectorModifiersEditor value={data.selectorModifiers} onChange={(v) => onChange('selectorModifiers', v)} />
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Element Check</label>
               <select
@@ -302,6 +307,7 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
                 ))}
               </select>
             </div>
+            <SelectorModifiersEditor value={data.selectorModifiers} onChange={(v) => onChange('selectorModifiers', v)} />
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Attribute Name</label>
               <input
@@ -377,6 +383,7 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
                 ))}
               </select>
             </div>
+            <SelectorModifiersEditor value={data.selectorModifiers} onChange={(v) => onChange('selectorModifiers', v)} />
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Expected Value</label>
               <input
@@ -540,6 +547,7 @@ export default function VerifyConfig({ node, onChange }: VerifyConfigProps) {
                 ))}
               </select>
             </div>
+            <SelectorModifiersEditor value={data.selectorModifiers} onChange={(v) => onChange('selectorModifiers', v)} />
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">CSS Property</label>
               <input

@@ -1,4 +1,4 @@
-import { BaseNode, DbConnectNodeData, DbDisconnectNodeData, DbQueryNodeData } from '@automflows/shared';
+import { BaseNode, DbConnectNodeData, DbDisconnectNodeData, DbQueryNodeData, DbTransactionBeginNodeData, DbTransactionCommitNodeData, DbTransactionRollbackNodeData } from '@automflows/shared';
 import { NodeHandler } from './base';
 import { ContextManager } from '../engine/context';
 import { VariableInterpolator } from '../utils/variableInterpolator';
@@ -66,14 +66,23 @@ export class DbConnectHandler implements NodeHandler {
         config.database = VariableInterpolator.interpolateString(String(config.database), context);
       }
 
+      if (data.server !== undefined) {
+        config.server = VariableInterpolator.interpolateString(String(data.server), context);
+      } else if (config.server) {
+        config.server = VariableInterpolator.interpolateString(String(config.server), context);
+      }
+
       if (data.connectionString !== undefined) {
         config.connectionString = VariableInterpolator.interpolateString(String(data.connectionString), context);
       } else if (config.connectionString) {
         config.connectionString = VariableInterpolator.interpolateString(String(config.connectionString), context);
       }
 
-      // Note: filePath is handled via connectionString for SQLite databases
-      // If filePath is needed, it should be added to DbConnectNodeData interface
+      if (data.filePath !== undefined) {
+        config.filePath = VariableInterpolator.interpolateString(String(data.filePath), context);
+      } else if (config.filePath) {
+        config.filePath = VariableInterpolator.interpolateString(String(config.filePath), context);
+      }
 
       // Interpolate options if provided
       if (data.options) {
@@ -202,8 +211,15 @@ export class DbQueryHandler implements NodeHandler {
       // Interpolate context key for results
       const resolvedContextKey = VariableInterpolator.interpolateString(contextKey, context);
 
+      // Resolve timeout (supports variable interpolation)
+      let resolvedTimeout: number | undefined;
+      if (data.timeout !== undefined) {
+        const timeoutVal = VariableInterpolator.interpolateString(String(data.timeout), context);
+        resolvedTimeout = parseInt(timeoutVal, 10) || undefined;
+      }
+
       // Execute query
-      const queryResult: QueryResult = await dbClient.executeQuery(interpolatedQuery, interpolatedParams);
+      const queryResult: QueryResult = await dbClient.executeQuery(interpolatedQuery, interpolatedParams, resolvedTimeout);
 
       // Store results in context
       const resultData = {
@@ -228,5 +244,57 @@ export class DbQueryHandler implements NodeHandler {
       
       throw new Error(errorMessage);
     }
+  }
+}
+
+function executeTransactionNode(
+  _node: BaseNode,
+  context: ContextManager,
+  action: 'begin' | 'commit' | 'rollback',
+  data: DbTransactionBeginNodeData | DbTransactionCommitNodeData | DbTransactionRollbackNodeData
+): Promise<void> {
+  const connectionKey = data.connectionKey || 'dbConnection';
+  const failSilently = data.failSilently || false;
+
+  const resolvedConnectionKey = VariableInterpolator.interpolateString(connectionKey, context);
+  const dbClientKey = `_dbClient_${resolvedConnectionKey}`;
+  const dbClient = (context as any)[dbClientKey];
+
+  if (!dbClient) {
+    const err = new Error(`Database connection not found for key: ${resolvedConnectionKey}. Available keys: ${Object.keys(context.getAllDbConnections()).join(', ') || 'none'}`);
+    if (failSilently) {
+      console.warn(`[DB Transaction ${action}] ${err.message}`);
+      return Promise.resolve();
+    }
+    throw err;
+  }
+
+  const method = action === 'begin' ? 'beginTransaction' : action === 'commit' ? 'commit' : 'rollback';
+  return dbClient[method]().catch((error: any) => {
+    const errorMessage = `Transaction ${action} failed: ${error.message}`;
+    console.error(`[DB Transaction ${action}] ${errorMessage}`);
+    if (failSilently) {
+      console.warn(`[DB Transaction ${action}] Failed silently, continuing execution`);
+      return;
+    }
+    throw new Error(errorMessage);
+  });
+}
+
+export class DbTransactionBeginHandler implements NodeHandler {
+  async execute(node: BaseNode, context: ContextManager): Promise<void> {
+    await executeTransactionNode(node, context, 'begin', node.data as DbTransactionBeginNodeData);
+  }
+}
+
+export class DbTransactionCommitHandler implements NodeHandler {
+  async execute(node: BaseNode, context: ContextManager): Promise<void> {
+    await executeTransactionNode(node, context, 'commit', node.data as DbTransactionCommitNodeData);
+  }
+}
+
+export class DbTransactionRollbackHandler implements NodeHandler {
+  async execute(node: BaseNode, context: ContextManager): Promise<void> {
+    await executeTransactionNode(node, context, 'rollback', node.data as DbTransactionRollbackNodeData);
   }
 }

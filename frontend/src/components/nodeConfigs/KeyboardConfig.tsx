@@ -3,6 +3,7 @@ import { useState } from 'react';
 import RetryConfigSection from '../RetryConfigSection';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
 import SelectorFinderButton from '../SelectorFinderButton';
+import SelectorModifiersEditor from '../SelectorModifiersEditor';
 import { getSelectorPlaceholder, getSelectorHelpText, SELECTOR_TYPE_OPTIONS } from '../../utils/selectorHelpers';
 
 interface KeyboardConfigProps {
@@ -221,6 +222,9 @@ export default function KeyboardConfig({ node, onChange }: KeyboardConfigProps) 
                 ))}
               </select>
             </div>
+          )}
+          {data.selector && (
+            <SelectorModifiersEditor value={data.selectorModifiers} onChange={(v) => onChange('selectorModifiers', v)} />
           )}
         </>
       )}

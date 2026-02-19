@@ -30,6 +30,7 @@ export class DownloadHandler implements NodeHandler {
           await WaitHelper.executeWaits(page, {
             waitForSelector: data.waitForSelector,
             waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorModifiers: data.waitForSelectorModifiers,
             waitForSelectorTimeout: data.waitForSelectorTimeout,
             waitForUrl: data.waitForUrl,
             waitForUrlTimeout: data.waitForUrlTimeout,
@@ -106,6 +107,7 @@ export class DownloadHandler implements NodeHandler {
           await WaitHelper.executeWaits(page, {
             waitForSelector: data.waitForSelector,
             waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorModifiers: data.waitForSelectorModifiers,
             waitForSelectorTimeout: data.waitForSelectorTimeout,
             waitForUrl: data.waitForUrl,
             waitForUrlTimeout: data.waitForUrlTimeout,

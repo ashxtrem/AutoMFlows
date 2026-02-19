@@ -111,6 +111,9 @@ export function getNodeLabel(type: NodeType | string): string {
       [NodeType.DB_CONNECT]: 'DB Connect',
       [NodeType.DB_DISCONNECT]: 'DB Disconnect',
       [NodeType.DB_QUERY]: 'DB Query',
+      [NodeType.DB_TRANSACTION_BEGIN]: 'DB Transaction Begin',
+      [NodeType.DB_TRANSACTION_COMMIT]: 'DB Transaction Commit',
+      [NodeType.DB_TRANSACTION_ROLLBACK]: 'DB Transaction Rollback',
       [NodeType.CONTEXT_MANIPULATE]: 'Context Manipulate',
       [NodeType.CSV_HANDLE]: 'CSV Handle',
     };
@@ -202,6 +205,18 @@ export function getDefaultNodeData(type: NodeType | string): any {
         queryType: 'sql',
         contextKey: 'dbResult',
         timeout: 30000,
+        isTest: true 
+      },
+      [NodeType.DB_TRANSACTION_BEGIN]: { 
+        connectionKey: 'dbConnection',
+        isTest: true 
+      },
+      [NodeType.DB_TRANSACTION_COMMIT]: { 
+        connectionKey: 'dbConnection',
+        isTest: true 
+      },
+      [NodeType.DB_TRANSACTION_ROLLBACK]: { 
+        connectionKey: 'dbConnection',
         isTest: true 
       },
       [NodeType.CONTEXT_MANIPULATE]: { 

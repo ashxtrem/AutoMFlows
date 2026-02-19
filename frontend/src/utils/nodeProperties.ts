@@ -207,6 +207,7 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
           { name: 'connectionKey', label: 'Connection Key', dataType: PropertyDataType.STRING, required: false, defaultValue: 'dbConnection' },
           { name: 'configKey', label: 'Config Key', dataType: PropertyDataType.STRING, required: false },
           { name: 'host', label: 'Host', dataType: PropertyDataType.STRING, required: false },
+          { name: 'server', label: 'Server', dataType: PropertyDataType.STRING, required: false },
           { name: 'port', label: 'Port', dataType: PropertyDataType.INT, required: false },
           { name: 'user', label: 'User', dataType: PropertyDataType.STRING, required: false },
           { name: 'password', label: 'Password', dataType: PropertyDataType.STRING, required: false },
@@ -230,6 +231,14 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
           { name: 'queryKey', label: 'Query Key', dataType: PropertyDataType.STRING, required: false },
           { name: 'contextKey', label: 'Context Key', dataType: PropertyDataType.STRING, required: false, defaultValue: 'dbResult' },
           { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+      
+      case NodeType.DB_TRANSACTION_BEGIN:
+      case NodeType.DB_TRANSACTION_COMMIT:
+      case NodeType.DB_TRANSACTION_ROLLBACK:
+        return [
+          { name: 'connectionKey', label: 'Connection Key', dataType: PropertyDataType.STRING, required: false, defaultValue: 'dbConnection' },
           { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
         ];
       

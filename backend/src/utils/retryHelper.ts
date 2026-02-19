@@ -3,7 +3,7 @@
  * Provides retry logic with count-based and condition-based strategies
  */
 
-import { MatchType, SelectorType } from '@automflows/shared';
+import { MatchType, SelectorType, SelectorModifiers } from '@automflows/shared';
 import { ContextManager } from '../engine/context';
 import { LocatorHelper } from './locatorHelper';
 import { VariableInterpolator } from './variableInterpolator';
@@ -17,6 +17,7 @@ export interface RetryOptionsInput {
     type: 'selector' | 'url' | 'javascript' | 'api-status' | 'api-json-path' | 'api-javascript';
     value?: string; // Optional, used for javascript and api-javascript
     selectorType?: SelectorType;
+    selectorModifiers?: SelectorModifiers;
     visibility?: 'visible' | 'invisible';
     timeout?: number | string; // Max time to retry (can be string for interpolation)
     // API-specific fields
@@ -42,6 +43,7 @@ export interface RetryOptions {
     type: 'selector' | 'url' | 'javascript' | 'api-status' | 'api-json-path' | 'api-javascript';
     value?: string; // Optional, used for javascript and api-javascript
     selectorType?: SelectorType;
+    selectorModifiers?: SelectorModifiers;
     visibility?: 'visible' | 'invisible';
     timeout?: number; // Max time to retry
     // API-specific fields
@@ -143,6 +145,7 @@ export class RetryHelper {
         type: options.untilCondition.type,
         value: options.untilCondition.value,
         selectorType: options.untilCondition.selectorType,
+        selectorModifiers: options.untilCondition.selectorModifiers,
         visibility: options.untilCondition.visibility,
         timeout: options.untilCondition.timeout !== undefined
           ? this.interpolateNumericValue(options.untilCondition.timeout as any, context, 30000)
@@ -354,17 +357,16 @@ export class RetryHelper {
    */
   private static async checkConditionWithDetails(
     page: any,
-    condition: { type: 'selector' | 'url' | 'javascript'; value: string; selectorType?: SelectorType; visibility?: 'visible' | 'invisible' }
+    condition: { type: 'selector' | 'url' | 'javascript'; value: string; selectorType?: SelectorType; selectorModifiers?: SelectorModifiers; visibility?: 'visible' | 'invisible' }
   ): Promise<{ met: boolean; details?: string }> {
     try {
       if (condition.type === 'selector') {
         const selectorType = condition.selectorType || 'css';
         const visibility = condition.visibility || 'visible';
         const isInvisible = visibility === 'invisible';
-        
-        const locator = LocatorHelper.createLocator(page, condition.value, selectorType);
-        const element = locator.first();
-        const isVisible = await element.isVisible().catch(() => false);
+
+        const locator = LocatorHelper.createLocator(page, condition.value, selectorType, condition.selectorModifiers);
+        const isVisible = await locator.isVisible().catch(() => false);
         const met = isInvisible ? !isVisible : isVisible;
         const actualState = isVisible ? 'visible' : 'invisible';
         const details = `${condition.type} | selector: ${condition.value} | expected: ${visibility} | got: ${actualState}`;

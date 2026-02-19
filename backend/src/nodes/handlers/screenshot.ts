@@ -36,6 +36,7 @@ export class ScreenshotHandler implements NodeHandler {
           await WaitHelper.executeWaits(page, {
             waitForSelector: data.waitForSelector,
             waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorModifiers: data.waitForSelectorModifiers,
             waitForSelectorTimeout: data.waitForSelectorTimeout,
             waitForUrl: data.waitForUrl,
             waitForUrlTimeout: data.waitForUrlTimeout,
@@ -66,13 +67,13 @@ export class ScreenshotHandler implements NodeHandler {
               throw new Error('Selector is required for element screenshot action');
             }
             const selector = VariableInterpolator.interpolateString(data.selector, context);
-            const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css');
+            const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css', data.selectorModifiers);
             
             // Handle masking if specified
             // Note: mask selectors use the same selectorType as the main selector
             const maskLocators = data.mask?.map(m => {
               const maskSelector = VariableInterpolator.interpolateString(m, context);
-              return LocatorHelper.createLocator(page, maskSelector, data.selectorType || 'css');
+              return LocatorHelper.createLocator(page, maskSelector, data.selectorType || 'css', data.selectorModifiers);
             });
             
             const screenshotTimeout = data.waitForSelectorTimeout || 30000;
@@ -117,6 +118,7 @@ export class ScreenshotHandler implements NodeHandler {
           await WaitHelper.executeWaits(page, {
             waitForSelector: data.waitForSelector,
             waitForSelectorType: data.waitForSelectorType,
+            waitForSelectorModifiers: data.waitForSelectorModifiers,
             waitForSelectorTimeout: data.waitForSelectorTimeout,
             waitForUrl: data.waitForUrl,
             waitForUrlTimeout: data.waitForUrlTimeout,

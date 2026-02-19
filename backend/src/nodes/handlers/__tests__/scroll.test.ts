@@ -64,7 +64,7 @@ describe('ScrollHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#element', 'css');
+      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#element', 'css', undefined);
       expect(mockLocator.scrollIntoViewIfNeeded).toHaveBeenCalledWith({ timeout: 30000 });
     });
 
@@ -167,7 +167,7 @@ describe('ScrollHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#interpolated', 'css');
+      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#interpolated', 'css', undefined);
     });
 
     it('should use custom selectorType', async () => {
@@ -179,7 +179,7 @@ describe('ScrollHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#element', 'xpath');
+      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#element', 'xpath', undefined);
     });
   });
 });

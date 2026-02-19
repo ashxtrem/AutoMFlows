@@ -2,6 +2,7 @@ import { Node } from 'reactflow';
 import RetryConfigSection from '../RetryConfigSection';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
 import SelectorFinderButton from '../SelectorFinderButton';
+import SelectorModifiersEditor from '../SelectorModifiersEditor';
 import { getSelectorPlaceholder, getSelectorHelpText, SELECTOR_TYPE_OPTIONS } from '../../utils/selectorHelpers';
 
 interface WaitConfigProps {
@@ -115,6 +116,7 @@ export default function WaitConfig({ node, onChange }: WaitConfigProps) {
               </div>
             )}
           </div>
+          <SelectorModifiersEditor value={data.selectorModifiers} onChange={(v) => onChange('selectorModifiers', v)} />
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-1">Timeout (ms)</label>
             <input

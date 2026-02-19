@@ -85,7 +85,7 @@ describe('TypeHandler', () => {
 
       expect(VariableInterpolator.interpolateString).toHaveBeenCalledWith('#input', mockContext);
       expect(VariableInterpolator.interpolateString).toHaveBeenCalledWith('test text', mockContext);
-      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#input', 'css');
+      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#input', 'css', undefined);
       expect(mockLocator.fill).toHaveBeenCalledWith('test text', { timeout: 30000 });
     });
 
@@ -184,7 +184,7 @@ describe('TypeHandler', () => {
 
       expect(VariableInterpolator.interpolateString).toHaveBeenCalledWith('${selector}', mockContext);
       expect(VariableInterpolator.interpolateString).toHaveBeenCalledWith('${text}', mockContext);
-      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#interpolated', 'css');
+      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#interpolated', 'css', undefined);
       expect(mockLocator.fill).toHaveBeenCalledWith('interpolated text', { timeout: 30000 });
     });
 
@@ -241,7 +241,8 @@ describe('TypeHandler', () => {
         mockPage,
         '#input',
         'css',
-        30000
+        30000,
+        undefined
       );
     });
 
@@ -266,7 +267,7 @@ describe('TypeHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#input', 'xpath');
+      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#input', 'xpath', undefined);
     });
 
     it('should handle retry logic', async () => {

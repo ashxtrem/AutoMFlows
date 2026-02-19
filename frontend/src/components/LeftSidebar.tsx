@@ -64,6 +64,9 @@ const nodeIconMap: Record<NodeType, IconConfig> = {
   [NodeType.DB_CONNECT]: { icon: StorageIcon, color: '#4CAF50' },
   [NodeType.DB_DISCONNECT]: { icon: StorageIcon, color: '#F44336' },
   [NodeType.DB_QUERY]: { icon: StorageIcon, color: '#2196F3' },
+  [NodeType.DB_TRANSACTION_BEGIN]: { icon: StorageIcon, color: '#8BC34A' },
+  [NodeType.DB_TRANSACTION_COMMIT]: { icon: StorageIcon, color: '#4CAF50' },
+  [NodeType.DB_TRANSACTION_ROLLBACK]: { icon: StorageIcon, color: '#F44336' },
   [NodeType.CSV_HANDLE]: { icon: TableChartIcon, color: '#00BCD4' },
 };
 
@@ -135,6 +138,9 @@ const NODE_CATEGORIES = [
       { type: NodeType.DB_CONNECT, label: 'DB Connect' },
       { type: NodeType.DB_DISCONNECT, label: 'DB Disconnect' },
       { type: NodeType.DB_QUERY, label: 'DB Query' },
+      { type: NodeType.DB_TRANSACTION_BEGIN, label: 'DB Transaction Begin' },
+      { type: NodeType.DB_TRANSACTION_COMMIT, label: 'DB Transaction Commit' },
+      { type: NodeType.DB_TRANSACTION_ROLLBACK, label: 'DB Transaction Rollback' },
     ],
   },
   {
@@ -214,6 +220,9 @@ function getNodeCategory(nodeType: NodeType | string, _nodeLabel?: string): 'bro
     case NodeType.DB_CONNECT:
     case NodeType.DB_DISCONNECT:
     case NodeType.DB_QUERY:
+    case NodeType.DB_TRANSACTION_BEGIN:
+    case NodeType.DB_TRANSACTION_COMMIT:
+    case NodeType.DB_TRANSACTION_ROLLBACK:
       return 'db';
     case NodeType.JAVASCRIPT_CODE:
     case NodeType.WAIT:
