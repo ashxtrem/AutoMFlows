@@ -89,7 +89,7 @@ function isAnyPopupOpen(): boolean {
  * Only triggers when canvas is clean (no popups, no properties panel, no edit windows)
  */
 export function useShortcutNavigation() {
-  const { setCenter, getViewport, setNodes, getNodes } = useReactFlow();
+  const { fitView, setNodes, getNodes } = useReactFlow();
   const nodes = useWorkflowStore((state) => state.nodes);
   const selectedNode = useWorkflowStore((state) => state.selectedNode);
   const errorPopupNodeId = useWorkflowStore((state) => state.errorPopupNodeId);
@@ -154,13 +154,10 @@ export function useShortcutNavigation() {
             }))
           );
 
-          // Navigate to the node - center it in viewport
-          const viewport = getViewport();
-          const nodePosition = targetNode.position;
-          
-          // Center the node in the viewport
-          setCenter(nodePosition.x, nodePosition.y, {
-            zoom: viewport.zoom,
+          // Navigate to the node - use fitView (same as follow mode) for consistent zoom
+          fitView({
+            nodes: [{ id: targetNodeId }],
+            padding: 0.2,
             duration: 300,
           });
         }
@@ -172,5 +169,5 @@ export function useShortcutNavigation() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown, true);
     };
-  }, [nodes, setCenter, getViewport, setNodes, getNodes, selectedNode, errorPopupNodeId, canvasReloading]);
+  }, [nodes, fitView, setNodes, getNodes, selectedNode, errorPopupNodeId, canvasReloading]);
 }
