@@ -5,6 +5,7 @@ import LeftSidebar, { LeftSidebarHandle } from './components/LeftSidebar';
 import Canvas from './components/Canvas';
 import RightSidebar from './components/RightSidebar';
 import ReportHistory from './components/ReportHistory';
+import WorkflowLibraryPage from './components/WorkflowLibraryPage';
 import FloatingRunButton from './components/FloatingRunButton';
 import InteractiveTour from './components/InteractiveTour';
 import { useWorkflowStore } from './store/workflowStore';
@@ -224,10 +225,16 @@ function App() {
   // Simple routing based on pathname
   const currentPath = window.location.pathname;
   const isReportHistory = currentPath === '/reports/history';
+  const isWorkflowLibrary = currentPath === '/workflows';
 
   // If on report history page, render only that component
   if (isReportHistory) {
     return <ReportHistory />;
+  }
+
+  // If on workflow library page, render only that component
+  if (isWorkflowLibrary) {
+    return <WorkflowLibraryPage />;
   }
 
   return (

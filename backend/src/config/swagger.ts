@@ -410,6 +410,34 @@ const options: swaggerJsdoc.Options = {
           },
           required: ['success', 'message'],
         },
+        WorkflowFileInfo: {
+          type: 'object',
+          description: 'Workflow file scan result with validation status',
+          properties: {
+            fileName: {
+              type: 'string',
+              description: 'File name',
+            },
+            filePath: {
+              type: 'string',
+              description: 'Relative path from scan root',
+            },
+            isValid: {
+              type: 'boolean',
+              description: 'Whether the file is a valid workflow',
+            },
+            validationErrors: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'Validation errors if invalid',
+            },
+            workflow: {
+              $ref: '#/components/schemas/Workflow',
+              description: 'Parsed workflow object if valid',
+            },
+          },
+          required: ['fileName', 'filePath', 'isValid'],
+        },
         BatchStatusResponse: {
           type: 'object',
           properties: {
