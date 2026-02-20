@@ -1470,6 +1470,8 @@ export interface StartNodeOverrides {
   recordSession?: boolean;                // Optional: override Start node recordSession
   screenshotAllNodes?: boolean;            // Optional: override Start node screenshotAllNodes
   screenshotTiming?: 'pre' | 'post' | 'both'; // Optional: override Start node screenshotTiming
+  snapshotAllNodes?: boolean;             // Optional: override Start node snapshotAllNodes (accessibility snapshots)
+  snapshotTiming?: 'pre' | 'post' | 'both'; // Optional: override Start node snapshotTiming
   slowMo?: number;                        // Optional: override Start node slowMo (milliseconds)
   scrollThenAction?: boolean;             // Optional: override Start node scrollThenAction
 }
@@ -1480,6 +1482,7 @@ export interface ExecuteWorkflowRequest {
   
   // Parallel Mode: one of these required
   workflows?: Workflow[];                  // Optional: array of workflow objects (parallel mode)
+  workflowFileNames?: string[];           // Optional: original file names parallel to workflows array
   folderPath?: string;                    // Optional: path to folder containing workflows (parallel mode)
   // Note: files are handled via multer middleware for multipart/form-data (parallel mode)
   

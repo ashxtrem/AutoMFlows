@@ -1,5 +1,6 @@
 export * from './types';
-export { PropertySchema, getNodeProperties } from './nodeProperties';
+export type { PropertySchema } from './nodeProperties';
+export { getNodeProperties } from './nodeProperties';
 
 // Re-export plugin types for convenience
 export type {

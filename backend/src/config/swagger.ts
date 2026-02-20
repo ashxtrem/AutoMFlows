@@ -1,10 +1,6 @@
 import swaggerJsdoc from 'swagger-jsdoc';
 import path from 'path';
 
-// Resolve paths relative to this config file's location
-// __dirname is available in CommonJS (which this project uses)
-const routesPath = path.resolve(__dirname, '../routes/*.ts');
-
 const options: swaggerJsdoc.Options = {
   definition: {
     openapi: '3.0.0',
@@ -819,11 +815,11 @@ const options: swaggerJsdoc.Options = {
     ],
   },
   apis: [
-    // Try both source and compiled paths to work in dev and production
-    path.resolve(__dirname, '../routes/*.ts'),  // Source files (for tsx/dev)
-    path.resolve(__dirname, '../routes/*.js'),   // Compiled files (for production)
-    path.resolve(__dirname, '../../src/routes/*.ts'), // Alternative source path
-    path.resolve(__dirname, '../../src/routes/*.js'), // Alternative compiled path
+    // Normalize to forward slashes — glob (used by swagger-jsdoc) requires POSIX separators on Windows
+    path.resolve(__dirname, '../routes/*.ts').replace(/\\/g, '/'),
+    path.resolve(__dirname, '../routes/*.js').replace(/\\/g, '/'),
+    path.resolve(__dirname, '../../src/routes/*.ts').replace(/\\/g, '/'),
+    path.resolve(__dirname, '../../src/routes/*.js').replace(/\\/g, '/'),
   ],
 };
 

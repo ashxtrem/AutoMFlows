@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   FolderOpen,
   Play,
@@ -14,9 +14,44 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import { useBatchExecution } from '../hooks/useBatchExecution';
-import type { WorkflowFileInfo, Workflow } from '@automflows/shared';
+import type { WorkflowFileInfo, Workflow, ReportType, BatchStatusResponse } from '@automflows/shared';
 
 type TabId = 'library' | 'dashboard' | 'history';
+
+const STORAGE_KEY = 'workflowLibraryState';
+
+function loadPersistedState(): Partial<{
+  folderPath: string;
+  recursive: boolean;
+  pattern: string;
+  outputPath: string;
+  workers: number;
+  showOverrides: boolean;
+  startNodeOverrides: Record<string, unknown>;
+  scanResults: WorkflowFileInfo[];
+  selectedFiles: string[];
+  discoveredSearch: string;
+  discoveredExpanded: boolean;
+  traceLogs: boolean;
+  reportConfig: { enabled: boolean; reportTypes: string[]; reportRetention: number };
+  batchPriority: number;
+}> {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as ReturnType<typeof loadPersistedState>;
+  } catch {
+    return {};
+  }
+}
+
+function savePersistedState(state: Record<string, unknown>) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    // ignore quota or parse errors
+  }
+}
 
 export default function WorkflowLibraryPage() {
   const {
@@ -33,21 +68,31 @@ export default function WorkflowLibraryPage() {
     setBatchHistory,
   } = useBatchExecution();
 
+  const persisted = useMemo(() => loadPersistedState(), []);
+
   const [activeTab, setActiveTab] = useState<TabId>('library');
-  const [folderPath, setFolderPath] = useState('./tests/workflows');
-  const [recursive, setRecursive] = useState(false);
-  const [pattern, setPattern] = useState('*.json');
-  const [scanResults, setScanResults] = useState<WorkflowFileInfo[]>([]);
-  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(new Set());
+  const [folderPath, setFolderPath] = useState(() => persisted.folderPath ?? './tests/workflows');
+  const [recursive, setRecursive] = useState(() => persisted.recursive ?? true);
+  const [pattern, setPattern] = useState(() => persisted.pattern ?? '*.json');
+  const [scanResults, setScanResults] = useState<WorkflowFileInfo[]>(() => persisted.scanResults ?? []);
+  const [selectedFiles, setSelectedFiles] = useState<Set<string>>(
+    () => new Set(persisted.selectedFiles ?? [])
+  );
   const [droppedFiles, setDroppedFiles] = useState<File[]>([]);
-  const [workers, setWorkers] = useState(4);
-  const [outputPath, setOutputPath] = useState('./output');
-  const [showOverrides, setShowOverrides] = useState(false);
-  const [startNodeOverrides, setStartNodeOverrides] = useState({
+  const [selectedDroppedFiles, setSelectedDroppedFiles] = useState<Set<number>>(new Set());
+  const [workers, setWorkers] = useState(() => persisted.workers ?? 4);
+  const [outputPath, setOutputPath] = useState(() => persisted.outputPath ?? './output');
+  const [showOverrides, setShowOverrides] = useState(() => persisted.showOverrides ?? false);
+  const [startNodeOverrides, setStartNodeOverrides] = useState(() => ({
     recordSession: false,
     screenshotAllNodes: false,
     screenshotTiming: 'post' as 'pre' | 'post' | 'both',
-  });
+    snapshotAllNodes: false,
+    snapshotTiming: 'post' as 'pre' | 'post' | 'both',
+    slowMo: 0,
+    scrollThenAction: false,
+    ...(persisted.startNodeOverrides as Record<string, unknown>),
+  }));
   const [scanning, setScanning] = useState(false);
   const [executing, setExecuting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,9 +100,53 @@ export default function WorkflowLibraryPage() {
   const [historyStatusFilter, setHistoryStatusFilter] = useState<string>('');
   const [expandedBatchId, setExpandedBatchId] = useState<string | null>(null);
   const [pollingBatchIds, setPollingBatchIds] = useState<Set<string>>(new Set());
-  const [discoveredExpanded, setDiscoveredExpanded] = useState(false);
-  const [discoveredSearch, setDiscoveredSearch] = useState('');
+  const [discoveredExpanded, setDiscoveredExpanded] = useState(() => persisted.discoveredExpanded ?? false);
+  const [discoveredSearch, setDiscoveredSearch] = useState(() => persisted.discoveredSearch ?? '');
   const [executeFolderConfirm, setExecuteFolderConfirm] = useState(false);
+  const [batchDetailPopup, setBatchDetailPopup] = useState<BatchStatusResponse | null>(null);
+  const [batchDetailLoading, setBatchDetailLoading] = useState(false);
+  const [traceLogs, setTraceLogs] = useState(() => persisted.traceLogs ?? false);
+  const [reportConfig, setReportConfig] = useState(() => ({
+    enabled: false,
+    reportTypes: ['html'] as ReportType[],
+    reportRetention: 10,
+    ...(persisted.reportConfig as { enabled?: boolean; reportTypes?: ReportType[]; reportRetention?: number }),
+  }));
+  const [batchPriority, setBatchPriority] = useState(() => persisted.batchPriority ?? 0);
+
+  useEffect(() => {
+    savePersistedState({
+      folderPath,
+      recursive,
+      pattern,
+      outputPath,
+      workers,
+      showOverrides,
+      startNodeOverrides,
+      scanResults,
+      selectedFiles: Array.from(selectedFiles),
+      discoveredSearch,
+      discoveredExpanded,
+      traceLogs,
+      reportConfig,
+      batchPriority,
+    });
+  }, [
+    folderPath,
+    recursive,
+    pattern,
+    outputPath,
+    workers,
+    showOverrides,
+    startNodeOverrides,
+    scanResults,
+    selectedFiles,
+    discoveredSearch,
+    discoveredExpanded,
+    traceLogs,
+    reportConfig,
+    batchPriority,
+  ]);
 
   const handleScan = useCallback(async () => {
     if (!folderPath.trim()) {
@@ -86,7 +175,30 @@ export default function WorkflowLibraryPage() {
 
   const removeDroppedFile = (index: number) => {
     setDroppedFiles((prev) => prev.filter((_, i) => i !== index));
+    setSelectedDroppedFiles((prev) => {
+      const next = new Set<number>();
+      prev.forEach((i) => {
+        if (i < index) next.add(i);
+        else if (i > index) next.add(i - 1);
+      });
+      return next;
+    });
   };
+
+  const toggleDroppedFile = (index: number) => {
+    setSelectedDroppedFiles((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
+  const selectAllDropped = () => {
+    setSelectedDroppedFiles(new Set(droppedFiles.map((_, i) => i)));
+  };
+
+  const selectNoneDropped = () => setSelectedDroppedFiles(new Set());
 
   const toggleSelect = (filePath: string) => {
     setSelectedFiles((prev) => {
@@ -118,6 +230,14 @@ export default function WorkflowLibraryPage() {
         pattern,
         workers,
         outputPath,
+        traceLogs,
+        recordSession: showOverrides ? startNodeOverrides.recordSession : undefined,
+        screenshotConfig:
+          showOverrides && startNodeOverrides.screenshotAllNodes
+            ? { enabled: true, timing: startNodeOverrides.screenshotTiming ?? 'post' }
+            : undefined,
+        reportConfig: reportConfig.enabled ? reportConfig : undefined,
+        batchPriority,
         startNodeOverrides: showOverrides ? startNodeOverrides : undefined,
       });
       setActiveTab('dashboard');
@@ -126,43 +246,69 @@ export default function WorkflowLibraryPage() {
     } finally {
       setExecuting(false);
     }
-  }, [folderPath, recursive, pattern, workers, outputPath, showOverrides, startNodeOverrides, executeBatch]);
+  }, [folderPath, recursive, pattern, workers, outputPath, traceLogs, reportConfig, batchPriority, showOverrides, startNodeOverrides, executeBatch]);
 
   const handleLaunchFromSelection = useCallback(async () => {
     const workflows: Workflow[] = [];
+    const fileNames: string[] = [];
+
     const validSelected = scanResults.filter((r) => r.isValid && selectedFiles.has(r.filePath));
     for (const r of validSelected) {
-      if (r.workflow) workflows.push(r.workflow);
+      if (r.workflow) {
+        workflows.push(r.workflow);
+        fileNames.push(r.fileName);
+      }
     }
-    if (workflows.length === 0 && droppedFiles.length === 0) {
-      setError('Select workflows from scan results or add files via drag-drop');
+
+    const selectedDropped = droppedFiles
+      .map((f, i) => ({ f, i }))
+      .filter(({ i }) => selectedDroppedFiles.has(i));
+    for (const { f } of selectedDropped) {
+      try {
+        const text = await f.text();
+        const parsed = JSON.parse(text) as Workflow;
+        if (parsed?.nodes && Array.isArray(parsed.nodes) && parsed?.edges && Array.isArray(parsed.edges)) {
+          workflows.push(parsed);
+          fileNames.push(f.name);
+        } else {
+          setError(`Invalid workflow in ${f.name}: missing nodes or edges`);
+          return;
+        }
+      } catch (err) {
+        setError(`Failed to parse ${f.name}: ${err instanceof Error ? err.message : 'Invalid JSON'}`);
+        return;
+      }
+    }
+
+    if (workflows.length === 0) {
+      setError('Select workflows from scan results or add and select files via drag-drop');
       return;
     }
     setExecuting(true);
     setError(null);
     try {
-      if (droppedFiles.length > 0) {
-        await executeBatch({
-          files: droppedFiles,
-          workers,
-          outputPath,
-          startNodeOverrides: showOverrides ? startNodeOverrides : undefined,
-        });
-      } else {
-        await executeBatch({
-          workflows,
-          workers,
-          outputPath,
-          startNodeOverrides: showOverrides ? startNodeOverrides : undefined,
-        });
-      }
+      await executeBatch({
+        workflows,
+        workflowFileNames: fileNames.length > 0 ? fileNames : undefined,
+        workers,
+        outputPath,
+        traceLogs,
+        recordSession: showOverrides ? startNodeOverrides.recordSession : undefined,
+        screenshotConfig:
+          showOverrides && startNodeOverrides.screenshotAllNodes
+            ? { enabled: true, timing: startNodeOverrides.screenshotTiming ?? 'post' }
+            : undefined,
+        reportConfig: reportConfig.enabled ? reportConfig : undefined,
+        batchPriority,
+        startNodeOverrides: showOverrides ? startNodeOverrides : undefined,
+      });
       setActiveTab('dashboard');
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Execution failed');
     } finally {
       setExecuting(false);
     }
-  }, [scanResults, selectedFiles, droppedFiles, workers, outputPath, showOverrides, startNodeOverrides, executeBatch]);
+  }, [scanResults, selectedFiles, droppedFiles, selectedDroppedFiles, workers, outputPath, traceLogs, reportConfig, batchPriority, showOverrides, startNodeOverrides, executeBatch]);
 
   const handleStopBatch = useCallback(
     async (batchId: string) => {
@@ -197,6 +343,29 @@ export default function WorkflowLibraryPage() {
       console.error('Load history failed:', err);
     }
   }, [getBatchHistory, historyOffset, historyStatusFilter, setBatchHistory]);
+
+  const batchDetailCancelledRef = useRef(false);
+  const handleBatchIdClick = useCallback(
+    async (batchId: string) => {
+      batchDetailCancelledRef.current = false;
+      setBatchDetailLoading(true);
+      setBatchDetailPopup(null);
+      try {
+        const status = await getBatchStatus(batchId);
+        if (!batchDetailCancelledRef.current) setBatchDetailPopup(status);
+      } catch (err) {
+        if (!batchDetailCancelledRef.current) console.error('Load batch detail failed:', err);
+      } finally {
+        setBatchDetailLoading(false);
+      }
+    },
+    [getBatchStatus]
+  );
+  const handleBatchDetailClose = useCallback(() => {
+    batchDetailCancelledRef.current = true;
+    setBatchDetailLoading(false);
+    setBatchDetailPopup(null);
+  }, []);
 
   useEffect(() => {
     if (activeTab === 'history') loadHistory();
@@ -277,6 +446,111 @@ export default function WorkflowLibraryPage() {
             <button onClick={() => setError(null)}>
               <X size={18} />
             </button>
+          </div>
+        )}
+
+        {/* Batch detail popup */}
+        {(batchDetailPopup || batchDetailLoading) && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div className="bg-surface border border-border rounded-lg shadow-xl p-6 max-w-2xl max-h-[90vh] overflow-auto">
+              {batchDetailLoading ? (
+                <div className="flex flex-col items-center gap-4 py-8">
+                  <div className="text-secondary">Loading batch details...</div>
+                  <button
+                    onClick={handleBatchDetailClose}
+                    className="px-4 py-2 bg-surfaceHighlight hover:bg-border rounded text-sm"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : batchDetailPopup ? (
+                <>
+                  <div className="flex justify-between items-start mb-4">
+                    <h3 className="text-lg font-semibold text-primary">Batch Details</h3>
+                    <button
+                      onClick={handleBatchDetailClose}
+                      className="text-secondary hover:text-primary"
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+                  <div className="space-y-2 text-sm mb-4">
+                    <div>
+                      <span className="text-secondary">Batch ID:</span>{' '}
+                      <span className="font-mono">{batchDetailPopup.batchId}</span>
+                    </div>
+                    <div>
+                      <span className="text-secondary">Status:</span>{' '}
+                      <span
+                        className={`px-2 py-0.5 rounded text-xs ${
+                          batchDetailPopup.status === 'completed'
+                            ? 'bg-green-600/30'
+                            : batchDetailPopup.status === 'error' || batchDetailPopup.status === 'stopped'
+                              ? 'bg-red-600/30'
+                              : batchDetailPopup.status === 'running'
+                                ? 'bg-blue-600/30'
+                                : 'bg-surfaceHighlight'
+                        }`}
+                      >
+                        {batchDetailPopup.status}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-secondary">Source:</span> {batchDetailPopup.sourceType}
+                    </div>
+                    {batchDetailPopup.folderPath && (
+                      <div>
+                        <span className="text-secondary">Folder:</span> {batchDetailPopup.folderPath}
+                      </div>
+                    )}
+                    <div>
+                      <span className="text-secondary">Completed:</span> {batchDetailPopup.completed} /{' '}
+                      {batchDetailPopup.totalWorkflows} |{' '}
+                      <span className="text-secondary">Failed:</span> {batchDetailPopup.failed}
+                    </div>
+                    <div>
+                      <span className="text-secondary">Started:</span>{' '}
+                      {formatDate(batchDetailPopup.startTime)}
+                    </div>
+                    {batchDetailPopup.endTime != null && (
+                      <div>
+                        <span className="text-secondary">Duration:</span>{' '}
+                        {formatDuration(
+                          batchDetailPopup.endTime - batchDetailPopup.startTime
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {batchDetailPopup.executions && batchDetailPopup.executions.length > 0 && (
+                    <div>
+                      <h4 className="text-sm font-semibold mb-2">Per-workflow status</h4>
+                      <ul className="space-y-1 text-sm max-h-48 overflow-y-auto">
+                        {batchDetailPopup.executions.map((e) => (
+                          <li key={e.executionId} className="flex items-center gap-2">
+                            <span className="text-secondary truncate flex-1">
+                              {e.workflowFileName}
+                            </span>
+                            <span
+                              className={`px-1.5 rounded text-xs flex-shrink-0 ${
+                                e.status === 'completed'
+                                  ? 'bg-green-600/30'
+                                  : e.status === 'error' || e.status === 'stopped'
+                                    ? 'bg-red-600/30'
+                                    : e.status === 'running'
+                                      ? 'bg-blue-600/30'
+                                      : 'bg-surfaceHighlight'
+                              }`}
+                            >
+                              {e.status}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </>
+              ) : null}
+            </div>
           </div>
         )}
 
@@ -485,11 +759,11 @@ export default function WorkflowLibraryPage() {
                     </div>
                     <button
                       onClick={handleLaunchFromSelection}
-                      disabled={executing || (selectedFiles.size === 0 && droppedFiles.length === 0)}
+                      disabled={executing || (selectedFiles.size === 0 && selectedDroppedFiles.size === 0)}
                       className="mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded flex items-center gap-2"
                     >
                       <Play size={16} />
-                      Execute Selected ({selectedFiles.size + droppedFiles.length})
+                      Execute Selected ({selectedFiles.size + selectedDroppedFiles.size})
                     </button>
                   </>
                 )}
@@ -499,9 +773,28 @@ export default function WorkflowLibraryPage() {
             {droppedFiles.length > 0 && (
               <div className="bg-surface border border-border rounded-lg p-4">
                 <h2 className="text-sm font-semibold mb-2 text-secondary">Added workflow files</h2>
+                <div className="flex gap-2 mb-3">
+                  <button
+                    onClick={selectAllDropped}
+                    className="text-sm text-blue-400 hover:text-blue-300"
+                  >
+                    Select all
+                  </button>
+                  <button
+                    onClick={selectNoneDropped}
+                    className="text-sm text-blue-400 hover:text-blue-300"
+                  >
+                    Clear selection
+                  </button>
+                </div>
                 <ul className="space-y-1">
                   {droppedFiles.map((f, i) => (
                     <li key={`${f.name}-${i}`} className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={selectedDroppedFiles.has(i)}
+                        onChange={() => toggleDroppedFile(i)}
+                      />
                       <FileJson size={14} />
                       {f.name}
                       <button
@@ -513,6 +806,16 @@ export default function WorkflowLibraryPage() {
                     </li>
                   ))}
                 </ul>
+                {(scanResults.length === 0 || !discoveredExpanded) && (
+                  <button
+                    onClick={handleLaunchFromSelection}
+                    disabled={executing || (selectedFiles.size === 0 && selectedDroppedFiles.size === 0)}
+                    className="mt-4 px-4 py-2 bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded flex items-center gap-2"
+                  >
+                    <Play size={16} />
+                    Execute Selected ({selectedFiles.size + selectedDroppedFiles.size})
+                  </button>
+                )}
               </div>
             )}
 
@@ -540,6 +843,80 @@ export default function WorkflowLibraryPage() {
                     className="w-full px-3 py-2 bg-canvas border border-border rounded text-primary"
                   />
                 </div>
+                <div>
+                  <label className="block text-sm text-secondary mb-1">Batch priority</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={batchPriority}
+                    onChange={(e) => setBatchPriority(parseInt(e.target.value, 10) || 0)}
+                    className="w-24 px-3 py-2 bg-canvas border border-border rounded text-primary"
+                  />
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-6">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={traceLogs}
+                    onChange={(e) => setTraceLogs(e.target.checked)}
+                  />
+                  <span className="text-sm">Trace logs</span>
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={reportConfig.enabled}
+                    onChange={(e) =>
+                      setReportConfig((c) => ({ ...c, enabled: e.target.checked }))
+                    }
+                  />
+                  <span className="text-sm">Reports</span>
+                </label>
+                {reportConfig.enabled && (
+                  <>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <span className="text-sm text-secondary">Report types:</span>
+                      {(['html', 'allure', 'json', 'junit', 'csv', 'markdown'] as ReportType[]).map(
+                        (t) => (
+                          <label key={t} className="flex items-center gap-1 text-sm">
+                            <input
+                              type="checkbox"
+                              checked={reportConfig.reportTypes.includes(t)}
+                              onChange={(e) => {
+                                setReportConfig((c) => {
+                                  const next = e.target.checked
+                                    ? [...c.reportTypes, t]
+                                    : c.reportTypes.filter((x) => x !== t);
+                                  return {
+                                    ...c,
+                                    reportTypes: next.length > 0 ? next : ['html'],
+                                  };
+                                });
+                              }}
+                            />
+                            {t}
+                          </label>
+                        )
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 mt-2">
+                      <span className="text-sm text-secondary">Retention:</span>
+                      <input
+                        type="number"
+                        min={1}
+                        value={reportConfig.reportRetention}
+                        onChange={(e) =>
+                          setReportConfig((c) => ({
+                            ...c,
+                            reportRetention: parseInt(e.target.value, 10) || 10,
+                          }))
+                        }
+                        className="w-16 px-2 py-1 bg-canvas border border-border rounded text-primary text-sm"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
               <div className="mt-4">
                 <button
@@ -588,6 +965,58 @@ export default function WorkflowLibraryPage() {
                         <option value="both">Both</option>
                       </select>
                     </div>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={startNodeOverrides.snapshotAllNodes}
+                        onChange={(e) =>
+                          setStartNodeOverrides((o) => ({ ...o, snapshotAllNodes: e.target.checked }))
+                        }
+                      />
+                      <span className="text-sm">Accessibility snapshot all nodes</span>
+                    </label>
+                    <div>
+                      <label className="block text-sm text-secondary mb-1">Snapshot timing</label>
+                      <select
+                        value={startNodeOverrides.snapshotTiming}
+                        onChange={(e) =>
+                          setStartNodeOverrides((o) => ({
+                            ...o,
+                            snapshotTiming: e.target.value as 'pre' | 'post' | 'both',
+                          }))
+                        }
+                        className="px-2 py-1 bg-canvas border border-border rounded text-primary"
+                      >
+                        <option value="pre">Pre</option>
+                        <option value="post">Post</option>
+                        <option value="both">Both</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm text-secondary mb-1">Slow motion (ms)</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={startNodeOverrides.slowMo ?? 0}
+                        onChange={(e) =>
+                          setStartNodeOverrides((o) => ({
+                            ...o,
+                            slowMo: parseInt(e.target.value, 10) || 0,
+                          }))
+                        }
+                        className="w-24 px-2 py-1 bg-canvas border border-border rounded text-primary"
+                      />
+                    </div>
+                    <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={startNodeOverrides.scrollThenAction}
+                        onChange={(e) =>
+                          setStartNodeOverrides((o) => ({ ...o, scrollThenAction: e.target.checked }))
+                        }
+                      />
+                      <span className="text-sm">Scroll then action</span>
+                    </label>
                   </div>
                 )}
               </div>
@@ -597,9 +1026,18 @@ export default function WorkflowLibraryPage() {
 
         {activeTab === 'dashboard' && (
           <div className="space-y-4">
-            <div className="flex justify-between items-center">
+            <div className="flex justify-between items-center flex-wrap gap-4">
               <h2 className="text-lg font-semibold">Running Batches</h2>
-              {runningBatches.length > 0 && (
+              <div className="flex items-center gap-4">
+                <a
+                  href="/reports/history"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1"
+                >
+                  View Report History
+                </a>
+                {runningBatches.length > 0 && (
                 <button
                   onClick={handleStopAll}
                   className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded flex items-center gap-2"
@@ -607,7 +1045,8 @@ export default function WorkflowLibraryPage() {
                   <Square size={16} />
                   Stop All
                 </button>
-              )}
+                )}
+              </div>
             </div>
             {runningBatches.length === 0 ? (
               <div className="text-center py-12 text-secondary">
@@ -712,6 +1151,14 @@ export default function WorkflowLibraryPage() {
                   <RefreshCw size={16} />
                   Refresh
                 </button>
+                <a
+                  href="/reports/history"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1"
+                >
+                  View Report History
+                </a>
               </div>
               <button
                 onClick={async () => {
@@ -750,7 +1197,15 @@ export default function WorkflowLibraryPage() {
                   <tbody>
                     {batchHistory.batches.map((b) => (
                       <tr key={b.batchId} className="border-b border-border hover:bg-surfaceHighlight">
-                        <td className="px-4 py-3 font-mono text-sm">{b.batchId.slice(0, 12)}...</td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => handleBatchIdClick(b.batchId)}
+                            disabled={batchDetailLoading}
+                            className="font-mono text-sm text-blue-400 hover:text-blue-300 hover:underline text-left"
+                          >
+                            {b.batchId.slice(0, 12)}...
+                          </button>
+                        </td>
                         <td className="px-4 py-3">
                           <span
                             className={`px-2 py-0.5 rounded text-xs ${

@@ -447,6 +447,7 @@ export default function workflowRoutes(io: Server) {
       const { 
         workflow, 
         workflows, 
+        workflowFileNames,
         folderPath,
         executionMode = 'auto',
         traceLogs = false, 
@@ -537,7 +538,7 @@ export default function workflowRoutes(io: Server) {
           }));
       } else if (workflows && Array.isArray(workflows)) {
         sourceType = 'workflows';
-        const processed = WorkflowScanner.processWorkflows(workflows, startNodeOverrides);
+        const processed = WorkflowScanner.processWorkflows(workflows, startNodeOverrides, workflowFileNames);
         workflowFiles = processed
           .filter(f => f.isValid && f.workflow)
           .map(f => ({
