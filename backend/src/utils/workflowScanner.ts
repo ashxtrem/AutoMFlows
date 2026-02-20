@@ -135,13 +135,14 @@ export class WorkflowScanner {
    */
   static processWorkflows(
     workflows: Workflow[],
-    startNodeOverrides?: StartNodeOverrides
+    startNodeOverrides?: StartNodeOverrides,
+    fileNames?: string[]
   ): WorkflowFileInfo[] {
     const results: WorkflowFileInfo[] = [];
 
     for (let i = 0; i < workflows.length; i++) {
       const workflow = workflows[i];
-      const fileName = `workflow-${i + 1}.json`;
+      const fileName = fileNames?.[i] || `workflow-${i + 1}.json`;
 
       // Validate workflow structure
       const validationErrors = this.validateWorkflowStructure(workflow);

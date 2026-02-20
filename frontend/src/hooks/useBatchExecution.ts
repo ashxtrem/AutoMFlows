@@ -13,6 +13,7 @@ import { getBackendPort, getBackendBaseUrl } from '../utils/getBackendPort';
 
 export interface ExecuteBatchOptions {
   workflows?: Workflow[];
+  workflowFileNames?: string[];
   folderPath?: string;
   files?: File[];
   workers?: number;
@@ -199,6 +200,7 @@ export function useBatchExecution() {
         body.folderPath = opts.folderPath;
       } else if (opts.workflows && opts.workflows.length > 0) {
         body.workflows = opts.workflows;
+        if (opts.workflowFileNames?.length) body.workflowFileNames = opts.workflowFileNames;
       } else {
         throw new Error('Provide workflows, folderPath, or files');
       }

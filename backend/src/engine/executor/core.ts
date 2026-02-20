@@ -1,4 +1,4 @@
-import { Workflow, ExecutionStatus, ExecutionEventType, ExecutionEvent, BaseNode, Edge, NodeType, PropertyDataType, ScreenshotConfig, SnapshotConfig, ReportConfig, StartNodeData, BreakpointConfig } from '@automflows/shared';
+import { Workflow, ExecutionStatus, ExecutionEventType, ExecutionEvent, BaseNode, Edge, NodeType, PropertyDataType, PageDebugInfo, ScreenshotConfig, SnapshotConfig, ReportConfig, StartNodeData, BreakpointConfig } from '@automflows/shared';
 import { Server } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
 import { WorkflowParser } from '../parser';
@@ -246,6 +246,19 @@ export class Executor {
 
   isExecutionPaused(): boolean {
     return this.isPaused;
+  }
+
+  /**
+   * Returns stored DOM debug info from the most recent errored node event.
+   * Used when execution has ended or page is closed and live capture is not possible.
+   */
+  getStoredDebugInfo(): PageDebugInfo | null {
+    if (!this.executionTracker) return null;
+    const metadata = this.executionTracker.getMetadata();
+    const erroredWithDebug = metadata.nodes
+      .filter((n) => n.status === 'error' && n.debugInfo)
+      .sort((a, b) => (b.endTime ?? 0) - (a.endTime ?? 0));
+    return erroredWithDebug[0]?.debugInfo ?? null;
   }
 
   /**
