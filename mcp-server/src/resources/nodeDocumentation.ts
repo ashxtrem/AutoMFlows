@@ -1,4 +1,4 @@
-import { NodeType } from '@automflows/shared';
+import { NodeType, getNodeProperties, PropertyDataType } from '@automflows/shared';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -59,404 +59,230 @@ const NODE_CATEGORIES: Record<string, string[]> = {
   'Config': ['loadConfigFile', 'selectConfigFile'],
 };
 
+function dataTypeToString(dataType: PropertyDataType): string {
+  switch (dataType) {
+    case PropertyDataType.INT:
+    case PropertyDataType.FLOAT:
+    case PropertyDataType.DOUBLE:
+      return 'number';
+    case PropertyDataType.STRING:
+      return 'string';
+    case PropertyDataType.BOOLEAN:
+      return 'boolean';
+    default:
+      return 'string';
+  }
+}
+
+function getCategoryForType(type: string): string {
+  for (const [category, types] of Object.entries(NODE_CATEGORIES)) {
+    if (types.includes(type)) return category;
+  }
+  return 'Other';
+}
+
+const NODE_METADATA: Record<string, { label: string; description: string; examples: string[] }> = {
+  [NodeType.START]: {
+    label: 'Start',
+    description: 'The entry point of a workflow. All workflows must start with this node.',
+    examples: ['Every workflow must begin with a Start node'],
+  },
+  [NodeType.OPEN_BROWSER]: {
+    label: 'Open Browser',
+    description: 'Opens a browser instance (Chromium, Firefox, or WebKit)',
+    examples: ['Open browser in headless mode', 'Open Firefox browser with custom viewport'],
+  },
+  [NodeType.NAVIGATION]: {
+    label: 'Navigation',
+    description: 'Navigate to a URL',
+    examples: ['Navigate to https://example.com', 'Navigate and wait for network to be idle'],
+  },
+  [NodeType.ACTION]: {
+    label: 'Action',
+    description: 'Perform browser actions like click, double-click, hover, etc.',
+    examples: ['Click a button: selector="button.submit", action="click"', 'Hover over element: selector=".menu-item", action="hover"'],
+  },
+  [NodeType.TYPE]: {
+    label: 'Type',
+    description: 'Type text into an input field',
+    examples: ['Type into email field: selector="input[type=email]", text="user@example.com"', 'Type with delay: text="Hello", delay=100'],
+  },
+  [NodeType.WAIT]: {
+    label: 'Wait',
+    description: 'Wait for a condition or timeout',
+    examples: ['Wait 5 seconds: waitType="timeout", value=5000', 'Wait for selector: waitType="selector", value=".loaded"'],
+  },
+  [NodeType.API_REQUEST]: {
+    label: 'API Request',
+    description: 'Make HTTP API requests',
+    examples: ['GET request: method="GET", url="https://api.example.com/data"', 'POST with JSON: method="POST", body={key: "value"}'],
+  },
+  [NodeType.API_CURL]: {
+    label: 'API cURL',
+    description: 'Execute a cURL command as an API request',
+    examples: ['Convert cURL command to API request node'],
+  },
+  [NodeType.VERIFY]: {
+    label: 'Verify',
+    description: 'Verify conditions, assertions, or element states',
+    examples: ['Verify element visible: domain="browser", verificationType="visible", selector=".success"', 'Verify API status: domain="api", verificationType="status", expectedValue=200'],
+  },
+  [NodeType.CSV_HANDLE]: {
+    label: 'CSV Handle',
+    description: 'Read CSV from file into context, or write/append an array from context to a CSV file.',
+    examples: ['Write products to CSV: action="write", filePath="${data.outputDirectory}/products.csv", dataSource="products"', 'Read CSV: action="read", filePath="/path/to/data.csv", contextKey="csvData"'],
+  },
+  [NodeType.KEYBOARD]: {
+    label: 'Keyboard',
+    description: 'Send keyboard input (key press, shortcuts, type)',
+    examples: ['Press Enter key', 'Type text with delay'],
+  },
+  [NodeType.SCROLL]: {
+    label: 'Scroll',
+    description: 'Scroll the page or an element',
+    examples: ['Scroll to element', 'Scroll by delta'],
+  },
+  [NodeType.STORAGE]: {
+    label: 'Storage',
+    description: 'Get or set cookies, localStorage, sessionStorage',
+    examples: ['Get cookies', 'Set localStorage value'],
+  },
+  [NodeType.DIALOG]: {
+    label: 'Dialog',
+    description: 'Handle browser dialogs (alert, confirm, prompt)',
+    examples: ['Accept alert', 'Dismiss confirm'],
+  },
+  [NodeType.DOWNLOAD]: {
+    label: 'Download',
+    description: 'Wait for or handle file downloads',
+    examples: ['Wait for download to complete'],
+  },
+  [NodeType.IFRAME]: {
+    label: 'Iframe',
+    description: 'Switch to or interact with iframes',
+    examples: ['Switch to iframe by selector'],
+  },
+  [NodeType.ELEMENT_QUERY]: {
+    label: 'Element Query',
+    description: 'Query elements and extract text, attributes, or count',
+    examples: ['Get text from element', 'Get attribute value'],
+  },
+  [NodeType.FORM_INPUT]: {
+    label: 'Form Input',
+    description: 'Interact with form elements (select, check, fill)',
+    examples: ['Select option from dropdown', 'Check checkbox'],
+  },
+  [NodeType.SCREENSHOT]: {
+    label: 'Screenshot',
+    description: 'Take a screenshot of the page or an element',
+    examples: ['Capture full page screenshot', 'Capture element screenshot'],
+  },
+  [NodeType.JAVASCRIPT_CODE]: {
+    label: 'JavaScript Code',
+    description: 'Execute custom JavaScript in the browser context',
+    examples: ['Run custom script', 'Extract data with JavaScript'],
+  },
+  [NodeType.LOOP]: {
+    label: 'Loop',
+    description: 'Iterate over an array or repeat until condition',
+    examples: ['Loop over array variable', 'Do-while loop'],
+  },
+  [NodeType.DB_CONNECT]: {
+    label: 'DB Connect',
+    description: 'Connect to a database (PostgreSQL, MySQL, SQLite, etc.)',
+    examples: ['Connect to PostgreSQL', 'Use connection string'],
+  },
+  [NodeType.DB_DISCONNECT]: {
+    label: 'DB Disconnect',
+    description: 'Disconnect from a database',
+    examples: ['Close database connection'],
+  },
+  [NodeType.DB_QUERY]: {
+    label: 'DB Query',
+    description: 'Execute a SQL query and store results in context',
+    examples: ['SELECT query', 'INSERT with parameters'],
+  },
+  [NodeType.DB_TRANSACTION_BEGIN]: {
+    label: 'DB Transaction Begin',
+    description: 'Begin a database transaction',
+    examples: ['Start transaction for multiple operations'],
+  },
+  [NodeType.DB_TRANSACTION_COMMIT]: {
+    label: 'DB Transaction Commit',
+    description: 'Commit a database transaction',
+    examples: ['Commit transaction'],
+  },
+  [NodeType.DB_TRANSACTION_ROLLBACK]: {
+    label: 'DB Transaction Rollback',
+    description: 'Rollback a database transaction',
+    examples: ['Rollback on error'],
+  },
+  [NodeType.CONTEXT_MANIPULATE]: {
+    label: 'Context Manipulate',
+    description: 'Modify browser context (geolocation, viewport, permissions, etc.)',
+    examples: ['Set geolocation', 'Set viewport size'],
+  },
+  [NodeType.INT_VALUE]: {
+    label: 'Int Value',
+    description: 'Provide an integer value (can be connected from other nodes)',
+    examples: ['Static integer value'],
+  },
+  [NodeType.STRING_VALUE]: {
+    label: 'String Value',
+    description: 'Provide a string value (can be connected from other nodes)',
+    examples: ['Static string value'],
+  },
+  [NodeType.BOOLEAN_VALUE]: {
+    label: 'Boolean Value',
+    description: 'Provide a boolean value (can be connected from other nodes)',
+    examples: ['Static boolean value'],
+  },
+  [NodeType.INPUT_VALUE]: {
+    label: 'Input Value',
+    description: 'Provide a configurable value with type selection',
+    examples: ['Dynamic value with type'],
+  },
+  [NodeType.LOAD_CONFIG_FILE]: {
+    label: 'Load Config File',
+    description: 'Load configuration from a JSON/Env file',
+    examples: ['Load env.json for credentials'],
+  },
+  [NodeType.SELECT_CONFIG_FILE]: {
+    label: 'Select Config File',
+    description: 'Select which config file to use at runtime',
+    examples: ['Choose config by environment'],
+  },
+};
+
 export function generateNodeDocumentation(): NodeDocumentation[] {
   const docs: NodeDocumentation[] = [];
 
-  // Start Node
-  docs.push({
-    type: NodeType.START,
-    label: 'Start',
-    category: 'Start',
-    description: 'The entry point of a workflow. All workflows must start with this node.',
-    fields: [
-      {
-        name: 'slowMo',
-        label: 'Slow Motion',
-        type: 'number',
-        required: false,
-        description: 'Delay in milliseconds between node executions',
-        defaultValue: 0,
-      },
-      {
-        name: 'screenshotAllNodes',
-        label: 'Screenshot All Nodes',
-        type: 'boolean',
-        required: false,
-        description: 'Enable screenshots on all nodes',
-        defaultValue: false,
-      },
-      {
-        name: 'recordSession',
-        label: 'Record Session',
-        type: 'boolean',
-        required: false,
-        description: 'Enable video recording of the session',
-        defaultValue: false,
-      },
-    ],
-    examples: ['Every workflow must begin with a Start node'],
-  });
+  for (const nodeType of Object.values(NodeType)) {
+    const properties = getNodeProperties(nodeType);
+    const metadata = NODE_METADATA[nodeType] || {
+      label: nodeType.charAt(0).toUpperCase() + nodeType.slice(1).replace(/([A-Z])/g, ' $1'),
+      description: `Node type: ${nodeType}`,
+      examples: [],
+    };
 
-  // Open Browser Node
-  docs.push({
-    type: NodeType.OPEN_BROWSER,
-    label: 'Open Browser',
-    category: 'Browser',
-    description: 'Opens a browser instance (Chromium, Firefox, or WebKit)',
-    fields: [
-      {
-        name: 'headless',
-        label: 'Headless',
-        type: 'boolean',
-        required: false,
-        description: 'Run browser in headless mode',
-        defaultValue: false,
-      },
-      {
-        name: 'browser',
-        label: 'Browser',
-        type: 'string',
-        required: false,
-        description: 'Browser type: chromium, firefox, or webkit',
-        defaultValue: 'chromium',
-      },
-      {
-        name: 'viewportWidth',
-        label: 'Viewport Width',
-        type: 'number',
-        required: false,
-        description: 'Browser viewport width in pixels',
-        defaultValue: 1280,
-      },
-      {
-        name: 'viewportHeight',
-        label: 'Viewport Height',
-        type: 'number',
-        required: false,
-        description: 'Browser viewport height in pixels',
-        defaultValue: 720,
-      },
-    ],
-    examples: [
-      'Open browser in headless mode',
-      'Open Firefox browser with custom viewport',
-    ],
-  });
+    const fields: FieldDocumentation[] = properties.map((p) => ({
+      name: p.name,
+      label: p.label,
+      type: dataTypeToString(p.dataType),
+      required: p.required,
+      description: `${p.label} (${p.dataType})`,
+      defaultValue: p.defaultValue,
+    }));
 
-  // Navigation Node
-  docs.push({
-    type: NodeType.NAVIGATION,
-    label: 'Navigation',
-    category: 'Browser',
-    description: 'Navigate to a URL',
-    fields: [
-      {
-        name: 'url',
-        label: 'URL',
-        type: 'string',
-        required: true,
-        description: 'The URL to navigate to',
-      },
-      {
-        name: 'waitUntil',
-        label: 'Wait Until',
-        type: 'string',
-        required: false,
-        description: 'When to consider navigation finished: load, domcontentloaded, networkidle, commit',
-        defaultValue: 'networkidle',
-      },
-      {
-        name: 'timeout',
-        label: 'Timeout',
-        type: 'number',
-        required: false,
-        description: 'Navigation timeout in milliseconds',
-        defaultValue: 30000,
-      },
-    ],
-    examples: [
-      'Navigate to https://example.com',
-      'Navigate and wait for network to be idle',
-    ],
-  });
-
-  // Action Node
-  docs.push({
-    type: NodeType.ACTION,
-    label: 'Action',
-    category: 'Interaction',
-    description: 'Perform browser actions like click, double-click, hover, etc.',
-    fields: [
-      {
-        name: 'action',
-        label: 'Action',
-        type: 'string',
-        required: true,
-        description: 'Action type: click, doubleClick, hover, rightClick, etc.',
-      },
-      {
-        name: 'selector',
-        label: 'Selector',
-        type: 'string',
-        required: true,
-        description: 'CSS selector, XPath, or Playwright locator',
-      },
-      {
-        name: 'selectorType',
-        label: 'Selector Type',
-        type: 'string',
-        required: false,
-        description: 'Type of selector: css, xpath, getByRole, getByText, etc.',
-        defaultValue: 'css',
-      },
-      {
-        name: 'timeout',
-        label: 'Timeout',
-        type: 'number',
-        required: false,
-        description: 'Action timeout in milliseconds',
-        defaultValue: 30000,
-      },
-    ],
-    examples: [
-      'Click a button: selector="button.submit", action="click"',
-      'Hover over element: selector=".menu-item", action="hover"',
-    ],
-  });
-
-  // Type Node
-  docs.push({
-    type: NodeType.TYPE,
-    label: 'Type',
-    category: 'Interaction',
-    description: 'Type text into an input field',
-    fields: [
-      {
-        name: 'selector',
-        label: 'Selector',
-        type: 'string',
-        required: true,
-        description: 'CSS selector or Playwright locator for the input field',
-      },
-      {
-        name: 'text',
-        label: 'Text',
-        type: 'string',
-        required: true,
-        description: 'Text to type into the field',
-      },
-      {
-        name: 'clearFirst',
-        label: 'Clear First',
-        type: 'boolean',
-        required: false,
-        description: 'Clear the field before typing',
-        defaultValue: false,
-      },
-      {
-        name: 'delay',
-        label: 'Delay',
-        type: 'number',
-        required: false,
-        description: 'Delay between keystrokes in milliseconds',
-        defaultValue: 0,
-      },
-    ],
-    examples: [
-      'Type into email field: selector="input[type=email]", text="user@example.com"',
-      'Type with delay: text="Hello", delay=100',
-    ],
-  });
-
-  // Wait Node
-  docs.push({
-    type: NodeType.WAIT,
-    label: 'Wait',
-    category: 'Control',
-    description: 'Wait for a condition or timeout',
-    fields: [
-      {
-        name: 'waitType',
-        label: 'Wait Type',
-        type: 'string',
-        required: true,
-        description: 'Type of wait: timeout, selector, condition, url',
-      },
-      {
-        name: 'value',
-        label: 'Value',
-        type: 'string | number',
-        required: true,
-        description: 'Wait value (timeout in ms, selector string, condition, or URL)',
-      },
-      {
-        name: 'timeout',
-        label: 'Timeout',
-        type: 'number',
-        required: false,
-        description: 'Maximum wait time in milliseconds',
-        defaultValue: 30000,
-      },
-    ],
-    examples: [
-      'Wait 5 seconds: waitType="timeout", value=5000',
-      'Wait for selector: waitType="selector", value=".loaded"',
-    ],
-  });
-
-  // API Request Node
-  docs.push({
-    type: NodeType.API_REQUEST,
-    label: 'API Request',
-    category: 'API',
-    description: 'Make HTTP API requests',
-    fields: [
-      {
-        name: 'method',
-        label: 'Method',
-        type: 'string',
-        required: true,
-        description: 'HTTP method: GET, POST, PUT, DELETE, etc.',
-      },
-      {
-        name: 'url',
-        label: 'URL',
-        type: 'string',
-        required: true,
-        description: 'API endpoint URL',
-      },
-      {
-        name: 'headers',
-        label: 'Headers',
-        type: 'object',
-        required: false,
-        description: 'HTTP headers object',
-      },
-      {
-        name: 'body',
-        label: 'Body',
-        type: 'string | object',
-        required: false,
-        description: 'Request body (string or JSON object)',
-      },
-      {
-        name: 'contextKey',
-        label: 'Context Key',
-        type: 'string',
-        required: false,
-        description: 'Key to store response in context',
-        defaultValue: 'apiResponse',
-      },
-    ],
-    examples: [
-      'GET request: method="GET", url="https://api.example.com/data"',
-      'POST with JSON: method="POST", body={key: "value"}',
-    ],
-  });
-
-  // Verify Node
-  docs.push({
-    type: NodeType.VERIFY,
-    label: 'Verify',
-    category: 'Verification',
-    description: 'Verify conditions, assertions, or element states',
-    fields: [
-      {
-        name: 'domain',
-        label: 'Domain',
-        type: 'string',
-        required: true,
-        description: 'Verification domain: browser, api, database',
-      },
-      {
-        name: 'verificationType',
-        label: 'Verification Type',
-        type: 'string',
-        required: true,
-        description: 'Type of verification: visible, text, attribute, status, etc.',
-      },
-      {
-        name: 'selector',
-        label: 'Selector',
-        type: 'string',
-        required: false,
-        description: 'Element selector (for browser domain)',
-      },
-      {
-        name: 'expectedValue',
-        label: 'Expected Value',
-        type: 'string | number',
-        required: false,
-        description: 'Expected value for comparison',
-      },
-    ],
-    examples: [
-      'Verify element visible: domain="browser", verificationType="visible", selector=".success"',
-      'Verify API status: domain="api", verificationType="status", expectedValue=200',
-    ],
-  });
-
-  // CSV Handle Node
-  docs.push({
-    type: NodeType.CSV_HANDLE,
-    label: 'CSV Handle',
-    category: 'Data',
-    description: 'Read CSV from file into context, or write/append an array from context to a CSV file. Use case: save scraped product list to CSV, or load CSV data for use in later nodes.',
-    fields: [
-      {
-        name: 'action',
-        label: 'Action',
-        type: 'string',
-        required: true,
-        description: 'write (create/overwrite), append (add rows), or read (load file into context)',
-        defaultValue: 'write',
-      },
-      {
-        name: 'filePath',
-        label: 'File path',
-        type: 'string',
-        required: true,
-        description: 'Path to CSV file. Supports ${data.outputDirectory}/file.csv for run output dir.',
-      },
-      {
-        name: 'dataSource',
-        label: 'Data source',
-        type: 'string',
-        required: false,
-        description: 'Context key holding array of objects/rows (for write/append)',
-      },
-      {
-        name: 'contextKey',
-        label: 'Context key',
-        type: 'string',
-        required: false,
-        description: 'Where to store parsed data for read (default: csvData)',
-        defaultValue: 'csvData',
-      },
-      {
-        name: 'headers',
-        label: 'Headers',
-        type: 'string[]',
-        required: false,
-        description: 'Column order for write/append; optional, inferred from first object if omitted',
-      },
-      {
-        name: 'delimiter',
-        label: 'Delimiter',
-        type: 'string',
-        required: false,
-        description: 'CSV delimiter (default: comma)',
-        defaultValue: ',',
-      },
-    ],
-    examples: [
-      'Write products to CSV: action="write", filePath="${data.outputDirectory}/products.csv", dataSource="products"',
-      'Read CSV: action="read", filePath="/path/to/data.csv", contextKey="csvData"',
-    ],
-  });
-
-  // Add more node types as needed...
-  // For brevity, I'm including the most commonly used ones
+    docs.push({
+      type: nodeType,
+      label: metadata.label,
+      category: getCategoryForType(nodeType),
+      description: metadata.description,
+      fields,
+      examples: metadata.examples,
+    });
+  }
 
   return docs;
 }
@@ -468,13 +294,11 @@ export function discoverPluginNodes(): PluginNodeDefinition[] {
   const pluginNodes: PluginNodeDefinition[] = [];
   const pluginsDir = path.join(process.cwd(), 'plugins');
 
-  // Check if plugins directory exists
   if (!fs.existsSync(pluginsDir)) {
     console.warn(`Plugins directory not found: ${pluginsDir}`);
     return pluginNodes;
   }
 
-  // Scan plugins directory
   const pluginDirs = fs.readdirSync(pluginsDir, { withFileTypes: true })
     .filter(dirent => dirent.isDirectory())
     .map(dirent => dirent.name);
@@ -487,8 +311,6 @@ export function discoverPluginNodes(): PluginNodeDefinition[] {
       try {
         const manifestContent = fs.readFileSync(manifestPath, 'utf-8');
         const manifest: PluginManifest = JSON.parse(manifestContent);
-
-        // Add all nodes from this plugin
         pluginNodes.push(...manifest.nodes);
       } catch (error) {
         console.warn(`Failed to load plugin manifest from ${manifestPath}:`, error);
@@ -503,9 +325,8 @@ export function discoverPluginNodes(): PluginNodeDefinition[] {
  * Converts plugin node definitions to NodeDocumentation format
  */
 export function convertPluginNodeToDocumentation(pluginNode: PluginNodeDefinition): NodeDocumentation {
-  // Extract fields from defaultData
   const fields: FieldDocumentation[] = [];
-  
+
   if (pluginNode.defaultData) {
     for (const [key, value] of Object.entries(pluginNode.defaultData)) {
       fields.push({
@@ -536,8 +357,6 @@ export function generateCompleteNodeDocumentation(): NodeDocumentation[] {
   const coreDocs = generateNodeDocumentation();
   const pluginNodes = discoverPluginNodes();
   const pluginDocs = pluginNodes.map(convertPluginNodeToDocumentation);
-
-  // Combine core and plugin documentation
   return [...coreDocs, ...pluginDocs];
 }
 
@@ -549,4 +368,23 @@ export function getNodeDocumentationAsResource(): string {
 export function getNodeDocumentationByType(type: string): NodeDocumentation | null {
   const docs = generateCompleteNodeDocumentation();
   return docs.find(d => d.type === type) || null;
+}
+
+/**
+ * Returns all node property schemas as a JSON object mapping node type to PropertySchema[]
+ */
+export function getNodePropertySchemasAsResource(): string {
+  const schemas: Record<string, ReturnType<typeof getNodeProperties>> = {};
+  for (const nodeType of Object.values(NodeType)) {
+    schemas[nodeType] = getNodeProperties(nodeType);
+  }
+  return JSON.stringify(schemas, null, 2);
+}
+
+/**
+ * Returns property schema for a single node type (JSON string)
+ */
+export function getNodePropertySchemaByType(type: string): string {
+  const schema = getNodeProperties(type);
+  return JSON.stringify(schema, null, 2);
 }

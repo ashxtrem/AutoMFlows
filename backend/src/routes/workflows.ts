@@ -1112,6 +1112,49 @@ export default function workflowRoutes(io: Server) {
    *             schema:
    *               $ref: '#/components/schemas/Error'
    */
+  router.get('/execution/captured-dom', async (req: Request, res: Response) => {
+    try {
+      const execId = executionManager.getMostRecentExecutionId();
+      if (!execId) {
+        return res.status(404).json({
+          success: false,
+          message: 'No execution found',
+        });
+      }
+      const executor = executionManager.getExecutor(execId);
+      if (!executor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Execution executor not available',
+        });
+      }
+      let debugInfo: any = null;
+      if (executor.isExecutionPaused()) {
+        const page = (executor as any).context?.getPage?.();
+        if (page && !page.isClosed?.()) {
+          const { PageDebugHelper } = await import('../utils/pageDebugHelper');
+          debugInfo = await PageDebugHelper.captureDebugInfo(page);
+        }
+      }
+      if (!debugInfo) {
+        debugInfo = executor.getStoredDebugInfo?.() ?? null;
+      }
+      if (!debugInfo) {
+        return res.status(404).json({
+          success: false,
+          message: 'No captured DOM available for this execution',
+        });
+      }
+      res.json({ success: true, debugInfo });
+    } catch (error: any) {
+      console.error('Get captured DOM error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get captured DOM',
+      });
+    }
+  });
+
   router.get('/execution/:executionId', (req: Request, res: Response) => {
     try {
       const { executionId } = req.params;
@@ -1867,6 +1910,43 @@ export default function workflowRoutes(io: Server) {
       res.status(500).json({
         success: false,
         message: error.message || 'Failed to capture DOM',
+      });
+    }
+  });
+
+  router.get('/execution/:executionId/captured-dom', async (req: Request, res: Response) => {
+    try {
+      const { executionId } = req.params;
+      const executor = executionManager.getExecutor(executionId);
+      if (!executor) {
+        return res.status(404).json({
+          success: false,
+          message: 'Execution not found or executor not available',
+        });
+      }
+      let debugInfo: any = null;
+      if (executor.isExecutionPaused()) {
+        const page = (executor as any).context?.getPage?.();
+        if (page && !page.isClosed?.()) {
+          const { PageDebugHelper } = await import('../utils/pageDebugHelper');
+          debugInfo = await PageDebugHelper.captureDebugInfo(page);
+        }
+      }
+      if (!debugInfo) {
+        debugInfo = executor.getStoredDebugInfo?.() ?? null;
+      }
+      if (!debugInfo) {
+        return res.status(404).json({
+          success: false,
+          message: 'No captured DOM available for this execution',
+        });
+      }
+      res.json({ success: true, debugInfo });
+    } catch (error: any) {
+      console.error('Get captured DOM error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to get captured DOM',
       });
     }
   });

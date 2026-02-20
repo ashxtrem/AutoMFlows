@@ -8,7 +8,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { loadConfig } from './config.js';
 import { loadWorkflowExamples, getWorkflowExample } from './resources/workflowExamples.js';
-import { getNodeDocumentationAsResource, getNodeDocumentationByType } from './resources/nodeDocumentation.js';
+import { getNodeDocumentationAsResource, getNodeDocumentationByType, getNodePropertySchemasAsResource, getNodePropertySchemaByType } from './resources/nodeDocumentation.js';
 import { getProjectContextAsResource } from './resources/projectContext.js';
 import { createWorkflow } from './tools/createWorkflow.js';
 import { executeWorkflow } from './tools/executeWorkflow.js';
@@ -56,6 +56,12 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
         uri: 'automflows://project-context',
         name: 'Project Context',
         description: 'AutoMFlows project structure and conventions',
+        mimeType: 'application/json',
+      },
+      {
+        uri: 'automflows://node-property-schemas',
+        name: 'Node Property Schemas',
+        description: 'Full programmatic property schemas for all node types (for AI to generate accurate node configs)',
         mimeType: 'application/json',
       },
     ],
@@ -114,6 +120,18 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
       };
     }
 
+    case 'automflows://node-property-schemas': {
+      return {
+        contents: [
+          {
+            uri,
+            mimeType: 'application/json',
+            text: getNodePropertySchemasAsResource(),
+          },
+        ],
+      };
+    }
+
     default:
       if (uri.startsWith('automflows://workflow-example/')) {
         const name = uri.replace('automflows://workflow-example/', '');
@@ -129,6 +147,19 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
             ],
           };
         }
+      }
+      if (uri.startsWith('automflows://node-property-schemas/')) {
+        const type = uri.replace('automflows://node-property-schemas/', '');
+        const schema = getNodePropertySchemaByType(type);
+        return {
+          contents: [
+            {
+              uri,
+              mimeType: 'application/json',
+              text: schema,
+            },
+          ],
+        };
       }
       throw new Error(`Unknown resource: ${uri}`);
   }
