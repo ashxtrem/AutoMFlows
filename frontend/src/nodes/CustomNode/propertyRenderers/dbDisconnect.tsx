@@ -10,6 +10,7 @@ export const renderDbDisconnectProperties: PropertyRenderer = ({ renderData, han
           value={renderData.connectionKey || 'dbConnection'}
           onChange={(value) => handlePropertyChange('connectionKey', value)}
           placeholder="dbConnection"
+          field="connectionKey"
           onOpenPopup={handleOpenPopup}
         />
       ), 0)}

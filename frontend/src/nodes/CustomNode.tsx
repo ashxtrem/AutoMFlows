@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import { createPortal } from 'react-dom';
 import { shallow } from 'zustand/shallow';
 import { Handle, Position, NodeProps } from 'reactflow';
-import { NodeType, PropertyDataType, OpenBrowserNodeData } from '@automflows/shared';
+import { NodeType, PropertyDataType } from '@automflows/shared';
 import { frontendPluginRegistry } from '../plugins/registry';
 import { useWorkflowStore } from '../store/workflowStore';
 import { useSettingsStore } from '../store/settingsStore';
@@ -45,9 +45,8 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   // Get latest node data from store to avoid stale prop issues
   const storeNodes = useWorkflowStore((state) => state.nodes);
   const storeNodeData = storeNodes.find(n => n.id === id)?.data;
-  // Use data prop for searchHighlighted (set in mappedNodes) but fall back to store for other properties
-  // This ensures searchHighlighted updates correctly when search results change
-  const latestNodeData = { ...storeNodeData, ...data };
+  // Store data takes priority for node properties; data prop provides UI-only fields like searchHighlighted
+  const latestNodeData = { ...data, ...storeNodeData };
   
   // Get nodeType early for use in useEffect
   const nodeType = latestNodeData.type as NodeType | string;
@@ -213,7 +212,17 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
     method: latestNodeData.method,
     curlCommand: latestNodeData.curlCommand,
     contextKey: latestNodeData.contextKey,
-    config: latestNodeData.config, // Include config for setConfig nodes
+    config: latestNodeData.config,
+    slowMo: latestNodeData.slowMo,
+    key: latestNodeData.key,
+    shortcut: latestNodeData.shortcut,
+    action: latestNodeData.action,
+    selectorModifiers: latestNodeData.selectorModifiers,
+    delay: latestNodeData.delay,
+    button: latestNodeData.button,
+    targetSelector: latestNodeData.targetSelector,
+    retryCount: latestNodeData.retryCount,
+    retryStrategy: latestNodeData.retryStrategy,
   });
   
   // Update version when data changes to force re-render
@@ -673,38 +682,13 @@ export default function CustomNode({ id, data, selected }: NodeProps) {
   // Instead, we memoize based on the actual data that affects the output
   // Include _inputConnections in dependencies so properties re-render when converted to inputs
   const inputConnectionsForMemo = stableData._inputConnections ? JSON.stringify(stableData._inputConnections) : '';
-  // Include maxWindow and browser properties in dependencies for OPEN_BROWSER nodes
-  const browserDataForMemo = nodeType === NodeType.OPEN_BROWSER 
-    ? `${(stableData as OpenBrowserNodeData).maxWindow}|${(stableData as OpenBrowserNodeData).browser}|${(stableData as OpenBrowserNodeData).stealthMode}|${(stableData as OpenBrowserNodeData).capabilities ? Object.keys((stableData as OpenBrowserNodeData).capabilities || {}).length : 0}|${(stableData as OpenBrowserNodeData).launchOptions ? Object.keys((stableData as OpenBrowserNodeData).launchOptions || {}).length : 0}`
-    : '';
-  // Include value for value nodes to ensure real-time updates
-  const valueForMemo = (nodeType === NodeType.INT_VALUE || 
-                        nodeType === NodeType.STRING_VALUE || 
-                        nodeType === NodeType.BOOLEAN_VALUE || 
-                        nodeType === NodeType.INPUT_VALUE)
-    ? JSON.stringify(renderData.value)
-    : '';
-  // Include dataType for INPUT_VALUE nodes
-  const dataTypeForMemo = nodeType === NodeType.INPUT_VALUE 
-    ? renderData.dataType 
-    : '';
   const properties = useMemo(() => renderProperties(), [
-    nodeType, 
-    renderData.code, 
-    renderData.url,
-    renderData.selector,
-    renderData.text,
-    renderData.method,
-    renderData.curlCommand,
-    renderData.contextKey,
-    renderData.action, // Include action for nodes that use it (ACTION, CONTEXT_MANIPULATE, etc.)
+    nodeType,
+    storeNodeData,
     edgesForThisNode.length,
     sourceNodes.length,
     connectingHandleId,
     inputConnectionsForMemo,
-    browserDataForMemo, // Include browser-specific data in dependencies
-    valueForMemo, // Include value for value nodes
-    dataTypeForMemo, // Include dataType for INPUT_VALUE nodes
   ]);
   const hasProperties = properties !== null;
 

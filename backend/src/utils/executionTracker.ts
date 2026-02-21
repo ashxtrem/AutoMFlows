@@ -11,6 +11,8 @@ export interface NodeExecutionEvent {
   endTime?: number;
   status: 'running' | 'completed' | 'error' | 'bypassed';
   error?: string;
+  iteration?: number;
+  parentLoopNodeId?: string;
   screenshotPaths?: {
     pre?: string;
     post?: string;
@@ -125,19 +127,30 @@ export class ExecutionTracker {
     return this.videosDirectory;
   }
 
-  recordNodeStart(node: BaseNode): void {
+  private findActiveNodeEvent(nodeId: string): NodeExecutionEvent | undefined {
+    for (let i = this.metadata.nodes.length - 1; i >= 0; i--) {
+      const n = this.metadata.nodes[i];
+      if (n.nodeId === nodeId && n.status === 'running') {
+        return n;
+      }
+    }
+    return undefined;
+  }
+
+  recordNodeStart(node: BaseNode, loopContext?: { iteration: number; parentLoopNodeId: string }): void {
     const nodeEvent: NodeExecutionEvent = {
       nodeId: node.id,
       nodeType: node.type as string,
       nodeLabel: (node.data as any)?.label,
       startTime: Date.now(),
       status: 'running',
+      ...(loopContext && { iteration: loopContext.iteration, parentLoopNodeId: loopContext.parentLoopNodeId }),
     };
     this.metadata.nodes.push(nodeEvent);
   }
 
   recordNodeComplete(nodeId: string): void {
-    const nodeEvent = this.metadata.nodes.find(n => n.nodeId === nodeId);
+    const nodeEvent = this.findActiveNodeEvent(nodeId);
     if (nodeEvent) {
       nodeEvent.endTime = Date.now();
       nodeEvent.status = 'completed';
@@ -145,7 +158,7 @@ export class ExecutionTracker {
   }
 
   recordNodeError(nodeId: string, error: string, traceLogs?: string[], debugInfo?: PageDebugInfo): void {
-    const nodeEvent = this.metadata.nodes.find(n => n.nodeId === nodeId);
+    const nodeEvent = this.findActiveNodeEvent(nodeId);
     if (nodeEvent) {
       nodeEvent.endTime = Date.now();
       nodeEvent.status = 'error';
@@ -168,21 +181,19 @@ export class ExecutionTracker {
   }
 
   recordScreenshot(nodeId: string, screenshotPath: string, timing: 'pre' | 'post' | 'failure'): void {
-    const nodeEvent = this.metadata.nodes.find(n => n.nodeId === nodeId);
+    const nodeEvent = this.findActiveNodeEvent(nodeId) || this.metadata.nodes.find(n => n.nodeId === nodeId);
     if (nodeEvent) {
       if (!nodeEvent.screenshotPaths) {
         nodeEvent.screenshotPaths = {};
       }
       nodeEvent.screenshotPaths[timing] = screenshotPath;
     } else {
-      // If node event doesn't exist yet (shouldn't happen, but handle gracefully),
-      // log a warning. This can happen if screenshot is taken before node start is recorded.
       console.warn(`Cannot record screenshot for node ${nodeId}: node event not found. Screenshot path: ${screenshotPath}`);
     }
   }
 
   recordAccessibilitySnapshot(nodeId: string, snapshotPath: string, timing: 'pre' | 'post' | 'failure'): void {
-    const nodeEvent = this.metadata.nodes.find(n => n.nodeId === nodeId);
+    const nodeEvent = this.findActiveNodeEvent(nodeId) || this.metadata.nodes.find(n => n.nodeId === nodeId);
     if (nodeEvent) {
       if (!nodeEvent.accessibilitySnapshotPaths) {
         nodeEvent.accessibilitySnapshotPaths = {};
@@ -194,7 +205,7 @@ export class ExecutionTracker {
   }
 
   recordVideo(nodeId: string, videoPath: string): void {
-    const nodeEvent = this.metadata.nodes.find(n => n.nodeId === nodeId);
+    const nodeEvent = this.findActiveNodeEvent(nodeId) || this.metadata.nodes.find(n => n.nodeId === nodeId);
     if (nodeEvent) {
       nodeEvent.videoPath = videoPath;
     } else {

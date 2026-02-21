@@ -36,6 +36,7 @@ export const renderScreenshotProperties: PropertyRenderer = ({ renderData, handl
           value={renderData.selector || ''}
           onChange={(value) => handlePropertyChange('selector', value)}
           placeholder="#element"
+          field="selector"
           onOpenPopup={handleOpenPopup}
         />
       ), 1)}
@@ -56,6 +57,7 @@ export const renderScreenshotProperties: PropertyRenderer = ({ renderData, handl
           value={renderData.path || ''}
           onChange={(value) => handlePropertyChange('path', value)}
           placeholder="screenshot.png (optional)"
+          field="path"
           onOpenPopup={handleOpenPopup}
         />
       ), 1)}
@@ -65,6 +67,7 @@ export const renderScreenshotProperties: PropertyRenderer = ({ renderData, handl
           value={renderData.waitForSelector || ''}
           onChange={(value) => handlePropertyChange('waitForSelector', value)}
           placeholder=".my-class"
+          field="waitForSelector"
           onOpenPopup={handleOpenPopup}
         />
       ), 2)}
@@ -82,6 +85,7 @@ export const renderScreenshotProperties: PropertyRenderer = ({ renderData, handl
           value={renderData.waitForUrl || ''}
           onChange={(value) => handlePropertyChange('waitForUrl', value)}
           placeholder="/pattern/ or exact-url"
+          field="waitForUrl"
           onOpenPopup={handleOpenPopup}
         />
       ), 4)}
@@ -91,6 +95,7 @@ export const renderScreenshotProperties: PropertyRenderer = ({ renderData, handl
           value={renderData.waitForCondition || ''}
           onChange={(value) => handlePropertyChange('waitForCondition', value)}
           placeholder="() => document.querySelector('.loaded')"
+          field="waitForCondition"
           onOpenPopup={handleOpenPopup}
         />
       ), 5)}
@@ -122,6 +127,7 @@ export const renderScreenshotProperties: PropertyRenderer = ({ renderData, handl
           value={renderData.retryCount || 3}
           onChange={(value) => handlePropertyChange('retryCount', value)}
           placeholder="3"
+          field="retryCount"
           onOpenPopup={handleOpenPopup}
         />
       ), 8)}

@@ -47,6 +47,7 @@ export const renderNavigationProperties: PropertyRenderer = ({ renderData, handl
           value={renderData.url || ''}
           onChange={(value) => handlePropertyChange('url', value)}
           placeholder="https://example.com"
+          field="url"
           onOpenPopup={handleOpenPopup}
         />
       ), 1)}
@@ -56,6 +57,7 @@ export const renderNavigationProperties: PropertyRenderer = ({ renderData, handl
           value={renderData.referer || ''}
           onChange={(value) => handlePropertyChange('referer', value)}
           placeholder="https://referer.com"
+          field="referer"
           onOpenPopup={handleOpenPopup}
         />
       ), 2)}
@@ -78,6 +80,7 @@ export const renderNavigationProperties: PropertyRenderer = ({ renderData, handl
           value={renderData.tabIndex !== undefined ? renderData.tabIndex : ''}
           onChange={(value) => handlePropertyChange('tabIndex', value !== '' ? value : undefined)}
           placeholder="Leave empty for URL pattern"
+          field="tabIndex"
           onOpenPopup={handleOpenPopup}
         />
       ), 3)}
@@ -87,6 +90,7 @@ export const renderNavigationProperties: PropertyRenderer = ({ renderData, handl
           value={renderData.urlPattern || ''}
           onChange={(value) => handlePropertyChange('urlPattern', value)}
           placeholder="/example\.com/ or example.com"
+          field="urlPattern"
           onOpenPopup={handleOpenPopup}
         />
       ), 4)}
@@ -96,6 +100,7 @@ export const renderNavigationProperties: PropertyRenderer = ({ renderData, handl
           value={renderData.tabIndex !== undefined ? renderData.tabIndex : ''}
           onChange={(value) => handlePropertyChange('tabIndex', value !== '' ? value : undefined)}
           placeholder="Leave empty for current tab"
+          field="tabIndex"
           onOpenPopup={handleOpenPopup}
         />
       ), 3)}
@@ -105,6 +110,7 @@ export const renderNavigationProperties: PropertyRenderer = ({ renderData, handl
           value={renderData.timeout || 30000}
           onChange={(value) => handlePropertyChange('timeout', value)}
           placeholder="30000"
+          field="timeout"
           onOpenPopup={handleOpenPopup}
         />
       ), 5)}

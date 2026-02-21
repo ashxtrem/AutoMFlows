@@ -24,6 +24,7 @@ export const renderCsvHandleProperties: PropertyRenderer = ({ renderData, handle
           value={renderData.filePath || ''}
           onChange={(value) => handlePropertyChange('filePath', value)}
           placeholder={action === 'read' ? 'path/to/file.csv' : '${data.outputDirectory}/out.csv'}
+          field="filePath"
           onOpenPopup={handleOpenPopup}
         />
       ), 1)}
@@ -33,6 +34,7 @@ export const renderCsvHandleProperties: PropertyRenderer = ({ renderData, handle
           value={renderData.dataSource || ''}
           onChange={(value) => handlePropertyChange('dataSource', value)}
           placeholder="products"
+          field="dataSource"
           onOpenPopup={handleOpenPopup}
         />
       ), 2)}
@@ -42,6 +44,7 @@ export const renderCsvHandleProperties: PropertyRenderer = ({ renderData, handle
           value={renderData.contextKey || 'csvData'}
           onChange={(value) => handlePropertyChange('contextKey', value)}
           placeholder="csvData"
+          field="contextKey"
           onOpenPopup={handleOpenPopup}
         />
       ), 2)}

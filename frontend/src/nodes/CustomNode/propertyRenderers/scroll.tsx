@@ -39,6 +39,7 @@ export const renderScrollProperties: PropertyRenderer = ({ renderData, handlePro
           value={renderData.selector || ''}
           onChange={(value) => handlePropertyChange('selector', value)}
           placeholder="#element"
+          field="selector"
           onOpenPopup={handleOpenPopup}
         />
       ), 1)}
@@ -50,6 +51,7 @@ export const renderScrollProperties: PropertyRenderer = ({ renderData, handlePro
               value={renderData.x || 0}
               onChange={(value) => handlePropertyChange('x', value)}
               placeholder="0"
+              field="x"
               onOpenPopup={handleOpenPopup}
             />
           ), 1)}
@@ -59,6 +61,7 @@ export const renderScrollProperties: PropertyRenderer = ({ renderData, handlePro
               value={renderData.y || 0}
               onChange={(value) => handlePropertyChange('y', value)}
               placeholder="0"
+              field="y"
               onOpenPopup={handleOpenPopup}
             />
           ), 2)}
@@ -72,6 +75,7 @@ export const renderScrollProperties: PropertyRenderer = ({ renderData, handlePro
               value={renderData.deltaX || 0}
               onChange={(value) => handlePropertyChange('deltaX', value)}
               placeholder="0"
+              field="deltaX"
               onOpenPopup={handleOpenPopup}
             />
           ), 1)}
@@ -81,6 +85,7 @@ export const renderScrollProperties: PropertyRenderer = ({ renderData, handlePro
               value={renderData.deltaY || 0}
               onChange={(value) => handlePropertyChange('deltaY', value)}
               placeholder="0"
+              field="deltaY"
               onOpenPopup={handleOpenPopup}
             />
           ), 2)}
@@ -92,6 +97,7 @@ export const renderScrollProperties: PropertyRenderer = ({ renderData, handlePro
           value={renderData.timeout || 30000}
           onChange={(value) => handlePropertyChange('timeout', value)}
           placeholder="30000"
+          field="timeout"
           onOpenPopup={handleOpenPopup}
         />
       ), 3)}

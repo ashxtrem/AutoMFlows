@@ -45,8 +45,6 @@ export function useCanvasHandlers({
   const { 
     setSelectedNodeIds, 
     setSelectedGroupId,
-    failedNodes,
-    showErrorPopupForNode,
     selectedNodeIds,
     nodes,
   } = useWorkflowStore();
@@ -93,11 +91,6 @@ export function useCanvasHandlers({
   }, []);
 
   const onNodeClick = useCallback((e: React.MouseEvent, node: any) => {
-    // If node has failed, show error popup
-    if (failedNodes.has(node.id)) {
-      showErrorPopupForNode(node.id);
-    }
-    
     // Handle Ctrl/Cmd+Click for toggle selection
     const isModifierPressed = e.metaKey || e.ctrlKey;
     if (isModifierPressed) {
@@ -132,7 +125,7 @@ export function useCanvasHandlers({
       }
     }
     // Node click no longer opens property panel - use context menu instead
-  }, [failedNodes, showErrorPopupForNode, setSelectedNodeIds, setNodes]);
+  }, [setSelectedNodeIds, setNodes]);
 
   const onPaneClick = useCallback((e: React.MouseEvent) => {
     const now = Date.now();

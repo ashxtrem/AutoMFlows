@@ -51,6 +51,7 @@ export const renderActionProperties: PropertyRenderer = ({ renderData, handlePro
           value={renderData.selector || ''}
           onChange={(value) => handlePropertyChange('selector', value)}
           placeholder={getSelectorPlaceholder(renderData.selectorType || 'css')}
+          field="selector"
           onOpenPopup={handleOpenPopup}
         />
       ), 2)}
@@ -79,6 +80,7 @@ export const renderActionProperties: PropertyRenderer = ({ renderData, handlePro
           value={renderData.delay || 0}
           onChange={(value) => handlePropertyChange('delay', value)}
           placeholder="0"
+          field="delay"
           onOpenPopup={handleOpenPopup}
         />
       ), 3)}
@@ -101,6 +103,7 @@ export const renderActionProperties: PropertyRenderer = ({ renderData, handlePro
               value={renderData.targetSelector || ''}
               onChange={(value) => handlePropertyChange('targetSelector', value)}
               placeholder={getSelectorPlaceholder(renderData.targetSelectorType || 'css')}
+              field="targetSelector"
               onOpenPopup={handleOpenPopup}
             />
           ), 5)}
@@ -119,6 +122,7 @@ export const renderActionProperties: PropertyRenderer = ({ renderData, handlePro
                   value={renderData.targetX || 0}
                   onChange={(value) => handlePropertyChange('targetX', value)}
                   placeholder="X coordinate"
+                  field="targetX"
                   onOpenPopup={handleOpenPopup}
                 />
               ), 6)}
@@ -128,6 +132,7 @@ export const renderActionProperties: PropertyRenderer = ({ renderData, handlePro
                   value={renderData.targetY || 0}
                   onChange={(value) => handlePropertyChange('targetY', value)}
                   placeholder="Y coordinate"
+                  field="targetY"
                   onOpenPopup={handleOpenPopup}
                 />
               ), 7)}
@@ -141,6 +146,7 @@ export const renderActionProperties: PropertyRenderer = ({ renderData, handlePro
           value={renderData.timeout || 30000}
           onChange={(value) => handlePropertyChange('timeout', value)}
           placeholder="30000"
+          field="timeout"
           onOpenPopup={handleOpenPopup}
         />
       ), action === 'dragAndDrop' ? (renderData.targetX !== undefined || renderData.targetY !== undefined ? 8 : 6) : (action === 'click' || action === 'rightClick' ? 4 : (action === 'hover' || action === 'doubleClick' ? 4 : 3)))}
@@ -150,6 +156,7 @@ export const renderActionProperties: PropertyRenderer = ({ renderData, handlePro
           value={renderData.waitForSelector || ''}
           onChange={(value) => handlePropertyChange('waitForSelector', value)}
           placeholder=".my-class"
+          field="waitForSelector"
           onOpenPopup={handleOpenPopup}
         />
       ), 5)}
@@ -167,6 +174,7 @@ export const renderActionProperties: PropertyRenderer = ({ renderData, handlePro
           value={renderData.waitForUrl || ''}
           onChange={(value) => handlePropertyChange('waitForUrl', value)}
           placeholder="/pattern/ or exact-url"
+          field="waitForUrl"
           onOpenPopup={handleOpenPopup}
         />
       ), 7)}
@@ -176,6 +184,7 @@ export const renderActionProperties: PropertyRenderer = ({ renderData, handlePro
           value={renderData.waitForCondition || ''}
           onChange={(value) => handlePropertyChange('waitForCondition', value)}
           placeholder="() => document.querySelector('.loaded')"
+          field="waitForCondition"
           onOpenPopup={handleOpenPopup}
         />
       ), 8)}
@@ -207,6 +216,7 @@ export const renderActionProperties: PropertyRenderer = ({ renderData, handlePro
           value={renderData.retryCount || 3}
           onChange={(value) => handlePropertyChange('retryCount', value)}
           placeholder="3"
+          field="retryCount"
           onOpenPopup={handleOpenPopup}
         />
       ), 11)}

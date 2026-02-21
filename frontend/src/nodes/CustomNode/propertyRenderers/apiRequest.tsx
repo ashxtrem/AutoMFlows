@@ -26,6 +26,7 @@ export const renderApiRequestProperties: PropertyRenderer = ({ renderData, handl
           value={renderData.url || ''}
           onChange={(value) => handlePropertyChange('url', value)}
           placeholder="https://api.example.com/users"
+          field="url"
           onOpenPopup={handleOpenPopup}
         />
       ), 1)}
@@ -35,6 +36,7 @@ export const renderApiRequestProperties: PropertyRenderer = ({ renderData, handl
           value={renderData.contextKey || 'apiResponse'}
           onChange={(value) => handlePropertyChange('contextKey', value)}
           placeholder="apiResponse"
+          field="contextKey"
           onOpenPopup={handleOpenPopup}
         />
       ), 2)}
@@ -44,6 +46,7 @@ export const renderApiRequestProperties: PropertyRenderer = ({ renderData, handl
           value={renderData.timeout || 30000}
           onChange={(value) => handlePropertyChange('timeout', value)}
           placeholder="30000"
+          field="timeout"
           onOpenPopup={handleOpenPopup}
         />
       ), 3)}

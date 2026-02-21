@@ -30,6 +30,7 @@ export const renderStorageProperties: PropertyRenderer = ({ renderData, handlePr
           value={renderData.contextKey || 'storageResult'}
           onChange={(value) => handlePropertyChange('contextKey', value)}
           placeholder="storageResult"
+          field="contextKey"
           onOpenPopup={handleOpenPopup}
         />
       ), 1)}

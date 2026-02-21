@@ -824,35 +824,106 @@ export class Executor {
                 
                 // Execute each child node for this iteration
                 for (const childNodeId of childNodeIds) {
-                  // Skip if marked as skipped
                   if (skippedNodes.has(childNodeId)) {
                     continue;
                   }
                   
-                  // Get the child node
                   const childNode = this.parser.getNode(childNodeId);
                   if (!childNode) {
                     continue;
                   }
                   
-                  // Resolve property inputs
                   const resolvedChildNode = resolvePropertyInputs(childNode, this.workflow, this.parser, this.context, (message: string) => this.traceLog(message));
                   
-                  // Get handler
                   const childHandler = nodeHandlers.getNodeHandler(resolvedChildNode.type);
                   if (!childHandler) {
                     this.traceLog(`[TRACE] Warning: No handler found for child node type: ${resolvedChildNode.type}`);
                     continue;
                   }
                   
-                  // Execute child node
-                  this.traceLog(`[TRACE] Executing loop child node: ${childNodeId} (type: ${resolvedChildNode.type})`);
-                  await childHandler.execute(resolvedChildNode, this.context);
-                  this.traceLog(`[TRACE] Loop child node ${childNodeId} completed successfully`);
-                  
-                  // Apply slowmo delay if enabled
-                  if (this.slowMo > 0) {
-                    await new Promise(resolve => setTimeout(resolve, this.slowMo));
+                  if (this.executionTracker) {
+                    this.executionTracker.recordNodeStart(childNode, { iteration: i, parentLoopNodeId: nodeId });
+                  }
+                  this.emitEvent({
+                    type: ExecutionEventType.NODE_START,
+                    nodeId: childNodeId,
+                    timestamp: Date.now(),
+                  });
+
+                  if (this.screenshotConfig?.enabled && 
+                      (this.screenshotConfig.timing === 'pre' || this.screenshotConfig.timing === 'both')) {
+                    await takeNodeScreenshot(childNodeId, 'pre', this.context, this.playwright, this.executionTracker);
+                  }
+                  if (this.snapshotConfig?.enabled && 
+                      (this.snapshotConfig.timing === 'pre' || this.snapshotConfig.timing === 'both')) {
+                    await takeNodeAccessibilitySnapshot(childNodeId, 'pre', this.context, this.executionTracker);
+                  }
+
+                  try {
+                    this.traceLog(`[TRACE] Executing loop child node: ${childNodeId} (type: ${resolvedChildNode.type})`);
+                    await childHandler.execute(resolvedChildNode, this.context);
+                    this.traceLog(`[TRACE] Loop child node ${childNodeId} completed successfully`);
+
+                    if (this.screenshotConfig?.enabled && 
+                        (this.screenshotConfig.timing === 'post' || this.screenshotConfig.timing === 'both')) {
+                      await takeNodeScreenshot(childNodeId, 'post', this.context, this.playwright, this.executionTracker);
+                    }
+                    if (this.snapshotConfig?.enabled && 
+                        (this.snapshotConfig.timing === 'post' || this.snapshotConfig.timing === 'both')) {
+                      await takeNodeAccessibilitySnapshot(childNodeId, 'post', this.context, this.executionTracker);
+                    }
+
+                    if (this.executionTracker) {
+                      this.executionTracker.recordNodeComplete(childNodeId);
+                    }
+
+                    this.emitEvent({
+                      type: ExecutionEventType.NODE_COMPLETE,
+                      nodeId: childNodeId,
+                      timestamp: Date.now(),
+                    });
+
+                    if (this.slowMo > 0) {
+                      await new Promise(resolve => setTimeout(resolve, this.slowMo));
+                    }
+                  } catch (childError: any) {
+                    this.traceLog(`[TRACE] Loop child node ${childNodeId} failed: ${childError.message}`);
+
+                    if (this.executionTracker) {
+                      try {
+                        const page = this.context.getPage();
+                        if (page && (!page.isClosed || !page.isClosed())) {
+                          await takeNodeScreenshot(childNodeId, 'failure', this.context, this.playwright, this.executionTracker);
+                          if (this.snapshotConfig?.enabled) {
+                            await takeNodeAccessibilitySnapshot(childNodeId, 'failure', this.context, this.executionTracker);
+                          }
+                        }
+                      } catch (screenshotError: any) {
+                        console.warn(`Failed to take failure screenshot for loop child node ${childNodeId}: ${screenshotError.message}`);
+                      }
+                    }
+
+                    const childNodeData = childNode.data as any;
+                    const childFailSilently = childNodeData?.failSilently === true;
+
+                    this.emitEvent({
+                      type: ExecutionEventType.NODE_ERROR,
+                      nodeId: childNodeId,
+                      message: childError.message,
+                      failSilently: childFailSilently,
+                      timestamp: Date.now(),
+                    });
+
+                    if (this.executionTracker) {
+                      this.executionTracker.recordNodeError(childNodeId, childError.message);
+                    }
+
+                    if (childFailSilently) {
+                      this.traceLog(`[TRACE] Loop child node ${childNodeId} failed silently, continuing loop`);
+                      continue;
+                    }
+
+                    throw childError;
                   }
                 }
               }
@@ -900,35 +971,106 @@ export class Executor {
                   
                   // Execute each child node for this iteration
                   for (const childNodeId of childNodeIds) {
-                    // Skip if marked as skipped
                     if (skippedNodes.has(childNodeId)) {
                       continue;
                     }
                     
-                    // Get the child node
                     const childNode = this.parser.getNode(childNodeId);
                     if (!childNode) {
                       continue;
                     }
                     
-                    // Resolve property inputs
                     const resolvedChildNode = resolvePropertyInputs(childNode, this.workflow, this.parser, this.context, (message: string) => this.traceLog(message));
                     
-                    // Get handler
                     const childHandler = nodeHandlers.getNodeHandler(resolvedChildNode.type);
                     if (!childHandler) {
                       this.traceLog(`[TRACE] Warning: No handler found for child node type: ${resolvedChildNode.type}`);
                       continue;
                     }
                     
-                    // Execute child node
-                    this.traceLog(`[TRACE] Executing loop child node: ${childNodeId} (type: ${resolvedChildNode.type})`);
-                    await childHandler.execute(resolvedChildNode, this.context);
-                    this.traceLog(`[TRACE] Loop child node ${childNodeId} completed successfully`);
-                    
-                    // Apply slowmo delay if enabled
-                    if (this.slowMo > 0) {
-                      await new Promise(resolve => setTimeout(resolve, this.slowMo));
+                    if (this.executionTracker) {
+                      this.executionTracker.recordNodeStart(childNode, { iteration: iterationCount, parentLoopNodeId: nodeId });
+                    }
+                    this.emitEvent({
+                      type: ExecutionEventType.NODE_START,
+                      nodeId: childNodeId,
+                      timestamp: Date.now(),
+                    });
+
+                    if (this.screenshotConfig?.enabled && 
+                        (this.screenshotConfig.timing === 'pre' || this.screenshotConfig.timing === 'both')) {
+                      await takeNodeScreenshot(childNodeId, 'pre', this.context, this.playwright, this.executionTracker);
+                    }
+                    if (this.snapshotConfig?.enabled && 
+                        (this.snapshotConfig.timing === 'pre' || this.snapshotConfig.timing === 'both')) {
+                      await takeNodeAccessibilitySnapshot(childNodeId, 'pre', this.context, this.executionTracker);
+                    }
+
+                    try {
+                      this.traceLog(`[TRACE] Executing loop child node: ${childNodeId} (type: ${resolvedChildNode.type})`);
+                      await childHandler.execute(resolvedChildNode, this.context);
+                      this.traceLog(`[TRACE] Loop child node ${childNodeId} completed successfully`);
+
+                      if (this.screenshotConfig?.enabled && 
+                          (this.screenshotConfig.timing === 'post' || this.screenshotConfig.timing === 'both')) {
+                        await takeNodeScreenshot(childNodeId, 'post', this.context, this.playwright, this.executionTracker);
+                      }
+                      if (this.snapshotConfig?.enabled && 
+                          (this.snapshotConfig.timing === 'post' || this.snapshotConfig.timing === 'both')) {
+                        await takeNodeAccessibilitySnapshot(childNodeId, 'post', this.context, this.executionTracker);
+                      }
+
+                      if (this.executionTracker) {
+                        this.executionTracker.recordNodeComplete(childNodeId);
+                      }
+
+                      this.emitEvent({
+                        type: ExecutionEventType.NODE_COMPLETE,
+                        nodeId: childNodeId,
+                        timestamp: Date.now(),
+                      });
+
+                      if (this.slowMo > 0) {
+                        await new Promise(resolve => setTimeout(resolve, this.slowMo));
+                      }
+                    } catch (childError: any) {
+                      this.traceLog(`[TRACE] Loop child node ${childNodeId} failed: ${childError.message}`);
+
+                      if (this.executionTracker) {
+                        try {
+                          const page = this.context.getPage();
+                          if (page && (!page.isClosed || !page.isClosed())) {
+                            await takeNodeScreenshot(childNodeId, 'failure', this.context, this.playwright, this.executionTracker);
+                            if (this.snapshotConfig?.enabled) {
+                              await takeNodeAccessibilitySnapshot(childNodeId, 'failure', this.context, this.executionTracker);
+                            }
+                          }
+                        } catch (screenshotError: any) {
+                          console.warn(`Failed to take failure screenshot for loop child node ${childNodeId}: ${screenshotError.message}`);
+                        }
+                      }
+
+                      const childNodeData = childNode.data as any;
+                      const childFailSilently = childNodeData?.failSilently === true;
+
+                      this.emitEvent({
+                        type: ExecutionEventType.NODE_ERROR,
+                        nodeId: childNodeId,
+                        message: childError.message,
+                        failSilently: childFailSilently,
+                        timestamp: Date.now(),
+                      });
+
+                      if (this.executionTracker) {
+                        this.executionTracker.recordNodeError(childNodeId, childError.message);
+                      }
+
+                      if (childFailSilently) {
+                        this.traceLog(`[TRACE] Loop child node ${childNodeId} failed silently, continuing loop`);
+                        continue;
+                      }
+
+                      throw childError;
                     }
                   }
                   

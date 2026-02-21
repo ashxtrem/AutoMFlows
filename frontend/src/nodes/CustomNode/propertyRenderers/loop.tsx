@@ -54,6 +54,7 @@ export const renderLoopProperties: PropertyRenderer = ({ renderData, handlePrope
             value={renderData.arrayVariable || ''}
             onChange={(value) => handlePropertyChange('arrayVariable', value)}
             placeholder="items (variable name)"
+            field="arrayVariable"
             onOpenPopup={handleOpenPopup}
           />
         ), 1)
