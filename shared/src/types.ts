@@ -826,7 +826,8 @@ export interface SwitchCondition {
   type: 'ui-element' | 'api-status' | 'api-json-path' | 'javascript' | 'variable';
   // UI element condition fields
   selector?: string;
-  selectorType?: 'css' | 'xpath';
+  selectorType?: SelectorType;
+  selectorModifiers?: SelectorModifiers;
   elementCheck?: 'visible' | 'hidden' | 'exists';
   // API condition fields
   apiContextKey?: string;

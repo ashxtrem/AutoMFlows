@@ -207,16 +207,31 @@ export function useShortcuts({
 
       // Ctrl/Cmd + V: Paste nodes (at mouse position or center)
       if (isModifierPressed && e.key === 'v' && !e.shiftKey) {
-        const clipboard = useWorkflowStore.getState().clipboard;
-        if (clipboard && reactFlowWrapper.current) {
-          e.preventDefault();
-          e.stopPropagation();
-          const rect = reactFlowWrapper.current.getBoundingClientRect();
-          const centerX = rect.width / 2;
-          const centerY = rect.height / 2;
-          const flowPosition = screenToFlowPosition({ x: centerX, y: centerY });
-          pasteNode(flowPosition);
-        }
+        if (!reactFlowWrapper.current) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        const rect = reactFlowWrapper.current.getBoundingClientRect();
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+        const flowPosition = screenToFlowPosition({ x: centerX, y: centerY });
+
+        (async () => {
+          try {
+            const text = await navigator.clipboard.readText();
+            const parsed = JSON.parse(text);
+            if (parsed && parsed._automflows === true && Array.isArray(parsed.nodes) && parsed.nodes.length > 0) {
+              useWorkflowStore.getState().pasteFromClipboardData(parsed, flowPosition);
+              return;
+            }
+          } catch {
+            // System clipboard unavailable or content is not ours — fall back
+          }
+          const clipboard = useWorkflowStore.getState().clipboard;
+          if (clipboard) {
+            pasteNode(flowPosition);
+          }
+        })();
         return;
       }
 

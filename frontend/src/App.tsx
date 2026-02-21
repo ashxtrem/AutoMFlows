@@ -31,6 +31,7 @@ function App() {
   const failedNodes = useWorkflowStore((state) => state.failedNodes);
   const errorPopupNodeId = useWorkflowStore((state) => state.errorPopupNodeId);
   const showErrorPopupForNode = useWorkflowStore((state) => state.showErrorPopupForNode);
+  const executionStatus = useWorkflowStore((state) => state.executionStatus);
   const canvasReloading = useWorkflowStore((state) => state.canvasReloading);
   const pauseReason = useWorkflowStore((state) => state.pauseReason);
   const pausedNodeId = useWorkflowStore((state) => state.pausedNodeId);
@@ -164,61 +165,46 @@ function App() {
     loadPluginData();
   }, []);
 
-  // Track dismissed popups to prevent auto-reopening
-  const dismissedPopupRef = useRef<Set<string>>(new Set());
-  
-  // Show error popup when a node fails (only open new popup, don't auto-close or reopen dismissed ones)
-  const prevFailedNodesRef = useRef<Map<string, any>>(new Map());
+  // Auto-open error popup only at end of flow: show the last failed node's error.
+  // During execution, user can click on any failed node header to inspect errors manually.
+  const prevExecutionStatusRef = useRef(executionStatus);
   useEffect(() => {
-    // Only auto-open if:
-    // 1. There are failed nodes
-    // 2. No popup is currently open
-    // 3. A new node failed (failedNodes size increased)
-    const hasNewFailedNode = failedNodes.size > prevFailedNodesRef.current.size;
-    if (failedNodes.size > 0 && !errorPopupNodeId && !browserInstallError && hasNewFailedNode) {
-      // Find first failed node that hasn't been dismissed
-      const firstFailedNodeId = Array.from(failedNodes.keys()).find(
-        nodeId => !dismissedPopupRef.current.has(nodeId)
-      );
-      
-      if (firstFailedNodeId) {
-        const error = failedNodes.get(firstFailedNodeId);
+    const wasRunning = prevExecutionStatusRef.current === 'running';
+    prevExecutionStatusRef.current = executionStatus;
+
+    if (!wasRunning || executionStatus === 'running') return;
+
+    // Execution just finished — check for failed nodes after a small delay
+    // to ensure all node errors have been recorded by the store.
+    setTimeout(() => {
+      const currentFailedNodes = useWorkflowStore.getState().failedNodes;
+      if (currentFailedNodes.size > 0) {
+        const failedNodeIds = Array.from(currentFailedNodes.keys());
+        const lastFailedNodeId = failedNodeIds[failedNodeIds.length - 1];
+        const error = currentFailedNodes.get(lastFailedNodeId);
         const errorMessage = error?.message || '';
-        
-        // Check if this is a browser installation error
+
         const browserInstallMatch = errorMessage.match(/(Chromium|Firefox|Webkit|WebKit)\s+is\s+not\s+installed/i);
         if (browserInstallMatch) {
           let browserName = browserInstallMatch[1];
-          // Normalize Webkit to WebKit
           if (browserName.toLowerCase() === 'webkit') {
             browserName = 'WebKit';
           }
-          setBrowserInstallError({ nodeId: firstFailedNodeId, browserName });
+          setBrowserInstallError({ nodeId: lastFailedNodeId, browserName });
         } else {
-          showErrorPopupForNode(firstFailedNodeId);
+          showErrorPopupForNode(lastFailedNodeId);
         }
       }
-    }
-    // Update ref to track previous state
-    prevFailedNodesRef.current = new Map(failedNodes);
-    // Don't auto-close popup when failedNodes becomes empty - let user dismiss it manually
-  }, [failedNodes, errorPopupNodeId, browserInstallError, showErrorPopupForNode]);
+    }, 200);
+  }, [executionStatus, showErrorPopupForNode]);
 
   const handleCloseErrorPopup = useCallback(() => {
-    if (errorPopupNodeId) {
-      // Mark this node's popup as dismissed to prevent auto-reopening
-      dismissedPopupRef.current.add(errorPopupNodeId);
-    }
     showErrorPopupForNode(null);
-  }, [showErrorPopupForNode, errorPopupNodeId]);
+  }, [showErrorPopupForNode]);
 
   const handleCloseBrowserInstallError = useCallback(() => {
-    if (browserInstallError) {
-      // Mark this node's popup as dismissed to prevent auto-reopening
-      dismissedPopupRef.current.add(browserInstallError.nodeId);
-    }
     setBrowserInstallError(null);
-  }, [browserInstallError]);
+  }, []);
 
   const errorPopupError = errorPopupNodeId ? failedNodes.get(errorPopupNodeId) : null;
 

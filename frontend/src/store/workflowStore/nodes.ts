@@ -1,5 +1,5 @@
 import { StateCreator } from 'zustand';
-import { Node, NodeChange, applyNodeChanges } from 'reactflow';
+import { Node, Edge, NodeChange, applyNodeChanges } from 'reactflow';
 import { NodeType } from '@automflows/shared';
 import { WorkflowStoreStateWithNodes } from './slices';
 import { reconnectEdgesOnNodeDeletion } from './utils';
@@ -7,6 +7,13 @@ import { getNodeLabel, getDefaultNodeData } from './utils';
 import { getPropertyInputHandleId } from '../../utils/nodeProperties';
 import { Group } from './types';
 import { WorkflowSnapshot } from './types';
+
+export interface AutomflowsClipboardData {
+  _automflows: true;
+  version: number;
+  nodes: Node[];
+  edges: Edge[];
+}
 
 export interface NodesSlice {
   setNodes: (nodes: Node[]) => void;
@@ -20,6 +27,7 @@ export interface NodesSlice {
   updateNodeDimensions: (nodeId: string, width: number, height?: number) => void;
   copyNode: (nodeId: string | string[]) => void;
   pasteNode: (position: { x: number; y: number }) => void;
+  pasteFromClipboardData: (data: AutomflowsClipboardData, position: { x: number; y: number }) => void;
   duplicateNode: (nodeId: string | string[]) => void;
   renameNode: (nodeId: string, label: string) => void;
   deleteNode: (nodeId: string | string[]) => void;
@@ -465,12 +473,29 @@ export const createNodesSlice: StateCreator<
     
     if (nodesToCopy.length === 0) return;
     
+    const serializedNodes = JSON.parse(JSON.stringify(nodesToCopy));
+    
     if (nodesToCopy.length === 1) {
-      // Single node: store as single Node
-      set({ clipboard: JSON.parse(JSON.stringify(nodesToCopy[0])) });
+      set({ clipboard: serializedNodes[0] });
     } else {
-      // Multiple nodes: store as array, maintaining relative positions
-      set({ clipboard: JSON.parse(JSON.stringify(nodesToCopy)) });
+      set({ clipboard: serializedNodes });
+    }
+
+    // Write to system clipboard for cross-tab paste support
+    const nodeIdSet = new Set(nodeIds);
+    const connectedEdges = state.edges.filter(
+      (e) => nodeIdSet.has(e.source) && nodeIdSet.has(e.target)
+    );
+    const payload = {
+      _automflows: true,
+      version: 1,
+      nodes: serializedNodes,
+      edges: JSON.parse(JSON.stringify(connectedEdges)),
+    };
+    try {
+      navigator.clipboard.writeText(JSON.stringify(payload));
+    } catch {
+      // System clipboard unavailable (non-secure context, etc.)
     }
   },
 
@@ -515,6 +540,49 @@ export const createNodesSlice: StateCreator<
       });
     }
     
+    setTimeout(() => get().saveToHistory(), 100);
+  },
+
+  pasteFromClipboardData: (data, position) => {
+    const { nodes: clipboardNodes, edges: clipboardEdges } = data;
+    if (!clipboardNodes || clipboardNodes.length === 0) return;
+
+    const state = get();
+    const timestamp = Date.now();
+
+    const firstNode = clipboardNodes[0];
+    const offsetX = position.x - firstNode.position.x;
+    const offsetY = position.y - firstNode.position.y;
+
+    const idMap = new Map<string, string>();
+    const newNodes: Node[] = clipboardNodes.map((node, index) => {
+      const newId = `${node.data.type}-${timestamp}-${index}`;
+      idMap.set(node.id, newId);
+      return {
+        ...JSON.parse(JSON.stringify(node)),
+        id: newId,
+        selected: false,
+        position: {
+          x: node.position.x + offsetX,
+          y: node.position.y + offsetY,
+        },
+      };
+    });
+
+    const newEdges: Edge[] = (clipboardEdges || [])
+      .filter((e) => idMap.has(e.source) && idMap.has(e.target))
+      .map((edge, index) => ({
+        ...JSON.parse(JSON.stringify(edge)),
+        id: `edge-${timestamp}-${index}`,
+        source: idMap.get(edge.source)!,
+        target: idMap.get(edge.target)!,
+      }));
+
+    set({
+      nodes: [...state.nodes, ...newNodes],
+      edges: [...state.edges, ...newEdges],
+    });
+
     setTimeout(() => get().saveToHistory(), 100);
   },
 

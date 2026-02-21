@@ -4,6 +4,8 @@ import { Node } from 'reactflow';
 import { usePropertyInput } from '../../hooks/usePropertyInput';
 import PropertyEditorPopup from '../PropertyEditorPopup';
 import { SwitchCondition } from '@automflows/shared';
+import { getSelectorPlaceholder, getSelectorHelpText, SELECTOR_TYPE_OPTIONS } from '../../utils/selectorHelpers';
+import SelectorModifiersEditor from '../SelectorModifiersEditor';
 
 interface LoopConfigProps {
   node: Node;
@@ -67,26 +69,36 @@ export default function LoopConfig({ node, onChange }: LoopConfigProps) {
         return (
           <>
             <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
+              <select
+                value={condition.selectorType || 'css'}
+                onChange={(e) => updateCondition({ selectorType: e.target.value as any })}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                {SELECTOR_TYPE_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+              {getSelectorHelpText(condition.selectorType || 'css') && (
+                <div className="mt-1 text-xs text-gray-400">
+                  {getSelectorHelpText(condition.selectorType || 'css')}
+                </div>
+              )}
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Selector</label>
               <input
                 type="text"
                 value={condition.selector || ''}
                 onChange={(e) => updateCondition({ selector: e.target.value })}
-                placeholder="#button or //button[@id='button']"
+                placeholder={getSelectorPlaceholder(condition.selectorType || 'css')}
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
-              <select
-                value={condition.selectorType || 'css'}
-                onChange={(e) => updateCondition({ selectorType: e.target.value as 'css' | 'xpath' })}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              >
-                <option value="css">CSS</option>
-                <option value="xpath">XPath</option>
-              </select>
-            </div>
+            <SelectorModifiersEditor
+              value={condition.selectorModifiers}
+              onChange={(v) => updateCondition({ selectorModifiers: v })}
+            />
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Element Check</label>
               <select
