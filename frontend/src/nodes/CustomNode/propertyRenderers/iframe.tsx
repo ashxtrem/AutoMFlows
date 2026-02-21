@@ -24,6 +24,7 @@ export const renderIframeProperties: PropertyRenderer = ({ renderData, handlePro
           value={renderData.timeout || 30000}
           onChange={(value) => handlePropertyChange('timeout', value)}
           placeholder="30000"
+          field="timeout"
           onOpenPopup={handleOpenPopup}
         />
       ), 1)}

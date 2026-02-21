@@ -36,6 +36,7 @@ export const renderContextManipulateProperties: PropertyRenderer = ({ renderData
           value={renderData.contextKey || ''}
           onChange={(value) => handlePropertyChange('contextKey', value)}
           placeholder="default"
+          field="contextKey"
           onOpenPopup={handleOpenPopup}
         />
       ), 1)}
@@ -45,6 +46,7 @@ export const renderContextManipulateProperties: PropertyRenderer = ({ renderData
           value={renderData.stateFilePath || ''}
           onChange={(value) => handlePropertyChange('stateFilePath', value)}
           placeholder="./state/auth-state.json"
+          field="stateFilePath"
           onOpenPopup={handleOpenPopup}
         />
       ), 2)}
@@ -54,6 +56,7 @@ export const renderContextManipulateProperties: PropertyRenderer = ({ renderData
           value={renderData.device || ''}
           onChange={(value) => handlePropertyChange('device', value)}
           placeholder="iPhone 12"
+          field="device"
           onOpenPopup={handleOpenPopup}
         />
       ), 3)}
@@ -65,6 +68,7 @@ export const renderContextManipulateProperties: PropertyRenderer = ({ renderData
               value={renderData.viewportWidth || 1920}
               onChange={(value) => handlePropertyChange('viewportWidth', value)}
               placeholder="1920"
+              field="viewportWidth"
               onOpenPopup={handleOpenPopup}
             />
           ), 4)}
@@ -74,6 +78,7 @@ export const renderContextManipulateProperties: PropertyRenderer = ({ renderData
               value={renderData.viewportHeight || 1080}
               onChange={(value) => handlePropertyChange('viewportHeight', value)}
               placeholder="1080"
+              field="viewportHeight"
               onOpenPopup={handleOpenPopup}
             />
           ), 5)}
@@ -85,6 +90,7 @@ export const renderContextManipulateProperties: PropertyRenderer = ({ renderData
           value={renderData.userAgent || ''}
           onChange={(value) => handlePropertyChange('userAgent', value)}
           placeholder="Mozilla/5.0..."
+          field="userAgent"
           onOpenPopup={handleOpenPopup}
         />
       ), 6)}
@@ -94,6 +100,7 @@ export const renderContextManipulateProperties: PropertyRenderer = ({ renderData
           value={renderData.locale || ''}
           onChange={(value) => handlePropertyChange('locale', value)}
           placeholder="en-US"
+          field="locale"
           onOpenPopup={handleOpenPopup}
         />
       ), 7)}
@@ -103,6 +110,7 @@ export const renderContextManipulateProperties: PropertyRenderer = ({ renderData
           value={renderData.timezoneId || ''}
           onChange={(value) => handlePropertyChange('timezoneId', value)}
           placeholder="America/New_York"
+          field="timezoneId"
           onOpenPopup={handleOpenPopup}
         />
       ), 8)}
@@ -129,6 +137,7 @@ export const renderContextManipulateProperties: PropertyRenderer = ({ renderData
                 handlePropertyChange('geolocation', { ...current, latitude: value });
               }}
               placeholder="40.7128"
+              field="latitude"
               onOpenPopup={handleOpenPopup}
             />
           ), 10)}
@@ -141,6 +150,7 @@ export const renderContextManipulateProperties: PropertyRenderer = ({ renderData
                 handlePropertyChange('geolocation', { ...current, longitude: value });
               }}
               placeholder="-74.0060"
+              field="longitude"
               onOpenPopup={handleOpenPopup}
             />
           ), 11)}
@@ -155,6 +165,7 @@ export const renderContextManipulateProperties: PropertyRenderer = ({ renderData
             handlePropertyChange('permissions', perms);
           }}
           placeholder="geolocation, notifications, camera"
+          field="permissions"
           onOpenPopup={handleOpenPopup}
         />
       ), 12)}

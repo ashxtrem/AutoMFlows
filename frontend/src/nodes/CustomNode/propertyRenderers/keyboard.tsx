@@ -38,6 +38,7 @@ export const renderKeyboardProperties: PropertyRenderer = ({ renderData, handleP
           value={renderData.key || ''}
           onChange={(value) => handlePropertyChange('key', value)}
           placeholder="Enter, Tab"
+          field="key"
           onOpenPopup={handleOpenPopup}
         />
       ), 1)}
@@ -47,6 +48,7 @@ export const renderKeyboardProperties: PropertyRenderer = ({ renderData, handleP
           value={renderData.text || ''}
           onChange={(value) => handlePropertyChange('text', value)}
           placeholder="Text to type"
+          field="text"
           onOpenPopup={handleOpenPopup}
         />
       ), 1)}
@@ -56,6 +58,7 @@ export const renderKeyboardProperties: PropertyRenderer = ({ renderData, handleP
           value={renderData.shortcut || ''}
           onChange={(value) => handlePropertyChange('shortcut', value)}
           placeholder="Control+C"
+          field="shortcut"
           onOpenPopup={handleOpenPopup}
         />
       ), 1)}
@@ -65,6 +68,7 @@ export const renderKeyboardProperties: PropertyRenderer = ({ renderData, handleP
           value={renderData.timeout || 30000}
           onChange={(value) => handlePropertyChange('timeout', value)}
           placeholder="30000"
+          field="timeout"
           onOpenPopup={handleOpenPopup}
         />
       ), 2)}

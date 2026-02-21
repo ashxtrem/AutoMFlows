@@ -23,6 +23,7 @@ export const renderDbConnectProperties: PropertyRenderer = ({ renderData, handle
           value={renderData.connectionKey || 'dbConnection'}
           onChange={(value) => handlePropertyChange('connectionKey', value)}
           placeholder="dbConnection"
+          field="connectionKey"
           onOpenPopup={handleOpenPopup}
         />
       ), 1)}
@@ -32,6 +33,7 @@ export const renderDbConnectProperties: PropertyRenderer = ({ renderData, handle
           value={renderData.configKey || ''}
           onChange={(value) => handlePropertyChange('configKey', value)}
           placeholder="dbConfig"
+          field="configKey"
           onOpenPopup={handleOpenPopup}
         />
       ), 2)}
@@ -41,6 +43,7 @@ export const renderDbConnectProperties: PropertyRenderer = ({ renderData, handle
           value={renderData.host || ''}
           onChange={(value) => handlePropertyChange('host', value)}
           placeholder="localhost"
+          field="host"
           onOpenPopup={handleOpenPopup}
         />
       ), 2)}
@@ -50,6 +53,7 @@ export const renderDbConnectProperties: PropertyRenderer = ({ renderData, handle
           value={renderData.database || ''}
           onChange={(value) => handlePropertyChange('database', value)}
           placeholder="mydb"
+          field="database"
           onOpenPopup={handleOpenPopup}
         />
       ), 3)}

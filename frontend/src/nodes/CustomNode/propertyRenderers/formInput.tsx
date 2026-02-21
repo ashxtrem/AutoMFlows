@@ -49,6 +49,7 @@ export const renderFormInputProperties: PropertyRenderer = ({ renderData, handle
           value={renderData.selector || ''}
           onChange={(value) => handlePropertyChange('selector', value)}
           placeholder={getSelectorPlaceholder(renderData.selectorType || 'css')}
+          field="selector"
           onOpenPopup={handleOpenPopup}
         />
       ), 2)}
@@ -62,6 +63,7 @@ export const renderFormInputProperties: PropertyRenderer = ({ renderData, handle
             handlePropertyChange('values', values);
           }}
           placeholder="option1, option2"
+          field="values"
           onOpenPopup={handleOpenPopup}
         />
       ), 3)}
@@ -75,6 +77,7 @@ export const renderFormInputProperties: PropertyRenderer = ({ renderData, handle
             handlePropertyChange('filePaths', paths);
           }}
           placeholder="/path/to/file.txt"
+          field="filePaths"
           onOpenPopup={handleOpenPopup}
         />
       ), 3)}
@@ -84,6 +87,7 @@ export const renderFormInputProperties: PropertyRenderer = ({ renderData, handle
           value={renderData.timeout || 30000}
           onChange={(value) => handlePropertyChange('timeout', value)}
           placeholder="30000"
+          field="timeout"
           onOpenPopup={handleOpenPopup}
         />
       ), 4)}

@@ -24,6 +24,7 @@ export const renderDownloadProperties: PropertyRenderer = ({ renderData, handleP
           value={renderData.timeout || 30000}
           onChange={(value) => handlePropertyChange('timeout', value)}
           placeholder="30000"
+          field="timeout"
           onOpenPopup={handleOpenPopup}
         />
       ), 1)}

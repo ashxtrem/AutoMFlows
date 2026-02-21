@@ -3,7 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "workspaces": ["backend", "frontend", "shared", "mcp-server"],
+  "workspaces": [
+    "backend",
+    "frontend",
+    "shared",
+    "mcp-server"
+  ],
   "scripts": {
     "dev:backend": "npm run dev --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend",
@@ -25,5 +30,8 @@
   "overrides": {
     "minimatch": ">=10.2.1",
     "glob": ">=10.6.0"
+  },
+  "dependencies": {
+    "std-env": "^4.0.0-rc.1"
   }
 }

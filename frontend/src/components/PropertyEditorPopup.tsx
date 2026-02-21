@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { X } from 'lucide-react';
 import Editor from '@monaco-editor/react';
 
@@ -48,6 +48,11 @@ export default function PropertyEditorPopup({
     }
   }, [type]);
 
+  const handleCancel = useCallback(() => {
+    setEditValue(String(value || ''));
+    onClose();
+  }, [value, onClose]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -59,7 +64,7 @@ export default function PropertyEditorPopup({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, []);
+  }, [handleCancel]);
 
   const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
     if (e.target === e.currentTarget) {
@@ -79,11 +84,6 @@ export default function PropertyEditorPopup({
     } else {
       onChange(editValue);
     }
-    onClose();
-  };
-
-  const handleCancel = () => {
-    setEditValue(String(value || ''));
     onClose();
   };
 

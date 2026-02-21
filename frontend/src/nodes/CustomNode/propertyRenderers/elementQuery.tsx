@@ -67,6 +67,7 @@ export const renderElementQueryProperties: PropertyRenderer = ({ renderData, han
           value={renderData.selector || ''}
           onChange={(value) => handlePropertyChange('selector', value)}
           placeholder={getSelectorPlaceholder(renderData.selectorType || 'css')}
+          field="selector"
           onOpenPopup={handleOpenPopup}
         />
       ), 2)}
@@ -76,6 +77,7 @@ export const renderElementQueryProperties: PropertyRenderer = ({ renderData, han
           value={renderData.attributeName || ''}
           onChange={(value) => handlePropertyChange('attributeName', value)}
           placeholder="id, class, href, etc."
+          field="attributeName"
           onOpenPopup={handleOpenPopup}
         />
       ), 3)}
@@ -85,6 +87,7 @@ export const renderElementQueryProperties: PropertyRenderer = ({ renderData, han
           value={renderData.outputVariable || getDefaultOutputVar(elementQueryAction)}
           onChange={(value) => handlePropertyChange('outputVariable', value)}
           placeholder={getDefaultOutputVar(elementQueryAction)}
+          field="outputVariable"
           onOpenPopup={handleOpenPopup}
         />
       ), 4)}
@@ -94,6 +97,7 @@ export const renderElementQueryProperties: PropertyRenderer = ({ renderData, han
           value={renderData.timeout || 30000}
           onChange={(value) => handlePropertyChange('timeout', value)}
           placeholder="30000"
+          field="timeout"
           onOpenPopup={handleOpenPopup}
         />
       ), 5)}

@@ -10,6 +10,7 @@ export const renderDbQueryProperties: PropertyRenderer = ({ renderData, handlePr
           value={renderData.connectionKey || 'dbConnection'}
           onChange={(value) => handlePropertyChange('connectionKey', value)}
           placeholder="dbConnection"
+          field="connectionKey"
           onOpenPopup={handleOpenPopup}
         />
       ), 0)}
@@ -32,6 +33,7 @@ export const renderDbQueryProperties: PropertyRenderer = ({ renderData, handlePr
             value={renderData.queryKey || ''}
             onChange={(value) => handlePropertyChange('queryKey', value)}
             placeholder="queryFromContext"
+            field="queryKey"
             onOpenPopup={handleOpenPopup}
           />
         ), 2)
@@ -42,6 +44,7 @@ export const renderDbQueryProperties: PropertyRenderer = ({ renderData, handlePr
             value={typeof renderData.query === 'string' ? renderData.query : JSON.stringify(renderData.query || '')}
             onChange={(value) => handlePropertyChange('query', value)}
             placeholder="SELECT * FROM users"
+            field="query"
             onOpenPopup={handleOpenPopup}
           />
         ), 2)
@@ -52,6 +55,7 @@ export const renderDbQueryProperties: PropertyRenderer = ({ renderData, handlePr
           value={renderData.contextKey || 'dbResult'}
           onChange={(value) => handlePropertyChange('contextKey', value)}
           placeholder="dbResult"
+          field="contextKey"
           onOpenPopup={handleOpenPopup}
         />
       ), 3)}
@@ -61,6 +65,7 @@ export const renderDbQueryProperties: PropertyRenderer = ({ renderData, handlePr
           value={renderData.timeout || 30000}
           onChange={(value) => handlePropertyChange('timeout', value)}
           placeholder="30000"
+          field="timeout"
           onOpenPopup={handleOpenPopup}
         />
       ), 4)}

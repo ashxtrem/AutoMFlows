@@ -25,6 +25,7 @@ export const renderWaitProperties: PropertyRenderer = ({ renderData, handlePrope
             value={typeof renderData.value === 'number' ? renderData.value : parseInt(String(renderData.value || 1000), 10)}
             onChange={(value) => handlePropertyChange('value', value)}
             placeholder="1000"
+            field="value"
             onOpenPopup={handleOpenPopup}
           />
         ), 1)
@@ -47,6 +48,7 @@ export const renderWaitProperties: PropertyRenderer = ({ renderData, handlePrope
               value={typeof renderData.value === 'string' ? renderData.value : ''}
               onChange={(value) => handlePropertyChange('value', value)}
               placeholder={getSelectorPlaceholder(renderData.selectorType || 'css')}
+              field="value"
               onOpenPopup={handleOpenPopup}
             />
           ), 2)}
@@ -56,6 +58,7 @@ export const renderWaitProperties: PropertyRenderer = ({ renderData, handlePrope
               value={renderData.timeout || 30000}
               onChange={(value) => handlePropertyChange('timeout', value)}
               placeholder="30000"
+              field="timeout"
               onOpenPopup={handleOpenPopup}
             />
           ), 3)}
@@ -68,6 +71,7 @@ export const renderWaitProperties: PropertyRenderer = ({ renderData, handlePrope
               value={typeof renderData.value === 'string' ? renderData.value : ''}
               onChange={(value) => handlePropertyChange('value', value)}
               placeholder="/pattern/ or exact-url"
+              field="value"
               onOpenPopup={handleOpenPopup}
             />
           ), 1)}
@@ -77,6 +81,7 @@ export const renderWaitProperties: PropertyRenderer = ({ renderData, handlePrope
               value={renderData.timeout || 30000}
               onChange={(value) => handlePropertyChange('timeout', value)}
               placeholder="30000"
+              field="timeout"
               onOpenPopup={handleOpenPopup}
             />
           ), 2)}
@@ -89,6 +94,7 @@ export const renderWaitProperties: PropertyRenderer = ({ renderData, handlePrope
               value={typeof renderData.value === 'string' ? renderData.value : ''}
               onChange={(value) => handlePropertyChange('value', value)}
               placeholder="() => document.querySelector('.loaded')"
+              field="value"
               onOpenPopup={handleOpenPopup}
             />
           ), 1)}
@@ -98,6 +104,7 @@ export const renderWaitProperties: PropertyRenderer = ({ renderData, handlePrope
               value={renderData.timeout || 30000}
               onChange={(value) => handlePropertyChange('timeout', value)}
               placeholder="30000"
+              field="timeout"
               onOpenPopup={handleOpenPopup}
             />
           ), 2)}
@@ -120,6 +127,7 @@ export const renderWaitProperties: PropertyRenderer = ({ renderData, handlePrope
           value={renderData.retryCount || 3}
           onChange={(value) => handlePropertyChange('retryCount', value)}
           placeholder="3"
+          field="retryCount"
           onOpenPopup={handleOpenPopup}
         />
       ), 4)}

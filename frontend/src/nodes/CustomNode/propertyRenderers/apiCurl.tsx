@@ -10,6 +10,7 @@ export const renderApiCurlProperties: PropertyRenderer = ({ renderData, handlePr
           value={renderData.curlCommand || ''}
           onChange={(value) => handlePropertyChange('curlCommand', value)}
           placeholder="curl -X POST https://api.example.com/users"
+          field="curlCommand"
           onOpenPopup={handleOpenPopup}
         />
       ), 0)}
@@ -19,6 +20,7 @@ export const renderApiCurlProperties: PropertyRenderer = ({ renderData, handlePr
           value={renderData.contextKey || 'apiResponse'}
           onChange={(value) => handlePropertyChange('contextKey', value)}
           placeholder="apiResponse"
+          field="contextKey"
           onOpenPopup={handleOpenPopup}
         />
       ), 1)}
@@ -28,6 +30,7 @@ export const renderApiCurlProperties: PropertyRenderer = ({ renderData, handlePr
           value={renderData.timeout || 30000}
           onChange={(value) => handlePropertyChange('timeout', value)}
           placeholder="30000"
+          field="timeout"
           onOpenPopup={handleOpenPopup}
         />
       ), 2)}

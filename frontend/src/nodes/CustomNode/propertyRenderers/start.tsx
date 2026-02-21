@@ -56,6 +56,7 @@ export const renderStartProperties: PropertyRenderer = ({ renderData, handleProp
           onChange={(value) => handlePropertyChange('slowMo', value)}
           min={0}
           placeholder="Delay between nodes"
+          field="slowMo"
           onOpenPopup={handleOpenPopup}
         />
       ), 3)}

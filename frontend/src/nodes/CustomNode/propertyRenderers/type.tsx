@@ -19,6 +19,7 @@ export const renderTypeProperties: PropertyRenderer = ({ renderData, handlePrope
           value={renderData.selector || ''}
           onChange={(value) => handlePropertyChange('selector', value)}
           placeholder={getSelectorPlaceholder(renderData.selectorType || 'css')}
+          field="selector"
           onOpenPopup={handleOpenPopup}
         />
       ), 1)}
@@ -43,6 +44,7 @@ export const renderTypeProperties: PropertyRenderer = ({ renderData, handlePrope
           value={renderData.text || ''}
           onChange={(value) => handlePropertyChange('text', value)}
           placeholder="Text to type"
+          field="text"
           onOpenPopup={handleOpenPopup}
         />
       ), 3)}
@@ -52,6 +54,7 @@ export const renderTypeProperties: PropertyRenderer = ({ renderData, handlePrope
           value={renderData.delay || 0}
           onChange={(value) => handlePropertyChange('delay', value)}
           placeholder="0"
+          field="delay"
           onOpenPopup={handleOpenPopup}
         />
       ), 4)}
@@ -61,6 +64,7 @@ export const renderTypeProperties: PropertyRenderer = ({ renderData, handlePrope
           value={renderData.timeout || 30000}
           onChange={(value) => handlePropertyChange('timeout', value)}
           placeholder="30000"
+          field="timeout"
           onOpenPopup={handleOpenPopup}
         />
       ), (renderData.inputMethod === 'type' || renderData.inputMethod === 'pressSequentially') ? 5 : 4)}
@@ -70,6 +74,7 @@ export const renderTypeProperties: PropertyRenderer = ({ renderData, handlePrope
           value={renderData.waitForSelector || ''}
           onChange={(value) => handlePropertyChange('waitForSelector', value)}
           placeholder=".my-class"
+          field="waitForSelector"
           onOpenPopup={handleOpenPopup}
         />
       ), 4)}
@@ -87,6 +92,7 @@ export const renderTypeProperties: PropertyRenderer = ({ renderData, handlePrope
           value={renderData.waitForUrl || ''}
           onChange={(value) => handlePropertyChange('waitForUrl', value)}
           placeholder="/pattern/ or exact-url"
+          field="waitForUrl"
           onOpenPopup={handleOpenPopup}
         />
       ), 6)}
@@ -96,6 +102,7 @@ export const renderTypeProperties: PropertyRenderer = ({ renderData, handlePrope
           value={renderData.waitForCondition || ''}
           onChange={(value) => handlePropertyChange('waitForCondition', value)}
           placeholder="() => document.querySelector('.loaded')"
+          field="waitForCondition"
           onOpenPopup={handleOpenPopup}
         />
       ), 7)}
@@ -127,6 +134,7 @@ export const renderTypeProperties: PropertyRenderer = ({ renderData, handlePrope
           value={renderData.retryCount || 3}
           onChange={(value) => handlePropertyChange('retryCount', value)}
           placeholder="3"
+          field="retryCount"
           onOpenPopup={handleOpenPopup}
         />
       ), 10)}

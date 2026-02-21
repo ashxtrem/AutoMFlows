@@ -43,6 +43,7 @@ export const renderOpenBrowserProperties: PropertyRenderer = ({ renderData, hand
             value={browserData.viewportWidth || 1280}
             onChange={(value) => handlePropertyChange('viewportWidth', value)}
             placeholder="1280"
+            field="viewportWidth"
             onOpenPopup={handleOpenPopup}
           />
         ), 2)}
@@ -52,6 +53,7 @@ export const renderOpenBrowserProperties: PropertyRenderer = ({ renderData, hand
             value={browserData.viewportHeight || 720}
             onChange={(value) => handlePropertyChange('viewportHeight', value)}
             placeholder="720"
+            field="viewportHeight"
             onOpenPopup={handleOpenPopup}
           />
         ), 3)}

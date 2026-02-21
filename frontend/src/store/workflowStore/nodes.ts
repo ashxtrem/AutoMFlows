@@ -410,14 +410,9 @@ export const createNodesSlice: StateCreator<
   },
 
   updateNodeData: (nodeId, data) => {
-    // Show global loader
-    set({ canvasReloading: true });
-    
     const state = get();
     const updatedNodes = state.nodes.map((node) => {
       if (node.id === nodeId) {
-        // Create a completely new node object to ensure ReactFlow detects the change
-        // The spread operator creates a new reference, which ReactFlow uses for change detection
         return { 
           ...node, 
           data: { ...node.data, ...data }
@@ -435,11 +430,6 @@ export const createNodesSlice: StateCreator<
       selectedNode: updatedSelectedNode,
       hasUnsavedChanges: true,
     });
-    
-      // Hide loader after a short delay to allow ReactFlow to reload
-      setTimeout(() => {
-        set({ canvasReloading: false });
-      }, 100);
     
     // Save to history for data changes (debounced to avoid too many saves)
     setTimeout(() => get().saveToHistory(), 300);
