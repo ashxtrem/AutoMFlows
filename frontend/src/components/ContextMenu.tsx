@@ -240,12 +240,20 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
     onClose();
   };
 
-  const handlePaste = () => {
+  const handlePaste = async () => {
+    const position = flowPosition || { x, y };
+    try {
+      const text = await navigator.clipboard.readText();
+      const parsed = JSON.parse(text);
+      if (parsed && parsed._automflows === true && Array.isArray(parsed.nodes) && parsed.nodes.length > 0) {
+        useWorkflowStore.getState().pasteFromClipboardData(parsed, position);
+        onClose();
+        return;
+      }
+    } catch {
+      // System clipboard unavailable or content is not ours — fall back
+    }
     if (clipboard) {
-      // Use flow position if available (for empty canvas), otherwise use screen coordinates
-      // Note: For node context menu, flowPosition won't be set, so it falls back to x,y
-      // which should be converted by the caller, but for now we'll use flowPosition when available
-      const position = flowPosition || { x, y };
       pasteNode(position);
     }
     onClose();
@@ -573,15 +581,13 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
               <Plus size={16} />
               Add Node
             </button>
-            {clipboard && (
-              <button
-                onClick={handlePaste}
-                className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surfaceHighlight flex items-center gap-2"
-              >
-                <Copy size={16} />
-                Paste
-              </button>
-            )}
+            <button
+              onClick={handlePaste}
+              className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surfaceHighlight flex items-center gap-2"
+            >
+              <Copy size={16} />
+              Paste
+            </button>
           </>
         )}
       </div>

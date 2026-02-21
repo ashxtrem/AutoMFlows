@@ -1,4 +1,7 @@
 import { Node } from 'reactflow';
+import { SwitchCondition, SelectorModifiers } from '@automflows/shared';
+import { getSelectorPlaceholder, getSelectorHelpText, SELECTOR_TYPE_OPTIONS } from '../../frontend/src/utils/selectorHelpers';
+import SelectorModifiersEditor from '../../frontend/src/components/SelectorModifiersEditor';
 
 interface SwitchConfigProps {
   node: Node;
@@ -8,22 +11,7 @@ interface SwitchConfigProps {
 interface SwitchCase {
   id: string;
   label: string;
-  condition: {
-    type: 'ui-element' | 'api-status' | 'api-json-path' | 'javascript' | 'variable';
-    selector?: string;
-    selectorType?: 'css' | 'xpath';
-    elementCheck?: 'visible' | 'hidden' | 'exists';
-    apiContextKey?: string;
-    statusCode?: number;
-    jsonPath?: string;
-    expectedValue?: any;
-    matchType?: 'equals' | 'contains' | 'greaterThan' | 'lessThan' | 'greaterThanOrEqual' | 'lessThanOrEqual' | 'startsWith' | 'endsWith' | 'regex';
-    javascriptExpression?: string;
-    variableName?: string;
-    comparisonOperator?: 'equals' | 'greaterThan' | 'lessThan' | 'greaterThanOrEqual' | 'lessThanOrEqual';
-    comparisonValue?: any;
-    timeout?: number;
-  };
+  condition: SwitchCondition;
 }
 
 const CONDITION_TYPES = [
@@ -113,26 +101,36 @@ export default function SwitchConfig({ node, onChange }: SwitchConfigProps) {
         return (
           <>
             <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
+              <select
+                value={condition.selectorType || 'css'}
+                onChange={(e) => updateCaseCondition(index, { selectorType: e.target.value as any })}
+                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+              >
+                {SELECTOR_TYPE_OPTIONS.map(option => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+              {getSelectorHelpText(condition.selectorType || 'css') && (
+                <div className="mt-1 text-xs text-gray-400">
+                  {getSelectorHelpText(condition.selectorType || 'css')}
+                </div>
+              )}
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Selector</label>
               <input
                 type="text"
                 value={condition.selector || ''}
                 onChange={(e) => updateCaseCondition(index, { selector: e.target.value })}
-                placeholder="#button or //button[@id='button']"
+                placeholder={getSelectorPlaceholder(condition.selectorType || 'css')}
                 className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
               />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-1">Selector Type</label>
-              <select
-                value={condition.selectorType || 'css'}
-                onChange={(e) => updateCaseCondition(index, { selectorType: e.target.value as 'css' | 'xpath' })}
-                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm"
-              >
-                <option value="css">CSS</option>
-                <option value="xpath">XPath</option>
-              </select>
-            </div>
+            <SelectorModifiersEditor
+              value={condition.selectorModifiers}
+              onChange={(v) => updateCaseCondition(index, { selectorModifiers: v })}
+            />
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">Element Check</label>
               <select

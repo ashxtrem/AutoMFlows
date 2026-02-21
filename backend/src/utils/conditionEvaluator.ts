@@ -1,7 +1,7 @@
 import { ContextManager } from '../engine/context';
 import { BrowserElementStrategy } from '../nodes/verification/strategies/browser';
 import { ApiStatusStrategy, ApiBodyPathStrategy } from '../nodes/verification/strategies/api';
-import { VerifyNodeData, MatchType } from '@automflows/shared';
+import { VerifyNodeData, MatchType, SwitchCondition } from '@automflows/shared';
 
 export interface ConditionResult {
   passed: boolean;
@@ -9,26 +9,7 @@ export interface ConditionResult {
   details?: Record<string, any>;
 }
 
-export interface SwitchCondition {
-  type: 'ui-element' | 'api-status' | 'api-json-path' | 'javascript' | 'variable';
-  // UI element condition fields
-  selector?: string;
-  selectorType?: 'css' | 'xpath';
-  elementCheck?: 'visible' | 'hidden' | 'exists';
-  // API condition fields
-  apiContextKey?: string;
-  statusCode?: number;
-  jsonPath?: string;
-  expectedValue?: any;
-  matchType?: 'equals' | 'contains' | 'greaterThan' | 'lessThan' | 'greaterThanOrEqual' | 'lessThanOrEqual' | 'startsWith' | 'endsWith' | 'regex';
-  // JavaScript condition fields
-  javascriptExpression?: string;
-  // Variable condition fields
-  variableName?: string;
-  comparisonOperator?: 'equals' | 'greaterThan' | 'lessThan' | 'greaterThanOrEqual' | 'lessThanOrEqual';
-  comparisonValue?: any;
-  timeout?: number;
-}
+export { SwitchCondition };
 
 export class ConditionEvaluator {
   /**
@@ -78,6 +59,7 @@ export class ConditionEvaluator {
       verificationType: 'element',
       selector: condition.selector,
       selectorType: condition.selectorType || 'css',
+      selectorModifiers: condition.selectorModifiers,
       elementCheck: condition.elementCheck || 'visible',
       timeout: condition.timeout || 30000,
     };
