@@ -827,6 +827,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
         edgeTypes={edgeTypes}
         minZoom={0.1}
         maxZoom={2}
+        panActivationKeyCode={null}
         zoomOnDoubleClick={false}
         className="bg-canvas react-flow-canvas"
         proOptions={{ hideAttribution: true }}
