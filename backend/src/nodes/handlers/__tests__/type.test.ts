@@ -2,7 +2,7 @@ import { TypeHandler } from '../type';
 import { NodeType } from '@automflows/shared';
 import { createMockPage, createMockContextManager, createMockNode } from '../../../__tests__/helpers/mocks';
 import { WaitHelper } from '../../../utils/waitHelper';
-import { RetryHelper } from '../../../utils/retryHelper';
+import { RetryHelper, FAIL_SILENT_RESULT } from '../../../utils/retryHelper';
 import { VariableInterpolator } from '../../../utils/variableInterpolator';
 import { LocatorHelper } from '../../../utils/locatorHelper';
 
@@ -285,8 +285,8 @@ describe('TypeHandler', () => {
       expect(RetryHelper.executeWithRetry).toHaveBeenCalled();
     });
 
-    it('should throw error on failSilently when result is undefined', async () => {
-      (RetryHelper.executeWithRetry as jest.Mock).mockResolvedValue(undefined);
+    it('should throw error on failSilently when RetryHelper returns FAIL_SILENT_RESULT', async () => {
+      (RetryHelper.executeWithRetry as jest.Mock).mockResolvedValue(FAIL_SILENT_RESULT);
       const node = createMockNode(NodeType.TYPE, {
         selector: '#input',
         text: 'test',
@@ -296,6 +296,17 @@ describe('TypeHandler', () => {
       await expect(handler.execute(node, mockContext)).rejects.toThrow(
         'Type operation failed silently on selector: #input'
       );
+    });
+
+    it('should not throw error on failSilently when operation succeeds with undefined', async () => {
+      (RetryHelper.executeWithRetry as jest.Mock).mockResolvedValue(undefined);
+      const node = createMockNode(NodeType.TYPE, {
+        selector: '#input',
+        text: 'test',
+        failSilently: true,
+      });
+
+      await expect(handler.execute(node, mockContext)).resolves.not.toThrow();
     });
   });
 });

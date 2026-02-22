@@ -8,6 +8,8 @@ import { ContextManager } from '../engine/context';
 import { LocatorHelper } from './locatorHelper';
 import { VariableInterpolator } from './variableInterpolator';
 
+export const FAIL_SILENT_RESULT = Symbol('FAIL_SILENT_RESULT');
+
 // Input type that accepts string | number for numeric fields (before interpolation)
 export interface RetryOptionsInput {
   enabled: boolean;
@@ -188,7 +190,7 @@ export class RetryHelper {
       } catch (error: any) {
         if (options.failSilently) {
           console.warn(`Operation failed silently: ${error.message}`);
-          return undefined as T;
+          return FAIL_SILENT_RESULT as unknown as T;
         }
         throw error;
       }
@@ -247,7 +249,7 @@ export class RetryHelper {
     // All retries exhausted
     if (options.failSilently) {
       console.warn(`Operation failed after ${retryCount} retries: ${lastError?.message}`);
-      return undefined as T;
+      return FAIL_SILENT_RESULT as unknown as T;
     }
     throw lastError || new Error('Operation failed after retries');
   }
@@ -279,7 +281,7 @@ export class RetryHelper {
       if (elapsed >= timeout) {
         if (options.failSilently) {
           console.warn(`Retry until condition timed out after ${timeout}ms: ${lastError?.message || 'Condition not met'}`);
-          return undefined as T;
+          return FAIL_SILENT_RESULT as unknown as T;
         }
         throw new Error(`Retry until condition timed out after ${timeout}ms: ${lastError?.message || 'Condition not met'}`);
       }
@@ -310,7 +312,7 @@ export class RetryHelper {
         if (elapsed + retryDelay >= timeout) {
           if (options.failSilently) {
             console.warn(`Retry until condition timed out: Condition not met after ${attempt} attempts`);
-            return undefined as T;
+            return FAIL_SILENT_RESULT as unknown as T;
           }
           throw new Error(`Retry until condition timed out: Condition not met after ${attempt} attempts`);
         }
@@ -341,7 +343,7 @@ export class RetryHelper {
         if (elapsed + retryDelay >= timeout) {
           if (options.failSilently) {
             console.warn(`Retry until condition timed out after ${timeout}ms: ${error.message}`);
-            return undefined as T;
+            return FAIL_SILENT_RESULT as unknown as T;
           }
           throw error;
         }

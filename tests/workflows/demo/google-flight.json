@@ -1,0 +1,812 @@
+{
+  "nodes": [
+    {
+      "id": "start-1771787703763",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 200
+      },
+      "data": {
+        "type": "start",
+        "label": "Start",
+        "isTest": true,
+        "recordSession": false,
+        "screenshotAllNodes": false,
+        "screenshotTiming": "post",
+        "snapshotAllNodes": false,
+        "snapshotTiming": "post",
+        "slowMo": 800,
+        "scrollThenAction": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "openBrowser-1771787708643",
+      "type": "openBrowser",
+      "position": {
+        "x": 350,
+        "y": 200
+      },
+      "data": {
+        "type": "openBrowser",
+        "label": "Open Browser",
+        "headless": false,
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "maxWindow": false,
+        "browser": "chromium",
+        "stealthMode": true,
+        "capabilities": {
+          "isMobile": true
+        },
+        "launchOptions": {},
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "navigation-1771787710459",
+      "type": "navigation",
+      "position": {
+        "x": 600,
+        "y": 200
+      },
+      "data": {
+        "type": "navigation",
+        "label": "Navigation",
+        "action": "navigate",
+        "url": "https://www.google.com/travel/flights",
+        "timeout": 30000,
+        "waitUntil": "load",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "action-1771787809858",
+      "type": "action",
+      "position": {
+        "x": 850,
+        "y": 200
+      },
+      "data": {
+        "type": "action",
+        "label": "Action",
+        "action": "click",
+        "selector": "[aria-label=\"Where from?\"]",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "keyboard-1771787890890",
+      "type": "keyboard",
+      "position": {
+        "x": 1100,
+        "y": 200
+      },
+      "data": {
+        "type": "keyboard",
+        "label": "Keyboard",
+        "action": "type",
+        "timeout": 30000,
+        "isTest": true,
+        "selector": "",
+        "searchHighlighted": false,
+        "text": "Delhi",
+        "clearFirst": true,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "action-1771787991402",
+      "type": "action",
+      "position": {
+        "x": 1350,
+        "y": 200
+      },
+      "data": {
+        "type": "action",
+        "label": "Action",
+        "action": "click",
+        "selector": "text:New Delhi",
+        "selectorType": "getByText",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "selectorModifiers": {
+          "nth": 0
+        },
+        "isPinned": false
+      }
+    },
+    {
+      "id": "wait-1771788068930",
+      "type": "wait",
+      "position": {
+        "x": 100,
+        "y": 770
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait",
+        "waitType": "timeout",
+        "value": 1000,
+        "timeout": 30000,
+        "isTest": true,
+        "breakpoint": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "action-1771788106356-0",
+      "type": "action",
+      "position": {
+        "x": 350,
+        "y": 770
+      },
+      "data": {
+        "type": "action",
+        "label": "Action",
+        "action": "click",
+        "selector": "[aria-label=\"Where to? \"]",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "wait-1771788106356-1",
+      "type": "wait",
+      "position": {
+        "x": 600,
+        "y": 770
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait",
+        "waitType": "timeout",
+        "value": 1000,
+        "timeout": 30000,
+        "isTest": true,
+        "breakpoint": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "keyboard-1771788106356-2",
+      "type": "keyboard",
+      "position": {
+        "x": 850,
+        "y": 770
+      },
+      "data": {
+        "type": "keyboard",
+        "label": "Keyboard",
+        "action": "type",
+        "timeout": 30000,
+        "isTest": true,
+        "selector": "",
+        "searchHighlighted": false,
+        "text": "Mumbai",
+        "clearFirst": true,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "wait-1771788106356-3",
+      "type": "wait",
+      "position": {
+        "x": 1100,
+        "y": 770
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait",
+        "waitType": "timeout",
+        "value": 1000,
+        "timeout": 30000,
+        "isTest": true,
+        "breakpoint": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "action-1771788106356-4",
+      "type": "action",
+      "position": {
+        "x": 1350,
+        "y": 770
+      },
+      "data": {
+        "type": "action",
+        "label": "Action",
+        "action": "click",
+        "selector": "text:Mumbai, Maharashtra",
+        "selectorType": "getByText",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "selectorModifiers": {
+          "nth": 0
+        },
+        "isPinned": false
+      }
+    },
+    {
+      "id": "wait-1771788166850",
+      "type": "wait",
+      "position": {
+        "x": 100,
+        "y": 1340
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait",
+        "waitType": "timeout",
+        "value": 1000,
+        "timeout": 30000,
+        "isTest": true,
+        "breakpoint": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "action-1771788410778-0",
+      "type": "action",
+      "position": {
+        "x": 350,
+        "y": 1340
+      },
+      "data": {
+        "type": "action",
+        "label": "Action",
+        "action": "click",
+        "selector": "[aria-label=\"Departure\"]",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "selectorModifiers": {
+          "nth": 0
+        }
+      }
+    },
+    {
+      "id": "action-1771788492594-0",
+      "type": "action",
+      "position": {
+        "x": 600,
+        "y": 1340
+      },
+      "data": {
+        "type": "action",
+        "label": "Action",
+        "action": "click",
+        "selector": "[data-iso=\"2026-03-08\"]",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "action-1771788523498-0",
+      "type": "action",
+      "position": {
+        "x": 850,
+        "y": 1340
+      },
+      "data": {
+        "type": "action",
+        "label": "Action",
+        "action": "click",
+        "selector": "[data-iso=\"2026-03-10\"]",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "action-1771788582409",
+      "type": "action",
+      "position": {
+        "x": 1100,
+        "y": 1340
+      },
+      "data": {
+        "type": "action",
+        "label": "Action",
+        "action": "click",
+        "selector": "text:Done",
+        "selectorType": "getByText",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "selectorModifiers": {
+          "pierceShadow": true,
+          "nth": 3
+        },
+        "isPinned": false
+      }
+    },
+    {
+      "id": "wait-1771788619833",
+      "type": "wait",
+      "position": {
+        "x": 1350,
+        "y": 1340
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait",
+        "waitType": "timeout",
+        "value": 1000,
+        "timeout": 30000,
+        "isTest": true,
+        "breakpoint": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "action-1771789072969-0",
+      "type": "action",
+      "position": {
+        "x": 100,
+        "y": 1910
+      },
+      "data": {
+        "type": "action",
+        "label": "Action",
+        "action": "click",
+        "selector": "[aria-label=\"Search\"]",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "wait-1771789096385-0",
+      "type": "wait",
+      "position": {
+        "x": 350,
+        "y": 1910
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait",
+        "waitType": "timeout",
+        "value": 1000,
+        "timeout": 30000,
+        "isTest": true,
+        "breakpoint": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "javascriptCode-1771789266185-1",
+      "type": "javascriptCode",
+      "position": {
+        "x": 600,
+        "y": 1910
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Init empty CSV rows",
+        "code": "context.setData('initRows', []);",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "javascriptCode-1771789266185-2",
+      "type": "javascriptCode",
+      "position": {
+        "x": 850,
+        "y": 1910
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Create card indices",
+        "code": "context.setData('cardIndices', 20);",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "width": 200
+      }
+    },
+    {
+      "id": "csvHandle-1771789266185-3",
+      "type": "csvHandle",
+      "position": {
+        "x": 1100,
+        "y": 1910
+      },
+      "data": {
+        "type": "csvHandle",
+        "label": "Create CSV with headers",
+        "action": "write",
+        "filePath": "tests/output/flight_google.csv",
+        "dataSource": "initRows",
+        "headers": [
+          "name",
+          "price",
+          "link"
+        ],
+        "delimiter": ",",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "loop-1771789266185-4",
+      "type": "loop",
+      "position": {
+        "x": 1350,
+        "y": 1910
+      },
+      "data": {
+        "type": "loop",
+        "label": "Loop over listings",
+        "mode": "forEach",
+        "arrayVariable": "cardIndices",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "javascriptCode-1771789266185-5",
+      "type": "javascriptCode",
+      "position": {
+        "x": 100,
+        "y": 2480
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set card index (1-based)",
+        "code": "const idx = context.getVariable('index') || 0;\ncontext.setData('cardIndex', idx + 1);",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "elementQuery-1771789266185-6",
+      "type": "elementQuery",
+      "position": {
+        "x": 350,
+        "y": 2480
+      },
+      "data": {
+        "type": "elementQuery",
+        "label": "Get listing name",
+        "action": "getText",
+        "selector": "(//div[@data-testid=\"card-container\"])[${data.cardIndex}]//div[@data-testid=\"listing-card-title\"]",
+        "selectorType": "xpath",
+        "timeout": 10000,
+        "outputVariable": "listingName",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "elementQuery-1771789266185-7",
+      "type": "elementQuery",
+      "position": {
+        "x": 600,
+        "y": 2480
+      },
+      "data": {
+        "type": "elementQuery",
+        "label": "Get card full text",
+        "action": "getText",
+        "selector": "(//div[@data-testid=\"card-container\"])[${data.cardIndex}]",
+        "selectorType": "xpath",
+        "timeout": 10000,
+        "outputVariable": "cardText",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "elementQuery-1771789266185-8",
+      "type": "elementQuery",
+      "position": {
+        "x": 850,
+        "y": 2480
+      },
+      "data": {
+        "type": "elementQuery",
+        "label": "Get listing link",
+        "action": "getAttribute",
+        "selector": "((//div[@data-testid=\"card-container\"])[${data.cardIndex}]//a)[1]",
+        "selectorType": "xpath",
+        "attributeName": "href",
+        "timeout": 10000,
+        "outputVariable": "listingLink",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "javascriptCode-1771789266185-9",
+      "type": "javascriptCode",
+      "position": {
+        "x": 1100,
+        "y": 2480
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Build CSV row",
+        "code": "const name = (context.getData('listingName') || '').replace(/[\\r\\n]+/g, ' ').trim();\nconst cardText = context.getData('cardText') || '';\nconst link = context.getData('listingLink') || '';\nconst priceMatch = cardText.match(/[\\$\\u20b9\\u00a3\\u20ac]\\s?[\\d,]+/);\nconst price = priceMatch ? priceMatch[0].trim() : '';\nconst fullLink = link && link.startsWith('http') ? link : 'https://www.airbnb.com' + (link || '');\nconst row = {\n  name: name,\n  price: price,\n  link: fullLink\n};\ncontext.setData('rowToAppend', [row]);",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "csvHandle-1771789266185-10",
+      "type": "csvHandle",
+      "position": {
+        "x": 1360,
+        "y": 2450
+      },
+      "data": {
+        "type": "csvHandle",
+        "label": "Append row to CSV",
+        "action": "append",
+        "filePath": "tests/output/flight_google.csv",
+        "dataSource": "rowToAppend",
+        "headers": [
+          "name",
+          "price",
+          "link"
+        ],
+        "delimiter": ",",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "edge-start-1771787703763-output-openBrowser-1771787708643-input",
+      "source": "start-1771787703763",
+      "target": "openBrowser-1771787708643",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-openBrowser-1771787708643-output-navigation-1771787710459-input",
+      "source": "openBrowser-1771787708643",
+      "target": "navigation-1771787710459",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-action-1771787991402-output-wait-1771788068930-input",
+      "source": "action-1771787991402",
+      "target": "wait-1771788068930",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-1771788106356-0",
+      "source": "action-1771788106356-0",
+      "target": "wait-1771788106356-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-1771788106356-1",
+      "source": "wait-1771788106356-1",
+      "target": "keyboard-1771788106356-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-1771788106356-2",
+      "source": "keyboard-1771788106356-2",
+      "target": "wait-1771788106356-3",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-1771788106356-3",
+      "source": "wait-1771788106356-3",
+      "target": "action-1771788106356-4",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "reactflow__edge-wait-1771788068930output-action-1771788106356-0driver",
+      "source": "wait-1771788068930",
+      "target": "action-1771788106356-0",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-action-1771788106356-4-output-wait-1771788166850-input",
+      "source": "action-1771788106356-4",
+      "target": "wait-1771788166850",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "navigation-1771787710459-action-1771787809858-1771788226368-0-2312s298x",
+      "source": "navigation-1771787710459",
+      "target": "action-1771787809858",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "action-1771787809858-keyboard-1771787890890-1771788227250-0-5bvfr3k8h",
+      "source": "action-1771787809858",
+      "target": "keyboard-1771787890890",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "keyboard-1771787890890-action-1771787991402-1771788228843-0-pn3a6mpp7",
+      "source": "keyboard-1771787890890",
+      "target": "action-1771787991402",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "reactflow__edge-wait-1771788166850output-action-1771788410778-0driver",
+      "source": "wait-1771788166850",
+      "target": "action-1771788410778-0",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-action-1771788410778-0output-action-1771788492594-0driver",
+      "source": "action-1771788410778-0",
+      "target": "action-1771788492594-0",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-action-1771788492594-0output-action-1771788523498-0driver",
+      "source": "action-1771788492594-0",
+      "target": "action-1771788523498-0",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-action-1771788523498-0-output-action-1771788582409-input",
+      "source": "action-1771788523498-0",
+      "target": "action-1771788582409",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-action-1771788582409-output-wait-1771788619833-input",
+      "source": "action-1771788582409",
+      "target": "wait-1771788619833",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "reactflow__edge-wait-1771788619833output-action-1771789072969-0driver",
+      "source": "wait-1771788619833",
+      "target": "action-1771789072969-0",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-action-1771789072969-0output-wait-1771789096385-0driver",
+      "source": "action-1771789072969-0",
+      "target": "wait-1771789096385-0",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-1771789266185-1",
+      "source": "javascriptCode-1771789266185-1",
+      "target": "javascriptCode-1771789266185-2",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-1771789266185-2",
+      "source": "javascriptCode-1771789266185-2",
+      "target": "csvHandle-1771789266185-3",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-1771789266185-3",
+      "source": "csvHandle-1771789266185-3",
+      "target": "loop-1771789266185-4",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-1771789266185-4",
+      "source": "loop-1771789266185-4",
+      "target": "javascriptCode-1771789266185-5",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-1771789266185-5",
+      "source": "javascriptCode-1771789266185-5",
+      "target": "elementQuery-1771789266185-6",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-1771789266185-6",
+      "source": "elementQuery-1771789266185-6",
+      "target": "elementQuery-1771789266185-7",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-1771789266185-7",
+      "source": "elementQuery-1771789266185-7",
+      "target": "elementQuery-1771789266185-8",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-1771789266185-8",
+      "source": "elementQuery-1771789266185-8",
+      "target": "javascriptCode-1771789266185-9",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-1771789266185-9",
+      "source": "javascriptCode-1771789266185-9",
+      "target": "csvHandle-1771789266185-10",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "wait-1771789096385-0-javascriptCode-1771789266185-1-1771789618337-0-nb2vlutfv",
+      "source": "wait-1771789096385-0",
+      "target": "javascriptCode-1771789266185-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    }
+  ],
+  "groups": [],
+  "metadata": {
+    "name": "google-flight",
+    "author": "ashxt",
+    "version": 4,
+    "createdAt": "2026-02-22T19:31:04.638Z",
+    "updatedAt": "2026-02-22T19:53:38.438Z"
+  }
+}

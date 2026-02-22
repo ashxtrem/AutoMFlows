@@ -5,7 +5,7 @@ import { useWorkflowStore } from '../store/workflowStore';
 import { useNotificationStore } from '../store/notificationStore';
 
 interface CanvasSettingsSubmenuProps {
-  onBack: () => void;
+  onBack?: () => void;
 }
 
 export default function CanvasSettingsSubmenu({ onBack }: CanvasSettingsSubmenuProps) {
@@ -105,17 +105,19 @@ export default function CanvasSettingsSubmenu({ onBack }: CanvasSettingsSubmenuP
   };
 
   return (
-    <div className="p-3 space-y-3">
-      <div className="flex items-center gap-2 mb-3">
-        <button
-          onClick={onBack}
-          className="text-gray-400 hover:text-white transition-colors p-1"
-          aria-label="Back to settings"
-        >
-          <ChevronLeft size={16} />
-        </button>
-        <h3 className="text-sm font-medium text-white">Canvas Settings</h3>
-      </div>
+    <div className={onBack ? "p-3 space-y-3" : "space-y-3"}>
+      {onBack && (
+        <div className="flex items-center gap-2 mb-3">
+          <button
+            onClick={onBack}
+            className="text-gray-400 hover:text-white transition-colors p-1"
+            aria-label="Back to settings"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <h3 className="text-sm font-medium text-white">Canvas Settings</h3>
+        </div>
+      )}
 
       {/* Auto Arrange Nodes */}
       <div>

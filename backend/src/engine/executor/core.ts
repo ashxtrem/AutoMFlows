@@ -799,7 +799,12 @@ export class Executor {
             }
 
             // Get all child nodes of the loop node (nodes reachable from its output)
-            const childNodeIds = this.parser.getNodesReachableFromHandle(nodeId, 'output');
+            // Filter out utility nodes (shortcut, comment-box) that should not be executed,
+            // consistent with getExecutionOrder() which also excludes them
+            const childNodeIds = this.parser.getNodesReachableFromHandle(nodeId, 'output').filter(childId => {
+              const childNode = this.parser.getNode(childId);
+              return childNode && childNode.type !== 'shortcut.shortcut' && childNode.type !== 'comment-box.comment';
+            });
             
             if (childNodeIds.length === 0) {
               this.traceLog(`[TRACE] Loop node ${nodeId} has no child nodes to iterate`);

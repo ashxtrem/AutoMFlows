@@ -31,6 +31,9 @@ import DbQueryConfig from './nodeConfigs/DbQueryConfig';
 import DbTransactionConfig from './nodeConfigs/DbTransactionConfig';
 import ContextManipulateConfig from './nodeConfigs/ContextManipulateConfig';
 import CsvHandleConfig from './nodeConfigs/CsvHandleConfig';
+import EmailConfig from './nodeConfigs/EmailConfig';
+import SlackConfig from './nodeConfigs/SlackConfig';
+import WebhookConfig from './nodeConfigs/WebhookConfig';
 import { frontendPluginRegistry } from '../plugins/registry';
 import { useCallback } from 'react';
 // Import switch node config component directly (until plugin loader supports dynamic loading)
@@ -125,6 +128,12 @@ export default function NodeConfigForm({ node }: NodeConfigFormProps) {
           return <DbTransactionConfig node={node} onChange={handleChange} action="rollback" />;
         case NodeType.CSV_HANDLE:
           return <CsvHandleConfig node={node} onChange={handleChange} />;
+        case NodeType.EMAIL:
+          return <EmailConfig node={node} onChange={handleChange} />;
+        case NodeType.SLACK:
+          return <SlackConfig node={node} onChange={handleChange} />;
+        case NodeType.WEBHOOK:
+          return <WebhookConfig node={node} onChange={handleChange} />;
         default:
           return <div className="text-secondary text-sm">No configuration available.</div>;
       }

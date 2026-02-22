@@ -275,6 +275,47 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
           { name: 'delimiter', label: 'Delimiter', dataType: PropertyDataType.STRING, required: false, defaultValue: ',' },
         ];
 
+      case NodeType.EMAIL:
+        return [
+          { name: 'smtpHost', label: 'SMTP Host', dataType: PropertyDataType.STRING, required: true },
+          { name: 'smtpPort', label: 'SMTP Port', dataType: PropertyDataType.INT, required: false, defaultValue: 587 },
+          { name: 'smtpSecure', label: 'SMTP Secure (TLS)', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+          { name: 'smtpUser', label: 'SMTP User', dataType: PropertyDataType.STRING, required: false },
+          { name: 'smtpPass', label: 'SMTP Password', dataType: PropertyDataType.STRING, required: false },
+          { name: 'from', label: 'From', dataType: PropertyDataType.STRING, required: true },
+          { name: 'to', label: 'To', dataType: PropertyDataType.STRING, required: true },
+          { name: 'cc', label: 'CC', dataType: PropertyDataType.STRING, required: false },
+          { name: 'bcc', label: 'BCC', dataType: PropertyDataType.STRING, required: false },
+          { name: 'subject', label: 'Subject', dataType: PropertyDataType.STRING, required: true },
+          { name: 'body', label: 'Body', dataType: PropertyDataType.STRING, required: false },
+          { name: 'bodyType', label: 'Body Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'text' },
+          { name: 'contextKey', label: 'Context Key', dataType: PropertyDataType.STRING, required: false, defaultValue: 'emailResult' },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+
+      case NodeType.SLACK:
+        return [
+          { name: 'webhookUrl', label: 'Webhook URL', dataType: PropertyDataType.STRING, required: true },
+          { name: 'message', label: 'Message', dataType: PropertyDataType.STRING, required: false },
+          { name: 'channel', label: 'Channel', dataType: PropertyDataType.STRING, required: false },
+          { name: 'username', label: 'Username', dataType: PropertyDataType.STRING, required: false },
+          { name: 'iconEmoji', label: 'Icon Emoji', dataType: PropertyDataType.STRING, required: false },
+          { name: 'blocks', label: 'Blocks (JSON)', dataType: PropertyDataType.STRING, required: false },
+          { name: 'contextKey', label: 'Context Key', dataType: PropertyDataType.STRING, required: false, defaultValue: 'slackResult' },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+
+      case NodeType.WEBHOOK:
+        return [
+          { name: 'url', label: 'URL', dataType: PropertyDataType.STRING, required: true },
+          { name: 'method', label: 'Method', dataType: PropertyDataType.STRING, required: false, defaultValue: 'POST' },
+          { name: 'body', label: 'Body', dataType: PropertyDataType.STRING, required: false },
+          { name: 'bodyType', label: 'Body Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'json' },
+          { name: 'contextKey', label: 'Context Key', dataType: PropertyDataType.STRING, required: false, defaultValue: 'webhookResult' },
+          { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+
       case NodeType.INT_VALUE:
       case NodeType.STRING_VALUE:
       case NodeType.BOOLEAN_VALUE:

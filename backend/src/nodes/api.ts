@@ -4,7 +4,7 @@ import { ContextManager } from '../engine/context';
 import { VariableInterpolator } from '../utils/variableInterpolator';
 import { HttpClient, ApiRequestConfig } from '../utils/httpClient';
 import { CurlParser } from '../utils/curlParser';
-import { RetryHelper } from '../utils/retryHelper';
+import { RetryHelper, FAIL_SILENT_RESULT } from '../utils/retryHelper';
 
 /**
  * Helper function to format body for logging
@@ -139,8 +139,7 @@ export class ApiRequestHandler implements NodeHandler {
       null // No page object needed for API requests
     );
 
-    // If RetryHelper returned undefined (failSilently), throw error so executor can track it
-    if (result === undefined && data.failSilently) {
+    if ((result as unknown) === FAIL_SILENT_RESULT) {
       throw new Error(`API Request operation failed silently for URL: ${interpolatedUrl}`);
     }
   }
@@ -259,8 +258,7 @@ export class ApiCurlHandler implements NodeHandler {
       null // No page object needed for API requests
     );
 
-    // If RetryHelper returned undefined (failSilently), throw error so executor can track it
-    if (result === undefined && data.failSilently) {
+    if ((result as unknown) === FAIL_SILENT_RESULT) {
       throw new Error(`API cURL operation failed silently for command: ${interpolatedCommand.substring(0, 100)}...`);
     }
   }

@@ -7,6 +7,7 @@ import MenuIcon from '@mui/icons-material/Menu';
 import SettingsIcon from '@mui/icons-material/Settings';
 import PlayCircleFilledWhiteTwoToneIcon from '@mui/icons-material/PlayCircleFilledWhiteTwoTone';
 import { Eye, EyeOff, ChevronDown, FolderOpen } from 'lucide-react';
+import { WorkflowMetadata } from '@automflows/shared';
 import { useWorkflowStore } from '../store/workflowStore';
 import { getSampleTemplate } from '../utils/sampleTemplate';
 import { useSettingsStore } from '../store/settingsStore';
@@ -15,115 +16,46 @@ import { serializeWorkflow, deserializeWorkflow } from '../utils/serialization';
 import ValidationErrorPopup from './ValidationErrorPopup';
 import ResetWarning from './ResetWarning';
 import LoadWarning from './LoadWarning';
-import ReportSettingsPopup from './ReportSettingsPopup';
 import NotificationContainer from './NotificationContainer';
-import BreakpointSettings from './BreakpointSettings';
-import CanvasSettingsSubmenu from './CanvasSettingsSubmenu';
-import AppearanceSettingsSubmenu from './AppearanceSettingsSubmenu';
-import NotificationSettingsSubmenu from './NotificationSettingsSubmenu';
-import MemoryManagementSubmenu from './MemoryManagementSubmenu';
-import KeyBindingsModal from './KeyBindingsModal';
+import SettingsModal from './SettingsModal';
 import { useNotificationStore } from '../store/notificationStore';
 import Tooltip from './Tooltip';
 import { getBackendPort, getBackendBaseUrl } from '../utils/getBackendPort';
 
-const STORAGE_KEY_TRACE_LOGS = 'automflows_trace_logs';
-
 export default function TopBar() {
-  const { nodes, edges, groups, setNodes, setEdges, setGroups, resetExecution, edgesHidden, setEdgesHidden, selectedNode, followModeEnabled, setFollowModeEnabled, workflowFileName, setWorkflowFileName, setHasUnsavedChanges, setFitViewRequested } = useWorkflowStore();
+  const { nodes, edges, groups, setNodes, setEdges, setGroups, resetExecution, edgesHidden, setEdgesHidden, selectedNode, followModeEnabled, workflowFileName, setWorkflowFileName, setHasUnsavedChanges, setFitViewRequested, workflowMetadata, setWorkflowMetadata } = useWorkflowStore();
   const { validationErrors, setValidationErrors } = useExecution();
   const addNotification = useNotificationStore((state) => state.addNotification);
   const { tourCompleted, startTour, resetTour } = useSettingsStore();
   
   const [showResetWarning, setShowResetWarning] = useState(false);
   const [showLoadWarning, setShowLoadWarning] = useState(false);
-  const [showReportSettings, setShowReportSettings] = useState(false);
-  const [showKeyBindingsModal, setShowKeyBindingsModal] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isSettingsSubmenuOpen, setIsSettingsSubmenuOpen] = useState(false);
-  const [isBreakpointSubmenuOpen, setIsBreakpointSubmenuOpen] = useState(false);
-  const [currentSettingsSubmenu, setCurrentSettingsSubmenu] = useState<'main' | 'canvas' | 'appearance' | 'notifications' | 'memory'>('main');
   const [pendingLoadAction, setPendingLoadAction] = useState<(() => void) | null>(null);
   const [currentFileHandle, setCurrentFileHandle] = useState<FileSystemFileHandle | null>(null);
   const [saveDropdownOpen, setSaveDropdownOpen] = useState(false);
+  const [authorName, setAuthorName] = useState<string>(() => {
+    try {
+      return localStorage.getItem('automflows-author') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [isEditingAuthor, setIsEditingAuthor] = useState(false);
+  const [appVersion, setAppVersion] = useState<string>('');
   const saveDropdownRef = useRef<HTMLDivElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
-  const settingsSubmenuRef = useRef<HTMLDivElement>(null);
-  const breakpointSubmenuRef = useRef<HTMLDivElement>(null);
   
   // Check for File System Access API support
   const supportsFileSystemAccess = typeof window !== 'undefined' && 
     'showOpenFilePicker' in window && 
     'showSaveFilePicker' in window;
   
-  // Load trace logs state from localStorage on mount
-  // Default to true (enabled) if not set, so trace logs are enabled by default
-  const [traceLogs, setTraceLogs] = useState(() => {
-    const saved = localStorage.getItem(STORAGE_KEY_TRACE_LOGS);
-    // If not set, default to true (enabled)
-    if (saved === null) {
-      return true;
-    }
-    return saved === 'true';
-  });
-
-  // Track previous trace logs state to detect changes
-  const prevTraceLogsRef = useRef(traceLogs);
-
-  // Save trace logs state to localStorage when it changes and update backend if execution is running
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEY_TRACE_LOGS, String(traceLogs));
-    
-    // Show notification when trace logs setting changes
-    if (prevTraceLogsRef.current !== traceLogs) {
-      addNotification({
-        type: 'settings',
-        title: 'Settings Applied',
-        details: [traceLogs ? 'Trace logs enabled' : 'Trace logs disabled'],
-      });
-      prevTraceLogsRef.current = traceLogs;
-      
-      // Dynamically update trace logs in running execution
-      const updateTraceLogs = async () => {
-        try {
-          // Get backend port
-          const portResponse = await fetch('/.automflows-port');
-          if (portResponse.ok) {
-            const portText = await portResponse.text();
-            const port = parseInt(portText.trim(), 10);
-            if (!isNaN(port) && port > 0) {
-              // Call API to toggle trace logs
-              const response = await fetch(`${getBackendBaseUrl(port)}/api/workflows/execution/trace-logs`, {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ enabled: traceLogs }),
-              });
-              
-              if (!response.ok) {
-                // If execution is not running, that's fine - just log it
-                const data = await response.json();
-                if (data.message !== 'No execution running') {
-                  console.warn('Failed to update trace logs:', data.message);
-                }
-              }
-            }
-          }
-        } catch (error) {
-          // Silently fail if backend is not available or execution is not running
-          // This is expected when no execution is active
-        }
-      };
-      
-      updateTraceLogs();
-    }
-  }, [traceLogs, addNotification]);
-
   // Track previous follow mode state to detect changes
   const prevFollowModeRef = useRef(followModeEnabled);
 
-  // Show notification when follow mode setting changes
+  // Show notification when follow mode setting changes (from any source)
   useEffect(() => {
     if (prevFollowModeRef.current !== followModeEnabled) {
       addNotification({
@@ -135,6 +67,53 @@ export default function TopBar() {
     }
   }, [followModeEnabled, addNotification]);
 
+  // Seed author name from backend system-info if not already set
+  useEffect(() => {
+    if (authorName) return;
+    (async () => {
+      try {
+        const port = await getBackendPort();
+        const res = await fetch(`${getBackendBaseUrl(port)}/api/system-info`);
+        if (res.ok) {
+          const info = await res.json();
+          if (info.username && !localStorage.getItem('automflows-author')) {
+            setAuthorName(info.username);
+            localStorage.setItem('automflows-author', info.username);
+          }
+          if (info.appVersion) {
+            setAppVersion(info.appVersion);
+          }
+        }
+      } catch {
+        // Backend unavailable
+      }
+    })();
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const saveAuthorName = () => {
+    setIsEditingAuthor(false);
+    const trimmed = authorName.trim() || 'Unknown';
+    setAuthorName(trimmed);
+    try {
+      localStorage.setItem('automflows-author', trimmed);
+    } catch {
+      // localStorage unavailable
+    }
+  };
+
+  const buildMetadata = (): WorkflowMetadata => {
+    const now = new Date().toISOString();
+    const existing = workflowMetadata;
+    return {
+      ...existing,
+      name: workflowFileName !== 'Untitled Workflow' ? workflowFileName.replace(/\.json$/i, '') : existing?.name,
+      author: authorName || existing?.author || 'Unknown',
+      version: (existing?.version ?? 0) + 1,
+      createdAt: existing?.createdAt || now,
+      updatedAt: now,
+      automflowsVersion: appVersion || existing?.automflowsVersion,
+    };
+  };
 
   // Handle click outside menu to close it
   useEffect(() => {
@@ -142,45 +121,15 @@ export default function TopBar() {
       const target = event.target as HTMLElement;
       const targetNode = target as Node;
       
-      // Don't close if clicking on the FAB button itself
       const fabButton = target?.closest('[data-fab-button]');
-      if (fabButton) {
-        return;
-      }
+      if (fabButton) return;
       
-      // Check if click is inside settings submenu - if so, don't close
-      if (settingsSubmenuRef.current && settingsSubmenuRef.current.contains(targetNode)) {
-        return; // Let the click handlers inside the submenu handle the action
-      }
-      
-      // Check if click is on Settings button in main menu
-      const settingsButton = target?.closest('[data-settings-button]');
-      if (settingsButton) {
-        return; // Let the Settings button handler toggle the submenu
-      }
-      
-      // Handle save dropdown click outside
       if (saveDropdownRef.current && !saveDropdownRef.current.contains(targetNode)) {
         setSaveDropdownOpen(false);
       }
       
-      // Handle settings submenu click outside
-      if (isSettingsSubmenuOpen && settingsSubmenuRef.current && !settingsSubmenuRef.current.contains(targetNode)) {
-        setIsSettingsSubmenuOpen(false);
-        setCurrentSettingsSubmenu('main');
-      }
-      
-      // Handle breakpoint submenu click outside
-      if (isBreakpointSubmenuOpen && breakpointSubmenuRef.current && !breakpointSubmenuRef.current.contains(targetNode)) {
-        setIsBreakpointSubmenuOpen(false);
-      }
-      
-      // Handle menu click outside
       if (menuRef.current && !menuRef.current.contains(targetNode)) {
-        // If clicking outside main menu, close both menu and submenu
         setIsMenuOpen(false);
-        setIsSettingsSubmenuOpen(false);
-        setIsBreakpointSubmenuOpen(false);
       }
     };
 
@@ -188,16 +137,13 @@ export default function TopBar() {
       if (event.key === 'Escape') {
         if (saveDropdownOpen) {
           setSaveDropdownOpen(false);
-        } else if (isSettingsSubmenuOpen) {
-          setIsSettingsSubmenuOpen(false);
         } else if (isMenuOpen) {
           setIsMenuOpen(false);
         }
       }
     };
 
-    if (isMenuOpen || saveDropdownOpen || isSettingsSubmenuOpen) {
-      // Use mousedown instead of click to avoid interfering with button clicks
+    if (isMenuOpen || saveDropdownOpen) {
       document.addEventListener('mousedown', handleClickOutside, false);
       document.addEventListener('touchstart', handleClickOutside, false);
       document.addEventListener('keydown', handleEscapeKey);
@@ -208,7 +154,7 @@ export default function TopBar() {
         document.removeEventListener('keydown', handleEscapeKey);
       };
     }
-  }, [isMenuOpen, saveDropdownOpen, isSettingsSubmenuOpen]);
+  }, [isMenuOpen, saveDropdownOpen]);
 
   // Handle click outside dropdown
   useEffect(() => {
@@ -240,8 +186,8 @@ export default function TopBar() {
     };
   }, [saveDropdownOpen]);
 
-  const downloadWorkflow = (filename: string) => {
-    const workflow = serializeWorkflow(nodes, edges, groups);
+  const downloadWorkflow = (filename: string, metadata?: WorkflowMetadata) => {
+    const workflow = serializeWorkflow(nodes, edges, groups, metadata);
     const blob = new Blob([JSON.stringify(workflow, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -256,11 +202,11 @@ export default function TopBar() {
     setIsMenuOpen(false);
     
     try {
-      const workflow = serializeWorkflow(nodes, edges, groups);
+      const metadata = buildMetadata();
+      const workflow = serializeWorkflow(nodes, edges, groups, metadata);
       const workflowJson = JSON.stringify(workflow, null, 2);
 
       if (supportsFileSystemAccess && currentFileHandle) {
-        // Write directly to the file handle
         try {
           const writable = await currentFileHandle.createWritable();
           await writable.write(workflowJson);
@@ -268,32 +214,30 @@ export default function TopBar() {
           
           setWorkflowFileName(currentFileHandle.name);
           setHasUnsavedChanges(false);
+          setWorkflowMetadata(metadata);
           
           addNotification({
             type: 'info',
             title: 'Workflow Saved',
-            message: `Saved to ${currentFileHandle.name}`,
+            message: `Saved to ${currentFileHandle.name} (v${metadata.version})`,
           });
         } catch (error) {
-          // If writing fails (e.g., permission denied), fall back to Save As
           console.warn('Failed to write to file handle:', error);
           const fileName = workflowFileName !== 'Untitled Workflow' ? workflowFileName : undefined;
           await handleSaveAs(fileName);
         }
       } else {
-        // Fallback: use Save As behavior
         if (currentFileHandle) {
-          // Try to use the filename from the handle
-          downloadWorkflow(currentFileHandle.name);
+          downloadWorkflow(currentFileHandle.name, metadata);
           setWorkflowFileName(currentFileHandle.name);
           setHasUnsavedChanges(false);
+          setWorkflowMetadata(metadata);
           addNotification({
             type: 'info',
             title: 'Workflow Saved',
-            message: `Saved as ${currentFileHandle.name}`,
+            message: `Saved as ${currentFileHandle.name} (v${metadata.version})`,
           });
         } else {
-          // No file handle, use Save As with persisted filename if available
           const fileName = workflowFileName !== 'Untitled Workflow' ? workflowFileName : undefined;
           await handleSaveAs(fileName);
         }
@@ -312,10 +256,10 @@ export default function TopBar() {
     setIsMenuOpen(false);
     
     try {
-      const workflow = serializeWorkflow(nodes, edges, groups);
+      const metadata = buildMetadata();
+      const workflow = serializeWorkflow(nodes, edges, groups, metadata);
       const workflowJson = JSON.stringify(workflow, null, 2);
 
-      // Determine filename to use: parameter > persisted filename (if not Untitled) > default
       const fileName = suggestedFileName || 
                        (workflowFileName !== 'Untitled Workflow' ? workflowFileName : undefined) ||
                        `workflow-${Date.now()}.json`;
@@ -334,32 +278,31 @@ export default function TopBar() {
           await writable.write(workflowJson);
           await writable.close();
 
-          // Update current file handle
           setCurrentFileHandle(handle);
           setWorkflowFileName(handle.name);
           setHasUnsavedChanges(false);
+          setWorkflowMetadata(metadata);
 
           addNotification({
             type: 'info',
             title: 'Workflow Saved',
-            message: `Saved as ${handle.name}`,
+            message: `Saved as ${handle.name} (v${metadata.version})`,
           });
         } catch (error: any) {
-          // User cancelled the picker
           if (error.name === 'AbortError') {
             return;
           }
           throw error;
         }
       } else {
-        // Fallback: download file
-        downloadWorkflow(fileName);
+        downloadWorkflow(fileName, metadata);
         setWorkflowFileName(fileName);
         setHasUnsavedChanges(false);
+        setWorkflowMetadata(metadata);
         addNotification({
           type: 'info',
           title: 'Workflow Saved',
-          message: `Saved as ${fileName}`,
+          message: `Saved as ${fileName} (v${metadata.version})`,
         });
       }
     } catch (error) {
@@ -408,20 +351,21 @@ export default function TopBar() {
               reader.onload = (event) => {
                 try {
                   const workflow = JSON.parse(event.target?.result as string);
-                  const { nodes: loadedNodes, edges: loadedEdges, groups: loadedGroups } = deserializeWorkflow(workflow);
+                  const { nodes: loadedNodes, edges: loadedEdges, groups: loadedGroups, metadata: loadedMetadata } = deserializeWorkflow(workflow);
                   setNodes(loadedNodes);
                   setEdges(loadedEdges);
                   if (loadedGroups) {
                     setGroups(loadedGroups);
                   }
-                  setCurrentFileHandle(null); // Can't track file handle with file input
-                  const fileName = file.name || 'Untitled Workflow';
+                  setWorkflowMetadata(loadedMetadata);
+                  setCurrentFileHandle(null);
+                  const fileName = selectedFile.name || 'Untitled Workflow';
                   setWorkflowFileName(fileName);
                   setHasUnsavedChanges(false);
                   addNotification({
                     type: 'info',
                     title: 'Workflow Loaded',
-                    message: `Loaded workflow with ${loadedNodes.length} node(s)`,
+                    message: `Loaded workflow with ${loadedNodes.length} node(s)${loadedMetadata?.version ? ` (v${loadedMetadata.version})` : ''}`,
                   });
                   resolve();
                 } catch (error) {
@@ -444,28 +388,27 @@ export default function TopBar() {
         });
       }
 
-      // Load file content
       const reader = new FileReader();
       reader.onload = (event) => {
         try {
           const workflow = JSON.parse(event.target?.result as string);
-          const { nodes: loadedNodes, edges: loadedEdges, groups: loadedGroups } = deserializeWorkflow(workflow);
+          const { nodes: loadedNodes, edges: loadedEdges, groups: loadedGroups, metadata: loadedMetadata } = deserializeWorkflow(workflow);
           setNodes(loadedNodes);
           setEdges(loadedEdges);
           if (loadedGroups) {
             setGroups(loadedGroups);
           } else {
-            setGroups([]); // Clear groups if not present
+            setGroups([]);
           }
+          setWorkflowMetadata(loadedMetadata);
           setCurrentFileHandle(fileHandle);
-          // Extract filename from file handle or file name
           const fileName = fileHandle?.name || file.name || 'Untitled Workflow';
           setWorkflowFileName(fileName);
           setHasUnsavedChanges(false);
           addNotification({
             type: 'info',
             title: 'Workflow Loaded',
-            message: `Loaded workflow with ${loadedNodes.length} node(s)`,
+            message: `Loaded workflow with ${loadedNodes.length} node(s)${loadedMetadata?.version ? ` (v${loadedMetadata.version})` : ''}`,
           });
         } catch (error) {
           addNotification({
@@ -536,11 +479,11 @@ export default function TopBar() {
   }, []);
 
   const loadSampleTemplate = () => {
-    // Clear existing workflow first
     resetExecution();
     setNodes([]);
     setEdges([]);
-    setGroups([]); // Clear groups when resetting template
+    setGroups([]);
+    setWorkflowMetadata(undefined);
     setCurrentFileHandle(null);
     setWorkflowFileName('Untitled Workflow');
     setHasUnsavedChanges(false);
@@ -588,13 +531,7 @@ export default function TopBar() {
         <button
           data-fab-button
           data-tour="menu-button"
-          onClick={() => {
-            setIsMenuOpen(!isMenuOpen);
-            if (isMenuOpen) {
-              setIsSettingsSubmenuOpen(false);
-              setCurrentSettingsSubmenu('main');
-            }
-          }}
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
           className={`fixed bottom-6 right-6 w-14 h-14 bg-surface hover:bg-surfaceHighlight border border-border text-primary rounded-full shadow-lg flex items-center justify-center transition-all duration-200 hover:scale-110 ${
             selectedNode ? 'z-20' : 'z-50'
           }`}
@@ -626,7 +563,25 @@ export default function TopBar() {
           {/* Header */}
           <div className="pb-2 border-b border-border mb-2">
             <h2 className="text-lg font-bold text-primary">AutoMFlows</h2>
-            <span className="text-xs text-secondary">Workspace</span>
+            {isEditingAuthor ? (
+              <input
+                autoFocus
+                className="text-xs bg-transparent border-b border-accent text-primary outline-none w-full"
+                value={authorName}
+                onChange={(e) => setAuthorName(e.target.value)}
+                onBlur={saveAuthorName}
+                onKeyDown={(e) => { if (e.key === 'Enter') saveAuthorName(); }}
+                placeholder="Enter author name"
+              />
+            ) : (
+              <span
+                className="text-xs text-secondary cursor-pointer hover:text-primary transition-colors"
+                onClick={() => setIsEditingAuthor(true)}
+                title="Click to edit author name"
+              >
+                {authorName || 'Workspace'}
+              </span>
+            )}
           </div>
 
 
@@ -778,8 +733,10 @@ export default function TopBar() {
           {/* Settings Section - Last Item */}
           <div className="space-y-1">
             <button
-              data-settings-button
-              onClick={() => setIsSettingsSubmenuOpen(!isSettingsSubmenuOpen)}
+              onClick={() => {
+                setIsMenuOpen(false);
+                setShowSettingsModal(true);
+              }}
               className="w-full px-4 py-2.5 bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded flex items-center gap-3 text-sm transition-colors"
               title="Settings"
             >
@@ -789,219 +746,6 @@ export default function TopBar() {
           </div>
         </div>
       </div>
-
-      {/* Settings Submenu - Appears to the left of main menu */}
-      {isSettingsSubmenuOpen && (
-        <div
-          ref={settingsSubmenuRef}
-          className={`fixed bottom-24 right-[22rem] w-64 bg-surface border border-border rounded-lg shadow-2xl transition-all duration-300 ${
-            selectedNode ? 'z-20' : 'z-50'
-          }`}
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          {currentSettingsSubmenu === 'main' && (
-            <div className="p-3 space-y-3">
-              {/* Trace Logs Toggle */}
-              <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-                <span className="text-sm text-primary font-medium">Trace Logs</span>
-                <label 
-                  className="relative inline-flex items-center cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={traceLogs}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      const newValue = e.target.checked;
-                      setTraceLogs(newValue);
-                    }}
-                    className="sr-only"
-                  />
-                  <div
-                    className={`w-14 h-7 rounded-lg transition-colors flex items-center px-1 cursor-pointer ${
-                      traceLogs ? 'bg-green-600' : 'bg-surfaceHighlight'
-                    }`}
-                  >
-                    <div
-                      className={`w-5 h-5 rounded-md bg-white transition-transform duration-200 ${
-                        traceLogs ? 'translate-x-7' : 'translate-x-0'
-                      }`}
-                    />
-                  </div>
-                </label>
-              </div>
-
-              {/* Follow Mode Toggle */}
-              <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
-                <span className="text-sm text-primary font-medium">Follow Mode</span>
-                <label 
-                  className="relative inline-flex items-center cursor-pointer"
-                >
-                  <input
-                    type="checkbox"
-                    checked={followModeEnabled}
-                    onChange={(e) => {
-                      e.stopPropagation();
-                      const newValue = e.target.checked;
-                      setFollowModeEnabled(newValue);
-                    }}
-                    className="sr-only"
-                  />
-                  <div
-                    className={`w-14 h-7 rounded-lg transition-colors flex items-center px-1 cursor-pointer ${
-                      followModeEnabled ? 'bg-green-600' : 'bg-surfaceHighlight'
-                    }`}
-                  >
-                    <div
-                      className={`w-5 h-5 rounded-md bg-white transition-transform duration-200 ${
-                        followModeEnabled ? 'translate-x-7' : 'translate-x-0'
-                      }`}
-                    />
-                  </div>
-                </label>
-              </div>
-
-              {/* Settings Categories */}
-              <div className="border-t border-border pt-3 mt-2 space-y-1">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentSettingsSubmenu('canvas');
-                  }}
-                  className="w-full px-3 py-2 text-sm bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded-md transition-colors text-left"
-                >
-                  Canvas
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentSettingsSubmenu('appearance');
-                  }}
-                  className="w-full px-3 py-2 text-sm bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded-md transition-colors text-left"
-                >
-                  Appearance
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentSettingsSubmenu('notifications');
-                  }}
-                  className="w-full px-3 py-2 text-sm bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded-md transition-colors text-left"
-                >
-                  Notifications
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setCurrentSettingsSubmenu('memory');
-                  }}
-                  className="w-full px-3 py-2 text-sm bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded-md transition-colors text-left"
-                >
-                  Memory Management
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsSettingsSubmenuOpen(false);
-                    window.location.href = window.location.origin + '/workflows';
-                  }}
-                  className="w-full px-3 py-2 text-sm bg-surfaceHighlight hover:bg-surfaceHighlight text-primary rounded-md transition-colors text-left flex items-center gap-2"
-                >
-                  <FolderOpen size={16} />
-                  Workflow Library
-                </button>
-              </div>
-
-              {/* Breakpoint Settings Button */}
-              <div className="border-t border-border pt-3 mt-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsBreakpointSubmenuOpen(!isBreakpointSubmenuOpen);
-                  }}
-                  className="w-full px-3 py-2 text-sm bg-orange-600 hover:bg-orange-700 text-white rounded-md transition-colors flex items-center justify-between"
-                >
-                  <span>Breakpoint</span>
-                  <ChevronDown size={16} className={`transition-transform ${isBreakpointSubmenuOpen ? 'rotate-180' : ''}`} />
-                </button>
-              </div>
-              {/* Report Settings Button */}
-              <div className="border-t border-border pt-3 mt-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsSettingsSubmenuOpen(false);
-                    setIsMenuOpen(false);
-                    setShowReportSettings(true);
-                  }}
-                  className="w-full px-3 py-2 text-sm bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
-                >
-                  Report Settings
-                </button>
-              </div>
-              {/* Key Bindings Button */}
-              <div className="border-t border-border pt-3 mt-2">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsSettingsSubmenuOpen(false);
-                    setIsMenuOpen(false);
-                    setShowKeyBindingsModal(true);
-                  }}
-                  className="w-full px-3 py-2 text-sm bg-purple-600 hover:bg-purple-700 text-white rounded-md transition-colors"
-                >
-                  Key Bindings
-                </button>
-              </div>
-            </div>
-          )}
-          
-          {currentSettingsSubmenu === 'canvas' && (
-            <CanvasSettingsSubmenu onBack={() => setCurrentSettingsSubmenu('main')} />
-          )}
-          
-          {currentSettingsSubmenu === 'appearance' && (
-            <AppearanceSettingsSubmenu onBack={() => setCurrentSettingsSubmenu('main')} />
-          )}
-          
-          {currentSettingsSubmenu === 'notifications' && (
-            <NotificationSettingsSubmenu onBack={() => setCurrentSettingsSubmenu('main')} />
-          )}
-          
-          {currentSettingsSubmenu === 'memory' && (
-            <MemoryManagementSubmenu onBack={() => setCurrentSettingsSubmenu('main')} />
-          )}
-        </div>
-      )}
-
-      {/* Breakpoint Settings Submenu */}
-      {isBreakpointSubmenuOpen && (
-        <div
-          ref={breakpointSubmenuRef}
-          className={`fixed bottom-24 right-[22rem] w-80 bg-surface border border-border rounded-lg shadow-2xl transition-all duration-300 ${
-            selectedNode ? 'z-20' : 'z-50'
-          }`}
-          onClick={(e) => e.stopPropagation()}
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          <div className="p-3">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-medium text-primary">Breakpoint Settings</h3>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setIsBreakpointSubmenuOpen(false);
-                }}
-                className="text-secondary hover:text-primary"
-              >
-                ×
-              </button>
-            </div>
-            <BreakpointSettings />
-          </div>
-        </div>
-      )}
 
       {/* Popups and Warnings */}
       {validationErrors.length > 0 && (
@@ -1025,11 +769,8 @@ export default function TopBar() {
           }}
         />
       )}
-      {showReportSettings && (
-        <ReportSettingsPopup onClose={() => setShowReportSettings(false)} />
-      )}
-      {showKeyBindingsModal && (
-        <KeyBindingsModal onClose={() => setShowKeyBindingsModal(false)} />
+      {showSettingsModal && (
+        <SettingsModal onClose={() => setShowSettingsModal(false)} />
       )}
       <NotificationContainer />
     </>

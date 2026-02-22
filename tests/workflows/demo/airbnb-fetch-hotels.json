@@ -1,0 +1,852 @@
+{
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": {
+        "x": 114.70547351491655,
+        "y": 253.5957681094971
+      },
+      "data": {
+        "type": "start",
+        "label": "Start",
+        "isTest": true,
+        "recordSession": false,
+        "screenshotAllNodes": true,
+        "screenshotTiming": "pre",
+        "snapshotAllNodes": true,
+        "snapshotTiming": "post",
+        "slowMo": 1009,
+        "scrollThenAction": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "width": 200
+      }
+    },
+    {
+      "id": "openBrowser-1",
+      "type": "openBrowser",
+      "position": {
+        "x": 618.7585188383239,
+        "y": 253.5957681094971
+      },
+      "data": {
+        "type": "openBrowser",
+        "label": "Open Browser (Mobile Stealth)",
+        "headless": false,
+        "viewportWidth": 380,
+        "viewportHeight": 844,
+        "maxWindow": false,
+        "browser": "chromium",
+        "stealthMode": true,
+        "capabilities": {
+          "isMobile": true,
+          "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1"
+        },
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "launchOptions": {}
+      }
+    },
+    {
+      "id": "navigate-1",
+      "type": "navigation",
+      "position": {
+        "x": 868.7585188383239,
+        "y": 253.5957681094971
+      },
+      "data": {
+        "type": "navigation",
+        "label": "Navigate to Airbnb",
+        "action": "navigate",
+        "url": "https://airbnb.co.in",
+        "timeout": 30000,
+        "waitUntil": "load",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "width": 200
+      }
+    },
+    {
+      "id": "wait-page-load",
+      "type": "wait",
+      "position": {
+        "x": 1118.7585188383239,
+        "y": 253.5957681094971
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for page load",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "action-start-search",
+      "type": "action",
+      "position": {
+        "x": 1368.7585188383239,
+        "y": 253.5957681094971
+      },
+      "data": {
+        "type": "action",
+        "label": "Click Start your search",
+        "action": "click",
+        "selector": "text:Start your search",
+        "selectorType": "getByText",
+        "timeout": 10000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "failSilently": true
+      }
+    },
+    {
+      "id": "action-search-homes",
+      "type": "action",
+      "position": {
+        "x": 100,
+        "y": 762
+      },
+      "data": {
+        "type": "action",
+        "label": "Click Search for homes",
+        "action": "click",
+        "selector": "text:Search for homes",
+        "selectorType": "getByText",
+        "timeout": 10000,
+        "isTest": true,
+        "failSilently": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "action-click-search",
+      "type": "action",
+      "position": {
+        "x": 352.2973967099941,
+        "y": 760.851301645003
+      },
+      "data": {
+        "type": "action",
+        "label": "Click search field",
+        "action": "click",
+        "selector": "role:search",
+        "selectorType": "getByRole",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "wait-search-field",
+      "type": "wait",
+      "position": {
+        "x": 600,
+        "y": 762
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for search field",
+        "waitType": "timeout",
+        "value": 3000,
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "keyboard-type-goa",
+      "type": "keyboard",
+      "position": {
+        "x": 850,
+        "y": 762
+      },
+      "data": {
+        "type": "keyboard",
+        "label": "Type Goa",
+        "action": "type",
+        "timeout": 30000,
+        "isTest": true,
+        "clearFirst": true,
+        "text": "${data.destination}",
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "action-click-option",
+      "type": "action",
+      "position": {
+        "x": 1100,
+        "y": 762
+      },
+      "data": {
+        "type": "action",
+        "label": "Select first suggestion",
+        "action": "click",
+        "selector": "role:option",
+        "selectorType": "getByRole",
+        "timeout": 30000,
+        "isTest": true,
+        "selectorModifiers": {
+          "nth": 0
+        },
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "action-click-checkin",
+      "type": "action",
+      "position": {
+        "x": 1350,
+        "y": 761.9999999999999
+      },
+      "data": {
+        "type": "action",
+        "label": "Select check-in date",
+        "action": "click",
+        "selector": "[data-state--date-string=\"${data.from_date}\"]",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "action-click-checkout",
+      "type": "action",
+      "position": {
+        "x": 100,
+        "y": 1324
+      },
+      "data": {
+        "type": "action",
+        "label": "Select check-out date",
+        "action": "click",
+        "selector": "[data-state--date-string=\"${data.to_date}\"]",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "action-confirm-dates",
+      "type": "action",
+      "position": {
+        "x": 350,
+        "y": 1324
+      },
+      "data": {
+        "type": "action",
+        "label": "Confirm dates",
+        "action": "click",
+        "selector": "[data-testid=\"dates-footer-primary-btn\"]",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "action-add-guest",
+      "type": "action",
+      "position": {
+        "x": 600,
+        "y": 1324
+      },
+      "data": {
+        "type": "action",
+        "label": "Add guest",
+        "action": "click",
+        "selector": "[data-testid=\"stepper-adults-increase-button\"]",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "action-search-submit",
+      "type": "action",
+      "position": {
+        "x": 850,
+        "y": 1324
+      },
+      "data": {
+        "type": "action",
+        "label": "Submit search",
+        "action": "click",
+        "selector": "[data-testid=\"explore-footer-primary-btn\"]",
+        "selectorType": "css",
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "wait-results-load",
+      "type": "wait",
+      "position": {
+        "x": 1096,
+        "y": 1370
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for results",
+        "waitType": "timeout",
+        "value": 5000,
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "action-dismiss-popup",
+      "type": "action",
+      "position": {
+        "x": 1348.6804920892273,
+        "y": 1324
+      },
+      "data": {
+        "type": "action",
+        "label": "Dismiss popup",
+        "action": "click",
+        "selector": "text:Got it",
+        "selectorType": "getByText",
+        "timeout": 30000,
+        "isTest": true,
+        "failSilently": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "width": 200
+      }
+    },
+    {
+      "id": "wait-after-popup",
+      "type": "wait",
+      "position": {
+        "x": -21.600626779653723,
+        "y": 1935.0284369127476
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait after popup",
+        "waitType": "timeout",
+        "value": 2000,
+        "timeout": 30000,
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "elemQuery-getCount",
+      "type": "elementQuery",
+      "position": {
+        "x": 228.39937322034626,
+        "y": 1935.0284369127476
+      },
+      "data": {
+        "type": "elementQuery",
+        "label": "Count listing cards",
+        "action": "getCount",
+        "selector": "[data-testid=\"card-container\"]",
+        "selectorType": "css",
+        "timeout": 30000,
+        "outputVariable": "resultCardCount",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "jsInitRows",
+      "type": "javascriptCode",
+      "position": {
+        "x": 478.39937322034626,
+        "y": 1935.0284369127476
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Init empty CSV rows",
+        "code": "context.setData('initRows', []);",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "jsCreateIndices",
+      "type": "javascriptCode",
+      "position": {
+        "x": 863.7070689625785,
+        "y": 1937.361328218648
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Create card indices",
+        "code": "const count = context.getData('resultCardCount') || 0;\nconst indices = Array.from({length: count}, (_, i) => i);\ncontext.setData('cardIndices', indices);",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "csvWriteHeaders",
+      "type": "csvHandle",
+      "position": {
+        "x": 1113.7070689625784,
+        "y": 1937.361328218648
+      },
+      "data": {
+        "type": "csvHandle",
+        "label": "Create CSV with headers",
+        "action": "write",
+        "filePath": "tests/output/airbnb_hotels.csv",
+        "dataSource": "initRows",
+        "headers": [
+          "name",
+          "price",
+          "link"
+        ],
+        "delimiter": ",",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "loopCards",
+      "type": "loop",
+      "position": {
+        "x": 1348.315726297033,
+        "y": 1959.7513448018951
+      },
+      "data": {
+        "type": "loop",
+        "label": "Loop over listings",
+        "mode": "forEach",
+        "arrayVariable": "cardIndices",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "jsSetCardIndex",
+      "type": "javascriptCode",
+      "position": {
+        "x": 112.7156666930448,
+        "y": 2765.7309922514937
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set card index (1-based)",
+        "code": "const idx = context.getVariable('index') || 0;\ncontext.setData('cardIndex', idx + 1);",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "elemQuery-getName",
+      "type": "elementQuery",
+      "position": {
+        "x": 362.7156666930448,
+        "y": 2765.7309922514937
+      },
+      "data": {
+        "type": "elementQuery",
+        "label": "Get listing name",
+        "action": "getText",
+        "selector": "(//div[@data-testid=\"card-container\"])[${data.cardIndex}]//div[@data-testid=\"listing-card-title\"]",
+        "selectorType": "xpath",
+        "timeout": 10000,
+        "outputVariable": "listingName",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "elemQuery-getCardText",
+      "type": "elementQuery",
+      "position": {
+        "x": 612.7156666930448,
+        "y": 2765.7309922514937
+      },
+      "data": {
+        "type": "elementQuery",
+        "label": "Get card full text",
+        "action": "getText",
+        "selector": "(//div[@data-testid=\"card-container\"])[${data.cardIndex}]",
+        "selectorType": "xpath",
+        "timeout": 10000,
+        "outputVariable": "cardText",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "backgroundColor": "#06b6d4"
+      }
+    },
+    {
+      "id": "elemQuery-getLink",
+      "type": "elementQuery",
+      "position": {
+        "x": 857.8251625383512,
+        "y": 2760.8404880968
+      },
+      "data": {
+        "type": "elementQuery",
+        "label": "Get listing link",
+        "action": "getAttribute",
+        "selector": "((//div[@data-testid=\"card-container\"])[${data.cardIndex}]//a)[1]",
+        "selectorType": "xpath",
+        "attributeName": "href",
+        "timeout": 10000,
+        "outputVariable": "listingLink",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 200
+      }
+    },
+    {
+      "id": "jsBuildRow",
+      "type": "javascriptCode",
+      "position": {
+        "x": 1112.7156666930448,
+        "y": 2765.7309922514937
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Build CSV row",
+        "code": "const name = (context.getData('listingName') || '').replace(/[\\r\\n]+/g, ' ').trim();\nconst cardText = context.getData('cardText') || '';\nconst link = context.getData('listingLink') || '';\nconst priceMatch = cardText.match(/[\\$\\u20b9\\u00a3\\u20ac]\\s?[\\d,]+/);\nconst price = priceMatch ? priceMatch[0].trim() : '';\nconst fullLink = link && link.startsWith('http') ? link : 'https://www.airbnb.com' + (link || '');\nconst row = {\n  name: name,\n  price: price,\n  link: fullLink\n};\ncontext.setData('rowToAppend', [row]);",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 200
+      }
+    },
+    {
+      "id": "csvAppend",
+      "type": "csvHandle",
+      "position": {
+        "x": 1341.277359449246,
+        "y": 2787.1692994952923
+      },
+      "data": {
+        "type": "csvHandle",
+        "label": "Append row to CSV",
+        "action": "append",
+        "filePath": "tests/output/airbnb_hotels.csv",
+        "dataSource": "rowToAppend",
+        "headers": [
+          "name",
+          "price",
+          "link"
+        ],
+        "delimiter": ",",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 200
+      }
+    },
+    {
+      "id": "setConfig.setConfig-1771661224289",
+      "type": "setConfig.setConfig",
+      "position": {
+        "x": 368.7585188383239,
+        "y": 248.24774274253997
+      },
+      "data": {
+        "type": "setConfig.setConfig",
+        "label": "Set Config",
+        "config": {
+          "destination": "south goa",
+          "from_date": "2026-03-07",
+          "to_date": "2026-03-09"
+        },
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "width": 197.33334350585938
+      }
+    },
+    {
+      "id": "shortcut.shortcut-1771754058096",
+      "type": "shortcut.shortcut",
+      "position": {
+        "x": -127.95578209966536,
+        "y": 258.626662132891
+      },
+      "data": {
+        "type": "shortcut.shortcut",
+        "label": "Shortcut",
+        "shortcut": "s",
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": true
+      }
+    },
+    {
+      "id": "comment-box.comment-1771755262478",
+      "type": "comment-box.comment",
+      "position": {
+        "x": 305.5931498460238,
+        "y": 99.56439682366582
+      },
+      "data": {
+        "type": "comment-box.comment",
+        "label": "Comment Box",
+        "content": "Edit Config to change paras for search.\n",
+        "isTest": true,
+        "width": 316,
+        "searchHighlighted": false,
+        "isPinned": true
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "start-1",
+      "target": "setConfig.setConfig-1771661224289",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "e2",
+      "source": "openBrowser-1",
+      "target": "navigate-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e3",
+      "source": "navigate-1",
+      "target": "wait-page-load",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e4",
+      "source": "wait-page-load",
+      "target": "action-start-search",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e5",
+      "source": "action-start-search",
+      "target": "action-search-homes",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e6",
+      "source": "action-search-homes",
+      "target": "action-click-search",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e7",
+      "source": "action-click-search",
+      "target": "wait-search-field",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e8",
+      "source": "wait-search-field",
+      "target": "keyboard-type-goa",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e9",
+      "source": "keyboard-type-goa",
+      "target": "action-click-option",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e10",
+      "source": "action-click-option",
+      "target": "action-click-checkin",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e11",
+      "source": "action-click-checkin",
+      "target": "action-click-checkout",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e12",
+      "source": "action-click-checkout",
+      "target": "action-confirm-dates",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e13",
+      "source": "action-confirm-dates",
+      "target": "action-add-guest",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e14",
+      "source": "action-add-guest",
+      "target": "action-search-submit",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e15",
+      "source": "action-search-submit",
+      "target": "wait-results-load",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e16",
+      "source": "wait-results-load",
+      "target": "action-dismiss-popup",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e17",
+      "source": "action-dismiss-popup",
+      "target": "wait-after-popup",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e18",
+      "source": "wait-after-popup",
+      "target": "elemQuery-getCount",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e19",
+      "source": "elemQuery-getCount",
+      "target": "jsInitRows",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e20",
+      "source": "jsInitRows",
+      "target": "jsCreateIndices",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e21",
+      "source": "jsCreateIndices",
+      "target": "csvWriteHeaders",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e22",
+      "source": "csvWriteHeaders",
+      "target": "loopCards",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e23",
+      "source": "loopCards",
+      "target": "jsSetCardIndex",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e24",
+      "source": "jsSetCardIndex",
+      "target": "elemQuery-getName",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e25",
+      "source": "elemQuery-getName",
+      "target": "elemQuery-getCardText",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e26",
+      "source": "elemQuery-getCardText",
+      "target": "elemQuery-getLink",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e27",
+      "source": "elemQuery-getLink",
+      "target": "jsBuildRow",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e28",
+      "source": "jsBuildRow",
+      "target": "csvAppend",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "reactflow__edge-setConfig.setConfig-1771661224289output-openBrowser-1driver",
+      "source": "setConfig.setConfig-1771661224289",
+      "target": "openBrowser-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "edge-csvAppend-output-shortcut.shortcut-1771754058096-input",
+      "source": "csvAppend",
+      "target": "shortcut.shortcut-1771754058096",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "edge-shortcut.shortcut-1771754058096-output-comment-box.comment-1771755262478-input",
+      "source": "shortcut.shortcut-1771754058096",
+      "target": "comment-box.comment-1771755262478",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    }
+  ],
+  "groups": []
+}

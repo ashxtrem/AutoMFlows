@@ -29,6 +29,9 @@ import { renderDbConnectProperties } from './dbConnect';
 import { renderDbDisconnectProperties } from './dbDisconnect';
 import { renderDbQueryProperties } from './dbQuery';
 import { renderCsvHandleProperties } from './csvHandle';
+import { renderEmailProperties } from './email';
+import { renderSlackProperties } from './slack';
+import { renderWebhookProperties } from './webhook';
 import { renderShortcutProperties } from './shortcut';
 import { renderCommentBoxProperties } from './commentBox';
 import { renderSetConfigProperties } from './setConfig';
@@ -71,6 +74,9 @@ export const propertyRendererRegistry: Record<string, PropertyRenderer> = {
   [NodeType.DB_TRANSACTION_COMMIT]: renderDbDisconnectProperties,
   [NodeType.DB_TRANSACTION_ROLLBACK]: renderDbDisconnectProperties,
   [NodeType.CSV_HANDLE]: renderCsvHandleProperties,
+  [NodeType.EMAIL]: renderEmailProperties,
+  [NodeType.SLACK]: renderSlackProperties,
+  [NodeType.WEBHOOK]: renderWebhookProperties,
 };
 
 export function getPropertyRenderer(nodeType: string): PropertyRenderer | null {

@@ -42,8 +42,8 @@ export function loadWorkflowExamples(): WorkflowExample[] {
       const useCase = inferUseCase(file, workflow);
       
       examples.push({
-        name: file.replace('.json', ''),
-        description: `Example workflow: ${useCase}`,
+        name: workflow.metadata?.name || file.replace('.json', ''),
+        description: workflow.metadata?.description || `Example workflow: ${useCase}`,
         workflow,
         useCase,
       });
@@ -101,5 +101,6 @@ export function getWorkflowExamplesAsResource(): string {
     useCase: e.useCase,
     nodeCount: e.workflow.nodes.length,
     edgeCount: e.workflow.edges.length,
+    metadata: e.workflow.metadata,
   })), null, 2);
 }

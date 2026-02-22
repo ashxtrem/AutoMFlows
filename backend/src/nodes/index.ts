@@ -7,6 +7,7 @@ import { JavaScriptCodeHandler, LoopHandler } from './logic';
 import { ApiRequestHandler, ApiCurlHandler } from './api';
 import { LoadConfigFileHandler, SelectConfigFileHandler } from './config';
 import { DbConnectHandler, DbDisconnectHandler, DbQueryHandler, DbTransactionBeginHandler, DbTransactionCommitHandler, DbTransactionRollbackHandler } from './database';
+import { EmailHandler, SlackHandler, WebhookHandler } from './notification';
 import { pluginRegistry } from '../plugins/registry';
 
 // Start node handler (no-op)
@@ -51,6 +52,9 @@ const handlers: NodeHandlerMap = {
   [NodeType.DB_TRANSACTION_COMMIT]: new DbTransactionCommitHandler(),
   [NodeType.DB_TRANSACTION_ROLLBACK]: new DbTransactionRollbackHandler(),
   [NodeType.CSV_HANDLE]: new CsvHandleHandler(),
+  [NodeType.EMAIL]: new EmailHandler(),
+  [NodeType.SLACK]: new SlackHandler(),
+  [NodeType.WEBHOOK]: new WebhookHandler(),
 };
 
 export function getNodeHandler(nodeType: NodeType | string): NodeHandler | undefined {
@@ -72,4 +76,5 @@ export * from './logic';
 export * from './api';
 export * from './config';
 export * from './database';
+export * from './notification';
 
