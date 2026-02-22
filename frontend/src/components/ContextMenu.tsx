@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Copy, Trash2, Palette, SkipForward, ChevronRight, Settings, Plug, RotateCw, Plus, LayoutGrid, FolderPlus } from 'lucide-react';
+import { Copy, Trash2, Palette, SkipForward, ChevronRight, Settings, Plug, RotateCw, Plus, LayoutGrid, FolderPlus, Save, Package } from 'lucide-react';
 import { useWorkflowStore } from '../store/workflowStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { getNodeProperties, isPropertyInputConnection } from '../utils/nodeProperties';
@@ -12,6 +12,7 @@ interface ContextMenuProps {
   screenPosition?: { x: number; y: number };
   onClose: () => void;
   onAddNode?: () => void;
+  onSaveAsSubNode?: (nodeIds: string[]) => void;
 }
 
 const PRESET_COLORS = [
@@ -29,15 +30,18 @@ const PRESET_COLORS = [
   { name: 'Default', value: '#1f2937' },
 ];
 
-export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition: _screenPosition, onClose, onAddNode }: ContextMenuProps) {
+export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition: _screenPosition, onClose, onAddNode, onSaveAsSubNode }: ContextMenuProps) {
   const menuRef = useRef<HTMLDivElement>(null);
   const colorSubmenuRef = useRef<HTMLDivElement>(null);
   const convertInputSubmenuRef = useRef<HTMLDivElement>(null);
   const arrangeSubmenuRef = useRef<HTMLDivElement>(null);
+  const subNodesSubmenuRef = useRef<HTMLDivElement>(null);
   const [showColorSubmenu, setShowColorSubmenu] = useState(false);
   const [showConvertInputSubmenu, setShowConvertInputSubmenu] = useState(false);
   const [showArrangeSubmenu, setShowArrangeSubmenu] = useState(false);
-  const { copyNode, pasteNode, deleteNode, toggleBypass, clipboard, setNodeColor, nodes, setSelectedNode, convertPropertyToInput, convertInputToProperty, reloadNode, selectedNodeIds, arrangeSelectedNodes, createGroup } = useWorkflowStore();
+  const [showSubNodesSubmenu, setShowSubNodesSubmenu] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const { copyNode, pasteNode, deleteNode, toggleBypass, clipboard, setNodeColor, nodes, setSelectedNode, convertPropertyToInput, convertInputToProperty, reloadNode, selectedNodeIds, arrangeSelectedNodes, createGroup, subNodeSnippets, insertSubNode, deleteSubNode } = useWorkflowStore();
   const { canvas } = useSettingsStore();
   
   // Check if multiple nodes are selected (need 2+ for arrange)
@@ -49,7 +53,7 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
 
   // Calculate adjusted position to keep menu within viewport
   const MENU_WIDTH = 180;
-  const MENU_HEIGHT = nodeId ? 350 : 60; // Approximate height based on items (increased for submenus)
+  const MENU_HEIGHT = nodeId ? 380 : 120; // Approximate height based on items (increased for submenus)
   const SUBMENU_WIDTH = 200;
   const [adjustedX, setAdjustedX] = useState(x);
   const [adjustedY, setAdjustedY] = useState(y);
@@ -203,6 +207,35 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
   }, [showArrangeSubmenu, submenuOnRight]);
 
   useEffect(() => {
+    if (showSubNodesSubmenu && subNodesSubmenuRef.current) {
+      requestAnimationFrame(() => {
+        if (subNodesSubmenuRef.current) {
+          const rect = subNodesSubmenuRef.current.getBoundingClientRect();
+          const viewportHeight = window.innerHeight;
+          const viewportWidth = window.innerWidth;
+          let offsetY = 0;
+          
+          if (rect.bottom > viewportHeight) {
+            offsetY = viewportHeight - rect.bottom - 10;
+          }
+          
+          if (rect.top < 0) {
+            offsetY = -rect.top + 10;
+          }
+          
+          if (submenuOnRight && rect.right > viewportWidth) {
+            setSubmenuOnRight(false);
+          } else if (!submenuOnRight && rect.left < 0) {
+            setSubmenuOnRight(true);
+          }
+          
+          setSubmenuY(offsetY);
+        }
+      });
+    }
+  }, [showSubNodesSubmenu, submenuOnRight]);
+
+  useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       // Use a small delay to allow button clicks to process first
       setTimeout(() => {
@@ -345,6 +378,35 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
     onClose();
   };
 
+  const handleSaveAsSubNode = () => {
+    let nodeIds: string[];
+    if (selectedNodeIds.size > 1 && selectedNodeIds.has(nodeId || '')) {
+      nodeIds = Array.from(selectedNodeIds);
+    } else if (nodeId) {
+      nodeIds = [nodeId];
+    } else {
+      return;
+    }
+    onClose();
+    onSaveAsSubNode?.(nodeIds);
+  };
+
+  const handleInsertSubNode = (snippetId: string) => {
+    const position = flowPosition || { x, y };
+    insertSubNode(snippetId, position);
+    onClose();
+  };
+
+  const handleDeleteSubNode = (e: React.MouseEvent, snippetId: string) => {
+    e.stopPropagation();
+    if (deleteConfirmId === snippetId) {
+      deleteSubNode(snippetId);
+      setDeleteConfirmId(null);
+    } else {
+      setDeleteConfirmId(snippetId);
+    }
+  };
+
   // Get available properties for the node
   const availableProperties = nodeId ? (() => {
     const node = nodes.find(n => n.id === nodeId);
@@ -365,10 +427,12 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
         if (!relatedTarget || (!menuRef.current?.contains(relatedTarget) && 
             !colorSubmenuRef.current?.contains(relatedTarget) && 
             !convertInputSubmenuRef.current?.contains(relatedTarget) &&
-            !arrangeSubmenuRef.current?.contains(relatedTarget))) {
+            !arrangeSubmenuRef.current?.contains(relatedTarget) &&
+            !subNodesSubmenuRef.current?.contains(relatedTarget))) {
           setShowColorSubmenu(false);
           setShowConvertInputSubmenu(false);
           setShowArrangeSubmenu(false);
+          setShowSubNodesSubmenu(false);
         }
       }}
     >
@@ -565,6 +629,14 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
             )}
             <div className="border-t border-border my-1" />
             <button
+              onClick={handleSaveAsSubNode}
+              className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surfaceHighlight flex items-center gap-2"
+            >
+              <Save size={16} />
+              Save as Sub Node
+            </button>
+            <div className="border-t border-border my-1" />
+            <button
               onClick={handleDelete}
               className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-surfaceHighlight flex items-center gap-2"
             >
@@ -588,6 +660,76 @@ export default function ContextMenu({ x, y, nodeId, flowPosition, screenPosition
               <Copy size={16} />
               Paste
             </button>
+            <div
+              className="relative"
+              onMouseEnter={() => setShowSubNodesSubmenu(true)}
+              onMouseLeave={(e) => {
+                const relatedTarget = e.relatedTarget as HTMLElement;
+                if (!relatedTarget || !subNodesSubmenuRef.current?.contains(relatedTarget)) {
+                  setShowSubNodesSubmenu(false);
+                  setDeleteConfirmId(null);
+                }
+              }}
+            >
+              <button
+                className="w-full px-4 py-2 text-left text-sm text-primary hover:bg-surfaceHighlight flex items-center justify-between gap-2"
+              >
+                <div className="flex items-center gap-2">
+                  <Package size={16} />
+                  Insert Sub Nodes
+                </div>
+                <ChevronRight size={14} />
+              </button>
+              {showSubNodesSubmenu && (
+                <div
+                  ref={subNodesSubmenuRef}
+                  className="absolute top-0 bg-surface border border-border rounded-lg shadow-xl z-50 py-2 min-w-[200px] max-h-[400px] overflow-y-auto"
+                  style={{
+                    [submenuOnRight ? 'left' : 'right']: '100%',
+                    transform: submenuY !== 0 ? `translateY(${submenuY}px)` : undefined
+                  }}
+                  onMouseEnter={() => setShowSubNodesSubmenu(true)}
+                  onMouseLeave={() => {
+                    setShowSubNodesSubmenu(false);
+                    setDeleteConfirmId(null);
+                  }}
+                >
+                  {subNodeSnippets.length === 0 ? (
+                    <div className="px-4 py-2 text-sm text-gray-500">
+                      No saved sub nodes
+                    </div>
+                  ) : (
+                    subNodeSnippets.map((snippet) => (
+                      <div
+                        key={snippet.id}
+                        className="flex items-center hover:bg-surfaceHighlight group"
+                      >
+                        <button
+                          onClick={() => handleInsertSubNode(snippet.id)}
+                          className="flex-1 px-4 py-2 text-left text-sm text-primary flex items-center gap-2 min-w-0"
+                        >
+                          <span className="truncate">{snippet.name}</span>
+                          <span className="text-xs text-gray-500 flex-shrink-0">
+                            ({snippet.nodes.length})
+                          </span>
+                        </button>
+                        <button
+                          onClick={(e) => handleDeleteSubNode(e, snippet.id)}
+                          className={`px-2 py-2 flex-shrink-0 transition-colors ${
+                            deleteConfirmId === snippet.id
+                              ? 'text-red-400'
+                              : 'text-gray-500 opacity-0 group-hover:opacity-100 hover:text-red-400'
+                          }`}
+                          title={deleteConfirmId === snippet.id ? 'Click again to confirm delete' : 'Delete sub node'}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>

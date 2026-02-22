@@ -19,9 +19,12 @@ export function useWorkflowAutoSave() {
 }
 
 export function useWorkflowLoad() {
-  const { setNodes, setEdges, setGroups, saveToHistory, clearAllNodeErrors, setFitViewRequested } = useWorkflowStore();
+  const { setNodes, setEdges, setGroups, saveToHistory, clearAllNodeErrors, setFitViewRequested, loadSubNodes } = useWorkflowStore();
 
   useEffect(() => {
+    // Load sub-node snippets from localStorage
+    loadSubNodes();
+
     // Load workflow from localStorage on mount
     const loaded = loadFromLocalStorage();
     if (loaded) {
@@ -50,6 +53,6 @@ export function useWorkflowLoad() {
         saveToHistory();
       }, 100);
     }
-  }, [setNodes, setEdges, setGroups, saveToHistory, clearAllNodeErrors, setFitViewRequested]);
+  }, [setNodes, setEdges, setGroups, saveToHistory, clearAllNodeErrors, setFitViewRequested, loadSubNodes]);
 }
 

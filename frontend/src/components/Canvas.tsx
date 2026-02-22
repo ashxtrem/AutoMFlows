@@ -15,6 +15,7 @@ import Tooltip from './Tooltip';
 import CustomNode from '../nodes/CustomNode';
 import CustomEdge from './CustomEdge';
 import ContextMenu from './ContextMenu';
+import SubNodeNameDialog from './SubNodeNameDialog';
 import CanvasSearchOverlay from './CanvasSearchOverlay';
 import NodeSearchOverlay from './NodeSearchOverlay';
 import GroupBoundary from './GroupBoundary';
@@ -137,6 +138,7 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
     return '#4a4a4a'; // Dark theme default
   };
   
+  const [subNodeDialogNodeIds, setSubNodeDialogNodeIds] = useState<string[] | null>(null);
   const reactFlowWrapper = useRef<HTMLDivElement>(null);
   const reactFlowInstance = useReactFlow();
   const { screenToFlowPosition, getViewport, setViewport: originalSetViewport, fitView, setNodes, getNodes } = reactFlowInstance;
@@ -887,7 +889,14 @@ function CanvasInner({ savedViewportRef, reactFlowInstanceRef, isFirstMountRef, 
                 handlers.setContextMenu(null);
               }
             }}
+            onSaveAsSubNode={(nodeIds) => setSubNodeDialogNodeIds(nodeIds)}
           />
+      )}
+      {subNodeDialogNodeIds && (
+        <SubNodeNameDialog
+          nodeIds={subNodeDialogNodeIds}
+          onClose={() => setSubNodeDialogNodeIds(null)}
+        />
       )}
       {handlers.searchOverlay && (
         <CanvasSearchOverlay
