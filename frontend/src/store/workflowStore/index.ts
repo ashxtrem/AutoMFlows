@@ -10,6 +10,7 @@ import { createFileManagementSlice } from './fileManagement';
 import { createArrangementSlice } from './arrangement';
 import { createPropertyInputSlice } from './propertyInput';
 import { createNodesSlice } from './nodes';
+import { createSubNodesSlice } from './subNodes';
 import { WorkflowStoreState } from './slices';
 
 // Create the combined store using Zustand's slices pattern
@@ -30,6 +31,7 @@ export const useWorkflowStore = createWithEqualityFn<WorkflowStoreState>((...a) 
     ...createArrangementSlice(...a),
     ...createPropertyInputSlice(...a),
     ...createNodesSlice(...a),
+    ...createSubNodesSlice(...a),
   };
 });
 

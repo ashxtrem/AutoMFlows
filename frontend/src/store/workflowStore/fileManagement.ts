@@ -1,9 +1,11 @@
 import { StateCreator } from 'zustand';
+import { WorkflowMetadata } from '@automflows/shared';
 import { WorkflowStateCore } from './core';
 
 export interface FileManagementSlice {
   setWorkflowFileName: (fileName: string) => void;
   setHasUnsavedChanges: (hasChanges: boolean) => void;
+  setWorkflowMetadata: (metadata: WorkflowMetadata | undefined) => void;
 }
 
 export const createFileManagementSlice: StateCreator<
@@ -28,5 +30,9 @@ export const createFileManagementSlice: StateCreator<
     } catch (error) {
       console.warn('Failed to save unsaved changes flag to localStorage:', error);
     }
+  },
+
+  setWorkflowMetadata: (metadata) => {
+    set({ workflowMetadata: metadata });
   },
 });

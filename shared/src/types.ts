@@ -67,6 +67,9 @@ export enum NodeType {
   IFRAME = 'iframe',
   CONTEXT_MANIPULATE = 'contextManipulate',
   CSV_HANDLE = 'csvHandle',
+  EMAIL = 'email',
+  SLACK = 'slack',
+  WEBHOOK = 'webhook',
 }
 
 // Base Node Interface
@@ -1175,6 +1178,68 @@ export interface ContextManipulateNodeData {
   };
 }
 
+export interface EmailNodeData {
+  smtpHost?: string;
+  smtpPort?: number;
+  smtpSecure?: boolean;
+  smtpUser?: string;
+  smtpPass?: string;
+  from?: string;
+  to?: string;
+  cc?: string;
+  bcc?: string;
+  subject?: string;
+  body?: string;
+  bodyType?: 'text' | 'html';
+  contextKey?: string;
+  failSilently?: boolean;
+  timeout?: number;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface SlackNodeData {
+  webhookUrl?: string;
+  channel?: string;
+  username?: string;
+  iconEmoji?: string;
+  message?: string;
+  blocks?: string;
+  contextKey?: string;
+  failSilently?: boolean;
+  timeout?: number;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface WebhookNodeData {
+  url?: string;
+  method?: 'POST' | 'PUT' | 'PATCH' | 'GET' | 'DELETE';
+  headers?: Record<string, string>;
+  body?: string;
+  bodyType?: 'json' | 'form-data' | 'raw';
+  contextKey?: string;
+  timeout?: number;
+  retryEnabled?: boolean;
+  retryCount?: number;
+  retryDelay?: number;
+  failSilently?: boolean;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
 export type NodeData =
   | StartNodeData
   | OpenBrowserNodeData
@@ -1210,6 +1275,9 @@ export type NodeData =
   | DbTransactionCommitNodeData
   | DbTransactionRollbackNodeData
   | CsvHandleNodeData
+  | EmailNodeData
+  | SlackNodeData
+  | WebhookNodeData
   | Record<string, any>; // Support custom plugin node data
 
 // Edge/Connection Interface
@@ -1232,11 +1300,24 @@ export interface Group {
   borderColor?: string; // Optional border color for the group boundary
 }
 
+// Workflow Metadata
+export interface WorkflowMetadata {
+  name?: string;
+  description?: string;
+  author?: string;
+  version?: number;
+  tags?: string[];
+  createdAt?: string;
+  updatedAt?: string;
+  automflowsVersion?: string;
+}
+
 // Workflow JSON Schema
 export interface Workflow {
   nodes: BaseNode[];
   edges: Edge[];
   groups?: Group[];
+  metadata?: WorkflowMetadata;
 }
 
 // Execution Context

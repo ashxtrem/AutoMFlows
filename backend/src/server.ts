@@ -42,6 +42,38 @@ app.use('/api/plugins', pluginRoutes());
 app.use('/api/reports', reportRoutes());
 app.use('/api/files', fileRoutes());
 
+// System info endpoint for the About section
+app.get('/api/system-info', (_req, res) => {
+  const os = require('os');
+  const backendPkg = require('../package.json');
+
+  let playwrightVersion = 'unknown';
+  try {
+    const pwPkg = require('playwright/package.json');
+    playwrightVersion = pwPkg.version;
+  } catch {
+    // Playwright not installed
+  }
+
+  let username = 'Unknown';
+  try {
+    username = os.userInfo().username;
+  } catch {
+    // May fail in some containerized environments
+  }
+
+  res.json({
+    appVersion: backendPkg.version,
+    nodeVersion: process.version,
+    os: os.platform(),
+    arch: os.arch(),
+    playwrightVersion,
+    ramTotal: os.totalmem(),
+    ramFree: os.freemem(),
+    username,
+  });
+});
+
 // Swagger API Documentation
 if (process.env.SWAGGER_ENABLED !== 'false') {
   app.use('/api-docs', swaggerRoutes(httpServer));

@@ -1,8 +1,8 @@
 import { Node, Edge } from 'reactflow';
-import { Workflow, BaseNode as WorkflowNode, Edge as WorkflowEdge, NodeType } from '@automflows/shared';
+import { Workflow, WorkflowMetadata, BaseNode as WorkflowNode, Edge as WorkflowEdge, NodeType } from '@automflows/shared';
 import { migrateWorkflow } from './migration';
 
-export function serializeWorkflow(nodes: Node[], edges: Edge[], groups?: any[]): Workflow {
+export function serializeWorkflow(nodes: Node[], edges: Edge[], groups?: any[], metadata?: WorkflowMetadata): Workflow {
   const workflowNodes: WorkflowNode[] = nodes.map((node) => ({
     id: node.id,
     type: node.data.type as NodeType,
@@ -28,10 +28,11 @@ export function serializeWorkflow(nodes: Node[], edges: Edge[], groups?: any[]):
     nodes: workflowNodes,
     edges: workflowEdges,
     groups: groups || undefined,
+    metadata: metadata || undefined,
   };
 }
 
-export function deserializeWorkflow(workflow: Workflow): { nodes: Node[]; edges: Edge[]; groups?: any[] } {
+export function deserializeWorkflow(workflow: Workflow): { nodes: Node[]; edges: Edge[]; groups?: any[]; metadata?: WorkflowMetadata } {
   const nodes: Node[] = workflow.nodes.map((node) => ({
     id: node.id,
     type: 'custom',
@@ -61,7 +62,7 @@ export function deserializeWorkflow(workflow: Workflow): { nodes: Node[]; edges:
     targetHandle: edge.targetHandle || 'input',
   }));
 
-  return { nodes, edges, groups: workflow.groups };
+  return { nodes, edges, groups: workflow.groups, metadata: workflow.metadata };
 }
 
 function getNodeLabel(type: NodeType): string {
@@ -100,16 +101,19 @@ function getNodeLabel(type: NodeType): string {
     [NodeType.DB_TRANSACTION_ROLLBACK]: 'DB Transaction Rollback',
     [NodeType.CONTEXT_MANIPULATE]: 'Context Manipulate',
     [NodeType.CSV_HANDLE]: 'CSV Handle',
+    [NodeType.EMAIL]: 'Email',
+    [NodeType.SLACK]: 'Slack',
+    [NodeType.WEBHOOK]: 'Webhook',
   };
   return labels[type] || type;
 }
 
-export function saveToLocalStorage(nodes: Node[], edges: Edge[], groups?: any[]): void {
-  const workflow = serializeWorkflow(nodes, edges, groups);
+export function saveToLocalStorage(nodes: Node[], edges: Edge[], groups?: any[], metadata?: WorkflowMetadata): void {
+  const workflow = serializeWorkflow(nodes, edges, groups, metadata);
   localStorage.setItem('automflows-workflow', JSON.stringify(workflow));
 }
 
-export function loadFromLocalStorage(): { nodes: Node[]; edges: Edge[]; groups?: any[]; warnings?: string[] } | null {
+export function loadFromLocalStorage(): { nodes: Node[]; edges: Edge[]; groups?: any[]; metadata?: WorkflowMetadata; warnings?: string[] } | null {
   const stored = localStorage.getItem('automflows-workflow');
   if (!stored) {
     return null;

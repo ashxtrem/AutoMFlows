@@ -1,5 +1,5 @@
 import { Node } from 'reactflow';
-import { SwitchCondition, SelectorModifiers } from '@automflows/shared';
+import { SwitchCondition } from '@automflows/shared';
 import { getSelectorPlaceholder, getSelectorHelpText, SELECTOR_TYPE_OPTIONS } from '../../frontend/src/utils/selectorHelpers';
 import SelectorModifiersEditor from '../../frontend/src/components/SelectorModifiersEditor';
 

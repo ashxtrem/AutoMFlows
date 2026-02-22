@@ -43,6 +43,9 @@ export function getDefaultNodeLabel(nodeType: string): string {
       [NodeType.DB_TRANSACTION_ROLLBACK]: 'DB Transaction Rollback',
       [NodeType.CONTEXT_MANIPULATE]: 'Context Manipulate',
       [NodeType.CSV_HANDLE]: 'CSV Handle',
+      [NodeType.EMAIL]: 'Email',
+      [NodeType.SLACK]: 'Slack',
+      [NodeType.WEBHOOK]: 'Webhook',
     };
     return labels[nodeType as NodeType] || nodeType;
   }

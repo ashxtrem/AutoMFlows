@@ -92,8 +92,13 @@ const preventAutoRefresh = (): Plugin => {
   };
 };
 
+const rootPkg = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf8'));
+
 export default defineConfig({
   plugins: [react(), suppressStartupProxyErrors(), preventAutoRefresh()],
+  define: {
+    __APP_VERSION__: JSON.stringify(rootPkg.version),
+  },
   resolve: {
     alias: {
       '@automflows/shared': path.resolve(__dirname, '../shared/src'),

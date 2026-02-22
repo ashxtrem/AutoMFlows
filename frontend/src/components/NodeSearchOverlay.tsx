@@ -84,6 +84,7 @@ export default function NodeSearchOverlay({
         right: '10px',
         minWidth: '320px',
         maxWidth: '400px',
+        animation: 'overlaySlideDown 0.2s ease-out forwards',
       }}
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}

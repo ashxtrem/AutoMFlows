@@ -26,6 +26,9 @@ import StorageIcon from '@mui/icons-material/Storage';
 import SettingsIcon from '@mui/icons-material/Settings';
 import EditIcon from '@mui/icons-material/Edit';
 import TableChartIcon from '@mui/icons-material/TableChart';
+import EmailIcon from '@mui/icons-material/Email';
+import TagIcon from '@mui/icons-material/Tag';
+import WebhookIcon from '@mui/icons-material/Webhook';
 
 interface IconConfig {
   icon: React.ComponentType<{ sx?: any }>;
@@ -67,6 +70,9 @@ const nodeIconMap: Record<NodeType, IconConfig> = {
   [NodeType.DB_TRANSACTION_COMMIT]: { icon: StorageIcon, color: '#4CAF50' },
   [NodeType.DB_TRANSACTION_ROLLBACK]: { icon: StorageIcon, color: '#F44336' },
   [NodeType.CSV_HANDLE]: { icon: TableChartIcon, color: '#00BCD4' },
+  [NodeType.EMAIL]: { icon: EmailIcon, color: '#E91E63' },
+  [NodeType.SLACK]: { icon: TagIcon, color: '#4A154B' },
+  [NodeType.WEBHOOK]: { icon: WebhookIcon, color: '#FF5722' },
 };
 
 function getNodeIconConfig(nodeType: NodeType | string): IconConfig | null {
@@ -113,6 +119,9 @@ function getNodeLabel(nodeType: NodeType | string): string {
       [NodeType.DB_TRANSACTION_ROLLBACK]: 'DB Transaction Rollback',
       [NodeType.CONTEXT_MANIPULATE]: 'Context Manipulate',
       [NodeType.CSV_HANDLE]: 'CSV Handle',
+      [NodeType.EMAIL]: 'Email',
+      [NodeType.SLACK]: 'Slack',
+      [NodeType.WEBHOOK]: 'Webhook',
     };
     return labels[nodeType as NodeType] || nodeType;
   }
@@ -244,6 +253,8 @@ export default function CanvasSearchOverlay({ position, flowPosition, onClose, o
         maxHeight: '500px',
         display: 'flex',
         flexDirection: 'column',
+        transformOrigin: 'top left',
+        animation: 'overlayScaleIn 0.2s ease-out forwards',
       }}
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}

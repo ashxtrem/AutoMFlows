@@ -116,6 +116,9 @@ export function getNodeLabel(type: NodeType | string): string {
       [NodeType.DB_TRANSACTION_ROLLBACK]: 'DB Transaction Rollback',
       [NodeType.CONTEXT_MANIPULATE]: 'Context Manipulate',
       [NodeType.CSV_HANDLE]: 'CSV Handle',
+      [NodeType.EMAIL]: 'Email',
+      [NodeType.SLACK]: 'Slack',
+      [NodeType.WEBHOOK]: 'Webhook',
     };
     return labels[type as NodeType] || type;
   }
@@ -230,6 +233,35 @@ export function getDefaultNodeData(type: NodeType | string): any {
         contextKey: 'csvData',
         delimiter: ',',
         isTest: true 
+      },
+      [NodeType.EMAIL]: {
+        smtpHost: '',
+        smtpPort: 587,
+        smtpSecure: false,
+        smtpUser: '',
+        smtpPass: '',
+        from: '',
+        to: '',
+        subject: '',
+        body: '',
+        bodyType: 'text',
+        contextKey: 'emailResult',
+        isTest: true
+      },
+      [NodeType.SLACK]: {
+        webhookUrl: '',
+        message: '',
+        contextKey: 'slackResult',
+        isTest: true
+      },
+      [NodeType.WEBHOOK]: {
+        url: '',
+        method: 'POST',
+        headers: {},
+        bodyType: 'json',
+        timeout: 30000,
+        contextKey: 'webhookResult',
+        isTest: true
       },
     };
     const defaultData = defaults[type as NodeType] || { isTest: true };

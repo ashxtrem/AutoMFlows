@@ -27,6 +27,9 @@ import StorageIcon from '@mui/icons-material/Storage';
 import SettingsIcon from '@mui/icons-material/Settings';
 import EditIcon from '@mui/icons-material/Edit';
 import TableChartIcon from '@mui/icons-material/TableChart';
+import EmailIcon from '@mui/icons-material/Email';
+import TagIcon from '@mui/icons-material/Tag';
+import WebhookIcon from '@mui/icons-material/Webhook';
 
 interface IconConfig {
   icon: React.ComponentType<{ sx?: any }>;
@@ -68,6 +71,9 @@ const nodeIconMap: Record<NodeType, IconConfig> = {
   [NodeType.DB_TRANSACTION_COMMIT]: { icon: StorageIcon, color: '#4CAF50' },
   [NodeType.DB_TRANSACTION_ROLLBACK]: { icon: StorageIcon, color: '#F44336' },
   [NodeType.CSV_HANDLE]: { icon: TableChartIcon, color: '#00BCD4' },
+  [NodeType.EMAIL]: { icon: EmailIcon, color: '#E91E63' },
+  [NodeType.SLACK]: { icon: TagIcon, color: '#4A154B' },
+  [NodeType.WEBHOOK]: { icon: WebhookIcon, color: '#FF5722' },
 };
 
 function getNodeIconConfig(nodeType: NodeType | string): IconConfig | null {
@@ -166,6 +172,14 @@ const NODE_CATEGORIES = [
     ],
   },
   {
+    label: 'Notification',
+    nodes: [
+      { type: NodeType.EMAIL, label: 'Email' },
+      { type: NodeType.SLACK, label: 'Slack' },
+      { type: NodeType.WEBHOOK, label: 'Webhook' },
+    ],
+  },
+  {
     label: 'Configuration',
     nodes: [
       { type: NodeType.LOAD_CONFIG_FILE, label: 'Load Config File' },
@@ -256,8 +270,29 @@ const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
   const [activeNode, setActiveNode] = useState<string | null>(null);
   const [pluginCount, setPluginCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [shouldRender, setShouldRender] = useState(isExpanded);
+  const [animState, setAnimState] = useState<'open' | 'closing' | 'closed'>(isExpanded ? 'open' : 'closed');
 
   const menuRef = useRef<HTMLDivElement>(null);
+
+  // Sync animation state when isExpanded changes
+  useEffect(() => {
+    if (isExpanded) {
+      setShouldRender(true);
+      setAnimState('open');
+    } else {
+      if (shouldRender) {
+        setAnimState('closing');
+      }
+    }
+  }, [isExpanded]);
+
+  const handleAnimationEnd = () => {
+    if (animState === 'closing') {
+      setShouldRender(false);
+      setAnimState('closed');
+    }
+  };
 
   // Expose methods via ref
   useImperativeHandle(ref, () => ({
@@ -467,8 +502,8 @@ const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
 
   return (
     <>
-      {/* FAB Button - shows when not expanded, positioned next to zoom controls */}
-      {!isExpanded && (
+      {/* FAB Button - shows when panel is not rendered */}
+      {!shouldRender && (
         <Tooltip content="Open node library">
           <button
             onClick={(e) => {
@@ -486,12 +521,22 @@ const LeftSidebar = forwardRef<LeftSidebarHandle>((_props, ref) => {
       )}
 
           {/* Expanded Menu */}
-      {isExpanded && (
+      {shouldRender && (
         <div
           ref={menuRef}
           onClick={handleMenuClick}
-          className="fixed bottom-5 z-30 bg-surface border border-border rounded-lg shadow-2xl flex flex-col transition-all duration-300 ease-in-out"
-          style={{ width: `${DEFAULT_WIDTH}px`, height: 'calc(100vh - 120px)', maxHeight: '600px', left: '60px' }}
+          onAnimationEnd={handleAnimationEnd}
+          className="fixed bottom-5 z-30 bg-surface border border-border rounded-lg shadow-2xl flex flex-col"
+          style={{
+            width: `${DEFAULT_WIDTH}px`,
+            height: 'calc(100vh - 120px)',
+            maxHeight: '600px',
+            left: '60px',
+            transformOrigin: 'bottom left',
+            animation: animState === 'open'
+              ? 'sidebarOpen 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) forwards'
+              : 'sidebarClose 0.2s ease-in forwards',
+          }}
           data-tour="left-sidebar"
         >
           {/* Header with Pin Button and Wiki Button */}

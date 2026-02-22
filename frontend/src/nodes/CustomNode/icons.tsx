@@ -31,6 +31,9 @@ import PictureInPictureIcon from '@mui/icons-material/PictureInPicture';
 import SettingsIcon from '@mui/icons-material/Settings';
 import EditIcon from '@mui/icons-material/Edit';
 import TableChartIcon from '@mui/icons-material/TableChart';
+import EmailIcon from '@mui/icons-material/Email';
+import TagIcon from '@mui/icons-material/Tag';
+import WebhookIcon from '@mui/icons-material/Webhook';
 
 export interface IconConfig {
   icon: React.ComponentType<{ sx?: any }>;
@@ -72,6 +75,9 @@ export const nodeIcons: Record<NodeType, IconConfig> = {
   [NodeType.DB_TRANSACTION_COMMIT]: { icon: StorageIcon, color: '#4CAF50' },
   [NodeType.DB_TRANSACTION_ROLLBACK]: { icon: StorageIcon, color: '#F44336' },
   [NodeType.CSV_HANDLE]: { icon: TableChartIcon, color: '#00BCD4' },
+  [NodeType.EMAIL]: { icon: EmailIcon, color: '#E91E63' },
+  [NodeType.SLACK]: { icon: TagIcon, color: '#4A154B' },
+  [NodeType.WEBHOOK]: { icon: WebhookIcon, color: '#FF5722' },
 };
 
 export function getNodeIcon(nodeType: NodeType | string): IconConfig | null {

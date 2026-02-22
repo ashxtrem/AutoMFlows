@@ -1,5 +1,5 @@
 import { Node, Edge } from 'reactflow';
-import { RecordedAction } from '@automflows/shared';
+import { RecordedAction, WorkflowMetadata } from '@automflows/shared';
 import { ValidationError } from '../../utils/validation';
 import { WorkflowSnapshot, NodeError, Group } from './types';
 
@@ -40,6 +40,7 @@ export interface WorkflowStateCore {
   builderModeModalPosition: { x: number; y: number } | null;
   workflowFileName: string;
   hasUnsavedChanges: boolean;
+  workflowMetadata: WorkflowMetadata | undefined;
   groups: Group[];
   selectedGroupId: string | null;
   fitViewRequested: boolean;
@@ -169,6 +170,7 @@ export function getInitialState(): WorkflowStateCore {
         return false;
       }
     })(),
+    workflowMetadata: undefined,
     groups: [],
     selectedGroupId: null,
     fitViewRequested: false,

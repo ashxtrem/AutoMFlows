@@ -120,10 +120,15 @@ export default function NodeMenuBar({ nodeId, bypass, failSilently, isMinimized,
 
   return (
     <div
-      className="absolute -top-8 left-1/2 transform -translate-x-1/2 flex items-center gap-1 bg-surface border border-border rounded px-2 py-1 shadow-lg z-10"
+      className="absolute -top-8 left-1/2 flex items-center gap-1 bg-surface border border-border rounded px-2 py-1 shadow-lg z-10"
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
-      style={{ zIndex: 1000, pointerEvents: 'auto' }}
+      style={{
+        zIndex: 1000,
+        pointerEvents: 'auto',
+        animation: 'nodeMenuBarEnter 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+        transform: 'translateX(-50%)',
+      }}
     >
       {!isUtilityNode && (
         <>

@@ -9,7 +9,7 @@ export interface ConditionResult {
   details?: Record<string, any>;
 }
 
-export { SwitchCondition };
+export type { SwitchCondition };
 
 export class ConditionEvaluator {
   /**

@@ -10,6 +10,7 @@ import { FileManagementSlice } from './fileManagement';
 import { ArrangementSlice } from './arrangement';
 import { PropertyInputSlice } from './propertyInput';
 import { NodesSlice } from './nodes';
+import { SubNodesSlice } from './subNodes';
 
 // Combined type that includes all slices
 export type WorkflowStoreState = WorkflowStateCore &
@@ -22,7 +23,8 @@ export type WorkflowStoreState = WorkflowStateCore &
   FileManagementSlice &
   ArrangementSlice &
   PropertyInputSlice &
-  NodesSlice;
+  NodesSlice &
+  SubNodesSlice;
 
 // Alias for backward compatibility - slices can use this type
 export type WorkflowStoreStateWithNodes = WorkflowStoreState;

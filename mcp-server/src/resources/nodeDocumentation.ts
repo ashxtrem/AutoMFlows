@@ -132,6 +132,21 @@ const NODE_METADATA: Record<string, { label: string; description: string; exampl
     description: 'Read CSV from file into context, or write/append an array from context to a CSV file.',
     examples: ['Write products to CSV: action="write", filePath="${data.outputDirectory}/products.csv", dataSource="products"', 'Read CSV: action="read", filePath="/path/to/data.csv", contextKey="csvData"'],
   },
+  [NodeType.EMAIL]: {
+    label: 'Email',
+    description: 'Send emails via SMTP with configurable host, authentication, and content type (text/html).',
+    examples: ['Send plain text email: smtpHost="smtp.gmail.com", to="user@example.com", subject="Test", body="Hello"', 'Send HTML email: bodyType="html", body="<h1>Report</h1>"'],
+  },
+  [NodeType.SLACK]: {
+    label: 'Slack',
+    description: 'Send messages to Slack channels via Incoming Webhooks with optional Block Kit formatting.',
+    examples: ['Send simple message: webhookUrl="https://hooks.slack.com/...", message="Build passed!"', 'Send with blocks JSON for rich formatting'],
+  },
+  [NodeType.WEBHOOK]: {
+    label: 'Webhook',
+    description: 'Send HTTP requests to external webhook endpoints with configurable method, headers, body, and retry logic.',
+    examples: ['POST JSON to webhook: url="https://example.com/webhook", method="POST", body=\'{"event":"complete"}\'', 'With retry: retryEnabled=true, retryCount=3'],
+  },
   [NodeType.KEYBOARD]: {
     label: 'Keyboard',
     description: 'Send keyboard input (key press, shortcuts, type)',

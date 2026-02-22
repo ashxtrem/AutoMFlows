@@ -2,7 +2,7 @@ import { BaseNode, ScrollNodeData } from '@automflows/shared';
 import { NodeHandler } from '../base';
 import { ContextManager } from '../../engine/context';
 import { WaitHelper } from '../../utils/waitHelper';
-import { RetryHelper } from '../../utils/retryHelper';
+import { RetryHelper, FAIL_SILENT_RESULT } from '../../utils/retryHelper';
 import { VariableInterpolator } from '../../utils/variableInterpolator';
 import { LocatorHelper } from '../../utils/locatorHelper';
 
@@ -120,8 +120,7 @@ export class ScrollHandler implements NodeHandler {
       page
     );
     
-    // If RetryHelper returned undefined (failSilently), throw error so executor can track it
-    if (result === undefined && data.failSilently) {
+    if ((result as unknown) === FAIL_SILENT_RESULT) {
       throw new Error(`Scroll operation failed silently with action: ${data.action}`);
     }
   }
