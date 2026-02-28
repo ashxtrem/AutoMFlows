@@ -34,6 +34,8 @@ import CsvHandleConfig from './nodeConfigs/CsvHandleConfig';
 import EmailConfig from './nodeConfigs/EmailConfig';
 import SlackConfig from './nodeConfigs/SlackConfig';
 import WebhookConfig from './nodeConfigs/WebhookConfig';
+import DataExtractorConfig from './nodeConfigs/DataExtractorConfig';
+import SmartExtractorConfig from './nodeConfigs/SmartExtractorConfig';
 import { frontendPluginRegistry } from '../plugins/registry';
 import { useCallback } from 'react';
 // Import switch node config component directly (until plugin loader supports dynamic loading)
@@ -134,6 +136,10 @@ export default function NodeConfigForm({ node }: NodeConfigFormProps) {
           return <SlackConfig node={node} onChange={handleChange} />;
         case NodeType.WEBHOOK:
           return <WebhookConfig node={node} onChange={handleChange} />;
+        case NodeType.DATA_EXTRACTOR:
+          return <DataExtractorConfig node={node} onChange={handleChange} />;
+        case NodeType.SMART_EXTRACTOR:
+          return <SmartExtractorConfig node={node} onChange={handleChange} />;
         default:
           return <div className="text-secondary text-sm">No configuration available.</div>;
       }

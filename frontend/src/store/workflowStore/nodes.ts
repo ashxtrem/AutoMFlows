@@ -194,7 +194,19 @@ export const createNodesSlice: StateCreator<
       return;
     }
     
-    const updatedNodes = applyNodeChanges(filteredChanges, state.nodes);
+    const rawUpdatedNodes = applyNodeChanges(filteredChanges, state.nodes);
+    
+    // Preserve current store data for each node after applyNodeChanges.
+    // ReactFlow's internal node copies may carry stale .data when it sends
+    // dimension/position/select changes, which would overwrite recent Zustand updates.
+    const storeNodeMap = new Map(state.nodes.map(n => [n.id, n]));
+    const updatedNodes = rawUpdatedNodes.map(node => {
+      const storeNode = storeNodeMap.get(node.id);
+      if (storeNode && node.data !== storeNode.data) {
+        return { ...node, data: storeNode.data };
+      }
+      return node;
+    });
     
     // Check if nodes actually changed by comparing references AND content
     // applyNodeChanges should preserve references when possible, but we need to verify

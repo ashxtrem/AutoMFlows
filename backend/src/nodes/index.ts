@@ -2,7 +2,7 @@ import { NodeType, BaseNode } from '@automflows/shared';
 import { NodeHandler, NodeHandlerMap } from './base';
 import { ContextManager } from '../engine/context';
 import { OpenBrowserHandler, NavigationHandler, ContextManipulateHandler } from './browser';
-import { TypeHandler, ActionHandler, FormInputHandler, KeyboardHandler, ScrollHandler, ElementQueryHandler, ScreenshotHandler, WaitHandler, IntValueHandler, StringValueHandler, BooleanValueHandler, InputValueHandler, VerifyHandler, StorageHandler, DialogHandler, DownloadHandler, IframeHandler, CsvHandleHandler } from './handlers';
+import { TypeHandler, ActionHandler, FormInputHandler, KeyboardHandler, ScrollHandler, ElementQueryHandler, ScreenshotHandler, WaitHandler, IntValueHandler, StringValueHandler, BooleanValueHandler, InputValueHandler, VerifyHandler, StorageHandler, DialogHandler, DownloadHandler, IframeHandler, CsvHandleHandler, DataExtractorHandler, SmartExtractorHandler } from './handlers';
 import { JavaScriptCodeHandler, LoopHandler } from './logic';
 import { ApiRequestHandler, ApiCurlHandler } from './api';
 import { LoadConfigFileHandler, SelectConfigFileHandler } from './config';
@@ -55,6 +55,8 @@ const handlers: NodeHandlerMap = {
   [NodeType.EMAIL]: new EmailHandler(),
   [NodeType.SLACK]: new SlackHandler(),
   [NodeType.WEBHOOK]: new WebhookHandler(),
+  [NodeType.DATA_EXTRACTOR]: new DataExtractorHandler(),
+  [NodeType.SMART_EXTRACTOR]: new SmartExtractorHandler(),
 };
 
 export function getNodeHandler(nodeType: NodeType | string): NodeHandler | undefined {

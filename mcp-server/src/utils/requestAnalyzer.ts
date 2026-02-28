@@ -1,3 +1,5 @@
+import { findPluginNodeByKeyword } from '../resources/nodeDocumentation.js';
+
 export interface RequestClarity {
   isClear: boolean;
   clarityScore: number; // 0-1, higher is clearer
@@ -309,13 +311,17 @@ export class RequestAnalyzer {
   static identifyModificationType(userRequest: string): 'add' | 'update' | 'insert' | 'add_assertion' | 'auto' {
     const requestLower = userRequest.toLowerCase();
     
-    // Assertion patterns
+    const isPluginNodeRequest = !!findPluginNodeByKeyword(requestLower);
+
+    // Assertion patterns -- skip when the request targets a plugin node type
     if (
-      requestLower.includes('assertion') ||
-      requestLower.includes('verify') ||
-      requestLower.includes('check') ||
-      requestLower.includes('validate') ||
-      requestLower.includes('ensure')
+      !isPluginNodeRequest && (
+        requestLower.includes('assertion') ||
+        requestLower.includes('verify') ||
+        requestLower.includes('check') ||
+        requestLower.includes('validate') ||
+        requestLower.includes('ensure')
+      )
     ) {
       return 'add_assertion';
     }
@@ -553,12 +559,22 @@ export class RequestAnalyzer {
       config.nodeType = 'verify';
     } else if (requestLower.includes('wait')) {
       config.nodeType = 'wait';
+    } else if (requestLower.includes('data extract') || requestLower.includes('scrape')) {
+      config.nodeType = 'dataExtractor';
     } else if (requestLower.includes('javascript') || requestLower.includes('extract') || requestLower.includes('code')) {
       config.nodeType = 'javascriptCode';
     } else if (requestLower.includes('csv') || config.headers) {
       config.nodeType = 'csvHandle';
     } else if (requestLower.includes('element') || requestLower.includes('query')) {
       config.nodeType = 'elementQuery';
+    }
+
+    // Fallback: match against dynamically discovered plugin node types
+    if (!config.nodeType) {
+      const pluginNode = findPluginNodeByKeyword(requestLower);
+      if (pluginNode) {
+        config.nodeType = pluginNode.type;
+      }
     }
     
     // Extract elementQuery action: "change to getAllText", "use getCount"

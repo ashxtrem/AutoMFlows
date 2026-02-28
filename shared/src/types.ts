@@ -71,6 +71,8 @@ export enum NodeType {
   EMAIL = 'email',
   SLACK = 'slack',
   WEBHOOK = 'webhook',
+  DATA_EXTRACTOR = 'dataExtractor',
+  SMART_EXTRACTOR = 'smartExtractor',
 }
 
 // Base Node Interface
@@ -1241,6 +1243,50 @@ export interface WebhookNodeData {
   };
 }
 
+export interface DataExtractorFieldDefinition {
+  name: string;
+  selector: string;
+  selectorType?: SelectorType;
+  extract: 'text' | 'attribute' | 'innerHTML';
+  attribute?: string;
+}
+
+export interface DataExtractorNodeData {
+  containerSelector: string;
+  containerSelectorType?: SelectorType;
+  fields: DataExtractorFieldDefinition[];
+  outputVariable?: string;
+  limit?: number;
+  timeout?: number;
+  waitForSelector?: boolean;
+  failSilently?: boolean;
+  saveToCSV?: boolean;
+  csvFilePath?: string;
+  csvDelimiter?: string;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
+export interface SmartExtractorNodeData {
+  mode: 'allLinks' | 'allImages' | 'tables' | 'repeatedItems';
+  tableIndex?: number;
+  outputVariable?: string;
+  includeMetadata?: boolean;
+  limit?: number;
+  timeout?: number;
+  failSilently?: boolean;
+  _inputConnections?: {
+    [propertyName: string]: {
+      sourceNodeId: string;
+      sourceHandleId: string;
+    };
+  };
+}
+
 export type NodeData =
   | StartNodeData
   | OpenBrowserNodeData
@@ -1279,6 +1325,8 @@ export type NodeData =
   | EmailNodeData
   | SlackNodeData
   | WebhookNodeData
+  | DataExtractorNodeData
+  | SmartExtractorNodeData
   | Record<string, any>; // Support custom plugin node data
 
 // Edge/Connection Interface

@@ -27,12 +27,9 @@ export default function PropertyEditorPopup({
   max,
 }: PropertyEditorPopupProps) {
   const [editValue, setEditValue] = useState<string>(String(value || ''));
+  const initialValueRef = useRef(String(value || ''));
   const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    setEditValue(String(value || ''));
-  }, [value]);
 
   useEffect(() => {
     // Auto-focus and select text on open
@@ -49,9 +46,9 @@ export default function PropertyEditorPopup({
   }, [type]);
 
   const handleCancel = useCallback(() => {
-    setEditValue(String(value || ''));
+    setEditValue(initialValueRef.current);
     onClose();
-  }, [value, onClose]);
+  }, [onClose]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {

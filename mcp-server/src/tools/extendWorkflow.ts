@@ -7,6 +7,7 @@ import { WorkflowBuilder } from '../utils/workflowBuilder.js';
 import { loadSnapshotsFromDir, findElementInSnapshot } from '../utils/snapshotWorkflowBuilder.js';
 import { BackendClient } from '../utils/backendClient.js';
 import { DOMSelectorInference } from '../utils/domSelectorInference.js';
+import { findPluginNodeByType } from '../resources/nodeDocumentation.js';
 
 export interface ExtendWorkflowParams {
   workflow: Workflow;
@@ -381,6 +382,28 @@ function createNodeFromConfig(
       (baseNode.data as any).selectorType = config.selectorType || 'css';
       (baseNode.data as any).outputVariable = config.outputVariable || 'text';
       break;
+
+    case 'dataExtractor':
+      (baseNode.data as any).containerSelector = config.selector || '';
+      (baseNode.data as any).containerSelectorType = config.selectorType || 'css';
+      (baseNode.data as any).fields = [];
+      (baseNode.data as any).outputVariable = config.outputVariable || 'extractedData';
+      if (config.filePath) {
+        (baseNode.data as any).saveToCSV = true;
+        (baseNode.data as any).csvFilePath = config.filePath;
+      }
+      break;
+
+    default: {
+      const pluginNode = findPluginNodeByType(nodeType);
+      if (pluginNode) {
+        if (pluginNode.defaultData) {
+          Object.assign(baseNode.data, JSON.parse(JSON.stringify(pluginNode.defaultData)));
+        }
+        (baseNode.data as any).label = label !== 'New Node' ? label : pluginNode.label;
+      }
+      break;
+    }
   }
 
   // Add any additional config properties

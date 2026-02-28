@@ -16,3 +16,5 @@ export { DialogHandler } from './dialog';
 export { DownloadHandler } from './download';
 export { IframeHandler } from './iframe';
 export { CsvHandleHandler } from './csvHandle';
+export { DataExtractorHandler } from './dataExtractor';
+export { SmartExtractorHandler } from './smartExtractor';
