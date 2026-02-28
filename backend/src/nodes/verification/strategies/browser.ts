@@ -70,7 +70,7 @@ export class BrowserTextStrategy extends BaseVerificationStrategy {
     let actualText: string;
     if (selector) {
       // Get text from specific element
-      const locator = LocatorHelper.createLocator(page, selector, selectorType, config.selectorModifiers);
+      const locator = await LocatorHelper.createLocatorAsync(page, selector, selectorType, config.selectorModifiers);
       actualText = (await locator.textContent({ timeout })) || '';
     } else {
       // Get text from entire page body
@@ -133,7 +133,7 @@ export class BrowserElementStrategy extends BaseVerificationStrategy {
       throw new Error('Selector is required for element verification');
     }
 
-    const locator = LocatorHelper.createLocator(page, selector, selectorType, config.selectorModifiers);
+    const locator = await LocatorHelper.createLocatorAsync(page, selector, selectorType, config.selectorModifiers);
 
     let passed: boolean;
     let actualValue: any;
@@ -279,7 +279,7 @@ export class BrowserAttributeStrategy extends BaseVerificationStrategy {
       throw new Error('Attribute name is required for attribute verification');
     }
 
-    const locator = LocatorHelper.createLocator(page, selector, selectorType, config.selectorModifiers);
+    const locator = await LocatorHelper.createLocatorAsync(page, selector, selectorType, config.selectorModifiers);
 
     const actualValue = await locator.getAttribute(attributeName, { timeout });
 
@@ -344,7 +344,7 @@ export class BrowserFormFieldStrategy extends BaseVerificationStrategy {
       throw new Error('Expected value is required for form field verification');
     }
 
-    const locator = LocatorHelper.createLocator(page, selector, selectorType, config.selectorModifiers);
+    const locator = await LocatorHelper.createLocatorAsync(page, selector, selectorType, config.selectorModifiers);
 
     const actualValue = await locator.inputValue({ timeout });
 
@@ -518,7 +518,7 @@ export class BrowserCssStrategy extends BaseVerificationStrategy {
       throw new Error('CSS property is required for CSS verification');
     }
 
-    const locator = LocatorHelper.createLocator(page, selector, selectorType, config.selectorModifiers);
+    const locator = await LocatorHelper.createLocatorAsync(page, selector, selectorType, config.selectorModifiers);
 
     const actualValue = await locator.evaluate((el: HTMLElement, prop: string) => {
       return window.getComputedStyle(el).getPropertyValue(prop);

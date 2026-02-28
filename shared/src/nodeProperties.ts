@@ -43,7 +43,7 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
           { name: 'text', label: 'Text', dataType: PropertyDataType.STRING, required: false },
           { name: 'shortcut', label: 'Shortcut', dataType: PropertyDataType.STRING, required: false },
           { name: 'selector', label: 'Selector', dataType: PropertyDataType.STRING, required: false },
-          { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'css' },
+          { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'text' },
           { name: 'delay', label: 'Delay', dataType: PropertyDataType.INT, required: false },
           { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
           { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
@@ -53,7 +53,7 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
         return [
           { name: 'action', label: 'Action', dataType: PropertyDataType.STRING, required: true, defaultValue: 'scrollToElement' },
           { name: 'selector', label: 'Selector', dataType: PropertyDataType.STRING, required: false },
-          { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'css' },
+          { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'text' },
           { name: 'x', label: 'X', dataType: PropertyDataType.INT, required: false },
           { name: 'y', label: 'Y', dataType: PropertyDataType.INT, required: false },
           { name: 'deltaX', label: 'Delta X', dataType: PropertyDataType.INT, required: false },
@@ -94,9 +94,9 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
         return [
           { name: 'action', label: 'Action', dataType: PropertyDataType.STRING, required: true, defaultValue: 'click' },
           { name: 'selector', label: 'Selector', dataType: PropertyDataType.STRING, required: true },
-          { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'css' },
+          { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'text' },
           { name: 'targetSelector', label: 'Target Selector', dataType: PropertyDataType.STRING, required: false },
-          { name: 'targetSelectorType', label: 'Target Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'css' },
+          { name: 'targetSelectorType', label: 'Target Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'text' },
           { name: 'targetX', label: 'Target X', dataType: PropertyDataType.INT, required: false },
           { name: 'targetY', label: 'Target Y', dataType: PropertyDataType.INT, required: false },
           { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
@@ -107,7 +107,7 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
         return [
           { name: 'action', label: 'Action', dataType: PropertyDataType.STRING, required: true, defaultValue: 'getText' },
           { name: 'selector', label: 'Selector', dataType: PropertyDataType.STRING, required: true },
-          { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'css' },
+          { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'text' },
           { name: 'outputVariable', label: 'Output Variable', dataType: PropertyDataType.STRING, required: false, defaultValue: 'text' },
           { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
           { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
@@ -117,7 +117,7 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
         return [
           { name: 'action', label: 'Action', dataType: PropertyDataType.STRING, required: true, defaultValue: 'select' },
           { name: 'selector', label: 'Selector', dataType: PropertyDataType.STRING, required: true },
-          { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'css' },
+          { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'text' },
           { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
           { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
         ];
@@ -125,7 +125,7 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
       case NodeType.TYPE:
         return [
           { name: 'selector', label: 'Selector', dataType: PropertyDataType.STRING, required: true },
-          { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'css' },
+          { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'text' },
           { name: 'inputMethod', label: 'Input Method', dataType: PropertyDataType.STRING, required: false, defaultValue: 'fill' },
           { name: 'text', label: 'Text', dataType: PropertyDataType.STRING, required: true },
           { name: 'delay', label: 'Delay', dataType: PropertyDataType.INT, required: false, defaultValue: 0 },
@@ -137,7 +137,7 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
         return [
           { name: 'waitType', label: 'Wait Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'timeout' },
           { name: 'value', label: 'Value', dataType: PropertyDataType.STRING, required: true }, // Can be int or string
-          { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'css' },
+          { name: 'selectorType', label: 'Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'text' },
           { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
           { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
         ];

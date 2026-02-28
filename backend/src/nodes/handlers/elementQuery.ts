@@ -94,7 +94,7 @@ export class ElementQueryHandler implements NodeHandler {
 
         // Execute action based on action type
         let queryResult: any;
-        const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css', data.selectorModifiers);
+        const locator = await LocatorHelper.createLocatorAsync(page, selector, data.selectorType || 'css', data.selectorModifiers);
 
         switch (data.action) {
           case 'getText':

@@ -51,7 +51,7 @@ export class ScrollHandler implements NodeHandler {
               throw new Error('Selector is required for scrollToElement action');
             }
             const selector = VariableInterpolator.interpolateString(data.selector, context);
-            const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css', data.selectorModifiers);
+            const locator = await LocatorHelper.createLocatorAsync(page, selector, data.selectorType || 'css', data.selectorModifiers);
             await locator.scrollIntoViewIfNeeded({ timeout });
             break;
 

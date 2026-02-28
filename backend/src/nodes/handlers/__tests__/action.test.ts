@@ -37,6 +37,7 @@ describe('ActionHandler', () => {
 
     (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str);
     (LocatorHelper.createLocator as jest.Mock).mockReturnValue(mockLocator);
+    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockLocator);
     (LocatorHelper.scrollToElementSmooth as jest.Mock).mockResolvedValue(undefined);
     (WaitHelper.executeWaits as jest.Mock).mockResolvedValue(undefined);
     (RetryHelper.executeWithRetry as jest.Mock).mockImplementation(async (fn: () => Promise<void>) => {
@@ -133,6 +134,10 @@ describe('ActionHandler', () => {
         if (selector === '#target') return targetLocator;
         return mockLocator;
       });
+      (LocatorHelper.createLocatorAsync as jest.Mock).mockImplementation((page: any, selector: string) => {
+        if (selector === '#target') return Promise.resolve(targetLocator);
+        return Promise.resolve(mockLocator);
+      });
 
       const node = createMockNode(NodeType.ACTION, {
         selector: '#source',
@@ -197,7 +202,7 @@ describe('ActionHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#interpolated', 'css', undefined);
+      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, '#interpolated', 'css', undefined);
     });
 
     it('should use custom timeout', async () => {
@@ -210,6 +215,19 @@ describe('ActionHandler', () => {
       await handler.execute(node, mockContext);
 
       expect(mockLocator.click).toHaveBeenCalledWith({ button: 'left', timeout: 5000 });
+    });
+
+    it('should pass text selectorType to createLocatorAsync', async () => {
+      const node = createMockNode(NodeType.ACTION, {
+        selector: 'Submit',
+        action: 'click',
+        selectorType: 'text',
+      });
+
+      await handler.execute(node, mockContext);
+
+      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, 'Submit', 'text', undefined);
+      expect(mockLocator.click).toHaveBeenCalled();
     });
   });
 });

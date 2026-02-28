@@ -62,7 +62,7 @@ export class ActionHandler implements NodeHandler {
         }
 
         // Execute action based on action type
-        const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css', data.selectorModifiers);
+        const locator = await LocatorHelper.createLocatorAsync(page, selector, data.selectorType || 'css', data.selectorModifiers);
         
         switch (data.action) {
           case 'click':
@@ -103,7 +103,7 @@ export class ActionHandler implements NodeHandler {
             if (data.targetSelector) {
               // Drag to target element
               const targetSelector = VariableInterpolator.interpolateString(data.targetSelector, context);
-              const targetLocator = LocatorHelper.createLocator(page, targetSelector, data.targetSelectorType || 'css', data.targetSelectorModifiers);
+              const targetLocator = await LocatorHelper.createLocatorAsync(page, targetSelector, data.targetSelectorType || 'css', data.targetSelectorModifiers);
               
               await locator.dragTo(targetLocator, { timeout });
             } else {
