@@ -37,6 +37,7 @@ describe('KeyboardHandler', () => {
 
     (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str);
     (LocatorHelper.createLocator as jest.Mock).mockReturnValue(mockLocator);
+    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockLocator);
     (LocatorHelper.scrollToElementSmooth as jest.Mock).mockResolvedValue(undefined);
     (WaitHelper.executeWaits as jest.Mock).mockResolvedValue(undefined);
     (RetryHelper.executeWithRetry as jest.Mock).mockImplementation(async (fn: () => Promise<void>) => {
@@ -241,6 +242,19 @@ describe('KeyboardHandler', () => {
       await handler.execute(node, mockContext);
 
       expect(mockPage.keyboard.press).toHaveBeenCalledWith('Enter');
+    });
+
+    it('should pass text selectorType to createLocatorAsync', async () => {
+      const node = createMockNode(NodeType.KEYBOARD, {
+        action: 'press',
+        key: 'Enter',
+        selector: 'Search',
+        selectorType: 'text',
+      });
+
+      await handler.execute(node, mockContext);
+
+      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, 'Search', 'text', undefined);
     });
   });
 });

@@ -4,6 +4,8 @@
 
 export function getSelectorPlaceholder(selectorType: string): string {
   switch (selectorType) {
+    case 'text':
+      return "Submit or Search Flights";
     case 'css':
       return "#button or .class-name";
     case 'xpath':
@@ -29,6 +31,8 @@ export function getSelectorPlaceholder(selectorType: string): string {
 
 export function getSelectorHelpText(selectorType: string): string {
   switch (selectorType) {
+    case 'text':
+      return "Just type the visible text of the button, link, or label you want to interact with. The engine auto-detects the best way to find it.";
     case 'getByRole':
       return "Format: role:button,name:Submit (name is optional). Supports variables: role:${roleVar},name:${nameVar}";
     case 'getByText':
@@ -49,6 +53,7 @@ export function getSelectorHelpText(selectorType: string): string {
 }
 
 export const SELECTOR_TYPE_OPTIONS = [
+  { value: 'text', label: 'Text (Auto-detect)' },
   { value: 'css', label: 'CSS Selector' },
   { value: 'xpath', label: 'XPath' },
   { value: 'getByRole', label: 'getByRole' },

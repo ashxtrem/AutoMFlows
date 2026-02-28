@@ -62,7 +62,7 @@ export class FormInputHandler implements NodeHandler {
         }
 
         // Execute action based on action type
-        const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css', data.selectorModifiers);
+        const locator = await LocatorHelper.createLocatorAsync(page, selector, data.selectorType || 'css', data.selectorModifiers);
 
         switch (data.action) {
           case 'select':

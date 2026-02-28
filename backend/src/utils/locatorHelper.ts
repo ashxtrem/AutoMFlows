@@ -8,6 +8,7 @@
 
 import { Page, Locator } from 'playwright';
 import { SelectorType, SelectorModifiers } from '@automflows/shared';
+import { TextSelectorResolver } from './textSelectorResolver';
 
 export class LocatorHelper {
   /**
@@ -169,6 +170,9 @@ export class LocatorHelper {
         break;
       }
 
+      case 'text':
+        throw new Error('Text selector type requires async resolution. Use LocatorHelper.createLocatorAsync() instead of createLocator().');
+
       default:
         // Default to CSS selector for unknown types (backward compatibility)
         console.warn(`Unknown selector type "${selectorType}", defaulting to CSS selector`);
@@ -176,6 +180,25 @@ export class LocatorHelper {
     }
 
     return this.applyModifiers(page, locator, modifiers);
+  }
+
+  /**
+   * Async variant of createLocator that supports the 'text' selector type.
+   * For non-text types, delegates to the sync createLocator().
+   * For 'text' type, uses TextSelectorResolver to auto-detect the best strategy
+   * and validates match count (throws on ambiguous multi-match).
+   */
+  static async createLocatorAsync(
+    page: Page,
+    selector: string,
+    selectorType: SelectorType | string = 'css',
+    modifiers?: SelectorModifiers
+  ): Promise<Locator> {
+    if (selectorType === 'text') {
+      const locator = await TextSelectorResolver.resolve(page, selector, modifiers);
+      return this.applyModifiers(page, locator, modifiers);
+    }
+    return this.createLocator(page, selector, selectorType, modifiers);
   }
 
   /**
@@ -228,7 +251,7 @@ export class LocatorHelper {
         return; // No selector, nothing to scroll to
       }
 
-      const locator = this.createLocator(page, selector, selectorType, modifiers);
+      const locator = await this.createLocatorAsync(page, selector, selectorType, modifiers);
 
       // Check if element is already centered in viewport (more strict check)
       // We want to scroll to center the element even if it's partially visible

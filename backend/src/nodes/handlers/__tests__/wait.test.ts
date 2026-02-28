@@ -28,6 +28,7 @@ describe('WaitHandler', () => {
 
     (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str);
     (LocatorHelper.createLocator as jest.Mock).mockReturnValue(mockLocator);
+    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockLocator);
     (WaitHelper.waitForUrl as jest.Mock).mockResolvedValue(undefined);
     (WaitHelper.waitForCondition as jest.Mock).mockResolvedValue(undefined);
     (RetryHelper.executeWithRetry as jest.Mock).mockImplementation(async (fn: () => Promise<void>) => {
@@ -58,7 +59,21 @@ describe('WaitHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#element', 'css', undefined);
+      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, '#element', 'css', undefined);
+      expect(mockLocator.waitFor).toHaveBeenCalledWith({ timeout: 5000, state: 'visible' });
+    });
+
+    it('should pass text selectorType to createLocatorAsync for selector wait', async () => {
+      const node = createMockNode(NodeType.WAIT, {
+        waitType: 'selector',
+        value: 'Loading...',
+        selectorType: 'text',
+        timeout: 5000,
+      });
+
+      await handler.execute(node, mockContext);
+
+      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, 'Loading...', 'text', undefined);
       expect(mockLocator.waitFor).toHaveBeenCalledWith({ timeout: 5000, state: 'visible' });
     });
 

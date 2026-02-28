@@ -60,7 +60,7 @@ export class KeyboardHandler implements NodeHandler {
             }
           }
           
-          locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css', data.selectorModifiers);
+          locator = await LocatorHelper.createLocatorAsync(page, selector, data.selectorType || 'css', data.selectorModifiers);
           await locator.focus({ timeout });
         }
 

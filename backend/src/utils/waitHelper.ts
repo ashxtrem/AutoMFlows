@@ -147,7 +147,7 @@ export class WaitHelper {
     }
 
     try {
-      const locator = LocatorHelper.createLocator(page, selector, selectorType || 'css', modifiers);
+      const locator = await LocatorHelper.createLocatorAsync(page, selector, selectorType || 'css', modifiers);
 
       // Log initial state
       try {
@@ -164,7 +164,7 @@ export class WaitHelper {
       // Log final state on timeout
       if (error.message.includes('timeout')) {
         try {
-          const locator = LocatorHelper.createLocator(page, selector, selectorType || 'css', modifiers);
+          const locator = await LocatorHelper.createLocatorAsync(page, selector, selectorType || 'css', modifiers);
           const isVisible = await locator.isVisible().catch(() => false);
           const actualState = isVisible ? 'visible' : 'invisible';
           log(`Wait [selector]: selector: ${selector} | expected: visible | got: ${actualState} | timeout: ${timeout}ms (TIMEOUT)`);

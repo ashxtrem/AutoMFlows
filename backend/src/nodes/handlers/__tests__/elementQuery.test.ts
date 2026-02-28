@@ -39,6 +39,7 @@ describe('ElementQueryHandler', () => {
 
     (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str);
     (LocatorHelper.createLocator as jest.Mock).mockReturnValue(mockLocator);
+    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockLocator);
     (LocatorHelper.scrollToElementSmooth as jest.Mock).mockResolvedValue(undefined);
     (WaitHelper.executeWaits as jest.Mock).mockResolvedValue(undefined);
     (RetryHelper.executeWithRetry as jest.Mock).mockImplementation(async (fn: () => Promise<any>) => {
@@ -214,7 +215,19 @@ describe('ElementQueryHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#interpolated', 'css', undefined);
+      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, '#interpolated', 'css', undefined);
+    });
+
+    it('should pass text selectorType to createLocatorAsync', async () => {
+      const node = createMockNode(NodeType.ELEMENT_QUERY, {
+        selector: 'Total Price',
+        action: 'getText',
+        selectorType: 'text',
+      });
+
+      await handler.execute(node, mockContext);
+
+      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, 'Total Price', 'text', undefined);
     });
   });
 });

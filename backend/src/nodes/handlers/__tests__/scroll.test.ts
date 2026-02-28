@@ -28,6 +28,7 @@ describe('ScrollHandler', () => {
 
     (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str);
     (LocatorHelper.createLocator as jest.Mock).mockReturnValue(mockLocator);
+    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockLocator);
     (WaitHelper.executeWaits as jest.Mock).mockResolvedValue(undefined);
     (RetryHelper.executeWithRetry as jest.Mock).mockImplementation(async (fn: () => Promise<void>) => {
       await fn();
@@ -64,7 +65,7 @@ describe('ScrollHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#element', 'css', undefined);
+      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, '#element', 'css', undefined);
       expect(mockLocator.scrollIntoViewIfNeeded).toHaveBeenCalledWith({ timeout: 30000 });
     });
 
@@ -167,7 +168,7 @@ describe('ScrollHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#interpolated', 'css', undefined);
+      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, '#interpolated', 'css', undefined);
     });
 
     it('should use custom selectorType', async () => {
@@ -179,7 +180,19 @@ describe('ScrollHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#element', 'xpath', undefined);
+      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, '#element', 'xpath', undefined);
+    });
+
+    it('should pass text selectorType to createLocatorAsync', async () => {
+      const node = createMockNode(NodeType.SCROLL, {
+        action: 'scrollToElement',
+        selector: 'Reviews Section',
+        selectorType: 'text',
+      });
+
+      await handler.execute(node, mockContext);
+
+      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, 'Reviews Section', 'text', undefined);
     });
   });
 });

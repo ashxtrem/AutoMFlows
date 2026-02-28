@@ -33,6 +33,7 @@ describe('TypeHandler', () => {
     // Setup default mocks
     (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str);
     (LocatorHelper.createLocator as jest.Mock).mockReturnValue(mockLocator);
+    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockLocator);
     (LocatorHelper.scrollToElementSmooth as jest.Mock).mockResolvedValue(undefined);
     (WaitHelper.executeWaits as jest.Mock).mockResolvedValue(undefined);
     (RetryHelper.executeWithRetry as jest.Mock).mockImplementation(async (fn: () => Promise<void>) => {
@@ -85,7 +86,7 @@ describe('TypeHandler', () => {
 
       expect(VariableInterpolator.interpolateString).toHaveBeenCalledWith('#input', mockContext);
       expect(VariableInterpolator.interpolateString).toHaveBeenCalledWith('test text', mockContext);
-      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#input', 'css', undefined);
+      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, '#input', 'css', undefined);
       expect(mockLocator.fill).toHaveBeenCalledWith('test text', { timeout: 30000 });
     });
 
@@ -184,7 +185,7 @@ describe('TypeHandler', () => {
 
       expect(VariableInterpolator.interpolateString).toHaveBeenCalledWith('${selector}', mockContext);
       expect(VariableInterpolator.interpolateString).toHaveBeenCalledWith('${text}', mockContext);
-      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#interpolated', 'css', undefined);
+      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, '#interpolated', 'css', undefined);
       expect(mockLocator.fill).toHaveBeenCalledWith('interpolated text', { timeout: 30000 });
     });
 
@@ -267,7 +268,20 @@ describe('TypeHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocator).toHaveBeenCalledWith(mockPage, '#input', 'xpath', undefined);
+      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, '#input', 'xpath', undefined);
+    });
+
+    it('should pass text selectorType to createLocatorAsync', async () => {
+      const node = createMockNode(NodeType.TYPE, {
+        selector: 'Email',
+        text: 'user@example.com',
+        selectorType: 'text',
+      });
+
+      await handler.execute(node, mockContext);
+
+      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, 'Email', 'text', undefined);
+      expect(mockLocator.fill).toHaveBeenCalledWith('user@example.com', { timeout: 30000 });
     });
 
     it('should handle retry logic', async () => {

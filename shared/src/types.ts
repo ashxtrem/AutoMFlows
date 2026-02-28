@@ -7,8 +7,9 @@ export enum PropertyDataType {
   BOOLEAN = 'boolean',
 }
 
-// Selector Types - supports CSS, XPath, and Playwright locator methods
+// Selector Types - supports CSS, XPath, Playwright locator methods, and text auto-detect
 export type SelectorType = 
+  | 'text'
   | 'css' 
   | 'xpath' 
   | 'getByRole' 

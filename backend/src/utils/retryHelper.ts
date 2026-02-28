@@ -367,7 +367,7 @@ export class RetryHelper {
         const visibility = condition.visibility || 'visible';
         const isInvisible = visibility === 'invisible';
 
-        const locator = LocatorHelper.createLocator(page, condition.value, selectorType, condition.selectorModifiers);
+        const locator = await LocatorHelper.createLocatorAsync(page, condition.value, selectorType, condition.selectorModifiers);
         const isVisible = await locator.isVisible().catch(() => false);
         const met = isInvisible ? !isVisible : isVisible;
         const actualState = isVisible ? 'visible' : 'invisible';

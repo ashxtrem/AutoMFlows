@@ -64,7 +64,7 @@ export class TypeHandler implements NodeHandler {
 
         // Execute type operation based on inputMethod
         const inputMethod = data.inputMethod || 'fill'; // Default to 'fill' for backward compatibility
-        const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css', data.selectorModifiers);
+        const locator = await LocatorHelper.createLocatorAsync(page, selector, data.selectorType || 'css', data.selectorModifiers);
 
         switch (inputMethod) {
           case 'fill':

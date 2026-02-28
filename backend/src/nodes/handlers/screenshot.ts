@@ -67,14 +67,16 @@ export class ScreenshotHandler implements NodeHandler {
               throw new Error('Selector is required for element screenshot action');
             }
             const selector = VariableInterpolator.interpolateString(data.selector, context);
-            const locator = LocatorHelper.createLocator(page, selector, data.selectorType || 'css', data.selectorModifiers);
+            const locator = await LocatorHelper.createLocatorAsync(page, selector, data.selectorType || 'css', data.selectorModifiers);
             
             // Handle masking if specified
             // Note: mask selectors use the same selectorType as the main selector
-            const maskLocators = data.mask?.map(m => {
-              const maskSelector = VariableInterpolator.interpolateString(m, context);
-              return LocatorHelper.createLocator(page, maskSelector, data.selectorType || 'css', data.selectorModifiers);
-            });
+            const maskLocators = data.mask
+              ? await Promise.all(data.mask.map(async (m) => {
+                  const maskSelector = VariableInterpolator.interpolateString(m, context);
+                  return LocatorHelper.createLocatorAsync(page, maskSelector, data.selectorType || 'css', data.selectorModifiers);
+                }))
+              : undefined;
             
             const screenshotTimeout = data.waitForSelectorTimeout || 30000;
             const screenshotOptions: any = { path: data.path, timeout: screenshotTimeout };

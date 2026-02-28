@@ -31,6 +31,7 @@ describe('FormInputHandler', () => {
 
     (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str);
     (LocatorHelper.createLocator as jest.Mock).mockReturnValue(mockLocator);
+    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockLocator);
     (LocatorHelper.scrollToElementSmooth as jest.Mock).mockResolvedValue(undefined);
     (WaitHelper.executeWaits as jest.Mock).mockResolvedValue(undefined);
     (RetryHelper.executeWithRetry as jest.Mock).mockImplementation(async (fn: () => Promise<void>) => {
@@ -244,6 +245,19 @@ describe('FormInputHandler', () => {
       await handler.execute(node, mockContext);
 
       expect(mockLocator.setInputFiles).toHaveBeenCalledWith(['/interpolated/path.pdf'], { timeout: 30000 });
+    });
+
+    it('should pass text selectorType to createLocatorAsync', async () => {
+      const node = createMockNode(NodeType.FORM_INPUT, {
+        selector: 'Country',
+        action: 'select',
+        selectorType: 'text',
+        values: 'US',
+      });
+
+      await handler.execute(node, mockContext);
+
+      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, 'Country', 'text', undefined);
     });
   });
 });
