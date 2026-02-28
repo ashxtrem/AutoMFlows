@@ -316,6 +316,32 @@ export function getNodeProperties(nodeType: NodeType | string): PropertySchema[]
           { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
         ];
 
+      case NodeType.DATA_EXTRACTOR:
+        return [
+          { name: 'containerSelector', label: 'Container Selector', dataType: PropertyDataType.STRING, required: true },
+          { name: 'containerSelectorType', label: 'Container Selector Type', dataType: PropertyDataType.STRING, required: false, defaultValue: 'css' },
+          { name: 'fields', label: 'Fields', dataType: PropertyDataType.STRING, required: true, defaultValue: '[]' },
+          { name: 'outputVariable', label: 'Output Variable', dataType: PropertyDataType.STRING, required: false, defaultValue: 'extractedData' },
+          { name: 'limit', label: 'Limit', dataType: PropertyDataType.INT, required: false, defaultValue: 0 },
+          { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
+          { name: 'waitForSelector', label: 'Wait For Selector', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: true },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+          { name: 'saveToCSV', label: 'Save to CSV', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+          { name: 'csvFilePath', label: 'CSV File Path', dataType: PropertyDataType.STRING, required: false },
+          { name: 'csvDelimiter', label: 'CSV Delimiter', dataType: PropertyDataType.STRING, required: false, defaultValue: ',' },
+        ];
+
+      case NodeType.SMART_EXTRACTOR:
+        return [
+          { name: 'mode', label: 'Mode', dataType: PropertyDataType.STRING, required: true, defaultValue: 'allLinks' },
+          { name: 'tableIndex', label: 'Table Index', dataType: PropertyDataType.INT, required: false, defaultValue: 0 },
+          { name: 'outputVariable', label: 'Output Variable', dataType: PropertyDataType.STRING, required: false, defaultValue: 'extractedData' },
+          { name: 'includeMetadata', label: 'Include Metadata', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+          { name: 'limit', label: 'Limit', dataType: PropertyDataType.INT, required: false, defaultValue: 0 },
+          { name: 'timeout', label: 'Timeout', dataType: PropertyDataType.INT, required: false, defaultValue: 30000 },
+          { name: 'failSilently', label: 'Fail Silently', dataType: PropertyDataType.BOOLEAN, required: false, defaultValue: false },
+        ];
+
       case NodeType.INT_VALUE:
       case NodeType.STRING_VALUE:
       case NodeType.BOOLEAN_VALUE:

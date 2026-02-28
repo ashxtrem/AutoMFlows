@@ -119,6 +119,8 @@ export function getNodeLabel(type: NodeType | string): string {
       [NodeType.EMAIL]: 'Email',
       [NodeType.SLACK]: 'Slack',
       [NodeType.WEBHOOK]: 'Webhook',
+      [NodeType.DATA_EXTRACTOR]: 'Data Extractor',
+      [NodeType.SMART_EXTRACTOR]: 'Smart Extractor',
     };
     return labels[type as NodeType] || type;
   }
@@ -261,6 +263,27 @@ export function getDefaultNodeData(type: NodeType | string): any {
         bodyType: 'json',
         timeout: 30000,
         contextKey: 'webhookResult',
+        isTest: true
+      },
+      [NodeType.DATA_EXTRACTOR]: {
+        containerSelector: '',
+        containerSelectorType: 'css',
+        fields: [],
+        outputVariable: 'extractedData',
+        limit: 0,
+        timeout: 30000,
+        waitForSelector: true,
+        failSilently: false,
+        isTest: true
+      },
+      [NodeType.SMART_EXTRACTOR]: {
+        mode: 'allLinks',
+        tableIndex: 0,
+        outputVariable: 'extractedData',
+        includeMetadata: false,
+        limit: 0,
+        timeout: 30000,
+        failSilently: false,
         isTest: true
       },
     };

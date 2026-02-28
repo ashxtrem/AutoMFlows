@@ -34,6 +34,8 @@ import TableChartIcon from '@mui/icons-material/TableChart';
 import EmailIcon from '@mui/icons-material/Email';
 import TagIcon from '@mui/icons-material/Tag';
 import WebhookIcon from '@mui/icons-material/Webhook';
+import DataObjectIcon from '@mui/icons-material/DataObject';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 
 export interface IconConfig {
   icon: React.ComponentType<{ sx?: any }>;
@@ -78,6 +80,8 @@ export const nodeIcons: Record<NodeType, IconConfig> = {
   [NodeType.EMAIL]: { icon: EmailIcon, color: '#E91E63' },
   [NodeType.SLACK]: { icon: TagIcon, color: '#4A154B' },
   [NodeType.WEBHOOK]: { icon: WebhookIcon, color: '#FF5722' },
+  [NodeType.DATA_EXTRACTOR]: { icon: DataObjectIcon, color: '#00BCD4' },
+  [NodeType.SMART_EXTRACTOR]: { icon: AutoFixHighIcon, color: '#8BC34A' },
 };
 
 export function getNodeIcon(nodeType: NodeType | string): IconConfig | null {

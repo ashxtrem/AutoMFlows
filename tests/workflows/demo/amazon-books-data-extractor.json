@@ -1,0 +1,423 @@
+{
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": {
+        "x": 100,
+        "y": 200
+      },
+      "data": {
+        "type": "start",
+        "label": "Start",
+        "isTest": false,
+        "recordSession": false,
+        "screenshotAllNodes": true,
+        "screenshotTiming": "post",
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 284,
+        "slowMo": 2000,
+        "scrollThenAction": true,
+        "snapshotAllNodes": false
+      }
+    },
+    {
+      "id": "openBrowser-1",
+      "type": "openBrowser",
+      "position": {
+        "x": 505,
+        "y": 200
+      },
+      "data": {
+        "headless": false,
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "maxWindow": false,
+        "browser": "chromium",
+        "stealthMode": true,
+        "capabilities": {
+          "isMobile": true,
+          "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1",
+          "viewport": {
+            "width": 390,
+            "height": 844
+          },
+          "hasTouch": true
+        },
+        "isTest": false,
+        "type": "openBrowser",
+        "label": "Open Browser (Stealth Mobile)",
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 280,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "navigate-1",
+      "type": "navigation",
+      "position": {
+        "x": 910,
+        "y": 200
+      },
+      "data": {
+        "type": "navigation",
+        "label": "Navigate to Amazon.in",
+        "action": "navigate",
+        "url": "https://www.amazon.in",
+        "timeout": 60000,
+        "waitUntil": "load",
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "width": 252,
+        "isMinimized": false
+      }
+    },
+    {
+      "id": "type-search-1",
+      "type": "type",
+      "position": {
+        "x": 1315,
+        "y": 200
+      },
+      "data": {
+        "type": "type",
+        "label": "Type search term",
+        "selector": "role:searchbox[name=\"Search Amazon.i\"]",
+        "selectorType": "getByRole",
+        "inputMethod": "fill",
+        "text": "ipad",
+        "delay": 0,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 400,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "keyboard-search-submit",
+      "type": "keyboard",
+      "position": {
+        "x": 1720,
+        "y": 200
+      },
+      "data": {
+        "type": "keyboard",
+        "label": "Press Enter to search",
+        "action": "press",
+        "key": "ENTER",
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "wait-results-heading",
+      "type": "wait",
+      "position": {
+        "x": 2125,
+        "y": 200
+      },
+      "data": {
+        "type": "wait",
+        "label": "Wait for Results heading",
+        "waitType": "selector",
+        "value": "role:heading[name=\"Results\"]",
+        "selectorType": "getByRole",
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 280
+      }
+    },
+    {
+      "id": "scroll-bottom",
+      "type": "scroll",
+      "position": {
+        "x": 100,
+        "y": 450
+      },
+      "data": {
+        "type": "scroll",
+        "label": "Scroll to load all results",
+        "action": "scrollToBottom",
+        "timeout": 10000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 220
+      }
+    },
+    {
+      "id": "dataExtractor-1",
+      "type": "dataExtractor",
+      "position": {
+        "x": 1315,
+        "y": 450
+      },
+      "data": {
+        "type": "dataExtractor",
+        "label": "Extract Book Data",
+        "containerSelector": "div.s-result-item.s-asin[data-component-type='s-search-result']",
+        "containerSelectorType": "css",
+        "fields": [
+          {
+            "name": "productName",
+            "selector": "h2 span",
+            "selectorType": "css",
+            "extract": "text"
+          },
+          {
+            "name": "rating",
+            "selector": "a[aria-label*='out of 5 stars']",
+            "selectorType": "css",
+            "extract": "attribute",
+            "attribute": "aria-label"
+          },
+          {
+            "name": "price",
+            "selector": "span.a-price span.a-offscreen",
+            "selectorType": "css",
+            "extract": "text"
+          },
+          {
+            "name": "productLink",
+            "selector": "a[href*='/dp/']",
+            "selectorType": "css",
+            "extract": "attribute",
+            "attribute": "href"
+          }
+        ],
+        "outputVariable": "extractedBooks",
+        "limit": 20,
+        "timeout": 30000,
+        "waitForSelector": true,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 400,
+        "saveToCSV": true,
+        "csvFilePath": "tests\\output\\amazon_books_direct.csv"
+      }
+    },
+    {
+      "id": "smartExtractor-1",
+      "type": "smartExtractor",
+      "position": {
+        "x": 1400,
+        "y": 680
+      },
+      "data": {
+        "type": "smartExtractor",
+        "label": "Smart Extract All Links",
+        "mode": "tables",
+        "outputVariable": "smartLinks",
+        "includeMetadata": true,
+        "limit": 50,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 300
+      }
+    },
+    {
+      "id": "jsTransformSmart",
+      "type": "javascriptCode",
+      "position": {
+        "x": 1840,
+        "y": 510
+      },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Transform smart links",
+        "code": "const links = context.getData('smartLinks') || [];\nconst rows = links.map((link) => ({\n  text: (link.text || '').replace(/[\\r\\n]+/g, ' ').trim(),\n  href: link.href || '',\n  visible: link.visible !== undefined ? String(link.visible) : ''\n})).filter(r => r.text || r.href);\ncontext.setData('smartLinkRows', rows);",
+        "isTest": false,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 400
+      }
+    },
+    {
+      "id": "csvWrite-smart",
+      "type": "csvHandle",
+      "position": {
+        "x": 2250,
+        "y": 660
+      },
+      "data": {
+        "type": "csvHandle",
+        "label": "Write smart links to CSV",
+        "action": "write",
+        "filePath": "tests/output/amazon_books_smart.csv",
+        "dataSource": "smartLinkRows",
+        "headers": [
+          "text",
+          "href",
+          "visible"
+        ],
+        "delimiter": ",",
+        "isTest": false,
+        "searchHighlighted": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 300
+      }
+    },
+    {
+      "id": "stringValue-1772304111038",
+      "type": "stringValue",
+      "position": {
+        "x": 505,
+        "y": 450
+      },
+      "data": {
+        "type": "stringValue",
+        "label": "String Value",
+        "value": "true",
+        "isTest": true,
+        "variableName": "gotoVar",
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "switch.switch-1772304438869",
+      "type": "switch.switch",
+      "position": {
+        "x": 910,
+        "y": 450
+      },
+      "data": {
+        "type": "switch.switch",
+        "label": "Switch",
+        "cases": [
+          {
+            "id": "case-1",
+            "label": "Case 1",
+            "condition": {
+              "type": "variable",
+              "selector": "",
+              "selectorType": "css",
+              "elementCheck": "visible",
+              "variableName": "gotoVar",
+              "comparisonValue": "true"
+            }
+          }
+        ],
+        "defaultCase": {
+          "label": "Default"
+        },
+        "isTest": true,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "start-1",
+      "target": "openBrowser-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e5",
+      "source": "type-search-1",
+      "target": "keyboard-search-submit",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e-smartExtractor-jsTransformSmart",
+      "source": "smartExtractor-1",
+      "target": "jsTransformSmart",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e-jsTransformSmart-csvWriteSmart",
+      "source": "jsTransformSmart",
+      "target": "csvWrite-smart",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "reactflow__edge-openBrowser-1output-navigate-1driver",
+      "source": "openBrowser-1",
+      "target": "navigate-1",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-stringValue-1772304111038output-switch.switch-1772304438869driver",
+      "source": "stringValue-1772304111038",
+      "target": "switch.switch-1772304438869",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-switch.switch-1772304438869case-1-dataExtractor-1driver",
+      "source": "switch.switch-1772304438869",
+      "target": "dataExtractor-1",
+      "sourceHandle": "case-1",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "reactflow__edge-switch.switch-1772304438869default-smartExtractor-1driver",
+      "source": "switch.switch-1772304438869",
+      "target": "smartExtractor-1",
+      "sourceHandle": "default",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "keyboard-search-submit-wait-results-heading-1772305509574-0-iifw10plm",
+      "source": "keyboard-search-submit",
+      "target": "wait-results-heading",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "wait-results-heading-scroll-bottom-1772305511721-0-bst5n470q",
+      "source": "wait-results-heading",
+      "target": "scroll-bottom",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "scroll-bottom-stringValue-1772304111038-1772305512709-0-va3rg4h0t",
+      "source": "scroll-bottom",
+      "target": "stringValue-1772304111038",
+      "sourceHandle": "output",
+      "targetHandle": "driver"
+    },
+    {
+      "id": "navigate-1-type-search-1-1772305514826-0-sq5w0md7c",
+      "source": "navigate-1",
+      "target": "type-search-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    }
+  ],
+  "groups": [],
+  "metadata": {
+    "name": "amazon-books-data-extractor",
+    "author": "ashxt",
+    "version": 8,
+    "createdAt": "2026-02-28T18:45:37.019Z",
+    "updatedAt": "2026-02-28T19:33:59.106Z"
+  }
+}

@@ -29,6 +29,8 @@ import TableChartIcon from '@mui/icons-material/TableChart';
 import EmailIcon from '@mui/icons-material/Email';
 import TagIcon from '@mui/icons-material/Tag';
 import WebhookIcon from '@mui/icons-material/Webhook';
+import DataObjectIcon from '@mui/icons-material/DataObject';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
 
 interface IconConfig {
   icon: React.ComponentType<{ sx?: any }>;
@@ -73,6 +75,8 @@ const nodeIconMap: Record<NodeType, IconConfig> = {
   [NodeType.EMAIL]: { icon: EmailIcon, color: '#E91E63' },
   [NodeType.SLACK]: { icon: TagIcon, color: '#4A154B' },
   [NodeType.WEBHOOK]: { icon: WebhookIcon, color: '#FF5722' },
+  [NodeType.DATA_EXTRACTOR]: { icon: DataObjectIcon, color: '#00BCD4' },
+  [NodeType.SMART_EXTRACTOR]: { icon: AutoFixHighIcon, color: '#8BC34A' },
 };
 
 function getNodeIconConfig(nodeType: NodeType | string): IconConfig | null {
@@ -122,6 +126,8 @@ function getNodeLabel(nodeType: NodeType | string): string {
       [NodeType.EMAIL]: 'Email',
       [NodeType.SLACK]: 'Slack',
       [NodeType.WEBHOOK]: 'Webhook',
+      [NodeType.DATA_EXTRACTOR]: 'Data Extractor',
+      [NodeType.SMART_EXTRACTOR]: 'Smart Extractor',
     };
     return labels[nodeType as NodeType] || nodeType;
   }

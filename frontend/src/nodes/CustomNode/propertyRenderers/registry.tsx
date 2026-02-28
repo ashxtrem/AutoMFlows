@@ -32,6 +32,8 @@ import { renderCsvHandleProperties } from './csvHandle';
 import { renderEmailProperties } from './email';
 import { renderSlackProperties } from './slack';
 import { renderWebhookProperties } from './webhook';
+import { renderDataExtractorProperties } from './dataExtractor';
+import { renderSmartExtractorProperties } from './smartExtractor';
 import { renderShortcutProperties } from './shortcut';
 import { renderCommentBoxProperties } from './commentBox';
 import { renderSetConfigProperties } from './setConfig';
@@ -77,6 +79,8 @@ export const propertyRendererRegistry: Record<string, PropertyRenderer> = {
   [NodeType.EMAIL]: renderEmailProperties,
   [NodeType.SLACK]: renderSlackProperties,
   [NodeType.WEBHOOK]: renderWebhookProperties,
+  [NodeType.DATA_EXTRACTOR]: renderDataExtractorProperties,
+  [NodeType.SMART_EXTRACTOR]: renderSmartExtractorProperties,
 };
 
 export function getPropertyRenderer(nodeType: string): PropertyRenderer | null {

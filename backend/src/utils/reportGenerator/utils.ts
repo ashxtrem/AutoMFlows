@@ -46,6 +46,8 @@ export function getDefaultNodeLabel(nodeType: string): string {
       [NodeType.EMAIL]: 'Email',
       [NodeType.SLACK]: 'Slack',
       [NodeType.WEBHOOK]: 'Webhook',
+      [NodeType.DATA_EXTRACTOR]: 'Data Extractor',
+      [NodeType.SMART_EXTRACTOR]: 'Smart Extractor',
     };
     return labels[nodeType as NodeType] || nodeType;
   }
