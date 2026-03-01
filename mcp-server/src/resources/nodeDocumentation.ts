@@ -245,13 +245,24 @@ const NODE_METADATA: Record<string, { label: string; description: string; exampl
   },
   [NodeType.JAVASCRIPT_CODE]: {
     label: 'JavaScript Code',
-    description: 'Execute custom JavaScript in the browser context',
-    examples: ['Run custom script', 'Extract data with JavaScript'],
+    description: 'Execute custom JavaScript. Code runs in an async function with a "context" parameter. Available API: context.page (Playwright Page instance), context.getData(key) / context.setData(key, value) for inter-node data, context.getVariable(key) / context.setVariable(key, value) for workflow variables, context.data (read-only snapshot of all data), context.variables (read-only snapshot of all variables). IMPORTANT: use "context.page" to access the Playwright page -- "context.getPage()" does NOT exist and will throw an error.',
+    examples: [
+      'Set data: context.setData("myKey", "myValue")',
+      'Read data: const val = context.getData("myKey")',
+      'Use Playwright page: const title = await context.page.title()',
+      'Extract text: const text = await context.page.locator("h1").textContent(); context.setData("heading", text)',
+      'Loop variable access: const idx = context.getVariable("index")',
+    ],
   },
   [NodeType.LOOP]: {
     label: 'Loop',
-    description: 'Iterate over an array or repeat until condition',
-    examples: ['Loop over array variable', 'Do-while loop'],
+    description: 'Iterate over items in an array variable or repeat while a condition is true. Modes: "forEach" iterates over arrayVariable (sets "item" and "index" context variables each iteration), "doWhile" repeats until condition is false. EDGE RULES: Loop body nodes connect from the loop\'s "output" handle -- the executor discovers all nodes reachable from "output" and treats them as the loop body. Do NOT create a back-edge from the last body node to the loop node (this causes a circular dependency error). After the loop completes, the next node should connect from the loop using sourceHandle="loopComplete" and targetHandle="input".',
+    examples: [
+      'forEach loop: arrayVariable="products", connects output -> first body node, loopComplete -> post-loop node',
+      'doWhile loop: condition="index < 5", connects output -> body, loopComplete -> next',
+      'CORRECT edges: loop --output--> bodyNode1 --output--> bodyNode2 ; loop --loopComplete--> afterLoopNode',
+      'WRONG edges: bodyNode2 --output--> loop (causes circular dependency)',
+    ],
   },
   [NodeType.DB_CONNECT]: {
     label: 'DB Connect',

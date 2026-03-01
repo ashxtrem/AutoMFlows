@@ -13,6 +13,8 @@ export interface ExecuteWorkflowParams {
   waitForCompletion?: boolean;
   pollIntervalMs?: number;
   maxDurationMs?: number;
+  /** When true, fetch and include execution trace logs in the result */
+  returnLogs?: boolean;
 }
 
 export async function executeWorkflow(params: ExecuteWorkflowParams): Promise<ExecutionResult> {
@@ -23,43 +25,48 @@ export async function executeWorkflow(params: ExecuteWorkflowParams): Promise<Ex
     breakpointConfig,
     waitForCompletion = false,
     pollIntervalMs = 1000,
-    maxDurationMs = 300000, // 5 minutes default
+    maxDurationMs = 300000,
+    returnLogs = false,
   } = params;
   const client = new BackendClient();
 
   const result = await client.executeWorkflow(workflow, {
-    traceLogs,
+    traceLogs: traceLogs || returnLogs,
     recordSession,
     breakpointConfig,
   });
 
-  // If waitForCompletion is true, poll until completion or timeout
   if (waitForCompletion && result.executionId) {
     const startTime = Date.now();
-    try {
-      const finalResult = await client.pollExecutionStatus(
-        result.executionId,
-        pollIntervalMs,
-        maxDurationMs
-      );
-      return finalResult;
-    } catch (error: any) {
+    const finalResult = await client.pollExecutionStatus(
+      result.executionId,
+      pollIntervalMs,
+      maxDurationMs
+    );
+
+    // If polling returned a partial/timed-out result, try to stop execution
+    if (finalResult.timedOut) {
       const elapsedTime = Date.now() - startTime;
-      // If timeout occurs, try to stop the execution to prevent it from hanging
-      if (error.message?.includes('timeout') || elapsedTime >= maxDurationMs) {
+      if (elapsedTime >= maxDurationMs) {
         try {
           await client.stopExecution();
-        } catch (stopError) {
-          // Ignore stop errors - execution may have already completed
+        } catch {
+          // Ignore -- execution may have completed
         }
-        throw new Error(
-          `Workflow execution timed out after ${Math.round(elapsedTime / 1000)}s (max: ${Math.round(maxDurationMs / 1000)}s). ` +
-          `Execution ID: ${result.executionId}. The execution has been stopped.`
-        );
       }
-      // Re-throw other errors
-      throw error;
     }
+
+    // Attach logs if requested
+    if (returnLogs && result.executionId) {
+      finalResult.logs = await client.getExecutionLogs(result.executionId);
+    }
+
+    return finalResult;
+  }
+
+  // Non-blocking mode: optionally fetch logs if execution already finished
+  if (returnLogs && result.executionId) {
+    result.logs = await client.getExecutionLogs(result.executionId);
   }
 
   return result;

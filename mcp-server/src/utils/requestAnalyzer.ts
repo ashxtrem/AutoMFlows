@@ -9,11 +9,16 @@ export interface RequestClarity {
 }
 
 export interface ParsedStep {
-  action: 'navigate' | 'click' | 'type' | 'wait' | 'fill' | 'submit' | 'unknown';
+  action: 'navigate' | 'click' | 'type' | 'wait' | 'fill' | 'submit' | 'setConfig' | 'loop' | 'extract' | 'verify' | 'code' | 'unknown';
   target?: string;
   value?: string;
   selector?: string;
   description: string;
+  /** For setConfig: key-value pairs to configure */
+  configEntries?: Record<string, string>;
+  /** For loop: array variable or iteration count */
+  loopVariable?: string;
+  loopCount?: number;
 }
 
 export class RequestAnalyzer {
@@ -52,6 +57,11 @@ export class RequestAnalyzer {
       'search', 'find',
       'add', 'remove', 'delete',
       'login', 'logout', 'register', 'sign up', 'sign in',
+      'set config', 'configure',
+      'loop', 'iterate', 'repeat', 'for each',
+      'extract', 'scrape',
+      'verify', 'assert', 'check', 'validate',
+      'javascript', 'code', 'calculate', 'compare', 'store',
     ];
 
     const foundActions = actionVerbs.filter(verb => 
@@ -294,6 +304,58 @@ export class RequestAnalyzer {
       return {
         action: 'click',
         target: 'register',
+        description: text,
+      };
+    }
+
+    // Config / setConfig
+    if (/(?:set\s*config|configure|set\s+(?:the\s+)?(?:config|settings|parameters?|variables?))/i.test(textLower)) {
+      const configEntries: Record<string, string> = {};
+      const kvMatches = text.matchAll(/(\w+)\s*[=:]\s*["']?([^"',;]+)["']?/gi);
+      for (const m of kvMatches) {
+        configEntries[m[1].trim()] = m[2].trim();
+      }
+      return {
+        action: 'setConfig',
+        configEntries: Object.keys(configEntries).length > 0 ? configEntries : undefined,
+        description: text,
+      };
+    }
+
+    // Loop / iterate / repeat
+    if (/\b(?:loop|iterate|repeat|for\s+each|forEach|top\s+\d+)\b/i.test(textLower)) {
+      const countMatch = text.match(/(?:top|first|repeat)\s+(\d+)/i);
+      const varMatch = text.match(/(?:over|through|items?\s+in)\s+["']?(\w+)["']?/i);
+      return {
+        action: 'loop',
+        loopVariable: varMatch ? varMatch[1] : undefined,
+        loopCount: countMatch ? parseInt(countMatch[1], 10) : undefined,
+        description: text,
+      };
+    }
+
+    // Extract / scrape / get text / get data
+    if (/\b(?:extract|scrape|get\s+(?:the\s+)?(?:text|data|name|title|price)|product\s+name)/i.test(textLower)) {
+      const selectorMatch = text.match(/(?:from|selector|element)\s+["']?([^"',]+)["']?/i);
+      return {
+        action: 'extract',
+        target: selectorMatch ? selectorMatch[1].trim() : undefined,
+        description: text,
+      };
+    }
+
+    // Verify / check / assert / confirm
+    if (/\b(?:verify|assert|check\s+(?:that|whether|if)|confirm|validate|ensure)/i.test(textLower)) {
+      return {
+        action: 'verify',
+        description: text,
+      };
+    }
+
+    // JavaScript / code / calculate / compare / store / save
+    if (/\b(?:javascript|code|calculate|compare|store\s+(?:in|to)|save\s+(?:to|in)\s+(?:variable|context))/i.test(textLower)) {
+      return {
+        action: 'code',
         description: text,
       };
     }

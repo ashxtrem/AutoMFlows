@@ -87,12 +87,17 @@ export class WorkflowValidator {
       }
     }
 
-    // Check for cycles (basic check - nodes shouldn't form cycles through control flow)
-    // This is a simplified check - full cycle detection would require graph traversal
-    const hasControlFlowCycle = this.detectControlFlowCycles(workflow);
-    if (hasControlFlowCycle) {
-      warnings.push('Workflow may contain cycles in control flow');
+    // Check for cycles -- the backend's topological sort rejects cycles as hard errors
+    const cycleNode = this.detectControlFlowCycleNode(workflow);
+    if (cycleNode) {
+      errors.push(`Circular dependency detected involving node: ${cycleNode}. ` +
+        'If you have a loop node, do NOT create a back-edge from the last body node to the loop. ' +
+        'Use sourceHandle="loopComplete" to connect post-loop nodes.');
     }
+
+    // Loop-specific edge validation
+    const loopErrors = this.validateLoopEdges(workflow);
+    errors.push(...loopErrors);
 
     return {
       valid: errors.length === 0,
@@ -101,14 +106,20 @@ export class WorkflowValidator {
     };
   }
 
-  private static detectControlFlowCycles(workflow: Workflow): boolean {
-    // Simplified cycle detection - check for edges that create back-references
+  /**
+   * Detects cycles in control flow edges. Returns the node ID involved in the
+   * cycle, or null if no cycle exists. Matches backend parser's topological
+   * sort behavior -- any cycle is a hard error.
+   */
+  private static detectControlFlowCycleNode(workflow: Workflow): string | null {
     const controlFlowEdges = workflow.edges.filter(
-      e => e.targetHandle === 'input' || e.sourceHandle === 'output'
+      e => e.targetHandle === 'input' || e.sourceHandle === 'output' ||
+           (!e.targetHandle && !e.sourceHandle)
     );
-    
-    // Build adjacency list
+
     const graph = new Map<string, string[]>();
+    const allNodes = new Set<string>(workflow.nodes.map(n => n.id));
+
     for (const edge of controlFlowEdges) {
       if (!graph.has(edge.source)) {
         graph.set(edge.source, []);
@@ -116,38 +127,93 @@ export class WorkflowValidator {
       graph.get(edge.source)!.push(edge.target);
     }
 
-    // Simple check: if any node can reach itself, there's a cycle
-    for (const [startNode] of graph) {
-      const visited = new Set<string>();
-      if (this.hasPath(graph, startNode, startNode, visited)) {
-        return true;
+    // Kahn's algorithm for topological sort -- detects cycles reliably
+    const inDegree = new Map<string, number>();
+    for (const nodeId of allNodes) {
+      inDegree.set(nodeId, 0);
+    }
+    for (const edge of controlFlowEdges) {
+      inDegree.set(edge.target, (inDegree.get(edge.target) || 0) + 1);
+    }
+
+    const queue: string[] = [];
+    for (const [nodeId, deg] of inDegree) {
+      if (deg === 0) queue.push(nodeId);
+    }
+
+    const sorted: string[] = [];
+    while (queue.length > 0) {
+      const node = queue.shift()!;
+      sorted.push(node);
+      for (const neighbor of (graph.get(node) || [])) {
+        const newDeg = (inDegree.get(neighbor) || 1) - 1;
+        inDegree.set(neighbor, newDeg);
+        if (newDeg === 0) queue.push(neighbor);
       }
     }
 
-    return false;
+    if (sorted.length < allNodes.size) {
+      // Find the first node still with in-degree > 0
+      for (const [nodeId, deg] of inDegree) {
+        if (deg > 0) return nodeId;
+      }
+    }
+
+    return null;
   }
 
-  private static hasPath(
-    graph: Map<string, string[]>,
-    start: string,
-    target: string,
-    visited: Set<string>
-  ): boolean {
-    if (visited.has(start)) {
-      return false;
-    }
-    visited.add(start);
+  /**
+   * Validates loop-specific edge patterns:
+   * - No back-edges from loop body to the loop node
+   * - Post-loop nodes should use loopComplete handle
+   */
+  private static validateLoopEdges(workflow: Workflow): string[] {
+    const errors: string[] = [];
+    const loopNodes = workflow.nodes.filter(n => n.type === NodeType.LOOP);
 
-    const neighbors = graph.get(start) || [];
-    for (const neighbor of neighbors) {
-      if (neighbor === target) {
-        return true;
-      }
-      if (this.hasPath(graph, neighbor, target, visited)) {
-        return true;
+    for (const loopNode of loopNodes) {
+      // Find all nodes reachable from this loop's output handle (the body)
+      const bodyNodes = this.getReachableFromHandle(workflow, loopNode.id, 'output');
+
+      // Check for back-edges: no body node should have an edge back to the loop
+      for (const edge of workflow.edges) {
+        if (bodyNodes.has(edge.source) && edge.target === loopNode.id) {
+          errors.push(
+            `Loop "${loopNode.id}" has a back-edge from body node "${edge.source}" (edge ${edge.id}). ` +
+            'Remove this edge -- the executor handles iteration internally.'
+          );
+        }
       }
     }
 
-    return false;
+    return errors;
+  }
+
+  private static getReachableFromHandle(workflow: Workflow, nodeId: string, handle: string): Set<string> {
+    const reachable = new Set<string>();
+    const visited = new Set<string>();
+
+    const initialEdges = workflow.edges.filter(
+      e => e.source === nodeId && e.sourceHandle === handle
+    );
+
+    const queue = initialEdges.map(e => e.target);
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      if (visited.has(current)) continue;
+      visited.add(current);
+      reachable.add(current);
+
+      const outgoing = workflow.edges.filter(
+        e => e.source === current && (!e.sourceHandle || e.sourceHandle === 'output')
+      );
+      for (const edge of outgoing) {
+        if (!visited.has(edge.target)) {
+          queue.push(edge.target);
+        }
+      }
+    }
+
+    return reachable;
   }
 }

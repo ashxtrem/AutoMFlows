@@ -1,0 +1,482 @@
+{
+  "nodes": [
+    {
+      "id": "start-1",
+      "type": "start",
+      "position": { "x": 100, "y": 200 },
+      "data": {
+        "type": "start",
+        "label": "Start",
+        "isTest": false,
+        "recordSession": false,
+        "screenshotAllNodes": true,
+        "screenshotTiming": "post",
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 284,
+        "slowMo": 2000,
+        "scrollThenAction": true,
+        "snapshotAllNodes": true
+      }
+    },
+    {
+      "id": "setConfig-1",
+      "type": "setConfig.setConfig",
+      "position": { "x": 505, "y": 200 },
+      "data": {
+        "type": "setConfig.setConfig",
+        "label": "Set Amazon Search Config",
+        "config": {
+          "searchTerm": "Atomic Habits",
+          "category": "Books",
+          "sortBy": "relevanceblender",
+          "minRating": 4,
+          "language": "English",
+          "maxResults": 20
+        },
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 228
+      }
+    },
+    {
+      "id": "openBrowser-1",
+      "type": "openBrowser",
+      "position": { "x": 910, "y": 200 },
+      "data": {
+        "headless": false,
+        "viewportWidth": 390,
+        "viewportHeight": 844,
+        "maxWindow": false,
+        "browser": "chromium",
+        "stealthMode": true,
+        "capabilities": {
+          "isMobile": true,
+          "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1",
+          "viewport": { "width": 390, "height": 844 },
+          "hasTouch": true
+        },
+        "isTest": false,
+        "type": "openBrowser",
+        "label": "Open Browser (Stealth Mobile)",
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 280,
+        "searchHighlighted": false,
+        "jsScript": "(function() {\n  'use strict';\n  const MOBILE_WIDTH = 390;\n  const MOBILE_HEIGHT = 844;\n  const MOBILE_USER_AGENT = 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1';\n  Object.defineProperty(window, 'innerWidth', { get: () => MOBILE_WIDTH, configurable: true, enumerable: true });\n  Object.defineProperty(window, 'innerHeight', { get: () => MOBILE_HEIGHT, configurable: true, enumerable: true });\n  Object.defineProperty(window, 'outerWidth', { get: () => MOBILE_WIDTH, configurable: true, enumerable: true });\n  Object.defineProperty(window, 'outerHeight', { get: () => MOBILE_HEIGHT, configurable: true, enumerable: true });\n  Object.defineProperty(screen, 'width', { get: () => MOBILE_WIDTH, configurable: true, enumerable: true });\n  Object.defineProperty(screen, 'height', { get: () => MOBILE_HEIGHT, configurable: true, enumerable: true });\n  Object.defineProperty(screen, 'availWidth', { get: () => MOBILE_WIDTH, configurable: true, enumerable: true });\n  Object.defineProperty(screen, 'availHeight', { get: () => MOBILE_HEIGHT - 44, configurable: true, enumerable: true });\n  Object.defineProperty(navigator, 'userAgent', { get: () => MOBILE_USER_AGENT, configurable: true, enumerable: true });\n  Object.defineProperty(navigator, 'platform', { get: () => 'iPhone', configurable: true, enumerable: true });\n  Object.defineProperty(navigator, 'maxTouchPoints', { get: () => 5, configurable: true, enumerable: true });\n  Object.defineProperty(navigator, 'hardwareConcurrency', { get: () => 6, configurable: true, enumerable: true });\n  if ('deviceMemory' in navigator) { Object.defineProperty(navigator, 'deviceMemory', { get: () => 4, configurable: true, enumerable: true }); }\n  if ('connection' in navigator) {\n    const connection = navigator.connection || navigator.mozConnection || navigator.webkitConnection;\n    if (connection) { Object.defineProperty(connection, 'effectiveType', { get: () => '4g', configurable: true, enumerable: true }); }\n  }\n  if (!('ontouchstart' in window)) { Object.defineProperty(window, 'ontouchstart', { get: () => null, set: () => {}, configurable: true, enumerable: true }); }\n  const originalMatchMedia = window.matchMedia;\n  window.matchMedia = function(query) {\n    if (query.includes('max-width')) {\n      const match = query.match(/max-width:\\s*(\\d+)px/);\n      if (match && parseInt(match[1]) >= MOBILE_WIDTH) {\n        return { matches: true, media: query, onchange: null, addListener: function() {}, removeListener: function() {}, addEventListener: function() {}, removeEventListener: function() {}, dispatchEvent: function() { return true; } };\n      }\n    }\n    return originalMatchMedia.call(window, query);\n  };\n  if (document.documentElement) {\n    let viewportMeta = document.querySelector('meta[name=\"viewport\"]');\n    if (!viewportMeta) { viewportMeta = document.createElement('meta'); viewportMeta.setAttribute('name', 'viewport'); document.head.appendChild(viewportMeta); }\n    viewportMeta.setAttribute('content', `width=${MOBILE_WIDTH}, initial-scale=1.0, maximum-scale=1.0, user-scalable=no`);\n  }\n  console.log(`[Mobile Emulation] Viewport set to ${MOBILE_WIDTH}x${MOBILE_HEIGHT}`);\n})();\n"
+      }
+    },
+    {
+      "id": "navigate-1",
+      "type": "navigation",
+      "position": { "x": 1315, "y": 200 },
+      "data": {
+        "type": "navigation",
+        "label": "Navigate to Amazon.in",
+        "action": "navigate",
+        "url": "https://www.amazon.in",
+        "timeout": 60000,
+        "waitUntil": "load",
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "width": 252,
+        "isMinimized": false
+      }
+    },
+    {
+      "id": "wait-page-load",
+      "type": "wait",
+      "position": { "x": 1720, "y": 200 },
+      "data": {
+        "type": "wait",
+        "label": "Wait for page load",
+        "waitType": "timeout",
+        "value": 3000,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212
+      }
+    },
+    {
+      "id": "type-search-1",
+      "type": "type",
+      "position": { "x": 2125, "y": 200 },
+      "data": {
+        "type": "type",
+        "label": "Type search term",
+        "selector": "role:searchbox[name=\"Search Amazon.in\"]",
+        "selectorType": "getByRole",
+        "inputMethod": "fill",
+        "text": "${data.searchTerm}",
+        "delay": 0,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "isMinimized": false,
+        "width": 400,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "keyboard-search-submit",
+      "type": "keyboard",
+      "position": { "x": 2530, "y": 200 },
+      "data": {
+        "type": "keyboard",
+        "label": "Press Enter to search",
+        "action": "press",
+        "key": "Enter",
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false
+      }
+    },
+    {
+      "id": "wait-search-results",
+      "type": "wait",
+      "position": { "x": 2935, "y": 200 },
+      "data": {
+        "type": "wait",
+        "label": "Wait for search results",
+        "waitType": "timeout",
+        "value": 5000,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212
+      }
+    },
+    {
+      "id": "wait-results-heading",
+      "type": "wait",
+      "position": { "x": 100, "y": 450 },
+      "data": {
+        "type": "wait",
+        "label": "Wait for Results heading",
+        "waitType": "selector",
+        "value": "role:heading[name=\"Results\"]",
+        "selectorType": "getByRole",
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 280
+      }
+    },
+    {
+      "id": "wait-stabilize",
+      "type": "wait",
+      "position": { "x": 505, "y": 450 },
+      "data": {
+        "type": "wait",
+        "label": "Wait for list to stabilize",
+        "waitType": "timeout",
+        "value": 3000,
+        "timeout": 30000,
+        "isTest": false,
+        "isPinned": false,
+        "searchHighlighted": false,
+        "isMinimized": false,
+        "width": 212
+      }
+    },
+    {
+      "id": "elemQuery-getCount",
+      "type": "elementQuery",
+      "position": { "x": 910, "y": 450 },
+      "data": {
+        "type": "elementQuery",
+        "label": "Get result card count",
+        "action": "getCount",
+        "selector": "//div[@data-asin and string-length(@data-asin) > 0]",
+        "selectorType": "xpath",
+        "timeout": 30000,
+        "outputVariable": "resultCardCount",
+        "isTest": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "jsInitRows",
+      "type": "javascriptCode",
+      "position": { "x": 1315, "y": 450 },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Init empty rows for CSV",
+        "code": "context.setData('bookRowsInit', []);",
+        "isTest": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "jsCreateIndices",
+      "type": "javascriptCode",
+      "position": { "x": 1720, "y": 450 },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Create book indices array",
+        "code": "const count = context.getData('resultCardCount') || 0;\nconst maxResults = context.getData('maxResults') || 20;\nconst indices = Array.from({length: Math.min(count, maxResults)}, (_, i) => i);\ncontext.setData('bookIndices', indices);",
+        "isTest": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "csvWriteHeaders",
+      "type": "csvHandle",
+      "position": { "x": 2125, "y": 450 },
+      "data": {
+        "type": "csvHandle",
+        "label": "Create CSV with headers",
+        "action": "write",
+        "filePath": "tests/output/amazon_books.csv",
+        "dataSource": "bookRowsInit",
+        "headers": ["index", "productName", "rating", "price", "productLink"],
+        "delimiter": ",",
+        "isTest": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "loopExtractBooks",
+      "type": "loop",
+      "position": { "x": 2530, "y": 450 },
+      "data": {
+        "type": "loop",
+        "label": "Loop over search results",
+        "mode": "forEach",
+        "arrayVariable": "bookIndices",
+        "isTest": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "jsSetCardIndex",
+      "type": "javascriptCode",
+      "position": { "x": 100, "y": 700 },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Set XPath index (1-based)",
+        "code": "const idx = context.getVariable('index') || 0;\ncontext.setData('cardIndex', idx + 1);",
+        "isTest": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "elemQuery-getCardText",
+      "type": "elementQuery",
+      "position": { "x": 505, "y": 700 },
+      "data": {
+        "type": "elementQuery",
+        "label": "Get book card text",
+        "action": "getText",
+        "selector": "(//div[@data-asin and string-length(@data-asin) > 0])[${data.cardIndex}]",
+        "selectorType": "xpath",
+        "timeout": 10000,
+        "outputVariable": "cardText",
+        "isTest": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "elemQuery-getLink",
+      "type": "elementQuery",
+      "position": { "x": 910, "y": 700 },
+      "data": {
+        "type": "elementQuery",
+        "label": "Get product link",
+        "action": "getAttribute",
+        "selector": "((//div[@data-asin and string-length(@data-asin) > 0])[${data.cardIndex}]//a)[1]",
+        "selectorType": "xpath",
+        "attributeName": "href",
+        "timeout": 10000,
+        "outputVariable": "productLink",
+        "isTest": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "jsBuildRow",
+      "type": "javascriptCode",
+      "position": { "x": 1315, "y": 700 },
+      "data": {
+        "type": "javascriptCode",
+        "label": "Build CSV row",
+        "code": "const idx = context.getVariable('index') || 0;\nconst text = context.getData('cardText') || '';\nconst link = context.getData('productLink') || '';\nconst lines = text.split('\\n').map(l => l.trim()).filter(Boolean);\nlet productName = '';\nfor (const line of lines) {\n  if (line.length > 10 && !line.match(/^(Sponsored|Best Seller|\\d+ out of|\\u20b9|FREE|Save|Get it)/i)) {\n    productName = line.substring(0, 200);\n    break;\n  }\n}\nif (!productName && lines.length > 0) productName = lines[0].substring(0, 200);\nconst ratingMatch = text.match(/(\\d+\\.?\\d*)\\s*out of\\s*5/);\nconst rating = ratingMatch ? ratingMatch[1] : '';\nconst priceMatch = text.match(/\\u20b9([\\d,]+)/);\nconst price = priceMatch ? '\\u20b9' + priceMatch[1] : '';\nconst fullLink = link && link.startsWith('http') ? link : 'https://www.amazon.in' + (link || '');\nconst row = {\n  index: idx + 1,\n  productName: productName.replace(/[\\r\\n]+/g, ' ').trim(),\n  rating: rating,\n  price: price,\n  productLink: fullLink\n};\ncontext.setData('bookRowToAppend', [row]);",
+        "isTest": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    },
+    {
+      "id": "csvAppend",
+      "type": "csvHandle",
+      "position": { "x": 1720, "y": 700 },
+      "data": {
+        "type": "csvHandle",
+        "label": "Append book to CSV",
+        "action": "append",
+        "filePath": "tests/output/amazon_books.csv",
+        "dataSource": "bookRowToAppend",
+        "headers": ["index", "productName", "rating", "price", "productLink"],
+        "delimiter": ",",
+        "isTest": false,
+        "searchHighlighted": false,
+        "isPinned": false
+      }
+    }
+  ],
+  "edges": [
+    {
+      "id": "e1",
+      "source": "start-1",
+      "target": "setConfig-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e2",
+      "source": "setConfig-1",
+      "target": "openBrowser-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e3",
+      "source": "openBrowser-1",
+      "target": "navigate-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e4",
+      "source": "navigate-1",
+      "target": "wait-page-load",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e5",
+      "source": "wait-page-load",
+      "target": "type-search-1",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e6",
+      "source": "type-search-1",
+      "target": "keyboard-search-submit",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e7",
+      "source": "keyboard-search-submit",
+      "target": "wait-search-results",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e8",
+      "source": "wait-search-results",
+      "target": "wait-results-heading",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e9",
+      "source": "wait-results-heading",
+      "target": "wait-stabilize",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e10",
+      "source": "wait-stabilize",
+      "target": "elemQuery-getCount",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e11",
+      "source": "elemQuery-getCount",
+      "target": "jsInitRows",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e12",
+      "source": "jsInitRows",
+      "target": "jsCreateIndices",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e13",
+      "source": "jsCreateIndices",
+      "target": "csvWriteHeaders",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e14",
+      "source": "csvWriteHeaders",
+      "target": "loopExtractBooks",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e15",
+      "source": "loopExtractBooks",
+      "target": "jsSetCardIndex",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e16",
+      "source": "jsSetCardIndex",
+      "target": "elemQuery-getCardText",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e17",
+      "source": "elemQuery-getCardText",
+      "target": "elemQuery-getLink",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e18",
+      "source": "elemQuery-getLink",
+      "target": "jsBuildRow",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    },
+    {
+      "id": "e19",
+      "source": "jsBuildRow",
+      "target": "csvAppend",
+      "sourceHandle": "output",
+      "targetHandle": "input"
+    }
+  ]
+}

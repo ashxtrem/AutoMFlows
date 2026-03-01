@@ -37,7 +37,8 @@ A workflow is a JSON object with two main properties:
 
 1. **nodes**: Array of node objects
    - Each node has: id, type, position, data
-   - Node types include: start, openBrowser, navigation, action, type, wait, apiRequest, etc.
+   - Node types include: start, openBrowser, navigation, action, type, wait, apiRequest, loop, javascriptCode, elementQuery, verify, etc.
+   - Plugin node types use "pluginName.nodeType" format (e.g., "setConfig.setConfig")
    - Nodes represent actions or data in the workflow
 
 2. **edges**: Array of edge objects
@@ -45,11 +46,21 @@ A workflow is a JSON object with two main properties:
    - Control flow edges: connect via 'input'/'output' handles
    - Property input edges: connect via property-specific handles (e.g., 'url-input')
 
+**Loop/Control-Flow Edge Rules:**
+- Loop body nodes are connected from the loop node's "output" handle
+- The executor uses getNodesReachableFromHandle(loopId, "output") to find ALL body nodes and iterates them
+- Do NOT create a back-edge from the last body node to the loop node -- this causes a circular dependency error in the topological sort
+- Post-loop nodes connect from the loop using sourceHandle="loopComplete", targetHandle="input"
+- Correct pattern: loop --[output]--> bodyNode1 --[output]--> bodyNode2 ; loop --[loopComplete]--> afterLoopNode
+- Incorrect pattern: bodyNode2 --[output]--> loop (circular dependency!)
+
 **Workflow Execution:**
 - Must start with a 'start' node
-- Nodes execute in dependency order
+- Nodes execute in dependency order (topological sort)
 - Execution context is shared between nodes via context manager
 - Variables can be referenced using \${data.key} or \${variables.key} syntax
+- Loop nodes set "item" and "index" variables for each iteration (forEach mode)
+- JavaScriptCode nodes receive a "context" object with: context.page (Playwright Page), context.getData/setData, context.getVariable/setVariable
     `,
     executionFlow: `
 1. Workflow is validated (WorkflowParser.validate())
@@ -83,6 +94,10 @@ A workflow is a JSON object with two main properties:
       'Conditional flows: Use Switch nodes for branching logic',
       'Reusable flows: Define reusable sub-workflows for repeated operations',
       'Error handling: Use retry strategies and failSilently flags appropriately',
+      'Config-driven workflow: Start → setConfig.setConfig (set key-value config) → Open Browser → ... (reference config via ${data.key})',
+      'Loop over items: Start → ... → Loop (forEach, arrayVariable="items") --[output]--> body nodes ; Loop --[loopComplete]--> post-loop nodes',
+      'JavaScript code: Use javascriptCode nodes for complex logic; access page via context.page, data via context.getData/setData',
+      'Cart/verification pattern: Extract product names → Store in context → Navigate to cart → Verify stored names appear on cart page',
     ],
   };
 }
