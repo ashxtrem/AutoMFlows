@@ -7,6 +7,10 @@ https://github.com/ashxtrem/AutoMFlows
 
 ![AutoMFlows workflow builder](frontend/public/main.png)
 
+## Demo
+[![Demo](https://img.shields.io/youtube/views/3AgL4C2WpHA
+)](https://www.youtube.com/watch?v=3AgL4C2WpHA)
+
 ## Features
 
 - **Visual Workflow Editor**: Drag-and-drop node-based interface
