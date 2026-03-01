@@ -10,6 +10,10 @@ export interface ExecutionResult {
   error?: string | null;
   pausedNodeId?: string | null;
   pauseReason?: 'wait-pause' | 'breakpoint' | null;
+  /** Populated when partial results are returned on timeout */
+  timedOut?: boolean;
+  /** Trace logs from execution, when requested */
+  logs?: string[];
 }
 
 export class BackendClient {
@@ -147,11 +151,13 @@ export class BackendClient {
   async pollExecutionStatus(
     executionId: string,
     intervalMs: number = 1000,
-    maxDurationMs: number = 300000
+    maxDurationMs: number = 300000,
+    onProgress?: (status: ExecutionResult) => void
   ): Promise<ExecutionResult> {
     const startTime = Date.now();
     let consecutiveErrors = 0;
     const maxConsecutiveErrors = 5;
+    let lastStatus: ExecutionResult | null = null;
 
     while (Date.now() - startTime < maxDurationMs) {
       try {
@@ -159,7 +165,6 @@ export class BackendClient {
         try {
           status = await this.getExecutionStatus(executionId);
         } catch (err: any) {
-          // 404 may mean execution completed and was cleaned up; try most-recent endpoint
           if (err.message?.includes('404') && executionId) {
             const recent = await this.getExecutionStatus();
             if (recent.executionId === executionId && ['completed', 'error', 'stopped'].includes(recent.status)) {
@@ -169,22 +174,28 @@ export class BackendClient {
           throw err;
         }
 
-        // Reset error counter on successful status check
         consecutiveErrors = 0;
+        lastStatus = status;
 
-        // Check if this is the execution we're waiting for
+        // Notify caller of intermediate progress
+        if (onProgress) {
+          onProgress(status);
+        }
+
         if (status.executionId === executionId || !executionId) {
           if (status.status === 'completed' || status.status === 'error' || status.status === 'stopped') {
             return status;
           }
-        } else if (status.executionId && status.executionId !== executionId) {
-          // If there's a different execution running, wait a bit longer
         }
 
         await new Promise(resolve => setTimeout(resolve, intervalMs));
       } catch (error: any) {
         consecutiveErrors++;
         if (consecutiveErrors >= maxConsecutiveErrors) {
+          // Return partial result instead of throwing
+          if (lastStatus) {
+            return { ...lastStatus, timedOut: true };
+          }
           throw new Error(
             `Failed to poll execution status after ${maxConsecutiveErrors} consecutive errors: ${error.message}`
           );
@@ -193,11 +204,41 @@ export class BackendClient {
       }
     }
 
+    // Timeout: return partial result instead of throwing
+    if (lastStatus) {
+      const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
+      return {
+        ...lastStatus,
+        timedOut: true,
+        error: (lastStatus.error || '') +
+          ` [Polling timed out after ${elapsedSeconds}s. Execution may still be running. ID: ${executionId}]`,
+      };
+    }
+
     const elapsedSeconds = Math.round((Date.now() - startTime) / 1000);
-    throw new Error(
-      `Execution status polling timeout after ${elapsedSeconds}s (max: ${Math.round(maxDurationMs / 1000)}s). ` +
-      `Execution ID: ${executionId}`
-    );
+    return {
+      executionId,
+      status: 'running',
+      timedOut: true,
+      error: `Execution status polling timed out after ${elapsedSeconds}s (max: ${Math.round(maxDurationMs / 1000)}s). ` +
+        `Execution ID: ${executionId}. The execution may still be running.`,
+    };
+  }
+
+  /**
+   * Fetch execution trace logs from the backend.
+   * Returns an array of log strings, or empty array if unavailable.
+   */
+  async getExecutionLogs(executionId?: string): Promise<string[]> {
+    try {
+      const url = executionId
+        ? `/api/workflows/execution/${encodeURIComponent(executionId)}/logs`
+        : '/api/workflows/execution/logs';
+      const response = await this.httpClient.get<{ success: boolean; logs: string[] }>(url);
+      return response.data.logs || [];
+    } catch {
+      return [];
+    }
   }
 
   /**

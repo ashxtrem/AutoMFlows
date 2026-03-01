@@ -120,4 +120,111 @@ export class WorkflowBuilder {
     const startNode = this.nodes.find(n => n.type === NodeType.START);
     return startNode ? startNode.id : null;
   }
+
+  /**
+   * Move layout cursor to the next row (resets X, increments Y).
+   * Useful for building multi-row workflows.
+   */
+  nextRow(): void {
+    this.currentX = 100;
+    this.currentY += this.ySpacing;
+  }
+
+  /**
+   * Add a setConfig plugin node with key-value configuration pairs.
+   * Returns the node ID.
+   */
+  addSetConfigNode(config: Record<string, any>, label?: string): string {
+    return this.addNode('setConfig.setConfig' as any, {
+      label: label || 'Set Config',
+      config,
+    });
+  }
+
+  /**
+   * Add a JavaScript code node. Returns the node ID.
+   */
+  addJavaScriptNode(code: string, label?: string): string {
+    return this.addNode(NodeType.JAVASCRIPT_CODE, {
+      label: label || 'JavaScript Code',
+      code,
+    });
+  }
+
+  /**
+   * Add a loop node. Returns the node ID.
+   * @param mode "forEach" or "doWhile"
+   * @param options For forEach: { arrayVariable }. For doWhile: { condition }.
+   */
+  addLoopNode(
+    mode: 'forEach' | 'doWhile',
+    options: { arrayVariable?: string; condition?: string },
+    label?: string
+  ): string {
+    return this.addNode(NodeType.LOOP, {
+      label: label || 'Loop',
+      loopMode: mode,
+      arrayVariable: options.arrayVariable,
+      condition: options.condition,
+    });
+  }
+
+  /**
+   * Connect a chain of nodes as the body of a loop.
+   * Connects loop --[output]--> first body node, then chains body nodes via output/input.
+   */
+  addLoopBody(loopNodeId: string, bodyNodeIds: string[]): void {
+    if (bodyNodeIds.length === 0) return;
+    this.addEdge(loopNodeId, bodyNodeIds[0], 'output', 'input');
+    for (let i = 0; i < bodyNodeIds.length - 1; i++) {
+      this.addEdge(bodyNodeIds[i], bodyNodeIds[i + 1], 'output', 'input');
+    }
+  }
+
+  /**
+   * Connect a node after a loop using the loopComplete handle.
+   * This prevents the node from being treated as part of the loop body.
+   */
+  addPostLoopConnection(loopNodeId: string, targetNodeId: string): void {
+    this.addEdge(loopNodeId, targetNodeId, 'loopComplete', 'input');
+  }
+
+  /**
+   * Add an elementQuery node. Returns the node ID.
+   */
+  addElementQueryNode(
+    action: 'getText' | 'getAttribute' | 'getCount' | 'isVisible' | 'isEnabled' | 'isChecked' | 'getBoundingBox' | 'getAllText',
+    selector: string,
+    outputVariable: string,
+    options?: { selectorType?: string; attributeName?: string },
+    label?: string
+  ): string {
+    return this.addNode(NodeType.ELEMENT_QUERY, {
+      label: label || `Query: ${action}`,
+      action,
+      selector,
+      selectorType: options?.selectorType || 'css',
+      outputVariable,
+      attributeName: options?.attributeName,
+    });
+  }
+
+  /**
+   * Add a verify node. Returns the node ID.
+   */
+  addVerifyNode(
+    domain: 'browser' | 'api',
+    verificationType: string,
+    options?: { selector?: string; expectedValue?: any; selectorType?: string },
+    label?: string
+  ): string {
+    return this.addNode(NodeType.VERIFY, {
+      label: label || `Verify: ${verificationType}`,
+      domain,
+      verificationType,
+      selector: options?.selector,
+      selectorType: options?.selectorType || 'css',
+      expectedValue: options?.expectedValue,
+    });
+  }
 }

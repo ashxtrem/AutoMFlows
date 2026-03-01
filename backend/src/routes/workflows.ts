@@ -1156,6 +1156,79 @@ export default function workflowRoutes(io: Server) {
     }
   });
 
+  /**
+   * @swagger
+   * /api/workflows/execution/status:
+   *   get:
+   *     summary: Get execution status
+   *     description: Get execution status by ID (query param) or most recent execution (backward compatibility)
+   *     tags: [Workflows]
+   *     parameters:
+   *       - in: query
+   *         name: executionId
+   *         schema:
+   *           type: string
+   *         description: Execution ID (optional, returns most recent if not provided)
+   *     responses:
+   *       200:
+   *         description: Execution status retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/ExecutionStatusResponse'
+   *       404:
+   *         description: Execution not found
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   *       500:
+   *         description: Internal server error
+   *         content:
+   *           application/json:
+   *             schema:
+   *               $ref: '#/components/schemas/Error'
+   */
+  router.get('/execution/status', (req: Request, res: Response) => {
+    try {
+      const executionId = req.query.executionId as string | undefined;
+      
+      // If executionId provided, get specific execution status
+      if (executionId) {
+        const status = executionManager.getExecutionStatus(executionId);
+        if (!status) {
+          return res.status(404).json({ error: 'Execution not found' });
+        }
+        return res.json(status as ExecutionStatusResponse);
+      }
+
+      // Backward compatibility: get most recent execution
+      const mostRecentId = executionManager.getMostRecentExecutionId();
+      if (!mostRecentId) {
+        return res.json({
+          executionId: '',
+          status: 'idle',
+        } as ExecutionStatusResponse);
+      }
+
+      const status = executionManager.getExecutionStatus(mostRecentId);
+      if (!status) {
+        return res.json({
+          executionId: '',
+          status: 'idle',
+        } as ExecutionStatusResponse);
+      }
+
+      res.json(status as ExecutionStatusResponse);
+    } catch (error: any) {
+      console.error('Get execution status error:', error);
+      res.status(500).json({
+        error: 'Failed to get execution status',
+        message: error.message,
+      });
+    }
+  });
+
   router.get('/execution/:executionId', (req: Request, res: Response) => {
     try {
       const { executionId } = req.params;
@@ -1278,79 +1351,6 @@ export default function workflowRoutes(io: Server) {
       console.error('Continue execution error:', error);
       res.status(500).json({
         success: false,
-        message: error.message,
-      });
-    }
-  });
-
-  /**
-   * @swagger
-   * /api/workflows/execution/status:
-   *   get:
-   *     summary: Get execution status
-   *     description: Get execution status by ID (query param) or most recent execution (backward compatibility)
-   *     tags: [Workflows]
-   *     parameters:
-   *       - in: query
-   *         name: executionId
-   *         schema:
-   *           type: string
-   *         description: Execution ID (optional, returns most recent if not provided)
-   *     responses:
-   *       200:
-   *         description: Execution status retrieved successfully
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/ExecutionStatusResponse'
-   *       404:
-   *         description: Execution not found
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Error'
-   *       500:
-   *         description: Internal server error
-   *         content:
-   *           application/json:
-   *             schema:
-   *               $ref: '#/components/schemas/Error'
-   */
-  router.get('/execution/status', (req: Request, res: Response) => {
-    try {
-      const executionId = req.query.executionId as string | undefined;
-      
-      // If executionId provided, get specific execution status
-      if (executionId) {
-        const status = executionManager.getExecutionStatus(executionId);
-        if (!status) {
-          return res.status(404).json({ error: 'Execution not found' });
-        }
-        return res.json(status as ExecutionStatusResponse);
-      }
-
-      // Backward compatibility: get most recent execution
-      const mostRecentId = executionManager.getMostRecentExecutionId();
-      if (!mostRecentId) {
-        return res.json({
-          executionId: '',
-          status: 'idle',
-        } as ExecutionStatusResponse);
-      }
-
-      const status = executionManager.getExecutionStatus(mostRecentId);
-      if (!status) {
-        return res.json({
-          executionId: '',
-          status: 'idle',
-        } as ExecutionStatusResponse);
-      }
-
-      res.json(status as ExecutionStatusResponse);
-    } catch (error: any) {
-      console.error('Get execution status error:', error);
-      res.status(500).json({
-        error: 'Failed to get execution status',
         message: error.message,
       });
     }
