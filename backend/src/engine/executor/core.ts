@@ -1,4 +1,4 @@
-import { Workflow, ExecutionStatus, ExecutionEventType, ExecutionEvent, BaseNode, Edge, NodeType, PropertyDataType, PageDebugInfo, ScreenshotConfig, SnapshotConfig, ReportConfig, StartNodeData, BreakpointConfig } from '@automflows/shared';
+import { Workflow, ExecutionStatus, ExecutionEventType, ExecutionEvent, ExecutionSource, BaseNode, Edge, NodeType, PropertyDataType, PageDebugInfo, ScreenshotConfig, SnapshotConfig, ReportConfig, StartNodeData, BreakpointConfig } from '@automflows/shared';
 import { Server } from 'socket.io';
 import { v4 as uuidv4 } from 'uuid';
 import { WorkflowParser } from '../parser';
@@ -52,6 +52,7 @@ export class Executor {
   private recordSession: boolean;
   private breakpointConfig?: BreakpointConfig;
   private builderModeEnabled: boolean = false;
+  private source: ExecutionSource = 'api';
   private logger?: Logger;
   private slowMo: number = 0; // Delay in milliseconds between node executions
   private workflowFileName?: string;
@@ -214,6 +215,10 @@ export class Executor {
 
   getExecutionId(): string {
     return this.executionId;
+  }
+
+  setSource(source: ExecutionSource): void {
+    this.source = source;
   }
 
   getOutputDirectory(): string | undefined {
@@ -1404,6 +1409,7 @@ export class Executor {
   private emitEvent(event: ExecutionEvent): void {
     this.io.emit('execution-event', {
       executionId: this.executionId,
+      source: this.source,
       ...event,
     });
   }

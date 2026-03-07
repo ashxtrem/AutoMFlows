@@ -4,6 +4,7 @@ import multer from 'multer';
 import { 
   ExecuteWorkflowRequest, 
   ExecutionStatusResponse, 
+  ExecutionSource,
   StopExecutionResponse, 
   SelectorFinderEvent, 
   SelectorOption, 
@@ -352,6 +353,7 @@ export default function workflowRoutes(io: Server) {
         const outputPath = body.outputPath || './output';
         const recursive = body.recursive === 'true' || body.recursive === true;
         const pattern = body.pattern || '*.json';
+        const source = (body.source as ExecutionSource) || 'api';
 
         // Parse JSON fields
         let screenshotConfig, reportConfig, startNodeOverrides;
@@ -405,6 +407,7 @@ export default function workflowRoutes(io: Server) {
           outputPath,
           startNodeOverrides,
           priority: 0,
+          source,
         });
 
         const batch = executionManager.getBatchStatus(batchId);
@@ -463,6 +466,7 @@ export default function workflowRoutes(io: Server) {
         pattern = '*.json',
         startNodeOverrides,
         batchPriority = 0,
+        source = 'api' as ExecutionSource,
       } = body as ExecuteWorkflowRequest;
 
       // Determine execution mode
@@ -504,6 +508,7 @@ export default function workflowRoutes(io: Server) {
           breakpointConfig,
           builderModeEnabled,
           workflowFileName,
+          source,
         });
 
         res.json({
@@ -584,6 +589,7 @@ export default function workflowRoutes(io: Server) {
         outputPath,
         startNodeOverrides,
         priority: batchPriority,
+        source,
       });
 
       // Get batch to build response
@@ -1924,6 +1930,96 @@ export default function workflowRoutes(io: Server) {
       res.status(500).json({
         success: false,
         message: error.message || 'Failed to capture DOM',
+      });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/workflows/execution/capture-accessibility-snapshot:
+   *   post:
+   *     summary: Capture accessibility snapshot at breakpoint
+   *     description: Capture the accessibility tree of the current page when execution is paused at a breakpoint. Uses CDP on Chromium or DOM-based fallback on other browsers.
+   *     tags: [Workflows]
+   *     requestBody:
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               executionId:
+   *                 type: string
+   *                 description: Execution ID (optional, uses most recent if not provided)
+   *     responses:
+   *       200:
+   *         description: Accessibility snapshot captured successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 accessibilityTree:
+   *                   type: object
+   *                   description: Accessibility tree with role, name, value, children
+   *       400:
+   *         description: Bad request - execution not paused or no active page
+   */
+  router.post('/execution/capture-accessibility-snapshot', async (req: Request, res: Response) => {
+    try {
+      const { executionId } = req.body as { executionId?: string };
+
+      const execId = executionId || executionManager.getMostRecentExecutionId();
+      if (!execId) {
+        return res.status(400).json({
+          success: false,
+          message: 'No execution running',
+        });
+      }
+
+      const executor = executionManager.getExecutor(execId);
+      if (!executor) {
+        return res.status(400).json({
+          success: false,
+          message: 'Execution executor not available',
+        });
+      }
+
+      if (!executor.isExecutionPaused()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Execution is not paused',
+        });
+      }
+
+      const page = (executor as any).context?.getPage();
+      if (!page || page.isClosed()) {
+        return res.status(400).json({
+          success: false,
+          message: 'No active page available',
+        });
+      }
+
+      const { captureAccessibilityTree } = await import('../engine/executor/accessibilitySnapshots');
+      const tree = await captureAccessibilityTree(page);
+
+      if (!tree) {
+        return res.status(400).json({
+          success: false,
+          message: 'Failed to capture accessibility tree',
+        });
+      }
+
+      res.json({
+        success: true,
+        accessibilityTree: tree,
+      });
+    } catch (error: any) {
+      console.error('Capture accessibility snapshot error:', error);
+      res.status(500).json({
+        success: false,
+        message: error.message || 'Failed to capture accessibility snapshot',
       });
     }
   });

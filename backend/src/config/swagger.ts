@@ -263,6 +263,12 @@ const options: swaggerJsdoc.Options = {
               description: 'Batch priority for queue ordering (parallel mode). Higher priority batches are processed first. Default 0 means FIFO order.',
               example: 0,
             },
+            source: {
+              type: 'string',
+              enum: ['frontend', 'api', 'mcp'],
+              default: 'api',
+              description: 'Execution source identifier. Used to prevent frontend auto-sync interference with non-frontend executions.',
+            },
           },
         },
         ExecuteWorkflowResponse: {

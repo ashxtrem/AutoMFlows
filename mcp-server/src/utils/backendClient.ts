@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from 'axios';
 import { io, Socket } from 'socket.io-client';
 import { Workflow, ExecuteWorkflowRequest, ExecutionStatusResponse } from '@automflows/shared';
-import { getConfig } from '../config.js';
+import { getConfig, MAX_EXECUTION_DURATION_MS, HTTP_REQUEST_TIMEOUT_MS } from '../config.js';
 
 function debugLog(...args: any[]): void {
   if (getConfig().verbose) {
@@ -32,7 +32,7 @@ export class BackendClient {
   constructor() {
     this.httpClient = axios.create({
       baseURL: this.config.backendUrl,
-      timeout: 60000,
+      timeout: HTTP_REQUEST_TIMEOUT_MS,
       headers: {
         'Content-Type': 'application/json',
       },
@@ -59,6 +59,7 @@ export class BackendClient {
         recordSession: options?.recordSession || false,
         breakpointConfig: options?.breakpointConfig,
         builderModeEnabled: options?.builderModeEnabled || false,
+        source: 'mcp',
       };
 
       const response = await this.httpClient.post<{ executionId: string; status: string }>(
@@ -118,11 +119,11 @@ export class BackendClient {
     });
 
     this.socket.on('connect', () => {
-      console.log('Connected to backend WebSocket');
+      console.error('Connected to backend WebSocket');
     });
 
     this.socket.on('disconnect', () => {
-      console.log('Disconnected from backend WebSocket');
+      console.error('Disconnected from backend WebSocket');
     });
 
     this.socket.on('error', (error) => {
@@ -160,7 +161,7 @@ export class BackendClient {
   async pollExecutionStatus(
     executionId: string,
     intervalMs: number = 1000,
-    maxDurationMs: number = 300000,
+    maxDurationMs: number = MAX_EXECUTION_DURATION_MS,
     onProgress?: (status: ExecutionResult) => void
   ): Promise<ExecutionResult> {
     const startTime = Date.now();
@@ -340,6 +341,42 @@ export class BackendClient {
       return response.data;
     } catch (error: any) {
       throw new Error(`Failed to skip node: ${error.message}`);
+    }
+  }
+
+  /**
+   * Continue execution from a breakpoint pause
+   */
+  async continueExecution(executionId?: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await this.httpClient.post<{ success: boolean; message: string }>(
+        '/api/workflows/execution/pause-control',
+        { action: 'continueWithoutBreakpoint', executionId }
+      );
+      return response.data;
+    } catch (error: any) {
+      throw new Error(`Failed to continue execution: ${error.message}`);
+    }
+  }
+
+  /**
+   * Capture accessibility tree from the current page while execution is paused at a breakpoint
+   */
+  async captureAccessibilitySnapshotAtBreakpoint(executionId?: string): Promise<any | null> {
+    try {
+      const response = await this.httpClient.post<{ success: boolean; accessibilityTree: any }>(
+        '/api/workflows/execution/capture-accessibility-snapshot',
+        { executionId }
+      );
+
+      if (!response.data.success || !response.data.accessibilityTree) {
+        return null;
+      }
+
+      return response.data.accessibilityTree;
+    } catch (error: any) {
+      console.warn(`Failed to capture accessibility snapshot: ${error.message}`);
+      return null;
     }
   }
 }

@@ -43,7 +43,7 @@ export async function fixWorkflow(params: FixWorkflowParams): Promise<Workflow> 
       const pageDebugInfo = await backendClient.getCapturedDOM(executionId);
       
       if (pageDebugInfo) {
-        console.log('Using DOM-based fixing with captured DOM');
+        console.error('Using DOM-based fixing with captured DOM');
         const fixedWorkflow = await fixWorkflowWithDOM(workflow, errorAnalysis, pageDebugInfo);
         
         // Validate the fixed workflow
@@ -122,9 +122,9 @@ async function fixWorkflowWithDOM(
     fixedWorkflow = updatedWorkflow;
     
     if (updates.length > 0) {
-      console.log(`Fixed ${updates.length} selectors using DOM for page: ${url}`);
+      console.error(`Fixed ${updates.length} selectors using DOM for page: ${url}`);
       for (const update of updates) {
-        console.log(`  - Node ${update.nodeId}: ${update.oldSelector} → ${update.newSelector}`);
+        console.error(`  - Node ${update.nodeId}: ${update.oldSelector} → ${update.newSelector}`);
       }
     }
   }

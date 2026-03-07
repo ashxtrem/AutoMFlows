@@ -41,7 +41,7 @@ export class WorkflowBuilder {
     data: Record<string, any>,
     position?: NodePosition
   ): string {
-    const nodeId = `${type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const nodeId = `${type}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     const pos = position || { x: this.currentX, y: this.currentY };
     
     const node: BaseNode = {

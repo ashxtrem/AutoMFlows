@@ -1,5 +1,5 @@
 import { BackendClient, ExecutionResult } from './backendClient.js';
-import { getConfig } from '../config.js';
+import { getConfig, MAX_EXECUTION_DURATION_MS, MAX_BREAKPOINT_WAIT_MS, WAIT_AFTER_CLICK_MS } from '../config.js';
 
 function debugLog(...args: any[]): void {
   if (getConfig().verbose) {
@@ -21,7 +21,7 @@ export class ExecutionMonitor {
     executionId: string,
     backendClient: BackendClient,
     intervalMs: number = 1000,
-    maxDurationMs: number = 300000
+    maxDurationMs: number = MAX_EXECUTION_DURATION_MS
   ): Promise<ExecutionResult> {
     const startTime = Date.now();
     let consecutive404s = 0;
@@ -75,7 +75,7 @@ export class ExecutionMonitor {
     executionId: string,
     backendClient: BackendClient,
     intervalMs: number = 500,
-    maxWaitMs: number = 60000
+    maxWaitMs: number = MAX_BREAKPOINT_WAIT_MS
   ): Promise<void> {
     const startTime = Date.now();
 
@@ -146,7 +146,7 @@ export class ExecutionMonitor {
   static async monitorExecutionWithEvents(
     executionId: string,
     backendClient: BackendClient,
-    maxDurationMs: number = 300000
+    maxDurationMs: number = MAX_EXECUTION_DURATION_MS
   ): Promise<ExecutionResult> {
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
@@ -167,7 +167,7 @@ export class ExecutionMonitor {
       backendClient.onExecutionEvent(eventHandler);
 
       // Also poll as fallback
-      this.monitorExecution(executionId, backendClient, 2000, maxDurationMs)
+      this.monitorExecution(executionId, backendClient, WAIT_AFTER_CLICK_MS, maxDurationMs)
         .then(result => {
           clearTimeout(timeout);
           backendClient.offExecutionEvent(eventHandler);

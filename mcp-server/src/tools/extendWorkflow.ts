@@ -1,10 +1,11 @@
 import { Workflow, BaseNode, NodeType } from '@automflows/shared';
 import { getLLMProvider } from '../llm/index.js';
-import { RequestAnalyzer } from '../utils/requestAnalyzer.js';
+import { RequestAnalyzer, ParsedStep } from '../utils/requestAnalyzer.js';
 import { WorkflowModifier } from '../utils/workflowModifier.js';
 import { WorkflowValidator } from '../utils/workflowValidator.js';
 import { WorkflowBuilder } from '../utils/workflowBuilder.js';
 import { loadSnapshotsFromDir, findElementInSnapshot } from '../utils/snapshotWorkflowBuilder.js';
+import { buildNodeConfig, SelectorInfo } from '../utils/nodeFactory.js';
 import { BackendClient } from '../utils/backendClient.js';
 import { DOMSelectorInference } from '../utils/domSelectorInference.js';
 import { findPluginNodeByType } from '../resources/nodeDocumentation.js';
@@ -319,55 +320,69 @@ function createNodeFromConfig(
 ): BaseNode {
   const nodeType = config.nodeType || 'wait';
   const label = extractLabel(userRequest) || config.nodeType || 'New Node';
-  
+
+  // Map the extractNewNodeConfig result to a ParsedStep for the shared factory
+  const actionMap: Record<string, ParsedStep['action']> = {
+    navigation: 'navigate',
+    action: 'click',
+    type: 'type',
+    wait: 'wait',
+    verify: 'verify',
+    javascriptCode: 'code',
+    loop: 'loop',
+    keyboard: 'keyboard',
+  };
+
+  const mappedAction = actionMap[nodeType] || 'unknown';
+  const step: ParsedStep = {
+    action: mappedAction,
+    target: config.url || config.selector || undefined,
+    value: config.text || config.code || undefined,
+    description: userRequest,
+    outputVariable: config.outputVariable,
+    configEntries: undefined,
+    verifySelector: config.selector,
+    verifyType: nodeType === 'verify' ? 'visible' : undefined,
+  };
+
+  const selectorInfo: SelectorInfo | null = config.selector
+    ? { selector: config.selector, selectorType: (config.selectorType as SelectorInfo['selectorType']) || 'css' }
+    : null;
+
+  const factoryResult = buildNodeConfig(step, selectorInfo);
+
+  if (factoryResult) {
+    const baseNode: BaseNode = {
+      id: `${factoryResult.type}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+      type: factoryResult.type,
+      position: { x: 0, y: 0 },
+      data: {
+        type: factoryResult.type,
+        ...factoryResult.data,
+        label: label !== 'New Node' ? label : factoryResult.data.label,
+      },
+    };
+
+    // Merge any additional config properties not covered by the factory
+    if (config.config) {
+      Object.assign(baseNode.data, config.config);
+    }
+
+    return baseNode;
+  }
+
+  // Fallback for node types the factory doesn't map (plugin types, csvHandle, etc.)
   const baseNode: BaseNode = {
-    id: `${nodeType}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: `${nodeType}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
     type: nodeType,
-    position: { x: 0, y: 0 }, // Will be calculated by modifier
+    position: { x: 0, y: 0 },
     data: {
       type: nodeType,
       label,
     },
   };
 
-  // Add type-specific data
   switch (nodeType) {
-    case 'navigation':
-      (baseNode.data as any).url = config.url || '';
-      (baseNode.data as any).waitUntil = 'networkidle';
-      break;
-    
-    case 'action':
-      (baseNode.data as any).action = 'click';
-      (baseNode.data as any).selector = config.selector || 'button';
-      break;
-    
-    case 'type':
-      (baseNode.data as any).selector = config.selector || 'input';
-      (baseNode.data as any).text = config.text || '';
-      (baseNode.data as any).clearFirst = true;
-      break;
-    
-    case 'apiRequest':
-      (baseNode.data as any).method = 'GET';
-      (baseNode.data as any).url = config.url || '';
-      break;
-    
-    case 'wait':
-      (baseNode.data as any).waitType = 'timeout';
-      (baseNode.data as any).value = 2000;
-      break;
-    
-    case 'verify':
-      (baseNode.data as any).domain = 'browser';
-      (baseNode.data as any).verificationType = 'visible';
-      (baseNode.data as any).selector = config.selector;
-      break;
-    
-    case 'javascriptCode':
-      (baseNode.data as any).code = config.code || '// Add your code here\ncontext.setData("result", null);';
-      break;
-    
     case 'csvHandle':
       (baseNode.data as any).action = 'write';
       (baseNode.data as any).filePath = config.filePath || '${data.outputDirectory}/output.csv';
@@ -375,7 +390,7 @@ function createNodeFromConfig(
       (baseNode.data as any).headers = config.headers || ['value'];
       (baseNode.data as any).delimiter = ',';
       break;
-    
+
     case 'elementQuery':
       (baseNode.data as any).action = config.action || 'getText';
       (baseNode.data as any).selector = config.selector || '';
@@ -406,7 +421,6 @@ function createNodeFromConfig(
     }
   }
 
-  // Add any additional config properties
   if (config.config) {
     Object.assign(baseNode.data, config.config);
   }

@@ -6,6 +6,7 @@ import { ExecutionMonitor, FailureContext } from '../utils/executionMonitor.js';
 import { PageTracker } from '../utils/pageTracker.js';
 import { DOMSelectorInference, PageDebugInfo } from '../utils/domSelectorInference.js';
 import { WorkflowModifier } from '../utils/workflowModifier.js';
+import { MAX_EXECUTION_DURATION_MS, MAX_BREAKPOINT_WAIT_MS } from '../config.js';
 
 export interface CreateAndExecuteWorkflowParams {
   userRequest: string;
@@ -71,8 +72,8 @@ export async function createAndExecuteWorkflow(
       const finalResult = await ExecutionMonitor.monitorExecution(
         executionResult.executionId,
         backendClient,
-        1000, // 1 second polling interval
-        300000 // 5 minute max duration
+        1000,
+        MAX_EXECUTION_DURATION_MS
       );
       
       // Check if completed successfully
@@ -155,8 +156,8 @@ export async function createAndExecuteWorkflow(
       await ExecutionMonitor.waitForBreakpoint(
         breakpointExecutionWithConfig.executionId,
         backendClient,
-        500, // 500ms polling interval
-        60000 // 60 second max wait
+        500,
+        MAX_BREAKPOINT_WAIT_MS
       );
       
       // Capture DOM
@@ -187,7 +188,7 @@ export async function createAndExecuteWorkflow(
         breakpointExecutionWithConfig.executionId,
         backendClient,
         1000,
-        300000
+        MAX_EXECUTION_DURATION_MS
       );
       
       // If completed, return success

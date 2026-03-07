@@ -141,6 +141,32 @@ async function buildTreeFromDOM(page: any): Promise<AccessibilityNode | null> {
 }
 
 /**
+ * Capture the accessibility tree from a live Playwright page.
+ * Uses CDP on Chromium, falls back to DOM-based extraction on other browsers.
+ * Returns the tree directly without saving to disk.
+ */
+export async function captureAccessibilityTree(page: any): Promise<AccessibilityNode | null> {
+  try {
+    if (!page) return null;
+    if (page.isClosed && page.isClosed()) return null;
+
+    // Try CDP first (Chromium)
+    try {
+      const cdp = await page.context().newCDPSession(page);
+      await cdp.send('Accessibility.enable');
+      const { nodes } = await cdp.send('Accessibility.getFullAXTree');
+      await cdp.detach();
+      return buildTreeFromCDPNodes(nodes || []);
+    } catch {
+      return await buildTreeFromDOM(page);
+    }
+  } catch (error: any) {
+    console.warn(`Failed to capture accessibility tree: ${error.message}`);
+    return null;
+  }
+}
+
+/**
  * Take an accessibility snapshot for a node at a specific timing
  */
 export async function takeNodeAccessibilitySnapshot(

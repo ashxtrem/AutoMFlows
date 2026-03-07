@@ -1,4 +1,5 @@
 import { BackendClient, ExecutionResult } from '../utils/backendClient.js';
+import { MAX_EXECUTION_DURATION_MS } from '../config.js';
 
 export interface GetExecutionStatusParams {
   executionId?: string;
@@ -14,7 +15,7 @@ export async function getExecutionStatus(
     executionId,
     pollUntilComplete = false,
     pollIntervalMs = 1000,
-    maxDurationMs = 300000,
+    maxDurationMs = MAX_EXECUTION_DURATION_MS,
   } = params;
 
   const client = new BackendClient();
