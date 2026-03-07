@@ -21,6 +21,8 @@
     "build:frontend": "npm run build --workspace=frontend",
     "lint": "eslint backend/src frontend/src",
     "type-check": "npm run type-check --workspaces",
+    "compress": "bash scripts/compress.sh",
+    "compress:ps1": "powershell -ExecutionPolicy Bypass -File scripts/compress.ps1",
     "prepare": "npx simple-git-hooks"
   },
   "simple-git-hooks": {
