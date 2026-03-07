@@ -21,13 +21,11 @@ export async function generateReports(
     const reportGenerator = new ReportGenerator(metadata, workflow);
     await reportGenerator.generateReports(reportConfig.reportTypes);
     traceLog(`[TRACE] Generated reports: ${reportConfig.reportTypes.join(', ')}`);
-    
-    // Enforce report retention after generating reports
+  } catch (error: any) {
+    console.error(`Failed to generate reports: ${error.message}`);
+  } finally {
     const retentionCount = reportConfig.reportRetention ?? 10;
     const outputPath = reportConfig.outputPath || './output';
     enforceReportRetention(retentionCount, outputPath);
-  } catch (error: any) {
-    console.error(`Failed to generate reports: ${error.message}`);
-    // Don't fail execution if report generation fails
   }
 }

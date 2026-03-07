@@ -667,6 +667,7 @@ export class ExecutionManager {
     error?: string;
     pausedNodeId?: string | null;
     pauseReason?: 'wait-pause' | 'breakpoint' | null;
+    outputDirectory?: string;
   } | null {
     const execution = this.executions.get(executionId);
     if (!execution) {
@@ -687,13 +688,16 @@ export class ExecutionManager {
       return null;
     }
 
+    const liveStatus = execution.executor.getStatus();
+
     return {
       executionId: execution.executionId,
-      status: execution.status,
+      status: liveStatus,
       currentNodeId: execution.executor.getCurrentNodeId() || undefined,
-      error: execution.error,
+      error: execution.error || (liveStatus === ExecutionStatus.ERROR ? 'Execution failed' : undefined),
       pausedNodeId: execution.executor.getPausedNodeId(),
       pauseReason: execution.executor.getPauseReason(),
+      outputDirectory: execution.executor.getOutputDirectory(),
     };
   }
 

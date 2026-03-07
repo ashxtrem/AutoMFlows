@@ -1,4 +1,5 @@
 import { findPluginNodeByKeyword } from '../resources/nodeDocumentation.js';
+import { getDomainSelectors } from '../resources/commonPatterns.js';
 
 export interface RequestClarity {
   isClear: boolean;
@@ -9,7 +10,7 @@ export interface RequestClarity {
 }
 
 export interface ParsedStep {
-  action: 'navigate' | 'click' | 'type' | 'wait' | 'fill' | 'submit' | 'setConfig' | 'loop' | 'extract' | 'verify' | 'code' | 'unknown';
+  action: 'navigate' | 'click' | 'type' | 'wait' | 'fill' | 'submit' | 'setConfig' | 'loop' | 'extract' | 'verify' | 'code' | 'keyboard' | 'unknown';
   target?: string;
   value?: string;
   selector?: string;
@@ -19,6 +20,20 @@ export interface ParsedStep {
   /** For loop: array variable or iteration count */
   loopVariable?: string;
   loopCount?: number;
+  /** For keyboard: the key to press (e.g. "Enter", "Tab", "Escape") */
+  key?: string;
+  /** For keyboard: shortcut combo (e.g. "Control+A") */
+  shortcut?: string;
+  /** Marks this step as occurring after a loop (post-loop) */
+  isPostLoop?: boolean;
+  /** For verify: extracted selector from the description */
+  verifySelector?: string;
+  /** For verify: extracted expected text */
+  verifyExpectedText?: string;
+  /** For verify: inferred verification type */
+  verifyType?: string;
+  /** For extract: context key name for storing output */
+  outputVariable?: string;
 }
 
 export class RequestAnalyzer {
@@ -165,11 +180,11 @@ export class RequestAnalyzer {
 
     // Try to split by numbered steps first
     let parts: string[] = [];
-    const numberedMatch = userRequest.match(/\d+\.\s*[^\d]+/g);
+    const numberedMatch = userRequest.match(/\d+\.\s*(?:(?!\d+\.\s).)+/g);
     if (numberedMatch) {
       parts = numberedMatch.map(m => m.replace(/^\d+\.\s*/, '').trim());
     } else {
-      // Try other delimiters
+      // Try strong delimiters first (then, after that, next, finally, followed by)
       let workingText = userRequest;
       for (const delimiter of stepDelimiters.slice(1, -1)) { // Skip numbered and "and"
         if (delimiter.test(workingText)) {
@@ -178,9 +193,12 @@ export class RequestAnalyzer {
         }
       }
       
-      // If no clear delimiter found, try "and" as last resort
-      if (parts.length === 0) {
-        parts = workingText.split(/\s+and\s+/gi).map(p => p.trim()).filter(p => p);
+      // Only fall back to "and" if no strong delimiters produced >=2 parts
+      if (parts.length < 2) {
+        const andParts = workingText.split(/\s+and\s+/gi).map(p => p.trim()).filter(p => p);
+        if (andParts.length > parts.length) {
+          parts = andParts;
+        }
       }
       
       // If still no parts, treat whole request as one step
@@ -189,10 +207,25 @@ export class RequestAnalyzer {
       }
     }
 
-    // Parse each part into a step
+    // Parse each part into a step, detecting post-loop boundaries
+    let seenLoop = false;
+    let isPostLoop = false;
     for (const part of parts) {
+      const partLower = part.toLowerCase();
+
+      // Detect post-loop boundary phrases
+      if (seenLoop && /\b(?:after\s+(?:the\s+)?loop|once\s+(?:done|finished|complete)|post[- ]?loop|when\s+(?:loop\s+)?completes?|after\s+(?:looping|iterating)|then\s+(?:go|navigate|open|visit))\b/i.test(partLower)) {
+        isPostLoop = true;
+      }
+
       const step = this.parseStep(part);
       if (step) {
+        if (step.action === 'loop') {
+          seenLoop = true;
+          isPostLoop = false;
+        } else if (isPostLoop) {
+          step.isPostLoop = true;
+        }
         steps.push(step);
       }
     }
@@ -216,6 +249,33 @@ export class RequestAnalyzer {
       return {
         action: 'navigate',
         target: urlMatch ? urlMatch[0] : urlTextMatch ? urlTextMatch[1] : undefined,
+        description: text,
+      };
+    }
+
+    // Keyboard (must come BEFORE click, since "press" overlaps)
+    if (/\b(?:press\s+(?:the\s+)?(?:enter|tab|escape|esc|space|backspace|delete|arrow\s*\w+|home|end|page\s*(?:up|down)|f\d{1,2}))\b/i.test(textLower) ||
+        /\b(?:hit\s+(?:the\s+)?(?:enter|tab|escape|esc|space|backspace|delete))\b/i.test(textLower) ||
+        /\b(?:keyboard\s+shortcut|key\s+(?:down|up|press))\b/i.test(textLower)) {
+      const knownKeys = ['enter', 'tab', 'escape', 'esc', 'space', 'backspace', 'delete', 'home', 'end',
+        'arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'pageup', 'pagedown',
+        'f1','f2','f3','f4','f5','f6','f7','f8','f9','f10','f11','f12'];
+      const keyMatch = text.match(/(?:press|hit)\s+(?:the\s+)?(\w+)/i);
+      const shortcutMatch = text.match(/(?:shortcut|combo)\s+["']?([^"',]+)["']?/i);
+      let key = keyMatch ? keyMatch[1].trim() : undefined;
+      if (key) {
+        const keyLower = key.toLowerCase();
+        const matched = knownKeys.find(k => k === keyLower);
+        if (matched) {
+          key = matched.charAt(0).toUpperCase() + matched.slice(1);
+        } else {
+          key = key.charAt(0).toUpperCase() + key.slice(1);
+        }
+      }
+      return {
+        action: 'keyboard',
+        key,
+        shortcut: shortcutMatch ? shortcutMatch[1].trim() : undefined,
         description: text,
       };
     }
@@ -311,9 +371,19 @@ export class RequestAnalyzer {
     // Config / setConfig
     if (/(?:set\s*config|configure|set\s+(?:the\s+)?(?:config|settings|parameters?|variables?))/i.test(textLower)) {
       const configEntries: Record<string, string> = {};
-      const kvMatches = text.matchAll(/(\w+)\s*[=:]\s*["']?([^"',;]+)["']?/gi);
+      const kvMatches = text.matchAll(/(\w+)\s*[=:]\s*["']?([^"',;\s]+(?:\s+[^"',;=\s]+)*)["']?/gi);
       for (const m of kvMatches) {
-        configEntries[m[1].trim()] = m[2].trim();
+        const key = m[1].trim();
+        let value = m[2].trim();
+        // Stop value at " and " boundary (used to separate multiple key=value pairs)
+        const andIdx = value.search(/\s+and\s+/i);
+        if (andIdx > 0) {
+          value = value.substring(0, andIdx).trim();
+        }
+        const skipKeys = ['config', 'with', 'set', 'the', 'configure'];
+        if (!skipKeys.includes(key.toLowerCase()) && key.length > 1) {
+          configEntries[key] = value;
+        }
       }
       return {
         action: 'setConfig',
@@ -325,10 +395,28 @@ export class RequestAnalyzer {
     // Loop / iterate / repeat
     if (/\b(?:loop|iterate|repeat|for\s+each|forEach|top\s+\d+)\b/i.test(textLower)) {
       const countMatch = text.match(/(?:top|first|repeat)\s+(\d+)/i);
-      const varMatch = text.match(/(?:over|through|items?\s+in)\s+["']?(\w+)["']?/i);
+      // Try to match an explicit variable name first (quoted or camelCase)
+      const explicitVarMatch = text.match(/(?:over|through|items?\s+in)\s+["'](\w+)["']/i) ||
+        text.match(/(?:over|through|items?\s+in)\s+(?:the\s+)?(\w+(?:[A-Z]\w*)+)/i);
+      let loopVariable: string | undefined;
+      if (explicitVarMatch) {
+        loopVariable = explicitVarMatch[1];
+      } else {
+        // Greedy capture of the full noun phrase after over/through, then trim trailing clauses
+        const phraseMatch = text.match(/(?:over|through|items?\s+in)\s+(?:the\s+|all\s+)?(.+)/i);
+        if (phraseMatch) {
+          const phrase = phraseMatch[1]
+            .replace(/\s+(?:and\s+then|then|and)\s+.*/i, '')
+            .trim();
+          const words = phrase.split(/\s+/).filter(w => !['the', 'a', 'an', 'all', 'each'].includes(w.toLowerCase()));
+          if (words.length > 0) {
+            loopVariable = words[0].toLowerCase() + words.slice(1).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('');
+          }
+        }
+      }
       return {
         action: 'loop',
-        loopVariable: varMatch ? varMatch[1] : undefined,
+        loopVariable,
         loopCount: countMatch ? parseInt(countMatch[1], 10) : undefined,
         description: text,
       };
@@ -337,17 +425,51 @@ export class RequestAnalyzer {
     // Extract / scrape / get text / get data
     if (/\b(?:extract|scrape|get\s+(?:the\s+)?(?:text|data|name|title|price)|product\s+name)/i.test(textLower)) {
       const selectorMatch = text.match(/(?:from|selector|element)\s+["']?([^"',]+)["']?/i);
+      const outputVarMatch = text.match(/(?:store|save|put)\s+(?:in|into|to)\s+["']?(\w+)["']?/i);
       return {
         action: 'extract',
         target: selectorMatch ? selectorMatch[1].trim() : undefined,
+        outputVariable: outputVarMatch ? outputVarMatch[1].trim() : undefined,
         description: text,
       };
     }
 
     // Verify / check / assert / confirm
     if (/\b(?:verify|assert|check\s+(?:that|whether|if)|confirm|validate|ensure)/i.test(textLower)) {
+      const selectorMatch = text.match(/(?:selector|element)\s+["']?([^"',]+)["']?/i);
+      const cssMatch = text.match(/["']([.#][^"']+)["']/);
+      const expectedQuoted = text.match(/(?:contains?|has\s+text|equals?|matches?|shows?)\s+["']([^"']+)["']/i);
+      const expectedUnquoted = text.match(/(?:contains?|has\s+text|equals?|matches?|shows?)\s+(?:the\s+)?(.+?)$/i);
+      const expectedMatch = expectedQuoted || expectedUnquoted;
+      const urlPatternMatch = text.match(/(?:url|page)\s+(?:contains?|matches?|includes?)\s+["']?([^"',]+)["']?/i);
+
+      let verifyType: string | undefined;
+      let verifySelector: string | undefined = cssMatch ? cssMatch[1].trim() : (selectorMatch ? selectorMatch[1].trim() : undefined);
+
+      if (urlPatternMatch) {
+        verifyType = 'url';
+      } else if (expectedMatch || /\bcontains?\b/i.test(textLower)) {
+        verifyType = 'containsText';
+      } else if (selectorMatch || cssMatch) {
+        verifyType = 'visible';
+      }
+
+      // Infer selector from domain context using the configurable map
+      if (!verifySelector) {
+        const domainSelectors = getDomainSelectors();
+        for (const [keyword, selector] of Object.entries(domainSelectors)) {
+          if (new RegExp(`\\b${keyword}\\b`, 'i').test(textLower)) {
+            verifySelector = selector;
+            break;
+          }
+        }
+      }
+
       return {
         action: 'verify',
+        verifySelector,
+        verifyExpectedText: expectedMatch ? expectedMatch[1].trim() : (urlPatternMatch ? urlPatternMatch[1].trim() : undefined),
+        verifyType,
         description: text,
       };
     }

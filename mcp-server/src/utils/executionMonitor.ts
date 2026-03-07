@@ -1,4 +1,11 @@
 import { BackendClient, ExecutionResult } from './backendClient.js';
+import { getConfig } from '../config.js';
+
+function debugLog(...args: any[]): void {
+  if (getConfig().verbose) {
+    console.error(...args);
+  }
+}
 
 export interface FailureContext {
   nodeId: string;
@@ -17,13 +24,41 @@ export class ExecutionMonitor {
     maxDurationMs: number = 300000
   ): Promise<ExecutionResult> {
     const startTime = Date.now();
+    let consecutive404s = 0;
+    const max404s = 3;
 
     while (Date.now() - startTime < maxDurationMs) {
-      const status = await backendClient.getExecutionStatus();
-      
-      if (status.executionId === executionId || !executionId) {
+      try {
+        const status = await backendClient.getExecutionStatus(executionId);
+        consecutive404s = 0;
+
+        const elapsed = Math.round((Date.now() - startTime) / 1000);
+        debugLog(`[ExecutionMonitor] Poll ${executionId} (${elapsed}s): status=${status.status}, node=${status.currentNodeId || 'n/a'}`);
+
         if (status.status === 'completed' || status.status === 'error' || status.status === 'stopped') {
           return status;
+        }
+
+        if (status.status === 'idle') {
+          console.error(`[ExecutionMonitor] Execution ${executionId} returned 'idle' - execution may have been cleaned up`);
+          return status;
+        }
+      } catch (err: any) {
+        const is404 = err.message?.includes('404') || err.message?.includes('not found') || err.message?.includes('Not Found');
+        if (is404) {
+          consecutive404s++;
+          console.error(`[ExecutionMonitor] Execution ${executionId} not found (404, attempt ${consecutive404s}/${max404s}) - may have been cleaned up after completion`);
+          if (consecutive404s >= max404s) {
+            console.error(`[ExecutionMonitor] Giving up after ${max404s} consecutive 404s for ${executionId}`);
+            return {
+              executionId,
+              status: 'unknown',
+              error: `Execution ${executionId} was cleaned up (not found after ${max404s} attempts). It likely completed or errored before polling started.`,
+            };
+          }
+        } else {
+          console.error(`[ExecutionMonitor] Error polling ${executionId}: ${err.message}`);
+          throw err;
         }
       }
 
@@ -45,16 +80,28 @@ export class ExecutionMonitor {
     const startTime = Date.now();
 
     while (Date.now() - startTime < maxWaitMs) {
-      const status = await backendClient.getExecutionStatus();
-      
-      if (status.executionId === executionId || !executionId) {
+      try {
+        const status = await backendClient.getExecutionStatus(executionId);
+
+        const elapsed = Math.round((Date.now() - startTime) / 1000);
+        debugLog(`[ExecutionMonitor] Breakpoint wait ${executionId} (${elapsed}s): status=${status.status}, pausedNode=${status.pausedNodeId || 'none'}`);
+
         if (status.status === 'error' || status.status === 'stopped') {
           throw new Error(`Execution failed while waiting for breakpoint: ${status.error || 'Unknown error'}`);
         }
+
+        if (status.status === 'idle') {
+          throw new Error(`Execution ${executionId} returned 'idle' - execution no longer active`);
+        }
         
         if (status.pausedNodeId && status.pauseReason === 'breakpoint') {
-          return; // Breakpoint reached
+          return;
         }
+      } catch (err: any) {
+        if (err.message?.includes('404') || err.message?.includes('not found')) {
+          throw new Error(`Execution ${executionId} not found (cleaned up) while waiting for breakpoint`);
+        }
+        throw err;
       }
 
       await new Promise(resolve => setTimeout(resolve, intervalMs));
@@ -112,8 +159,7 @@ export class ExecutionMonitor {
           clearTimeout(timeout);
           backendClient.offExecutionEvent(eventHandler);
           
-          // Get final status
-          backendClient.getExecutionStatus().then(resolve).catch(reject);
+          backendClient.getExecutionStatus(executionId).then(resolve).catch(reject);
         }
       };
 

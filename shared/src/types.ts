@@ -1527,6 +1527,7 @@ export interface ExecutionStatusResponse {
   error?: string;
   pausedNodeId?: string | null;
   pauseReason?: 'wait-pause' | 'breakpoint' | null;
+  outputDirectory?: string;
 }
 
 export interface StopExecutionResponse {
