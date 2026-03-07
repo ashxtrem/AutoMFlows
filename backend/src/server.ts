@@ -1,12 +1,5 @@
 import express from 'express';
-import cors from 'cors';
-import { createServer } from 'http';
-import { Server } from 'socket.io';
 import path from 'path';
-import workflowRoutes from './routes/workflows';
-import pluginRoutes from './routes/plugins';
-import reportRoutes from './routes/reports';
-import fileRoutes from './routes/files';
 import swaggerRoutes from './routes/swagger';
 import { findAvailablePort } from './utils/portFinder';
 import { writePortFile, deletePortFile } from './utils/writePort';
@@ -14,33 +7,15 @@ import { PluginLoader } from './plugins/loader';
 import { pluginRegistry } from './plugins/registry';
 import { resolveFromProjectRoot } from './utils/pathUtils';
 import { getBatchPersistence } from './utils/batchPersistence';
+import { createApp } from './app';
 
-const app = express();
-const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: {
-    origin: '*',
-    methods: ['GET', 'POST'],
-  },
-});
-
-// Middleware
-app.use(cors());
-// Increase body parser limit to 10MB to handle large workflow payloads
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+const { app, httpServer, io } = createApp();
 
 // Request logging middleware
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
   next();
 });
-
-// API Routes
-app.use('/api/workflows', workflowRoutes(io));
-app.use('/api/plugins', pluginRoutes());
-app.use('/api/reports', reportRoutes());
-app.use('/api/files', fileRoutes());
 
 // System info endpoint for the About section
 app.get('/api/system-info', (_req, res) => {

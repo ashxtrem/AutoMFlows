@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { renderKeyboardProperties } from '../keyboard';
 
 describe('renderKeyboardProperties', () => {
@@ -58,5 +58,20 @@ describe('renderKeyboardProperties', () => {
     const result = renderKeyboardProperties(props);
     const { container } = render(<>{result}</>);
     expect(container.textContent).toContain('Shortcut');
+  });
+
+  it('should call handlePropertyChange when selecting a value', () => {
+    const result = renderKeyboardProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+
+    // Click to enter edit mode
+    const selectDiv = container.querySelector('.cursor-pointer')!;
+    fireEvent.click(selectDiv);
+
+    // Now find the <select> and change its value
+    const select = container.querySelector('select')!;
+    fireEvent.change(select, { target: { value: 'type' } });
+
+    expect(mockHandlePropertyChange).toHaveBeenCalledWith('action', 'type');
   });
 });

@@ -3,13 +3,14 @@ import { NodeType } from '@automflows/shared';
 import { createMockPage, createMockContextManager, createMockNode } from '../../../__tests__/helpers/mocks';
 import { WaitHelper } from '../../../utils/waitHelper';
 import { RetryHelper } from '../../../utils/retryHelper';
-import { VariableInterpolator } from '../../../utils/variableInterpolator';
-import { LocatorHelper } from '../../../utils/locatorHelper';
 
 jest.mock('../../../utils/waitHelper');
 jest.mock('../../../utils/retryHelper');
-jest.mock('../../../utils/variableInterpolator');
-jest.mock('../../../utils/locatorHelper');
+jest.mock('../../../utils/textSelectorResolver', () => ({
+  TextSelectorResolver: {
+    resolve: jest.fn().mockImplementation(async (page: any, text: string) => page.locator(text)),
+  },
+}));
 
 describe('KeyboardHandler', () => {
   let handler: KeyboardHandler;
@@ -20,13 +21,19 @@ describe('KeyboardHandler', () => {
   beforeEach(() => {
     handler = new KeyboardHandler();
     mockPage = createMockPage();
-    mockContext = createMockContextManager(mockPage);
     mockLocator = {
       press: jest.fn().mockResolvedValue(undefined),
       type: jest.fn().mockResolvedValue(undefined),
       fill: jest.fn().mockResolvedValue(undefined),
       focus: jest.fn().mockResolvedValue(undefined),
+      filter: jest.fn().mockReturnThis(),
+      nth: jest.fn().mockReturnThis(),
+      locator: jest.fn().mockReturnThis(),
+      scrollIntoViewIfNeeded: jest.fn().mockResolvedValue(undefined),
+      evaluate: jest.fn().mockResolvedValue(undefined),
     };
+    mockPage.locator.mockReturnValue(mockLocator);
+    mockPage.viewportSize = jest.fn().mockReturnValue({ width: 1280, height: 720 });
     mockPage.keyboard = {
       press: jest.fn().mockResolvedValue(undefined),
       type: jest.fn().mockResolvedValue(undefined),
@@ -34,11 +41,8 @@ describe('KeyboardHandler', () => {
       down: jest.fn().mockResolvedValue(undefined),
       up: jest.fn().mockResolvedValue(undefined),
     };
+    mockContext = createMockContextManager(mockPage);
 
-    (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str);
-    (LocatorHelper.createLocator as jest.Mock).mockReturnValue(mockLocator);
-    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockLocator);
-    (LocatorHelper.scrollToElementSmooth as jest.Mock).mockResolvedValue(undefined);
     (WaitHelper.executeWaits as jest.Mock).mockResolvedValue(undefined);
     (RetryHelper.executeWithRetry as jest.Mock).mockImplementation(async (fn: () => Promise<void>) => {
       await fn();
@@ -228,15 +232,12 @@ describe('KeyboardHandler', () => {
       );
     });
 
-    it('should interpolate variables', async () => {
-      (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => {
-        if (str === '${key}') return 'Enter';
-        return str;
-      });
+    it('should interpolate variables via real VariableInterpolator', async () => {
+      mockContext.setVariable('key', 'Enter');
 
       const node = createMockNode(NodeType.KEYBOARD, {
         action: 'press',
-        key: '${key}',
+        key: '${variables.key}',
       });
 
       await handler.execute(node, mockContext);
@@ -244,7 +245,8 @@ describe('KeyboardHandler', () => {
       expect(mockPage.keyboard.press).toHaveBeenCalledWith('Enter');
     });
 
-    it('should pass text selectorType to createLocatorAsync', async () => {
+    it('should resolve text selectorType via TextSelectorResolver', async () => {
+      const { TextSelectorResolver } = require('../../../utils/textSelectorResolver');
       const node = createMockNode(NodeType.KEYBOARD, {
         action: 'press',
         key: 'Enter',
@@ -254,7 +256,7 @@ describe('KeyboardHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, 'Search', 'text', undefined);
+      expect(TextSelectorResolver.resolve).toHaveBeenCalledWith(mockPage, 'Search', undefined);
     });
   });
 });

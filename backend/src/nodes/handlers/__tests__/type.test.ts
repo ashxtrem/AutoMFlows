@@ -3,14 +3,14 @@ import { NodeType } from '@automflows/shared';
 import { createMockPage, createMockContextManager, createMockNode } from '../../../__tests__/helpers/mocks';
 import { WaitHelper } from '../../../utils/waitHelper';
 import { RetryHelper, FAIL_SILENT_RESULT } from '../../../utils/retryHelper';
-import { VariableInterpolator } from '../../../utils/variableInterpolator';
-import { LocatorHelper } from '../../../utils/locatorHelper';
 
-// Mock dependencies
 jest.mock('../../../utils/waitHelper');
 jest.mock('../../../utils/retryHelper');
-jest.mock('../../../utils/variableInterpolator');
-jest.mock('../../../utils/locatorHelper');
+jest.mock('../../../utils/textSelectorResolver', () => ({
+  TextSelectorResolver: {
+    resolve: jest.fn().mockImplementation(async (page: any, text: string) => page.locator(text)),
+  },
+}));
 
 describe('TypeHandler', () => {
   let handler: TypeHandler;
@@ -21,20 +21,21 @@ describe('TypeHandler', () => {
   beforeEach(() => {
     handler = new TypeHandler();
     mockPage = createMockPage();
-    mockContext = createMockContextManager(mockPage);
     mockLocator = {
       fill: jest.fn().mockResolvedValue(undefined),
       type: jest.fn().mockResolvedValue(undefined),
       pressSequentially: jest.fn().mockResolvedValue(undefined),
       inputValue: jest.fn().mockResolvedValue(''),
       evaluate: jest.fn().mockResolvedValue(undefined),
+      filter: jest.fn().mockReturnThis(),
+      nth: jest.fn().mockReturnThis(),
+      locator: jest.fn().mockReturnThis(),
+      scrollIntoViewIfNeeded: jest.fn().mockResolvedValue(undefined),
     };
+    mockPage.locator.mockReturnValue(mockLocator);
+    mockPage.viewportSize = jest.fn().mockReturnValue({ width: 1280, height: 720 });
+    mockContext = createMockContextManager(mockPage);
 
-    // Setup default mocks
-    (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str);
-    (LocatorHelper.createLocator as jest.Mock).mockReturnValue(mockLocator);
-    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockLocator);
-    (LocatorHelper.scrollToElementSmooth as jest.Mock).mockResolvedValue(undefined);
     (WaitHelper.executeWaits as jest.Mock).mockResolvedValue(undefined);
     (RetryHelper.executeWithRetry as jest.Mock).mockImplementation(async (fn: () => Promise<void>) => {
       await fn();
@@ -84,9 +85,7 @@ describe('TypeHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(VariableInterpolator.interpolateString).toHaveBeenCalledWith('#input', mockContext);
-      expect(VariableInterpolator.interpolateString).toHaveBeenCalledWith('test text', mockContext);
-      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, '#input', 'css', undefined);
+      expect(mockPage.locator).toHaveBeenCalledWith('#input');
       expect(mockLocator.fill).toHaveBeenCalledWith('test text', { timeout: 30000 });
     });
 
@@ -169,23 +168,18 @@ describe('TypeHandler', () => {
       expect(mockLocator.evaluate).toHaveBeenCalled();
     });
 
-    it('should interpolate selector and text variables', async () => {
-      (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => {
-        if (str === '${selector}') return '#interpolated';
-        if (str === '${text}') return 'interpolated text';
-        return str;
-      });
+    it('should interpolate selector and text variables via real VariableInterpolator', async () => {
+      mockContext.setVariable('selector', '#interpolated');
+      mockContext.setVariable('text', 'interpolated text');
 
       const node = createMockNode(NodeType.TYPE, {
-        selector: '${selector}',
-        text: '${text}',
+        selector: '${variables.selector}',
+        text: '${variables.text}',
       });
 
       await handler.execute(node, mockContext);
 
-      expect(VariableInterpolator.interpolateString).toHaveBeenCalledWith('${selector}', mockContext);
-      expect(VariableInterpolator.interpolateString).toHaveBeenCalledWith('${text}', mockContext);
-      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, '#interpolated', 'css', undefined);
+      expect(mockPage.locator).toHaveBeenCalledWith('#interpolated');
       expect(mockLocator.fill).toHaveBeenCalledWith('interpolated text', { timeout: 30000 });
     });
 
@@ -238,13 +232,7 @@ describe('TypeHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.scrollToElementSmooth).toHaveBeenCalledWith(
-        mockPage,
-        '#input',
-        'css',
-        30000,
-        undefined
-      );
+      expect(mockLocator.scrollIntoViewIfNeeded).toHaveBeenCalled();
     });
 
     it('should use custom timeout', async () => {
@@ -261,17 +249,18 @@ describe('TypeHandler', () => {
 
     it('should use custom selectorType', async () => {
       const node = createMockNode(NodeType.TYPE, {
-        selector: '#input',
+        selector: '//input[@id="test"]',
         text: 'test',
         selectorType: 'xpath',
       });
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, '#input', 'xpath', undefined);
+      expect(mockPage.locator).toHaveBeenCalledWith('xpath=//input[@id="test"]');
     });
 
-    it('should pass text selectorType to createLocatorAsync', async () => {
+    it('should resolve text selectorType via TextSelectorResolver', async () => {
+      const { TextSelectorResolver } = require('../../../utils/textSelectorResolver');
       const node = createMockNode(NodeType.TYPE, {
         selector: 'Email',
         text: 'user@example.com',
@@ -280,7 +269,7 @@ describe('TypeHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, 'Email', 'text', undefined);
+      expect(TextSelectorResolver.resolve).toHaveBeenCalledWith(mockPage, 'Email', undefined);
       expect(mockLocator.fill).toHaveBeenCalledWith('user@example.com', { timeout: 30000 });
     });
 

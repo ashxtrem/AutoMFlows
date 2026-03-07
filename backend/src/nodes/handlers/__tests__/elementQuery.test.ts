@@ -3,13 +3,14 @@ import { NodeType } from '@automflows/shared';
 import { createMockPage, createMockContextManager, createMockNode } from '../../../__tests__/helpers/mocks';
 import { WaitHelper } from '../../../utils/waitHelper';
 import { RetryHelper } from '../../../utils/retryHelper';
-import { VariableInterpolator } from '../../../utils/variableInterpolator';
-import { LocatorHelper } from '../../../utils/locatorHelper';
 
 jest.mock('../../../utils/waitHelper');
 jest.mock('../../../utils/retryHelper');
-jest.mock('../../../utils/variableInterpolator');
-jest.mock('../../../utils/locatorHelper');
+jest.mock('../../../utils/textSelectorResolver', () => ({
+  TextSelectorResolver: {
+    resolve: jest.fn().mockImplementation(async (page: any, text: string) => page.locator(text)),
+  },
+}));
 
 describe('ElementQueryHandler', () => {
   let handler: ElementQueryHandler;
@@ -20,9 +21,6 @@ describe('ElementQueryHandler', () => {
   beforeEach(() => {
     handler = new ElementQueryHandler();
     mockPage = createMockPage();
-    mockContext = createMockContextManager(mockPage);
-    // Spy on setData to verify it's called
-    jest.spyOn(mockContext, 'setData');
     mockLocator = {
       textContent: jest.fn().mockResolvedValue('test text'),
       getAttribute: jest.fn().mockResolvedValue('value'),
@@ -35,12 +33,17 @@ describe('ElementQueryHandler', () => {
         { textContent: jest.fn().mockResolvedValue('text1') },
         { textContent: jest.fn().mockResolvedValue('text2') },
       ]),
+      filter: jest.fn().mockReturnThis(),
+      nth: jest.fn().mockReturnThis(),
+      locator: jest.fn().mockReturnThis(),
+      scrollIntoViewIfNeeded: jest.fn().mockResolvedValue(undefined),
+      evaluate: jest.fn().mockResolvedValue(undefined),
     };
+    mockPage.locator.mockReturnValue(mockLocator);
+    mockPage.viewportSize = jest.fn().mockReturnValue({ width: 1280, height: 720 });
+    mockContext = createMockContextManager(mockPage);
+    jest.spyOn(mockContext, 'setData');
 
-    (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str);
-    (LocatorHelper.createLocator as jest.Mock).mockReturnValue(mockLocator);
-    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockLocator);
-    (LocatorHelper.scrollToElementSmooth as jest.Mock).mockResolvedValue(undefined);
     (WaitHelper.executeWaits as jest.Mock).mockResolvedValue(undefined);
     (RetryHelper.executeWithRetry as jest.Mock).mockImplementation(async (fn: () => Promise<any>) => {
       const result = await fn();
@@ -202,23 +205,21 @@ describe('ElementQueryHandler', () => {
       expect(mockContext.setData).toHaveBeenCalledWith('customVar', 'test text');
     });
 
-    it('should interpolate selector variables', async () => {
-      (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => {
-        if (str === '${selector}') return '#interpolated';
-        return str;
-      });
+    it('should interpolate selector variables via real VariableInterpolator', async () => {
+      mockContext.setVariable('selector', '#interpolated');
 
       const node = createMockNode(NodeType.ELEMENT_QUERY, {
-        selector: '${selector}',
+        selector: '${variables.selector}',
         action: 'getText',
       });
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, '#interpolated', 'css', undefined);
+      expect(mockPage.locator).toHaveBeenCalledWith('#interpolated');
     });
 
-    it('should pass text selectorType to createLocatorAsync', async () => {
+    it('should resolve text selectorType via TextSelectorResolver', async () => {
+      const { TextSelectorResolver } = require('../../../utils/textSelectorResolver');
       const node = createMockNode(NodeType.ELEMENT_QUERY, {
         selector: 'Total Price',
         action: 'getText',
@@ -227,7 +228,7 @@ describe('ElementQueryHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, 'Total Price', 'text', undefined);
+      expect(TextSelectorResolver.resolve).toHaveBeenCalledWith(mockPage, 'Total Price', undefined);
     });
   });
 });

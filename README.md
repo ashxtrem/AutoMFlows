@@ -92,18 +92,22 @@ cd shared && npm run build && cd ..
 
 ### Run Project
 
-Start the app with the project script:
-
-**Unix/Linux/macOS:**
+Start the app using npm:
 
 ```bash
-./start.sh
+npm start
 ```
 
-**Windows:**
+**Windows (PowerShell):**
 
 ```powershell
-.\start.ps1
+npm run start:ps1
+```
+
+**Windows (cmd):**
+
+```cmd
+npm run start:bat
 ```
 
 - **Backend**: [http://localhost:3003](http://localhost:3003) (API, Swagger at `/api-docs`)

@@ -1,15 +1,16 @@
 import { DataExtractorHandler } from '../dataExtractor';
 import { NodeType } from '@automflows/shared';
 import { createMockContextManager, createMockNode, createMockPage } from '../../../__tests__/helpers/mocks';
-import { LocatorHelper } from '../../../utils/locatorHelper';
-import { VariableInterpolator } from '../../../utils/variableInterpolator';
 import fs from 'fs/promises';
 import { stringify } from 'csv-stringify/sync';
 
-jest.mock('../../../utils/locatorHelper');
-jest.mock('../../../utils/variableInterpolator');
 jest.mock('fs/promises');
 jest.mock('csv-stringify/sync');
+jest.mock('../../../utils/textSelectorResolver', () => ({
+  TextSelectorResolver: {
+    resolve: jest.fn().mockImplementation(async (page: any, text: string) => page.locator(text)),
+  },
+}));
 
 describe('DataExtractorHandler', () => {
   let handler: DataExtractorHandler;
@@ -21,7 +22,6 @@ describe('DataExtractorHandler', () => {
     mockPage = createMockPage();
     mockContext = createMockContextManager(mockPage);
     jest.spyOn(mockContext, 'setData');
-    (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((s: string) => s ?? '');
     (fs.writeFile as jest.Mock).mockResolvedValue(undefined);
     (fs.mkdir as jest.Mock).mockResolvedValue(undefined);
     (stringify as jest.Mock).mockImplementation((rows: any[][]) => rows.map(r => r.join(',')).join('\n') + '\n');
@@ -71,9 +71,12 @@ describe('DataExtractorHandler', () => {
       first: jest.fn().mockReturnValue({
         waitFor: jest.fn().mockResolvedValue(undefined),
       }),
+      filter: jest.fn().mockReturnThis(),
+      nth: jest.fn().mockReturnThis(),
+      locator: jest.fn().mockReturnThis(),
     };
 
-    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockContainerLocator);
+    mockPage.locator.mockReturnValue(mockContainerLocator);
 
     const node = createMockNode(NodeType.DATA_EXTRACTOR, {
       containerSelector: '.product',
@@ -103,9 +106,12 @@ describe('DataExtractorHandler', () => {
       first: jest.fn().mockReturnValue({
         waitFor: jest.fn().mockResolvedValue(undefined),
       }),
+      filter: jest.fn().mockReturnThis(),
+      nth: jest.fn().mockReturnThis(),
+      locator: jest.fn().mockReturnThis(),
     };
 
-    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockContainerLocator);
+    mockPage.locator.mockReturnValue(mockContainerLocator);
 
     const node = createMockNode(NodeType.DATA_EXTRACTOR, {
       containerSelector: '.product',
@@ -130,9 +136,12 @@ describe('DataExtractorHandler', () => {
       first: jest.fn().mockReturnValue({
         waitFor: jest.fn().mockResolvedValue(undefined),
       }),
+      filter: jest.fn().mockReturnThis(),
+      nth: jest.fn().mockReturnThis(),
+      locator: jest.fn().mockReturnThis(),
     };
 
-    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockContainerLocator);
+    mockPage.locator.mockReturnValue(mockContainerLocator);
 
     const node = createMockNode(NodeType.DATA_EXTRACTOR, {
       containerSelector: '.product',
@@ -162,9 +171,12 @@ describe('DataExtractorHandler', () => {
       first: jest.fn().mockReturnValue({
         waitFor: jest.fn().mockResolvedValue(undefined),
       }),
+      filter: jest.fn().mockReturnThis(),
+      nth: jest.fn().mockReturnThis(),
+      locator: jest.fn().mockReturnThis(),
     };
 
-    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockContainerLocator);
+    mockPage.locator.mockReturnValue(mockContainerLocator);
 
     const node = createMockNode(NodeType.DATA_EXTRACTOR, {
       containerSelector: '.item',
@@ -183,9 +195,12 @@ describe('DataExtractorHandler', () => {
       first: jest.fn().mockReturnValue({
         waitFor: jest.fn().mockResolvedValue(undefined),
       }),
+      filter: jest.fn().mockReturnThis(),
+      nth: jest.fn().mockReturnThis(),
+      locator: jest.fn().mockReturnThis(),
     };
 
-    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockContainerLocator);
+    mockPage.locator.mockReturnValue(mockContainerLocator);
 
     const node = createMockNode(NodeType.DATA_EXTRACTOR, {
       containerSelector: '.item',
@@ -203,9 +218,12 @@ describe('DataExtractorHandler', () => {
       first: jest.fn().mockReturnValue({
         waitFor: jest.fn().mockResolvedValue(undefined),
       }),
+      filter: jest.fn().mockReturnThis(),
+      nth: jest.fn().mockReturnThis(),
+      locator: jest.fn().mockReturnThis(),
     };
 
-    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockContainerLocator);
+    mockPage.locator.mockReturnValue(mockContainerLocator);
 
     const node = createMockNode(NodeType.DATA_EXTRACTOR, {
       containerSelector: '.item',
@@ -222,9 +240,12 @@ describe('DataExtractorHandler', () => {
       first: jest.fn().mockReturnValue({
         waitFor: jest.fn().mockResolvedValue(undefined),
       }),
+      filter: jest.fn().mockReturnThis(),
+      nth: jest.fn().mockReturnThis(),
+      locator: jest.fn().mockReturnThis(),
     };
 
-    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockContainerLocator);
+    mockPage.locator.mockReturnValue(mockContainerLocator);
 
     const node = createMockNode(NodeType.DATA_EXTRACTOR, {
       containerSelector: '.item',
@@ -252,9 +273,12 @@ describe('DataExtractorHandler', () => {
       first: jest.fn().mockReturnValue({
         waitFor: jest.fn().mockResolvedValue(undefined),
       }),
+      filter: jest.fn().mockReturnThis(),
+      nth: jest.fn().mockReturnThis(),
+      locator: jest.fn().mockReturnThis(),
     };
 
-    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockContainerLocator);
+    mockPage.locator.mockReturnValue(mockContainerLocator);
 
     const node = createMockNode(NodeType.DATA_EXTRACTOR, {
       containerSelector: '.product',
@@ -283,9 +307,12 @@ describe('DataExtractorHandler', () => {
       first: jest.fn().mockReturnValue({
         waitFor: jest.fn().mockResolvedValue(undefined),
       }),
+      filter: jest.fn().mockReturnThis(),
+      nth: jest.fn().mockReturnThis(),
+      locator: jest.fn().mockReturnThis(),
     };
 
-    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockContainerLocator);
+    mockPage.locator.mockReturnValue(mockContainerLocator);
 
     const node = createMockNode(NodeType.DATA_EXTRACTOR, {
       containerSelector: '.item',

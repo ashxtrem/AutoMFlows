@@ -3,11 +3,9 @@ import { NodeType } from '@automflows/shared';
 import { createMockPage, createMockContextManager, createMockNode } from '../../../__tests__/helpers/mocks';
 import { WaitHelper } from '../../../utils/waitHelper';
 import { RetryHelper } from '../../../utils/retryHelper';
-import { VariableInterpolator } from '../../../utils/variableInterpolator';
 
 jest.mock('../../../utils/waitHelper');
 jest.mock('../../../utils/retryHelper');
-jest.mock('../../../utils/variableInterpolator');
 
 describe('StorageHandler', () => {
   let handler: StorageHandler;
@@ -31,7 +29,6 @@ describe('StorageHandler', () => {
     // Spy on setData to verify it's called
     jest.spyOn(mockContext, 'setData');
 
-    (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str);
     (WaitHelper.executeWaits as jest.Mock).mockResolvedValue(undefined);
     (RetryHelper.executeWithRetry as jest.Mock).mockImplementation(async (fn: () => Promise<void>) => {
       await fn();

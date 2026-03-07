@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { renderLoopProperties } from '../loop';
 
 describe('renderLoopProperties', () => {
@@ -105,5 +105,20 @@ describe('renderLoopProperties', () => {
       const { container } = render(<>{result}</>);
       expect(container.textContent).toContain(condition.expected);
     });
+  });
+
+  it('should call handlePropertyChange when selecting a value', () => {
+    const result = renderLoopProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+
+    // Click to enter edit mode
+    const selectDiv = container.querySelector('.cursor-pointer')!;
+    fireEvent.click(selectDiv);
+
+    // Now find the <select> and change its value
+    const select = container.querySelector('select')!;
+    fireEvent.change(select, { target: { value: 'doWhile' } });
+
+    expect(mockHandlePropertyChange).toHaveBeenCalledWith('mode', 'doWhile');
   });
 });

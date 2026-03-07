@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { renderIframeProperties } from '../iframe';
 
 describe('renderIframeProperties', () => {
@@ -34,5 +34,20 @@ describe('renderIframeProperties', () => {
     const result = renderIframeProperties(defaultProps);
     const { container } = render(<>{result}</>);
     expect(container.textContent).toContain('Timeout');
+  });
+
+  it('should call handlePropertyChange when selecting a value', () => {
+    const result = renderIframeProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+
+    // Click to enter edit mode
+    const selectDiv = container.querySelector('.cursor-pointer')!;
+    fireEvent.click(selectDiv);
+
+    // Now find the <select> and change its value
+    const select = container.querySelector('select')!;
+    fireEvent.change(select, { target: { value: 'switchToMainFrame' } });
+
+    expect(mockHandlePropertyChange).toHaveBeenCalledWith('action', 'switchToMainFrame');
   });
 });

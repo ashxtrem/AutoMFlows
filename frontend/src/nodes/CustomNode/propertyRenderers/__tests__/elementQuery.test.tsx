@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { renderElementQueryProperties } from '../elementQuery';
 
 describe('renderElementQueryProperties', () => {
@@ -94,5 +94,20 @@ describe('renderElementQueryProperties', () => {
       const { container } = render(<>{result}</>);
       expect(container).toBeTruthy();
     });
+  });
+
+  it('should call handlePropertyChange when selecting a value', () => {
+    const result = renderElementQueryProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+
+    // Click to enter edit mode
+    const selectDiv = container.querySelector('.cursor-pointer')!;
+    fireEvent.click(selectDiv);
+
+    // Now find the <select> and change its value
+    const select = container.querySelector('select')!;
+    fireEvent.change(select, { target: { value: 'getAttribute' } });
+
+    expect(mockHandlePropertyChange).toHaveBeenCalledWith('action', 'getAttribute');
   });
 });

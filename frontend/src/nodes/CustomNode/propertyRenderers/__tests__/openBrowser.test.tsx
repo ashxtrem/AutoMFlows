@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { renderOpenBrowserProperties } from '../openBrowser';
 
 describe('renderOpenBrowserProperties', () => {
@@ -36,5 +36,15 @@ describe('renderOpenBrowserProperties', () => {
     const result = renderOpenBrowserProperties(defaultProps);
     const { container } = render(<>{result}</>);
     expect(container.textContent).toContain('Max Window');
+  });
+
+  it('should call handlePropertyChange when selecting browser', () => {
+    const result = renderOpenBrowserProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+    const selectDiv = container.querySelector('.cursor-pointer')!;
+    fireEvent.click(selectDiv);
+    const select = container.querySelector('select')!;
+    fireEvent.change(select, { target: { value: 'firefox' } });
+    expect(mockHandlePropertyChange).toHaveBeenCalledWith('browser', 'firefox');
   });
 });

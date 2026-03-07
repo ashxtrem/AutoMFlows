@@ -1,10 +1,8 @@
 import { CsvHandleHandler } from '../csvHandle';
 import { NodeType } from '@automflows/shared';
 import { createMockContextManager, createMockNode } from '../../../__tests__/helpers/mocks';
-import { VariableInterpolator } from '../../../utils/variableInterpolator';
 import fs from 'fs/promises';
 
-jest.mock('../../../utils/variableInterpolator');
 jest.mock('fs/promises', () => ({
   readFile: jest.fn(),
   writeFile: jest.fn(),
@@ -19,7 +17,6 @@ describe('CsvHandleHandler', () => {
     handler = new CsvHandleHandler();
     mockContext = createMockContextManager();
     jest.spyOn(mockContext, 'setData');
-    (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((s: string) => s ?? '');
     (fs.readFile as jest.Mock).mockRejectedValue(Object.assign(new Error('ENOENT'), { code: 'ENOENT' }));
     (fs.writeFile as jest.Mock).mockResolvedValue(undefined);
   });
@@ -161,21 +158,20 @@ describe('CsvHandleHandler', () => {
       expect(written).toContain('C,3');
     });
 
-    it('should interpolate filePath via VariableInterpolator', async () => {
+    it('should interpolate filePath via real VariableInterpolator', async () => {
       mockContext.setData('outputDirectory', '/run/123');
       mockContext.setData('rows', [{ x: '1' }]);
-      (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((s: string, ctx: any) => {
-        const outDir = ctx.getData('outputDirectory');
-        return s.replace('${data.outputDirectory}', outDir ?? '');
-      });
       const node = createMockNode(NodeType.CSV_HANDLE, {
         action: 'write',
         filePath: '${data.outputDirectory}/out.csv',
         dataSource: 'rows',
       });
       await handler.execute(node, mockContext);
-      expect(VariableInterpolator.interpolateString).toHaveBeenCalled();
-      expect(fs.writeFile).toHaveBeenCalled();
+      expect(fs.writeFile).toHaveBeenCalledWith(
+        '/run/123/out.csv',
+        expect.any(String),
+        'utf-8'
+      );
     });
   });
 });

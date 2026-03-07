@@ -1,5 +1,5 @@
-import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, fireEvent } from '@testing-library/react';
 import { renderStringValueProperties } from '../stringValue';
 
 describe('renderStringValueProperties', () => {
@@ -17,30 +17,46 @@ describe('renderStringValueProperties', () => {
     vi.clearAllMocks();
   });
 
-  it('should render with default empty value', () => {
+  it('should render with Value label', () => {
     const result = renderStringValueProperties(defaultProps);
     const { container } = render(<>{result}</>);
-    expect(container).toBeTruthy();
     expect(container.textContent).toContain('Value');
   });
 
-  it('should render with existing value', () => {
-    const props = {
-      ...defaultProps,
-      renderData: { value: 'test string' },
-    };
-    const result = renderStringValueProperties(props);
+  it('should display existing value', () => {
+    const result = renderStringValueProperties({ ...defaultProps, renderData: { value: 'hello world' } });
     const { container } = render(<>{result}</>);
-    expect(container).toBeTruthy();
+    expect(container.textContent).toContain('hello world');
   });
 
-  it('should use empty string when value is null', () => {
-    const props = {
-      ...defaultProps,
-      renderData: { value: null },
-    };
-    const result = renderStringValueProperties(props);
+  it('should display placeholder when value is empty', () => {
+    const result = renderStringValueProperties(defaultProps);
     const { container } = render(<>{result}</>);
-    expect(container).toBeTruthy();
+    expect(container.textContent).toContain('Enter string value');
+  });
+
+  it('should call handleOpenPopup when clicked', () => {
+    const result = renderStringValueProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+
+    const clickableDiv = container.querySelector('.cursor-text')!;
+    fireEvent.click(clickableDiv);
+
+    expect(mockHandleOpenPopup).toHaveBeenCalledWith(
+      'text', 'Value', '', expect.any(Function), 'Enter string value', undefined, undefined, 'value'
+    );
+  });
+
+  it('should pass onChange that calls handlePropertyChange', () => {
+    const result = renderStringValueProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+
+    const clickableDiv = container.querySelector('.cursor-text')!;
+    fireEvent.click(clickableDiv);
+
+    const onChangeFn = mockHandleOpenPopup.mock.calls[0][3];
+    onChangeFn('new value');
+
+    expect(mockHandlePropertyChange).toHaveBeenCalledWith('value', 'new value');
   });
 });

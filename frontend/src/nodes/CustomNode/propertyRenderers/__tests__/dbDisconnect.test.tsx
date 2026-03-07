@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { renderDbDisconnectProperties } from '../dbDisconnect';
 
 describe('renderDbDisconnectProperties', () => {
@@ -28,5 +28,13 @@ describe('renderDbDisconnectProperties', () => {
     const result = renderDbDisconnectProperties(defaultProps);
     const { container } = render(<>{result}</>);
     expect(container.textContent).toContain('Connection Key');
+  });
+
+  it('should call handleOpenPopup when clicking connection key field', () => {
+    const result = renderDbDisconnectProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+    const clickableDiv = container.querySelector('.cursor-text')!;
+    fireEvent.click(clickableDiv);
+    expect(mockHandleOpenPopup).toHaveBeenCalled();
   });
 });

@@ -3,13 +3,14 @@ import { NodeType } from '@automflows/shared';
 import { createMockPage, createMockContextManager, createMockNode } from '../../../__tests__/helpers/mocks';
 import { WaitHelper } from '../../../utils/waitHelper';
 import { RetryHelper } from '../../../utils/retryHelper';
-import { VariableInterpolator } from '../../../utils/variableInterpolator';
-import { LocatorHelper } from '../../../utils/locatorHelper';
 
 jest.mock('../../../utils/waitHelper');
 jest.mock('../../../utils/retryHelper');
-jest.mock('../../../utils/variableInterpolator');
-jest.mock('../../../utils/locatorHelper');
+jest.mock('../../../utils/textSelectorResolver', () => ({
+  TextSelectorResolver: {
+    resolve: jest.fn().mockImplementation(async (page: any, text: string) => page.locator(text)),
+  },
+}));
 
 describe('WaitHandler', () => {
   let handler: WaitHandler;
@@ -21,14 +22,15 @@ describe('WaitHandler', () => {
     handler = new WaitHandler();
     mockPage = createMockPage();
     mockPage.waitForTimeout = jest.fn().mockResolvedValue(undefined);
-    mockContext = createMockContextManager(mockPage);
     mockLocator = {
       waitFor: jest.fn().mockResolvedValue(undefined),
+      filter: jest.fn().mockReturnThis(),
+      nth: jest.fn().mockReturnThis(),
+      locator: jest.fn().mockReturnThis(),
     };
+    mockPage.locator.mockReturnValue(mockLocator);
+    mockContext = createMockContextManager(mockPage);
 
-    (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str);
-    (LocatorHelper.createLocator as jest.Mock).mockReturnValue(mockLocator);
-    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockLocator);
     (WaitHelper.waitForUrl as jest.Mock).mockResolvedValue(undefined);
     (WaitHelper.waitForCondition as jest.Mock).mockResolvedValue(undefined);
     (RetryHelper.executeWithRetry as jest.Mock).mockImplementation(async (fn: () => Promise<void>) => {
@@ -59,11 +61,12 @@ describe('WaitHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, '#element', 'css', undefined);
+      expect(mockPage.locator).toHaveBeenCalledWith('#element');
       expect(mockLocator.waitFor).toHaveBeenCalledWith({ timeout: 5000, state: 'visible' });
     });
 
-    it('should pass text selectorType to createLocatorAsync for selector wait', async () => {
+    it('should resolve text selectorType via TextSelectorResolver for selector wait', async () => {
+      const { TextSelectorResolver } = require('../../../utils/textSelectorResolver');
       const node = createMockNode(NodeType.WAIT, {
         waitType: 'selector',
         value: 'Loading...',
@@ -73,7 +76,7 @@ describe('WaitHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, 'Loading...', 'text', undefined);
+      expect(TextSelectorResolver.resolve).toHaveBeenCalledWith(mockPage, 'Loading...', undefined);
       expect(mockLocator.waitFor).toHaveBeenCalledWith({ timeout: 5000, state: 'visible' });
     });
 

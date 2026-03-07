@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { renderDbQueryProperties } from '../dbQuery';
 
 describe('renderDbQueryProperties', () => {
@@ -34,5 +34,16 @@ describe('renderDbQueryProperties', () => {
     const result = renderDbQueryProperties(defaultProps);
     const { container } = render(<>{result}</>);
     expect(container.textContent).toContain('Query Type');
+  });
+
+  it('should call handlePropertyChange when selecting query type', () => {
+    const result = renderDbQueryProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+    const selectDivs = container.querySelectorAll('.cursor-pointer');
+    const queryTypeDiv = selectDivs[selectDivs.length - 1];
+    fireEvent.click(queryTypeDiv);
+    const select = container.querySelector('select')!;
+    fireEvent.change(select, { target: { value: 'mongodb' } });
+    expect(mockHandlePropertyChange).toHaveBeenCalledWith('queryType', 'mongodb');
   });
 });

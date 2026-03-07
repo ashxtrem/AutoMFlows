@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Input Fixture</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    label { display: block; margin-top: 12px; }
+    input, textarea { display: block; margin-top: 4px; padding: 6px; width: 300px; }
+  </style>
+</head>
+<body>
+  <form id="test-form">
+    <label for="username">Username</label>
+    <input id="username" name="username" type="text" placeholder="Enter username" />
+
+    <label for="password">Password</label>
+    <input id="password" name="password" type="password" placeholder="Enter password" />
+
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" placeholder="Enter email" />
+
+    <label for="prefilled">Prefilled</label>
+    <input id="prefilled" name="prefilled" type="text" value="initial" />
+
+    <label for="notes">Notes</label>
+    <textarea id="notes" name="notes" placeholder="Enter notes"></textarea>
+
+    <label for="search">Search</label>
+    <input id="search" name="search" type="search" data-testid="search-input" />
+  </form>
+</body>
+</html>

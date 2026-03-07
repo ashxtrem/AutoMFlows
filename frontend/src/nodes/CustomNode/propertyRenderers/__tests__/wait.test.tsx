@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { renderWaitProperties } from '../wait';
 
 describe('renderWaitProperties', () => {
@@ -38,5 +38,18 @@ describe('renderWaitProperties', () => {
     const result = renderWaitProperties(props);
     const { container } = render(<>{result}</>);
     expect(container.textContent).toContain('Value');
+  });
+
+  it('should call handlePropertyChange when selecting a value', () => {
+    const result = renderWaitProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+
+    const selectDiv = container.querySelector('.cursor-pointer')!;
+    fireEvent.click(selectDiv);
+
+    const select = container.querySelector('select')!;
+    fireEvent.change(select, { target: { value: 'selector' } });
+
+    expect(mockHandlePropertyChange).toHaveBeenCalledWith('waitType', 'selector');
   });
 });

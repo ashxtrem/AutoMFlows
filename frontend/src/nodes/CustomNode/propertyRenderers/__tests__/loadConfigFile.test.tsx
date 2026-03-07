@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { renderLoadConfigFileProperties } from '../loadConfigFile';
 
 describe('renderLoadConfigFileProperties', () => {
@@ -40,5 +40,13 @@ describe('renderLoadConfigFileProperties', () => {
     const result = renderLoadConfigFileProperties(props);
     const { container } = render(<>{result}</>);
     expect(container.textContent).toContain('Add Config');
+  });
+
+  it('should call setSelectedNode when clicking load config button', () => {
+    const result = renderLoadConfigFileProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+    const button = container.querySelector('button')!;
+    fireEvent.click(button);
+    expect(mockSetSelectedNode).toHaveBeenCalled();
   });
 });
