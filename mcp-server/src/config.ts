@@ -4,6 +4,7 @@ import * as path from 'path';
 export interface MCPConfig {
   backendUrl: string;
   workflowsPath: string;
+  verbose: boolean;
   llm: {
     provider: 'openai' | 'local' | 'none';
     openai?: {
@@ -20,6 +21,7 @@ export interface MCPConfig {
 const defaultConfig: MCPConfig = {
   backendUrl: process.env.AUTOMFLOWS_BACKEND_URL || 'http://localhost:3003',
   workflowsPath: process.env.AUTOMFLOWS_WORKFLOWS_PATH || path.join(process.cwd(), 'tests', 'workflows', 'demo'),
+  verbose: process.env.AUTOMFLOWS_VERBOSE === 'true',
   llm: {
     provider: (process.env.LLM_PROVIDER as 'openai' | 'local' | 'none') || 'none',
     openai: {

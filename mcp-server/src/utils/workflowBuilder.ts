@@ -227,4 +227,42 @@ export class WorkflowBuilder {
       expectedValue: options?.expectedValue,
     });
   }
+
+  /**
+   * Enable accessibility snapshots on the Start node so execution produces
+   * snapshot files that can be used for accurate selector inference.
+   */
+  enableSnapshots(timing: 'pre' | 'post' | 'both' = 'post'): void {
+    const startNode = this.nodes.find(n => n.type === NodeType.START);
+    if (startNode) {
+      (startNode.data as any).snapshotAllNodes = true;
+      (startNode.data as any).snapshotTiming = timing;
+    }
+  }
+
+  /**
+   * Enable accessibility snapshots on an already-built Workflow object.
+   * Returns a new workflow with snapshotAllNodes enabled on the Start node.
+   */
+  static enableSnapshotsOnWorkflow(
+    workflow: Workflow,
+    timing: 'pre' | 'post' | 'both' = 'post'
+  ): Workflow {
+    return {
+      ...workflow,
+      nodes: workflow.nodes.map(node => {
+        if (node.type === NodeType.START) {
+          return {
+            ...node,
+            data: {
+              ...node.data,
+              snapshotAllNodes: true,
+              snapshotTiming: timing,
+            },
+          };
+        }
+        return node;
+      }),
+    };
+  }
 }

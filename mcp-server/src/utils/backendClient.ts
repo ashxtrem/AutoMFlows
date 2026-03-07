@@ -3,9 +3,15 @@ import { io, Socket } from 'socket.io-client';
 import { Workflow, ExecuteWorkflowRequest, ExecutionStatusResponse } from '@automflows/shared';
 import { getConfig } from '../config.js';
 
+function debugLog(...args: any[]): void {
+  if (getConfig().verbose) {
+    console.error(...args);
+  }
+}
+
 export interface ExecutionResult {
   executionId: string;
-  status: 'running' | 'completed' | 'error' | 'stopped' | 'idle';
+  status: 'running' | 'completed' | 'error' | 'stopped' | 'idle' | 'unknown';
   currentNodeId?: string | null;
   error?: string | null;
   pausedNodeId?: string | null;
@@ -14,6 +20,8 @@ export interface ExecutionResult {
   timedOut?: boolean;
   /** Trace logs from execution, when requested */
   logs?: string[];
+  /** Output directory path from execution tracker (contains screenshots, snapshots, videos) */
+  outputDirectory?: string;
 }
 
 export class BackendClient {
@@ -81,6 +89,7 @@ export class BackendClient {
         error: response.data.error || null,
         pausedNodeId: response.data.pausedNodeId || null,
         pauseReason: response.data.pauseReason || null,
+        outputDirectory: response.data.outputDirectory || undefined,
       };
     } catch (error: any) {
       throw new Error(`Failed to get execution status: ${error.message}`);
@@ -157,6 +166,8 @@ export class BackendClient {
     const startTime = Date.now();
     let consecutiveErrors = 0;
     const maxConsecutiveErrors = 5;
+    let consecutive404s = 0;
+    const max404s = 3;
     let lastStatus: ExecutionResult | null = null;
 
     while (Date.now() - startTime < maxDurationMs) {
@@ -164,18 +175,44 @@ export class BackendClient {
         let status: ExecutionResult;
         try {
           status = await this.getExecutionStatus(executionId);
+          consecutive404s = 0;
         } catch (err: any) {
-          if (err.message?.includes('404') && executionId) {
-            const recent = await this.getExecutionStatus();
-            if (recent.executionId === executionId && ['completed', 'error', 'stopped'].includes(recent.status)) {
-              return recent;
+          const is404 = err.message?.includes('404') || err.message?.includes('not found') || err.message?.includes('Not Found');
+          if (is404 && executionId) {
+            consecutive404s++;
+            const elapsed = Math.round((Date.now() - startTime) / 1000);
+            console.error(`[BackendClient] Poll ${executionId} (${elapsed}s): 404 not found (attempt ${consecutive404s}/${max404s})`);
+
+            if (consecutive404s >= max404s) {
+              console.error(`[BackendClient] Execution ${executionId} cleaned up after ${max404s} consecutive 404s - status unknown`);
+              return {
+                executionId,
+                status: lastStatus?.status === 'error' ? 'error' : 'unknown',
+                error: lastStatus?.error || `Execution cleaned up (not found after ${max404s} attempts)`,
+              };
             }
+
+            // Try the generic status endpoint as fallback
+            try {
+              const recent = await this.getExecutionStatus();
+              if (recent.executionId === executionId && ['completed', 'error', 'stopped'].includes(recent.status)) {
+                return recent;
+              }
+            } catch {
+              // Ignore fallback errors
+            }
+
+            await new Promise(resolve => setTimeout(resolve, intervalMs));
+            continue;
           }
           throw err;
         }
 
         consecutiveErrors = 0;
         lastStatus = status;
+
+        const elapsed = Math.round((Date.now() - startTime) / 1000);
+        debugLog(`[BackendClient] Poll ${executionId} (${elapsed}s): status=${status.status}, node=${status.currentNodeId || 'n/a'}`);
 
         // Notify caller of intermediate progress
         if (onProgress) {
@@ -186,11 +223,18 @@ export class BackendClient {
           if (status.status === 'completed' || status.status === 'error' || status.status === 'stopped') {
             return status;
           }
+
+          if (status.status === 'idle') {
+            console.error(`[BackendClient] Execution ${executionId} returned 'idle' - no longer active`);
+            return status;
+          }
         }
 
         await new Promise(resolve => setTimeout(resolve, intervalMs));
       } catch (error: any) {
         consecutiveErrors++;
+        const elapsed = Math.round((Date.now() - startTime) / 1000);
+        console.error(`[BackendClient] Poll ${executionId} (${elapsed}s): error (${consecutiveErrors}/${maxConsecutiveErrors}): ${error.message}`);
         if (consecutiveErrors >= maxConsecutiveErrors) {
           // Return partial result instead of throwing
           if (lastStatus) {

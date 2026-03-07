@@ -1,25 +1,41 @@
 import { Workflow, NodeType } from '@automflows/shared';
+import * as path from 'path';
 import { getLLMProvider } from '../llm/index.js';
 import { WorkflowBuilder } from '../utils/workflowBuilder.js';
 import { WorkflowValidator } from '../utils/workflowValidator.js';
 import { getWorkflowExample } from '../resources/workflowExamples.js';
 import { RequestAnalyzer } from '../utils/requestAnalyzer.js';
 import { findPluginNodeByKeyword } from '../resources/nodeDocumentation.js';
+import { executeWorkflow } from './executeWorkflow.js';
+import { buildWorkflowFromSnapshots } from '../utils/snapshotWorkflowBuilder.js';
+import { BackendClient } from '../utils/backendClient.js';
+import { ExecutionMonitor } from '../utils/executionMonitor.js';
 
 export interface CreateWorkflowParams {
   userRequest: string;
   useCase: string;
   sampleWorkflowName?: string;
+  /** Skip the two-pass snapshot refinement and return the guess workflow directly */
+  skipSnapshotPass?: boolean;
 }
 
 export interface CreateWorkflowResult {
   workflow?: Workflow;
   needsClarification?: boolean;
   clarificationQuestions?: string[];
+  /** Path to snapshots directory from the first-pass execution (if available) */
+  snapshotsPath?: string;
 }
 
+/**
+ * Create a workflow using a two-pass snapshot-first strategy:
+ * 1. Generate a "guess" workflow (rule-based or LLM)
+ * 2. Execute it with snapshotAllNodes enabled to capture accessibility snapshots
+ * 3. Re-build the workflow from those snapshots for accurate getByRole selectors
+ * Falls back to the guess workflow if execution or snapshot rebuild fails.
+ */
 export async function createWorkflow(params: CreateWorkflowParams): Promise<CreateWorkflowResult | Workflow> {
-  const { userRequest, useCase, sampleWorkflowName } = params;
+  const { userRequest, useCase, sampleWorkflowName, skipSnapshotPass } = params;
 
   // Analyze request clarity
   const clarity = RequestAnalyzer.analyzeClarity(userRequest);
@@ -32,7 +48,32 @@ export async function createWorkflow(params: CreateWorkflowParams): Promise<Crea
     };
   }
 
-  // Try to get sample workflow if provided
+  // Pass 1: Generate guess workflow
+  const guessWorkflow = await generateGuessWorkflow(userRequest, useCase, sampleWorkflowName);
+
+  if (skipSnapshotPass) {
+    return guessWorkflow;
+  }
+
+  // Pass 2: Execute with snapshots enabled, then rebuild from snapshots
+  try {
+    const refined = await refineWorkflowViaSnapshots(guessWorkflow, userRequest, useCase);
+    return refined;
+  } catch (error: any) {
+    console.warn('Snapshot refinement failed, returning guess workflow:', error.message);
+    return guessWorkflow;
+  }
+}
+
+/**
+ * Generate a guess workflow using LLM or rule-based generation (Pass 1).
+ * Exported for direct use by other tools that need only the guess pass.
+ */
+export async function generateGuessWorkflow(
+  userRequest: string,
+  useCase: string,
+  sampleWorkflowName?: string
+): Promise<Workflow> {
   let sampleWorkflow: Workflow | undefined;
   if (sampleWorkflowName) {
     const example = getWorkflowExample(sampleWorkflowName);
@@ -41,7 +82,6 @@ export async function createWorkflow(params: CreateWorkflowParams): Promise<Crea
     }
   }
 
-  // Try LLM generation first
   const llmProvider = getLLMProvider();
   if (llmProvider) {
     try {
@@ -51,7 +91,6 @@ export async function createWorkflow(params: CreateWorkflowParams): Promise<Crea
         sampleWorkflow,
       });
 
-      // Validate the generated workflow
       const validation = WorkflowValidator.validate(workflow);
       if (!validation.valid) {
         throw new Error(`Generated workflow validation failed: ${validation.errors.join(', ')}`);
@@ -60,12 +99,65 @@ export async function createWorkflow(params: CreateWorkflowParams): Promise<Crea
       return workflow;
     } catch (error: any) {
       console.warn('LLM workflow generation failed, falling back to rule-based:', error.message);
-      // Fall through to rule-based generation
     }
   }
 
-  // Fallback to rule-based generation
   return generateWorkflowRuleBased(userRequest, useCase, sampleWorkflow);
+}
+
+/**
+ * Execute a guess workflow with snapshotAllNodes enabled, then rebuild
+ * the workflow from the captured accessibility snapshots (Pass 2).
+ */
+async function refineWorkflowViaSnapshots(
+  guessWorkflow: Workflow,
+  userRequest: string,
+  useCase: string
+): Promise<Workflow> {
+  // Enable snapshots on the Start node
+  const snapshotWorkflow = WorkflowBuilder.enableSnapshotsOnWorkflow(guessWorkflow, 'post');
+
+  // Execute the workflow to generate snapshots
+  const executionResult = await executeWorkflow({
+    workflow: snapshotWorkflow,
+    traceLogs: false,
+    recordSession: false,
+    waitForCompletion: true,
+    pollIntervalMs: 1000,
+    maxDurationMs: 300000,
+  });
+
+  // Get output directory from execution status
+  let outputDirectory: string | undefined;
+
+  if (executionResult.outputDirectory) {
+    outputDirectory = executionResult.outputDirectory;
+  } else if (executionResult.executionId) {
+    // Poll for final status to get outputDirectory
+    const backendClient = new BackendClient();
+    try {
+      const finalStatus = await backendClient.getExecutionStatus(executionResult.executionId);
+      outputDirectory = finalStatus.outputDirectory;
+    } catch {
+      // Ignore -- we'll try alternative discovery below
+    }
+  }
+
+  if (!outputDirectory) {
+    console.warn('Could not determine output directory from execution, returning guess workflow');
+    return guessWorkflow;
+  }
+
+  const snapshotsPath = path.join(outputDirectory, 'snapshots');
+
+  try {
+    const refinedWorkflow = buildWorkflowFromSnapshots(userRequest, useCase, snapshotsPath);
+    console.log(`Workflow refined from snapshots at ${snapshotsPath}`);
+    return refinedWorkflow;
+  } catch (snapshotError: any) {
+    console.warn(`Failed to build workflow from snapshots: ${snapshotError.message}`);
+    return guessWorkflow;
+  }
 }
 
 /**
@@ -75,21 +167,62 @@ export async function createWorkflow(params: CreateWorkflowParams): Promise<Crea
 function extractConfigVariables(userRequest: string): Record<string, string> {
   const config: Record<string, string> = {};
   const patterns = [
-    /(?:set|configure|pass)\s+(\w+)\s*(?:=|to|as)\s*["']?([^"',;.]+)["']?/gi,
-    /(\w+)\s*=\s*["']?([^"',;.]+)["']?/gi,
+    /(?:set|configure|pass)\s+(\w+)\s*(?:=|to|as)\s*["']?([^"',;.\s]+)["']?/gi,
+    /(\w+)\s*=\s*["']?([^"',;.\s]+)["']?/gi,
   ];
   for (const pattern of patterns) {
     let match;
     while ((match = pattern.exec(userRequest)) !== null) {
       const key = match[1].trim();
       const value = match[2].trim();
-      const skipKeys = ['config', 'the', 'it', 'this', 'that', 'them', 'we', 'you', 'browser'];
+      const skipKeys = ['config', 'the', 'it', 'this', 'that', 'them', 'we', 'you', 'browser', 'with', 'set'];
       if (!skipKeys.includes(key.toLowerCase()) && key.length > 1) {
         config[key] = value;
       }
     }
   }
   return config;
+}
+
+/**
+ * Resolves a natural-language value reference to a config variable interpolation.
+ * e.g. "the search term" + configVars { searchTerm: "toys" } -> "${data.searchTerm}"
+ */
+function resolveConfigReference(
+  value: string | undefined,
+  configVars: Record<string, string> | undefined
+): string | undefined {
+  if (!value || !configVars || Object.keys(configVars).length === 0) return value;
+
+  const normalized = value
+    .replace(/\b(the|a|an|my|our|this|that)\b/gi, '')
+    .trim()
+    .split(/\s+/)
+    .filter(w => w.length > 0);
+
+  if (normalized.length === 0) return value;
+
+  const camelized =
+    normalized[0].toLowerCase() +
+    normalized.slice(1).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join('');
+
+  for (const key of Object.keys(configVars)) {
+    if (key.toLowerCase() === camelized.toLowerCase()) {
+      return `\${data.${key}}`;
+    }
+  }
+
+  // Partial match: check if any config key is a substring of the camelized value or vice-versa
+  for (const key of Object.keys(configVars)) {
+    if (
+      camelized.toLowerCase().includes(key.toLowerCase()) ||
+      key.toLowerCase().includes(camelized.toLowerCase())
+    ) {
+      return `\${data.${key}}`;
+    }
+  }
+
+  return value;
 }
 
 function generateWorkflowRuleBased(
@@ -158,6 +291,8 @@ function generateWorkflowRuleBased(
       
       const waitAfterNavId = builder.addNode(NodeType.WAIT, {
         label: 'Wait after navigation',
+        waitType: 'timeout',
+        value: '2000',
         timeout: 2000,
       });
       builder.connectNodes(navId, waitAfterNavId);
@@ -174,6 +309,8 @@ function generateWorkflowRuleBased(
       
       const waitAfterClickId = builder.addNode(NodeType.WAIT, {
         label: 'Wait after click',
+        waitType: 'timeout',
+        value: '2000',
         timeout: 2000,
       });
       builder.connectNodes(clickId, waitAfterClickId);
@@ -264,7 +401,8 @@ function generateWorkflowFromSteps(
   // Add Open Browser node first if we have browser actions
   const hasBrowserActions = steps.some(s => 
     s.action === 'navigate' || s.action === 'click' || s.action === 'type' ||
-    s.action === 'fill' || s.action === 'extract' || s.action === 'verify'
+    s.action === 'fill' || s.action === 'extract' || s.action === 'verify' ||
+    s.action === 'keyboard'
   );
   
   if (hasBrowserActions) {
@@ -282,14 +420,27 @@ function generateWorkflowFromSteps(
 
   // Track loop state for proper edge wiring
   let activeLoopId: string | undefined;
+  let loopFinalized = false;
   const loopBodyNodeIds: string[] = [];
+  let lastExtractVariable: string | undefined;
 
-  for (const step of steps) {
+  for (let stepIdx = 0; stepIdx < steps.length; stepIdx++) {
+    const step = steps[stepIdx];
     let currentNodeId: string | undefined;
+
+    // When a post-loop step arrives, finalize the loop body first
+    if (activeLoopId && step.isPostLoop && !loopFinalized) {
+      if (loopBodyNodeIds.length > 0) {
+        builder.addLoopBody(activeLoopId, loopBodyNodeIds);
+        loopBodyNodeIds.length = 0;
+      }
+      loopFinalized = true;
+    }
 
     switch (step.action) {
       case 'setConfig': {
-        const config = step.configEntries || configVars || { key: 'value' };
+        const merged = { ...(configVars || {}), ...(step.configEntries || {}) };
+        const config = Object.keys(merged).length > 0 ? merged : { key: 'value' };
         currentNodeId = builder.addSetConfigNode(config, 'Set Config');
         break;
       }
@@ -313,14 +464,16 @@ function generateWorkflowFromSteps(
         });
         break;
 
-      case 'type':
+      case 'type': {
+        const resolvedText = resolveConfigReference(step.value, configVars) || step.value || '';
         currentNodeId = builder.addNode(NodeType.TYPE, {
           label: `Type ${step.value || 'text'}`,
           selector: inferSelector(step.target),
-          text: step.value || '',
+          text: resolvedText,
           clearFirst: true,
         });
         break;
+      }
 
       case 'fill':
         currentNodeId = builder.addNode(NodeType.TYPE, {
@@ -335,6 +488,8 @@ function generateWorkflowFromSteps(
         const waitTime = step.value ? parseInt(step.value, 10) * 1000 : 1000;
         currentNodeId = builder.addNode(NodeType.WAIT, {
           label: `Wait ${step.value || '1'}s`,
+          waitType: 'timeout',
+          value: String(waitTime),
           timeout: waitTime,
         });
         break;
@@ -348,6 +503,24 @@ function generateWorkflowFromSteps(
         });
         break;
 
+      case 'keyboard': {
+        const keyName = step.key || 'Enter';
+        if (step.shortcut) {
+          currentNodeId = builder.addNode(NodeType.KEYBOARD, {
+            label: `Shortcut ${step.shortcut}`,
+            action: 'shortcut',
+            shortcut: step.shortcut,
+          });
+        } else {
+          currentNodeId = builder.addNode(NodeType.KEYBOARD, {
+            label: `Press ${keyName}`,
+            action: 'press',
+            key: keyName,
+          });
+        }
+        break;
+      }
+
       case 'loop': {
         // If there's an active loop pending, finalize it first
         if (activeLoopId && loopBodyNodeIds.length > 0) {
@@ -355,37 +528,87 @@ function generateWorkflowFromSteps(
           loopBodyNodeIds.length = 0;
         }
 
+        const arrayVar = lastExtractVariable || step.loopVariable;
         const loopId = builder.addLoopNode(
-          step.loopVariable ? 'forEach' : 'doWhile',
+          arrayVar ? 'forEach' : 'doWhile',
           {
-            arrayVariable: step.loopVariable,
+            arrayVariable: arrayVar,
             condition: step.loopCount ? `index < ${step.loopCount}` : undefined,
           },
-          `Loop${step.loopVariable ? ` over ${step.loopVariable}` : ''}`
+          `Loop${arrayVar ? ` over ${arrayVar}` : ''}`
         );
         activeLoopId = loopId;
+        loopFinalized = false;
         currentNodeId = loopId;
         break;
       }
 
       case 'extract': {
-        const code = step.target
-          ? `const el = context.page.locator(${JSON.stringify(step.target)});\nconst text = await el.textContent();\ncontext.setData("extractedText", text);`
-          : 'const items = await context.page.locator("h2").allTextContents();\ncontext.setData("extractedItems", items);';
+        const outputVar = step.outputVariable || 'extractedData';
+        lastExtractVariable = outputVar;
+        let code: string;
+        if (step.target) {
+          code = `const el = context.page.locator(${JSON.stringify(step.target)});\n` +
+            `const items = await el.allTextContents();\n` +
+            `context.setData("${outputVar}", items);\n` +
+            `context.setVariable("${outputVar}", items);\n` +
+            `console.log("Extracted", items.length, "items into ${outputVar}");`;
+        } else {
+          code = `const maxResults = parseInt(context.getData("maxResults") || context.getData("maxProducts")) || 10;\n` +
+            `const items = await context.page.locator("h2").allTextContents();\n` +
+            `const limited = items.slice(0, maxResults);\n` +
+            `context.setData("${outputVar}", limited);\n` +
+            `context.setVariable("${outputVar}", limited);\n` +
+            `console.log("Extracted", limited.length, "items into ${outputVar}");`;
+        }
         currentNodeId = builder.addJavaScriptNode(code, 'Extract Data');
         break;
       }
 
       case 'verify': {
-        currentNodeId = builder.addVerifyNode('browser', 'visible', {
-          selector: 'body',
-        }, `Verify: ${step.description.substring(0, 40)}`);
+        const vType = step.verifyType || 'visible';
+        const vSelector = step.verifySelector || 'body';
+        const vExpected = step.verifyExpectedText;
+
+        // When verifying with variable data (e.g. "cart contains the products"),
+        // generate a JS node that reads the stored variable and compares.
+        // Treat generic expected values (e.g. "products", "items", "data") as non-specific
+        const genericExpected = /^(the\s+)?(products?|items?|data|results?|elements?|entries|values?)$/i;
+        const hasSpecificExpected = vExpected && !genericExpected.test(vExpected.trim());
+        if (vType === 'containsText' && !hasSpecificExpected && lastExtractVariable) {
+          const verifyCode =
+            `const expected = context.getVariable("${lastExtractVariable}") || context.getData("${lastExtractVariable}") || [];\n` +
+            `const cartSelector = ${JSON.stringify(vSelector)};\n` +
+            `const cartItems = await context.page.locator(cartSelector).allTextContents();\n` +
+            `const cartText = cartItems.join(" ").toLowerCase();\n` +
+            `let matched = 0;\n` +
+            `for (const item of expected) {\n` +
+            `  if (cartText.includes(item.toLowerCase())) matched++;\n` +
+            `}\n` +
+            `console.log("Cart verification:", matched, "/", expected.length, "products found");\n` +
+            `if (matched === 0) throw new Error("None of the expected products found in cart");`;
+          currentNodeId = builder.addJavaScriptNode(verifyCode, 'Verify Cart Contents');
+        } else if (vType === 'url') {
+          currentNodeId = builder.addVerifyNode('browser', 'url', {
+            selector: vSelector,
+            expectedValue: vExpected,
+          }, `Verify: ${step.description.substring(0, 40)}`);
+        } else if (vType === 'containsText') {
+          currentNodeId = builder.addVerifyNode('browser', 'containsText', {
+            selector: vSelector,
+            expectedValue: vExpected,
+          }, `Verify: ${step.description.substring(0, 40)}`);
+        } else {
+          currentNodeId = builder.addVerifyNode('browser', 'visible', {
+            selector: vSelector,
+          }, `Verify: ${step.description.substring(0, 40)}`);
+        }
         break;
       }
 
       case 'code': {
         currentNodeId = builder.addJavaScriptNode(
-          `// ${step.description}\n// Add your JavaScript code here\n// Available: context.page, context.getData(), context.setData()`,
+          `// ${step.description}\n// Add your JavaScript code here\n// Available: context.page, context.getData(), context.setData(), context.getVariable(), context.setVariable()`,
           step.description.substring(0, 40)
         );
         break;
@@ -406,22 +629,32 @@ function generateWorkflowFromSteps(
 
     // Wire up edges
     if (currentNodeId) {
-      if (activeLoopId && currentNodeId !== activeLoopId) {
-        // This node is part of the loop body
+      const isInLoopBody = activeLoopId && !loopFinalized && currentNodeId !== activeLoopId;
+
+      if (isInLoopBody) {
         loopBodyNodeIds.push(currentNodeId);
+      } else if (loopFinalized && activeLoopId) {
+        // First post-loop node: connect from loopComplete
+        builder.addPostLoopConnection(activeLoopId, currentNodeId);
+        activeLoopId = undefined;
+        loopFinalized = false;
       } else if (lastNodeId) {
         builder.connectNodes(lastNodeId, currentNodeId);
       } else {
         builder.connectNodes(startId, currentNodeId);
       }
 
-      // Auto-insert wait after navigation and click
-      if (step.action === 'navigate' || step.action === 'click') {
+      // Auto-insert wait after navigation and click, unless next step is an explicit wait
+      const nextStep = stepIdx + 1 < steps.length ? steps[stepIdx + 1] : undefined;
+      const nextIsWait = nextStep?.action === 'wait';
+      if ((step.action === 'navigate' || step.action === 'click') && !nextIsWait) {
         const waitId = builder.addNode(NodeType.WAIT, {
           label: `Wait after ${step.action}`,
+          waitType: 'timeout',
+          value: '2000',
           timeout: 2000,
         });
-        if (activeLoopId && currentNodeId !== activeLoopId) {
+        if (isInLoopBody) {
           loopBodyNodeIds.push(waitId);
         } else {
           builder.connectNodes(currentNodeId, waitId);
@@ -436,9 +669,7 @@ function generateWorkflowFromSteps(
   // Finalize any remaining loop body
   if (activeLoopId && loopBodyNodeIds.length > 0) {
     builder.addLoopBody(activeLoopId, loopBodyNodeIds);
-    // The next node after the loop should be wired from loopComplete
-    // For now, make lastNodeId the loopId so the caller can connect post-loop nodes
-    lastNodeId = activeLoopId;
+    loopBodyNodeIds.length = 0;
   }
 
   return builder.build();

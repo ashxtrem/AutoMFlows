@@ -1229,13 +1229,26 @@ export default function workflowRoutes(io: Server) {
     }
   });
 
+  const lastLoggedStatus: Map<string, string> = new Map();
   router.get('/execution/:executionId', (req: Request, res: Response) => {
     try {
       const { executionId } = req.params;
       const status = executionManager.getExecutionStatus(executionId);
       
       if (!status) {
+        const prevStatus = lastLoggedStatus.get(executionId);
+        if (prevStatus !== '404') {
+          console.log(`[ExecutionStatus] ${executionId}: not found (404) - execution may have been cleaned up`);
+          lastLoggedStatus.set(executionId, '404');
+        }
         return res.status(404).json({ error: 'Execution not found' });
+      }
+
+      const statusKey = `${status.status}|${status.currentNodeId || ''}|${status.error || ''}`;
+      const prevStatusKey = lastLoggedStatus.get(executionId);
+      if (statusKey !== prevStatusKey) {
+        console.log(`[ExecutionStatus] ${executionId}: status=${status.status}, currentNode=${status.currentNodeId || 'n/a'}${status.error ? `, error=${status.error}` : ''}${status.pausedNodeId ? `, paused=${status.pausedNodeId}` : ''}`);
+        lastLoggedStatus.set(executionId, statusKey);
       }
 
       res.json(status as ExecutionStatusResponse);

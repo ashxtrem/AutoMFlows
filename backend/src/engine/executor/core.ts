@@ -216,6 +216,10 @@ export class Executor {
     return this.executionId;
   }
 
+  getOutputDirectory(): string | undefined {
+    return this.executionTracker?.getOutputDirectory();
+  }
+
   getStatus(): ExecutionStatus {
     return this.status;
   }
@@ -1347,7 +1351,7 @@ export class Executor {
       
       // Generate reports even on error if enabled
       if (this.reportConfig?.enabled && this.executionTracker) {
-        await generateReports(this.executionTracker, this.reportConfig, this.traceLog);
+        await generateReports(this.executionTracker, this.reportConfig, (message: string) => this.traceLog(message));
       }
       
       this.emitEvent({

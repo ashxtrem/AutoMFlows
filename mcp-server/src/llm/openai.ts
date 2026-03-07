@@ -116,7 +116,17 @@ User Request: ${request.userRequest}
       throw new Error('OpenAI client is not configured');
     }
 
-    const systemPrompt = `You are an expert at fixing browser automation workflows. Analyze errors and suggest fixes.`;
+    const nodeDocs = getNodeDocumentationAsResource();
+    const projectContext = getProjectContextAsResource();
+
+    const systemPrompt = `You are an expert at fixing browser automation workflows for AutoMFlows.
+
+${projectContext}
+
+Available Node Types and Documentation:
+${nodeDocs}
+
+Analyze workflow errors and return a corrected workflow JSON. Use the node documentation above to ensure all node types, action values, selector formats, and property names are valid.`;
     
     const userPrompt = `The following workflow has errors:
 
@@ -129,11 +139,12 @@ ${errorMessage}
 ${executionLogs ? `Execution Logs:\n${executionLogs.join('\n')}` : ''}
 
 Analyze the errors and return a fixed workflow JSON. Fix issues like:
-- Invalid selectors
+- Invalid selectors (use correct selectorType and format)
 - Missing required node configurations
 - Incorrect node connections
 - Missing wait conditions
-- Incorrect property values
+- Incorrect property values or enum values
+- Strict mode violations (add selectorModifiers.nth when needed)
 
 Return ONLY the fixed workflow JSON, no explanations.`;
 
@@ -174,7 +185,16 @@ Return ONLY the fixed workflow JSON, no explanations.`;
       throw new Error('OpenAI client is not configured');
     }
 
-    const systemPrompt = `You are an expert at extending and modifying browser automation workflows. 
+    const nodeDocs = getNodeDocumentationAsResource();
+    const projectContext = getProjectContextAsResource();
+
+    const systemPrompt = `You are an expert at extending and modifying browser automation workflows for AutoMFlows.
+
+${projectContext}
+
+Available Node Types and Documentation:
+${nodeDocs}
+
 Your task is to modify an existing workflow based on user requests while preserving the existing structure and connections.
 
 Available modification types:
@@ -188,7 +208,8 @@ When modifying workflows:
 2. Maintain proper edge connections
 3. Ensure node IDs remain unique
 4. Keep the start node intact
-5. Add appropriate wait nodes after navigation/click operations if needed`;
+5. Add appropriate wait nodes after navigation/click operations if needed
+6. Use correct node types, action values, and selector formats from the documentation above`;
 
     const userPrompt = `Modify the following workflow based on this request:
 

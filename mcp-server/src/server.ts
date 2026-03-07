@@ -10,6 +10,10 @@ import { loadConfig } from './config.js';
 import { loadWorkflowExamples, getWorkflowExample } from './resources/workflowExamples.js';
 import { getNodeDocumentationAsResource, getNodeDocumentationByType, getNodePropertySchemasAsResource, getNodePropertySchemaByType } from './resources/nodeDocumentation.js';
 import { getProjectContextAsResource } from './resources/projectContext.js';
+import { getSelectorGuideAsResource } from './resources/selectorGuide.js';
+import { getVariableInterpolationGuideAsResource } from './resources/variableInterpolation.js';
+import { getNodeActionEnumsAsResource } from './resources/nodeActionEnums.js';
+import { getCommonPatternsAsResource } from './resources/commonPatterns.js';
 import { createWorkflow } from './tools/createWorkflow.js';
 import { executeWorkflow } from './tools/executeWorkflow.js';
 import { getExecutionStatus } from './tools/getExecutionStatus.js';
@@ -62,6 +66,30 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
         uri: 'automflows://node-property-schemas',
         name: 'Node Property Schemas',
         description: 'Full programmatic property schemas for all node types (for AI to generate accurate node configs)',
+        mimeType: 'application/json',
+      },
+      {
+        uri: 'automflows://selector-guide',
+        name: 'Selector Guide',
+        description: 'Comprehensive reference for selector types (css, xpath, getByRole, etc.), format strings, SelectorModifiers (nth, filterText, chainSelector), and application order with examples',
+        mimeType: 'application/json',
+      },
+      {
+        uri: 'automflows://variable-interpolation',
+        name: 'Variable Interpolation Guide',
+        description: 'Documentation for ${data.key}, ${variables.name}, and ${dynamic.key} interpolation syntax, supported fields, data flow patterns, and dynamic data generation keys',
+        mimeType: 'application/json',
+      },
+      {
+        uri: 'automflows://node-action-enums',
+        name: 'Node Action Enums',
+        description: 'All valid enum values for node action/waitType/inputMethod/mode fields, plus common node options (waitForSelector, retry, timeout, failSilently)',
+        mimeType: 'application/json',
+      },
+      {
+        uri: 'automflows://common-patterns',
+        name: 'Common Patterns & Pitfalls',
+        description: 'Practical tips, common pitfalls (strict mode, overlays, setConfig behavior), proven workflow patterns, plugin node usage guide, and wait/retry strategies',
         mimeType: 'application/json',
       },
     ],
@@ -132,6 +160,54 @@ server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
       };
     }
 
+    case 'automflows://selector-guide': {
+      return {
+        contents: [
+          {
+            uri,
+            mimeType: 'application/json',
+            text: getSelectorGuideAsResource(),
+          },
+        ],
+      };
+    }
+
+    case 'automflows://variable-interpolation': {
+      return {
+        contents: [
+          {
+            uri,
+            mimeType: 'application/json',
+            text: getVariableInterpolationGuideAsResource(),
+          },
+        ],
+      };
+    }
+
+    case 'automflows://node-action-enums': {
+      return {
+        contents: [
+          {
+            uri,
+            mimeType: 'application/json',
+            text: getNodeActionEnumsAsResource(),
+          },
+        ],
+      };
+    }
+
+    case 'automflows://common-patterns': {
+      return {
+        contents: [
+          {
+            uri,
+            mimeType: 'application/json',
+            text: getCommonPatternsAsResource(),
+          },
+        ],
+      };
+    }
+
     default:
       if (uri.startsWith('automflows://workflow-example/')) {
         const name = uri.replace('automflows://workflow-example/', '');
@@ -171,7 +247,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
     tools: [
       {
         name: 'create_workflow',
-        description: 'Create a new workflow from a user description and use case. Uses LLM if configured, otherwise uses rule-based generation.',
+        description: 'Create a workflow using a two-pass snapshot-first strategy: (1) generates a guess workflow, (2) executes it with accessibility snapshots enabled, (3) rebuilds the workflow from snapshots for accurate getByRole selectors. Falls back to the guess workflow if snapshot pass fails. Use skipSnapshotPass=true for faster creation without the refinement pass.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -186,6 +262,11 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             sampleWorkflowName: {
               type: 'string',
               description: 'Optional: Name of a sample workflow to use as reference',
+            },
+            skipSnapshotPass: {
+              type: 'boolean',
+              description: 'Optional: Skip the two-pass snapshot refinement and return the guess workflow directly (default: false)',
+              default: false,
             },
           },
           required: ['userRequest', 'useCase'],
@@ -391,7 +472,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'create_and_execute_workflow',
-        description: 'Create a workflow from a user prompt, execute it, and automatically fix selector issues using DOM capture at breakpoints. Iterates until workflow completes successfully or max iterations reached.',
+        description: 'Create a workflow using the two-pass snapshot-first strategy, then execute it with automatic self-healing. First creates the workflow (guess -> snapshot refinement), then runs it with DOM capture at breakpoints to fix remaining selector issues. Iterates until workflow completes successfully or max iterations reached.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -431,7 +512,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       },
       {
         name: 'create_workflow_via_snapshots',
-        description: 'Create a workflow with two options: (1) Guess selectors - faster, uses create_workflow or create_and_execute_workflow; (2) Use snapshots - builds from accessibility snapshots with accurate getByRole locators. Asks user to choose if preferredMode not specified.',
+        description: 'Create a workflow using accessibility snapshots for accurate selectors. When snapshotsPath is provided, builds directly from existing snapshots with getByRole locators. Without snapshotsPath, automatically uses the two-pass snapshot-first strategy (create guess -> execute with snapshots -> rebuild). Set executeImmediately=true to also execute and self-heal.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -446,15 +527,15 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             preferredMode: {
               type: 'string',
               enum: ['guess', 'snapshots'],
-              description: 'Optional: "guess" for faster creation with inferred selectors, "snapshots" for accurate getByRole locators from accessibility snapshots. If omitted, prompts user to choose.',
+              description: 'Optional: "guess" for two-pass creation, "snapshots" to build from existing snapshot files (requires snapshotsPath). Defaults to automatic two-pass when omitted.',
             },
             snapshotsPath: {
               type: 'string',
-              description: 'Required when preferredMode=snapshots. Path to snapshot directory (e.g. output/start-1771430710449/snapshots)',
+              description: 'Path to snapshot directory from a prior execution (e.g. output/start-1771430710449/snapshots). When provided, builds directly from these snapshots.',
             },
             executeImmediately: {
               type: 'boolean',
-              description: 'When preferredMode=guess: run create_and_execute_workflow if true, else create_workflow',
+              description: 'Create the workflow and immediately execute it with self-healing (default: false)',
               default: false,
             },
           },
@@ -479,6 +560,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           userRequest: args.userRequest as string,
           useCase: args.useCase as string,
           sampleWorkflowName: args.sampleWorkflowName as string | undefined,
+          skipSnapshotPass: args.skipSnapshotPass as boolean | undefined,
         });
         
         // Check if clarification is needed
@@ -637,17 +719,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           snapshotsPath: args.snapshotsPath as string | undefined,
           executeImmediately: args.executeImmediately as boolean | undefined,
         });
-
-        if ('needsModeSelection' in result && result.needsModeSelection) {
-          return {
-            content: [
-              {
-                type: 'text',
-                text: result.message,
-              },
-            ],
-          };
-        }
 
         return {
           content: [

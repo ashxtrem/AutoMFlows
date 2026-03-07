@@ -34,7 +34,8 @@ export async function createAndExecuteWorkflow(
   const fixedNodes: Array<{ nodeId: string; oldSelector: string; newSelector: string }> = [];
   const backendClient = new BackendClient();
 
-  // Step 1: Create initial workflow
+  // Step 1: Create workflow via two-pass snapshot-first strategy
+  // createWorkflow now internally does: guess -> execute with snapshots -> rebuild from snapshots
   const createResult = await createWorkflow({
     userRequest: params.userRequest,
     useCase: params.useCase,
@@ -45,7 +46,7 @@ export async function createAndExecuteWorkflow(
     throw new Error(`Workflow creation needs clarification: ${createResult.clarificationQuestions?.join(', ')}`);
   }
 
-  // Extract workflow from result
+  // Extract workflow from result (already snapshot-refined if two-pass succeeded)
   let workflow: Workflow;
   if (typeof createResult === 'object' && 'workflow' in createResult) {
     if (!createResult.workflow) {
@@ -56,7 +57,7 @@ export async function createAndExecuteWorkflow(
     workflow = createResult as Workflow;
   }
 
-  // Step 2: Iterative execution and fixing
+  // Step 2: Execute the (snapshot-refined) workflow with iterative self-healing
   for (let iteration = 0; iteration < maxIterations; iteration++) {
     try {
       // Execute workflow
@@ -89,8 +90,7 @@ export async function createAndExecuteWorkflow(
       // Extract failures
       const failures = ExecutionMonitor.extractFailureContext(finalResult);
       if (failures.length === 0) {
-        // No failures but not completed - might be stopped or error without node context
-        if (finalResult.status === 'error') {
+        if (finalResult.status === 'error' || finalResult.status === 'unknown') {
           return {
             workflow,
             executionId: executionResult.executionId,
@@ -113,11 +113,8 @@ export async function createAndExecuteWorkflow(
         firstFailure.nodeId
       ) || firstFailure.pageUrl;
 
-      // If we still don't have page URL, try to get it from execution context
       if (!pageUrl) {
-        // Try to get from execution status (if available)
-        const status = await backendClient.getExecutionStatus();
-        // Page URL might be in error message or we need to infer it
+        const status = await backendClient.getExecutionStatus(executionResult.executionId);
         pageUrl = undefined; // Will be captured from DOM
       }
       
@@ -205,8 +202,8 @@ export async function createAndExecuteWorkflow(
         };
       }
       
-      // If error again, continue to next iteration
-      if (continuedResult.status === 'error') {
+      // If error or unknown, continue to next iteration
+      if (continuedResult.status === 'error' || continuedResult.status === 'unknown') {
         continue;
       }
       
