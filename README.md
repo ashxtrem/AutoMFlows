@@ -110,6 +110,12 @@ npm run start:ps1
 npm run start:bat
 ```
 
+To start in LAN mode (accessible from other devices on the network), pass `--lan` or `--host`:
+
+```bash
+npm start -- --lan
+```
+
 - **Backend**: [http://localhost:3003](http://localhost:3003) (API, Swagger at `/api-docs`)
 - **Frontend**: [http://localhost:5173](http://localhost:5173)
 
