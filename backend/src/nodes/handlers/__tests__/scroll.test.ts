@@ -3,13 +3,14 @@ import { NodeType } from '@automflows/shared';
 import { createMockPage, createMockContextManager, createMockNode } from '../../../__tests__/helpers/mocks';
 import { WaitHelper } from '../../../utils/waitHelper';
 import { RetryHelper } from '../../../utils/retryHelper';
-import { VariableInterpolator } from '../../../utils/variableInterpolator';
-import { LocatorHelper } from '../../../utils/locatorHelper';
 
 jest.mock('../../../utils/waitHelper');
 jest.mock('../../../utils/retryHelper');
-jest.mock('../../../utils/variableInterpolator');
-jest.mock('../../../utils/locatorHelper');
+jest.mock('../../../utils/textSelectorResolver', () => ({
+  TextSelectorResolver: {
+    resolve: jest.fn().mockImplementation(async (page: any, text: string) => page.locator(text)),
+  },
+}));
 
 describe('ScrollHandler', () => {
   let handler: ScrollHandler;
@@ -20,15 +21,16 @@ describe('ScrollHandler', () => {
   beforeEach(() => {
     handler = new ScrollHandler();
     mockPage = createMockPage();
-    mockContext = createMockContextManager(mockPage);
     mockLocator = {
       scrollIntoViewIfNeeded: jest.fn().mockResolvedValue(undefined),
+      filter: jest.fn().mockReturnThis(),
+      nth: jest.fn().mockReturnThis(),
+      locator: jest.fn().mockReturnThis(),
     };
+    mockPage.locator.mockReturnValue(mockLocator);
     mockPage.evaluate = jest.fn().mockResolvedValue(undefined);
+    mockContext = createMockContextManager(mockPage);
 
-    (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str);
-    (LocatorHelper.createLocator as jest.Mock).mockReturnValue(mockLocator);
-    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockLocator);
     (WaitHelper.executeWaits as jest.Mock).mockResolvedValue(undefined);
     (RetryHelper.executeWithRetry as jest.Mock).mockImplementation(async (fn: () => Promise<void>) => {
       await fn();
@@ -65,7 +67,7 @@ describe('ScrollHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, '#element', 'css', undefined);
+      expect(mockPage.locator).toHaveBeenCalledWith('#element');
       expect(mockLocator.scrollIntoViewIfNeeded).toHaveBeenCalledWith({ timeout: 30000 });
     });
 
@@ -155,35 +157,33 @@ describe('ScrollHandler', () => {
       );
     });
 
-    it('should interpolate selector variables', async () => {
-      (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => {
-        if (str === '${selector}') return '#interpolated';
-        return str;
-      });
+    it('should interpolate selector variables via real VariableInterpolator', async () => {
+      mockContext.setVariable('selector', '#interpolated');
 
       const node = createMockNode(NodeType.SCROLL, {
         action: 'scrollToElement',
-        selector: '${selector}',
+        selector: '${variables.selector}',
       });
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, '#interpolated', 'css', undefined);
+      expect(mockPage.locator).toHaveBeenCalledWith('#interpolated');
     });
 
     it('should use custom selectorType', async () => {
       const node = createMockNode(NodeType.SCROLL, {
         action: 'scrollToElement',
-        selector: '#element',
+        selector: '//div[@id="element"]',
         selectorType: 'xpath',
       });
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, '#element', 'xpath', undefined);
+      expect(mockPage.locator).toHaveBeenCalledWith('xpath=//div[@id="element"]');
     });
 
-    it('should pass text selectorType to createLocatorAsync', async () => {
+    it('should resolve text selectorType via TextSelectorResolver', async () => {
+      const { TextSelectorResolver } = require('../../../utils/textSelectorResolver');
       const node = createMockNode(NodeType.SCROLL, {
         action: 'scrollToElement',
         selector: 'Reviews Section',
@@ -192,7 +192,7 @@ describe('ScrollHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, 'Reviews Section', 'text', undefined);
+      expect(TextSelectorResolver.resolve).toHaveBeenCalledWith(mockPage, 'Reviews Section', undefined);
     });
   });
 });

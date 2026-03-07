@@ -3,13 +3,14 @@ import { NodeType } from '@automflows/shared';
 import { createMockPage, createMockContextManager, createMockNode } from '../../../__tests__/helpers/mocks';
 import { WaitHelper } from '../../../utils/waitHelper';
 import { RetryHelper } from '../../../utils/retryHelper';
-import { VariableInterpolator } from '../../../utils/variableInterpolator';
-import { LocatorHelper } from '../../../utils/locatorHelper';
 
 jest.mock('../../../utils/waitHelper');
 jest.mock('../../../utils/retryHelper');
-jest.mock('../../../utils/variableInterpolator');
-jest.mock('../../../utils/locatorHelper');
+jest.mock('../../../utils/textSelectorResolver', () => ({
+  TextSelectorResolver: {
+    resolve: jest.fn().mockImplementation(async (page: any, text: string) => page.locator(text)),
+  },
+}));
 
 describe('FormInputHandler', () => {
   let handler: FormInputHandler;
@@ -20,19 +21,22 @@ describe('FormInputHandler', () => {
   beforeEach(() => {
     handler = new FormInputHandler();
     mockPage = createMockPage();
-    mockContext = createMockContextManager(mockPage);
     mockLocator = {
       selectOption: jest.fn().mockResolvedValue(undefined),
       check: jest.fn().mockResolvedValue(undefined),
       uncheck: jest.fn().mockResolvedValue(undefined),
       setChecked: jest.fn().mockResolvedValue(undefined),
       setInputFiles: jest.fn().mockResolvedValue(undefined),
+      filter: jest.fn().mockReturnThis(),
+      nth: jest.fn().mockReturnThis(),
+      locator: jest.fn().mockReturnThis(),
+      scrollIntoViewIfNeeded: jest.fn().mockResolvedValue(undefined),
+      evaluate: jest.fn().mockResolvedValue(undefined),
     };
+    mockPage.locator.mockReturnValue(mockLocator);
+    mockPage.viewportSize = jest.fn().mockReturnValue({ width: 1280, height: 720 });
+    mockContext = createMockContextManager(mockPage);
 
-    (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str);
-    (LocatorHelper.createLocator as jest.Mock).mockReturnValue(mockLocator);
-    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockLocator);
-    (LocatorHelper.scrollToElementSmooth as jest.Mock).mockResolvedValue(undefined);
     (WaitHelper.executeWaits as jest.Mock).mockResolvedValue(undefined);
     (RetryHelper.executeWithRetry as jest.Mock).mockImplementation(async (fn: () => Promise<void>) => {
       await fn();
@@ -230,16 +234,13 @@ describe('FormInputHandler', () => {
       );
     });
 
-    it('should interpolate file paths', async () => {
-      (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => {
-        if (str === '${filePath}') return '/interpolated/path.pdf';
-        return str;
-      });
+    it('should interpolate file paths via real VariableInterpolator', async () => {
+      mockContext.setVariable('filePath', '/interpolated/path.pdf');
 
       const node = createMockNode(NodeType.FORM_INPUT, {
         selector: '#file-input',
         action: 'upload',
-        filePaths: '${filePath}',
+        filePaths: '${variables.filePath}',
       });
 
       await handler.execute(node, mockContext);
@@ -247,7 +248,8 @@ describe('FormInputHandler', () => {
       expect(mockLocator.setInputFiles).toHaveBeenCalledWith(['/interpolated/path.pdf'], { timeout: 30000 });
     });
 
-    it('should pass text selectorType to createLocatorAsync', async () => {
+    it('should resolve text selectorType via TextSelectorResolver', async () => {
+      const { TextSelectorResolver } = require('../../../utils/textSelectorResolver');
       const node = createMockNode(NodeType.FORM_INPUT, {
         selector: 'Country',
         action: 'select',
@@ -257,7 +259,7 @@ describe('FormInputHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, 'Country', 'text', undefined);
+      expect(TextSelectorResolver.resolve).toHaveBeenCalledWith(mockPage, 'Country', undefined);
     });
   });
 });

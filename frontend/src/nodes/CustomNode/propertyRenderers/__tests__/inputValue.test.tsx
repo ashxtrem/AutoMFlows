@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { PropertyDataType } from '@automflows/shared';
 import { renderInputValueProperties } from '../inputValue';
 
@@ -53,5 +53,20 @@ describe('renderInputValueProperties', () => {
     const result = renderInputValueProperties(props);
     const { container } = render(<>{result}</>);
     expect(container.textContent).toContain('Value');
+  });
+
+  it('should call handlePropertyChange when selecting a value', () => {
+    const result = renderInputValueProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+
+    // Click to enter edit mode
+    const selectDiv = container.querySelector('.cursor-pointer')!;
+    fireEvent.click(selectDiv);
+
+    // Now find the <select> and change its value
+    const select = container.querySelector('select')!;
+    fireEvent.change(select, { target: { value: 'int' } });
+
+    expect(mockHandlePropertyChange).toHaveBeenCalledWith('dataType', 'int');
   });
 });

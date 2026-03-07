@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { renderScrollProperties } from '../scroll';
 
 describe('renderScrollProperties', () => {
@@ -60,5 +60,18 @@ describe('renderScrollProperties', () => {
     const { container } = render(<>{result}</>);
     expect(container.textContent).toContain('Delta X');
     expect(container.textContent).toContain('Delta Y');
+  });
+
+  it('should call handlePropertyChange when selecting a value', () => {
+    const result = renderScrollProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+
+    const selectDiv = container.querySelector('.cursor-pointer')!;
+    fireEvent.click(selectDiv);
+
+    const select = container.querySelector('select')!;
+    fireEvent.change(select, { target: { value: 'scrollToElement' } });
+
+    expect(mockHandlePropertyChange).toHaveBeenCalledWith('action', 'scrollToElement');
   });
 });

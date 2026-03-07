@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { renderStartProperties } from '../start';
 
 describe('renderStartProperties', () => {
@@ -94,5 +94,13 @@ describe('renderStartProperties', () => {
     const result = renderStartProperties(props);
     const { container } = render(<>{result}</>);
     expect(container).toBeTruthy();
+  });
+
+  it('should call handlePropertyChange when toggling recordSession checkbox', () => {
+    const result = renderStartProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+    const checkbox = container.querySelector('input[type="checkbox"]')!;
+    fireEvent.click(checkbox);
+    expect(mockHandlePropertyChange).toHaveBeenCalledWith('recordSession', true);
   });
 });

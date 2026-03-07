@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { renderApiCurlProperties } from '../apiCurl';
 
 describe('renderApiCurlProperties', () => {
@@ -40,5 +40,13 @@ describe('renderApiCurlProperties', () => {
     const result = renderApiCurlProperties(defaultProps);
     const { container } = render(<>{result}</>);
     expect(container.textContent).toContain('Timeout');
+  });
+
+  it('should call handleOpenPopup when clicking curl command field', () => {
+    const result = renderApiCurlProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+    const clickableDiv = container.querySelector('.cursor-text')!;
+    fireEvent.click(clickableDiv);
+    expect(mockHandleOpenPopup).toHaveBeenCalled();
   });
 });

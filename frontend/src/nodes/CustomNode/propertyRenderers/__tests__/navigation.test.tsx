@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { renderNavigationProperties } from '../navigation';
 
 describe('renderNavigationProperties', () => {
@@ -68,5 +68,18 @@ describe('renderNavigationProperties', () => {
     const result = renderNavigationProperties(props);
     const { container } = render(<>{result}</>);
     expect(container.textContent).toContain('Tab Index');
+  });
+
+  it('should call handlePropertyChange when selecting a value', () => {
+    const result = renderNavigationProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+
+    const selectDiv = container.querySelector('.cursor-pointer')!;
+    fireEvent.click(selectDiv);
+
+    const select = container.querySelector('select')!;
+    fireEvent.change(select, { target: { value: 'newTab' } });
+
+    expect(mockHandlePropertyChange).toHaveBeenCalledWith('action', 'newTab');
   });
 });

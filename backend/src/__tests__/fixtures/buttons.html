@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Button Fixture</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    .result { margin-top: 10px; padding: 8px; background: #f0f0f0; }
+    #drag-source { width: 80px; height: 40px; background: #4caf50; color: #fff; text-align: center; line-height: 40px; cursor: grab; }
+    #drop-target { width: 120px; height: 60px; background: #e0e0e0; border: 2px dashed #999; text-align: center; line-height: 60px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <button id="click-btn" onclick="document.getElementById('click-result').textContent='clicked'">Click Me</button>
+  <div id="click-result" class="result"></div>
+
+  <button id="dblclick-btn" ondblclick="document.getElementById('dblclick-result').textContent='double-clicked'">Double Click</button>
+  <div id="dblclick-result" class="result"></div>
+
+  <button id="rightclick-btn" oncontextmenu="event.preventDefault(); document.getElementById('rightclick-result').textContent='right-clicked'">Right Click</button>
+  <div id="rightclick-result" class="result"></div>
+
+  <button id="hover-btn" onmouseenter="document.getElementById('hover-result').textContent='hovered'">Hover Me</button>
+  <div id="hover-result" class="result"></div>
+
+  <div id="drag-source" draggable="true" ondragstart="event.dataTransfer.setData('text','dragged')">Drag</div>
+  <div id="drop-target" ondragover="event.preventDefault()" ondrop="event.preventDefault(); this.textContent='dropped'; document.getElementById('drag-result').textContent='drop-success'">Drop Here</div>
+  <div id="drag-result" class="result"></div>
+
+  <button id="custom-btn" data-testid="submit-action" aria-label="Submit Form">Submit</button>
+</body>
+</html>

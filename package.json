@@ -10,6 +10,9 @@
     "mcp-server"
   ],
   "scripts": {
+    "start": "bash scripts/start.sh",
+    "start:ps1": "powershell -ExecutionPolicy Bypass -File scripts/start.ps1",
+    "start:bat": "scripts\\start.bat",
     "dev:backend": "npm run dev --workspace=backend",
     "dev:frontend": "npm run dev --workspace=frontend",
     "dev:frontend:host": "npm run dev --workspace=frontend -- --host",
@@ -17,13 +20,18 @@
     "build:backend": "npm run build --workspace=backend",
     "build:frontend": "npm run build --workspace=frontend",
     "lint": "eslint backend/src frontend/src",
-    "type-check": "npm run type-check --workspaces"
+    "type-check": "npm run type-check --workspaces",
+    "prepare": "npx simple-git-hooks"
+  },
+  "simple-git-hooks": {
+    "pre-commit": "npm run type-check"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
     "@types/node": "^20.10.0",
     "eslint": "^9.0.0",
     "eslint-plugin-react-hooks": "^7.0.0",
+    "simple-git-hooks": "^2.13.1",
     "typescript": "^5.3.3",
     "typescript-eslint": "^8.0.0"
   },

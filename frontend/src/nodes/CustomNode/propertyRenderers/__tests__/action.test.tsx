@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { renderActionProperties } from '../action';
 
 describe('renderActionProperties', () => {
@@ -126,5 +126,18 @@ describe('renderActionProperties', () => {
     const result = renderActionProperties(props);
     const { container } = render(<>{result}</>);
     expect(container.textContent).toContain('Retry Count');
+  });
+
+  it('should call handlePropertyChange when selecting a value', () => {
+    const result = renderActionProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+
+    const selectDiv = container.querySelector('.cursor-pointer')!;
+    fireEvent.click(selectDiv);
+
+    const select = container.querySelector('select')!;
+    fireEvent.change(select, { target: { value: 'click' } });
+
+    expect(mockHandlePropertyChange).toHaveBeenCalledWith('action', 'click');
   });
 });

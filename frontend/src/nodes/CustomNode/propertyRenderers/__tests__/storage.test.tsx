@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { renderStorageProperties } from '../storage';
 
 describe('renderStorageProperties', () => {
@@ -34,5 +34,18 @@ describe('renderStorageProperties', () => {
     const result = renderStorageProperties(defaultProps);
     const { container } = render(<>{result}</>);
     expect(container.textContent).toContain('Context Key');
+  });
+
+  it('should call handlePropertyChange when selecting a value', () => {
+    const result = renderStorageProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+
+    const selectDiv = container.querySelector('.cursor-pointer')!;
+    fireEvent.click(selectDiv);
+
+    const select = container.querySelector('select')!;
+    fireEvent.change(select, { target: { value: 'setCookie' } });
+
+    expect(mockHandlePropertyChange).toHaveBeenCalledWith('action', 'setCookie');
   });
 });

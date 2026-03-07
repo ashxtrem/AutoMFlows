@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { renderScreenshotProperties } from '../screenshot';
 
 describe('renderScreenshotProperties', () => {
@@ -38,5 +38,18 @@ describe('renderScreenshotProperties', () => {
     const result = renderScreenshotProperties(props);
     const { container } = render(<>{result}</>);
     expect(container.textContent).toContain('Selector');
+  });
+
+  it('should call handlePropertyChange when selecting a value', () => {
+    const result = renderScreenshotProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+
+    const selectDiv = container.querySelector('.cursor-pointer')!;
+    fireEvent.click(selectDiv);
+
+    const select = container.querySelector('select')!;
+    fireEvent.change(select, { target: { value: 'element' } });
+
+    expect(mockHandlePropertyChange).toHaveBeenCalledWith('action', 'element');
   });
 });

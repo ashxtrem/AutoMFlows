@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { renderJavascriptCodeProperties } from '../javascriptCode';
 
 describe('renderJavascriptCodeProperties', () => {
@@ -28,5 +28,13 @@ describe('renderJavascriptCodeProperties', () => {
     const result = renderJavascriptCodeProperties(defaultProps);
     const { container } = render(<>{result}</>);
     expect(container.textContent).toContain('Code');
+  });
+
+  it('should call handleOpenPopup when clicking code field', () => {
+    const result = renderJavascriptCodeProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+    const clickableDiv = container.querySelector('.cursor-text')!;
+    fireEvent.click(clickableDiv);
+    expect(mockHandleOpenPopup).toHaveBeenCalled();
   });
 });

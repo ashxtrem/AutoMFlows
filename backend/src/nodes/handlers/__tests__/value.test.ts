@@ -1,9 +1,6 @@
 import { IntValueHandler, StringValueHandler, BooleanValueHandler, InputValueHandler } from '../value';
 import { NodeType } from '@automflows/shared';
 import { createMockContextManager, createMockNode } from '../../../__tests__/helpers/mocks';
-import { VariableInterpolator } from '../../../utils/variableInterpolator';
-
-jest.mock('../../../utils/variableInterpolator');
 
 describe('IntValueHandler', () => {
   let handler: IntValueHandler;
@@ -12,10 +9,8 @@ describe('IntValueHandler', () => {
   beforeEach(() => {
     handler = new IntValueHandler();
     mockContext = createMockContextManager();
-    // Spy on setVariable and setData to verify they're called
     jest.spyOn(mockContext, 'setVariable');
     jest.spyOn(mockContext, 'setData');
-    (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str.replace('${variables.test}', '42'));
   });
 
   it('should store integer value', async () => {
@@ -40,13 +35,13 @@ describe('IntValueHandler', () => {
   });
 
   it('should interpolate variables before parsing', async () => {
+    mockContext.setVariable('test', 42);
     const node = createMockNode(NodeType.INT_VALUE, {
       value: '${variables.test}',
     });
 
     await handler.execute(node, mockContext);
 
-    expect(VariableInterpolator.interpolateString).toHaveBeenCalled();
     expect(mockContext.setVariable).toHaveBeenCalledWith(node.id, 42);
   });
 
@@ -60,6 +55,17 @@ describe('IntValueHandler', () => {
 
     expect(mockContext.setVariable).toHaveBeenCalledWith('myVar', 42);
   });
+
+  it('should resolve nested data paths for interpolation', async () => {
+    mockContext.setData('config', { maxRetries: 5 });
+    const node = createMockNode(NodeType.INT_VALUE, {
+      value: '${data.config.maxRetries}',
+    });
+
+    await handler.execute(node, mockContext);
+
+    expect(mockContext.setVariable).toHaveBeenCalledWith(node.id, 5);
+  });
 });
 
 describe('StringValueHandler', () => {
@@ -69,10 +75,8 @@ describe('StringValueHandler', () => {
   beforeEach(() => {
     handler = new StringValueHandler();
     mockContext = createMockContextManager();
-    // Spy on setVariable and setData to verify they're called
     jest.spyOn(mockContext, 'setVariable');
     jest.spyOn(mockContext, 'setData');
-    (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str.replace('${variables.test}', 'interpolated'));
   });
 
   it('should store string value', async () => {
@@ -87,14 +91,25 @@ describe('StringValueHandler', () => {
   });
 
   it('should interpolate variables', async () => {
+    mockContext.setVariable('test', 'interpolated');
     const node = createMockNode(NodeType.STRING_VALUE, {
       value: '${variables.test}',
     });
 
     await handler.execute(node, mockContext);
 
-    expect(VariableInterpolator.interpolateString).toHaveBeenCalled();
     expect(mockContext.setVariable).toHaveBeenCalledWith(node.id, 'interpolated');
+  });
+
+  it('should interpolate data paths', async () => {
+    mockContext.setData('user', { name: 'Alice' });
+    const node = createMockNode(NodeType.STRING_VALUE, {
+      value: 'Hello ${data.user.name}',
+    });
+
+    await handler.execute(node, mockContext);
+
+    expect(mockContext.setVariable).toHaveBeenCalledWith(node.id, 'Hello Alice');
   });
 });
 
@@ -105,9 +120,7 @@ describe('BooleanValueHandler', () => {
   beforeEach(() => {
     handler = new BooleanValueHandler();
     mockContext = createMockContextManager();
-    // Spy on setVariable to verify it's called
     jest.spyOn(mockContext, 'setVariable');
-    (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str.replace('${variables.test}', 'true'));
   });
 
   it('should store boolean value', async () => {
@@ -139,6 +152,17 @@ describe('BooleanValueHandler', () => {
 
     expect(mockContext.setVariable).toHaveBeenCalledWith(node.id, true);
   });
+
+  it('should interpolate variables before parsing', async () => {
+    mockContext.setVariable('flag', 'true');
+    const node = createMockNode(NodeType.BOOLEAN_VALUE, {
+      value: '${variables.flag}',
+    });
+
+    await handler.execute(node, mockContext);
+
+    expect(mockContext.setVariable).toHaveBeenCalledWith(node.id, true);
+  });
 });
 
 describe('InputValueHandler', () => {
@@ -148,7 +172,6 @@ describe('InputValueHandler', () => {
   beforeEach(() => {
     handler = new InputValueHandler();
     mockContext = createMockContextManager();
-    // Spy on setVariable to verify it's called
     jest.spyOn(mockContext, 'setVariable');
   });
 

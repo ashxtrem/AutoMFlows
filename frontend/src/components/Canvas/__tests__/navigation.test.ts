@@ -6,17 +6,22 @@ import { useWorkflowStore } from '../../../store/workflowStore';
 const mockSetNavigateToFailedNode = vi.fn();
 const mockSetNavigateToPausedNode = vi.fn();
 
-const mockStoreState = {
-  failedNodes: new Map([['node-1', { message: 'Error' }]]),
-  executingNodeId: 'node-2',
-  pausedNodeId: 'node-3',
-  setNavigateToFailedNode: mockSetNavigateToFailedNode,
-  setNavigateToPausedNode: mockSetNavigateToPausedNode,
+let mockStoreState: Record<string, any>;
+
+const resetStoreState = (overrides: Record<string, any> = {}) => {
+  mockStoreState = {
+    failedNodes: new Map([['node-1', { message: 'Error' }]]),
+    executingNodeId: 'node-2',
+    pausedNodeId: 'node-3',
+    setNavigateToFailedNode: mockSetNavigateToFailedNode,
+    setNavigateToPausedNode: mockSetNavigateToPausedNode,
+    ...overrides,
+  };
 };
 
 vi.mock('../../../store/workflowStore', () => ({
   useWorkflowStore: Object.assign(
-    vi.fn((selector) => {
+    vi.fn((selector?: any) => {
       return selector ? selector(mockStoreState) : mockStoreState;
     }),
     {
@@ -40,30 +45,61 @@ describe('useNavigation', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    resetStoreState();
+    (useWorkflowStore as any).mockImplementation(
+      (selector?: any) => (selector ? selector(mockStoreState) : mockStoreState)
+    );
+    (useWorkflowStore.getState as any).mockImplementation(() => mockStoreState);
   });
 
-  it('should return navigation functions', () => {
-    const { result } = renderHook(() => useNavigation(defaultProps));
-    expect(result.current.navigateToFailedNode).toBeDefined();
-    expect(result.current.navigateToPausedNode).toBeDefined();
-    expect(result.current.navigateToExecutingNode).toBeDefined();
-  });
-
-  it('should navigate to failed node', () => {
+  it('navigateToFailedNode calls fitView with correct node and options', () => {
     const { result } = renderHook(() => useNavigation(defaultProps));
     result.current.navigateToFailedNode();
-    expect(mockFitView).toHaveBeenCalled();
+    expect(mockFitView).toHaveBeenCalledWith({
+      nodes: [{ id: 'node-1' }],
+      padding: 0.2,
+      duration: 300,
+    });
   });
 
-  it('should navigate to paused node', () => {
+  it('navigateToPausedNode calls fitView with correct node and options', () => {
     const { result } = renderHook(() => useNavigation(defaultProps));
     result.current.navigateToPausedNode();
-    expect(mockFitView).toHaveBeenCalled();
+    expect(mockFitView).toHaveBeenCalledWith({
+      nodes: [{ id: 'node-3' }],
+      padding: 0.2,
+      duration: 300,
+    });
   });
 
-  it('should navigate to executing node', () => {
+  it('navigateToExecutingNode calls fitView with correct node and options', () => {
     const { result } = renderHook(() => useNavigation(defaultProps));
     result.current.navigateToExecutingNode();
-    expect(mockFitView).toHaveBeenCalled();
+    expect(mockFitView).toHaveBeenCalledWith({
+      nodes: [{ id: 'node-2' }],
+      padding: 0.2,
+      duration: 300,
+    });
+  });
+
+  it('navigateToFailedNode does not call fitView when failedNodes is empty', () => {
+    resetStoreState({ failedNodes: new Map() });
+    const { result } = renderHook(() => useNavigation(defaultProps));
+    result.current.navigateToFailedNode();
+    expect(mockFitView).not.toHaveBeenCalled();
+  });
+
+  it('navigateToPausedNode does not call fitView when pausedNodeId is null', () => {
+    resetStoreState({ pausedNodeId: null });
+    const { result } = renderHook(() => useNavigation(defaultProps));
+    result.current.navigateToPausedNode();
+    expect(mockFitView).not.toHaveBeenCalled();
+  });
+
+  it('navigateToExecutingNode does not call fitView when executingNodeId is null', () => {
+    resetStoreState({ executingNodeId: null });
+    const { result } = renderHook(() => useNavigation(defaultProps));
+    result.current.navigateToExecutingNode();
+    expect(mockFitView).not.toHaveBeenCalled();
   });
 });

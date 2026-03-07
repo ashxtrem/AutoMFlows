@@ -3,13 +3,14 @@ import { NodeType } from '@automflows/shared';
 import { createMockPage, createMockContextManager, createMockNode } from '../../../__tests__/helpers/mocks';
 import { WaitHelper } from '../../../utils/waitHelper';
 import { RetryHelper } from '../../../utils/retryHelper';
-import { VariableInterpolator } from '../../../utils/variableInterpolator';
-import { LocatorHelper } from '../../../utils/locatorHelper';
 
 jest.mock('../../../utils/waitHelper');
 jest.mock('../../../utils/retryHelper');
-jest.mock('../../../utils/variableInterpolator');
-jest.mock('../../../utils/locatorHelper');
+jest.mock('../../../utils/textSelectorResolver', () => ({
+  TextSelectorResolver: {
+    resolve: jest.fn().mockImplementation(async (page: any, text: string) => page.locator(text)),
+  },
+}));
 
 describe('ActionHandler', () => {
   let handler: ActionHandler;
@@ -20,25 +21,28 @@ describe('ActionHandler', () => {
   beforeEach(() => {
     handler = new ActionHandler();
     mockPage = createMockPage();
-    mockContext = createMockContextManager(mockPage);
     mockLocator = {
       click: jest.fn().mockResolvedValue(undefined),
       dblclick: jest.fn().mockResolvedValue(undefined),
       hover: jest.fn().mockResolvedValue(undefined),
       dragTo: jest.fn().mockResolvedValue(undefined),
       boundingBox: jest.fn().mockResolvedValue({ x: 0, y: 0, width: 100, height: 100 }),
+      filter: jest.fn().mockReturnThis(),
+      nth: jest.fn().mockReturnThis(),
+      locator: jest.fn().mockReturnThis(),
+      scrollIntoViewIfNeeded: jest.fn().mockResolvedValue(undefined),
+      evaluate: jest.fn().mockResolvedValue(undefined),
     };
+    mockPage.locator.mockReturnValue(mockLocator);
+    mockPage.viewportSize = jest.fn().mockReturnValue({ width: 1280, height: 720 });
     mockPage.mouse = {
       move: jest.fn().mockResolvedValue(undefined),
       down: jest.fn().mockResolvedValue(undefined),
       up: jest.fn().mockResolvedValue(undefined),
     };
     mockPage.waitForTimeout = jest.fn().mockResolvedValue(undefined);
+    mockContext = createMockContextManager(mockPage);
 
-    (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => str);
-    (LocatorHelper.createLocator as jest.Mock).mockReturnValue(mockLocator);
-    (LocatorHelper.createLocatorAsync as jest.Mock).mockResolvedValue(mockLocator);
-    (LocatorHelper.scrollToElementSmooth as jest.Mock).mockResolvedValue(undefined);
     (WaitHelper.executeWaits as jest.Mock).mockResolvedValue(undefined);
     (RetryHelper.executeWithRetry as jest.Mock).mockImplementation(async (fn: () => Promise<void>) => {
       await fn();
@@ -129,14 +133,15 @@ describe('ActionHandler', () => {
     });
 
     it('should execute dragAndDrop to target selector', async () => {
-      const targetLocator = { dragTo: jest.fn().mockResolvedValue(undefined) };
-      (LocatorHelper.createLocator as jest.Mock).mockImplementation((page: any, selector: string) => {
+      const targetLocator = {
+        dragTo: jest.fn().mockResolvedValue(undefined),
+        filter: jest.fn().mockReturnThis(),
+        nth: jest.fn().mockReturnThis(),
+        locator: jest.fn().mockReturnThis(),
+      };
+      mockPage.locator.mockImplementation((selector: string) => {
         if (selector === '#target') return targetLocator;
         return mockLocator;
-      });
-      (LocatorHelper.createLocatorAsync as jest.Mock).mockImplementation((page: any, selector: string) => {
-        if (selector === '#target') return Promise.resolve(targetLocator);
-        return Promise.resolve(mockLocator);
       });
 
       const node = createMockNode(NodeType.ACTION, {
@@ -189,20 +194,18 @@ describe('ActionHandler', () => {
       );
     });
 
-    it('should interpolate selector variables', async () => {
-      (VariableInterpolator.interpolateString as jest.Mock).mockImplementation((str: string) => {
-        if (str === '${selector}') return '#interpolated';
-        return str;
-      });
+    it('should interpolate selector variables via real VariableInterpolator', async () => {
+      mockContext.setVariable('selector', '#interpolated');
 
       const node = createMockNode(NodeType.ACTION, {
-        selector: '${selector}',
+        selector: '${variables.selector}',
         action: 'click',
       });
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, '#interpolated', 'css', undefined);
+      expect(mockPage.locator).toHaveBeenCalledWith('#interpolated');
+      expect(mockLocator.click).toHaveBeenCalled();
     });
 
     it('should use custom timeout', async () => {
@@ -217,7 +220,8 @@ describe('ActionHandler', () => {
       expect(mockLocator.click).toHaveBeenCalledWith({ button: 'left', timeout: 5000 });
     });
 
-    it('should pass text selectorType to createLocatorAsync', async () => {
+    it('should resolve text selectorType via TextSelectorResolver', async () => {
+      const { TextSelectorResolver } = require('../../../utils/textSelectorResolver');
       const node = createMockNode(NodeType.ACTION, {
         selector: 'Submit',
         action: 'click',
@@ -226,7 +230,7 @@ describe('ActionHandler', () => {
 
       await handler.execute(node, mockContext);
 
-      expect(LocatorHelper.createLocatorAsync).toHaveBeenCalledWith(mockPage, 'Submit', 'text', undefined);
+      expect(TextSelectorResolver.resolve).toHaveBeenCalledWith(mockPage, 'Submit', undefined);
       expect(mockLocator.click).toHaveBeenCalled();
     });
   });

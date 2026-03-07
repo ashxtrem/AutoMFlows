@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, fireEvent } from '@testing-library/react';
 import { renderDbConnectProperties } from '../dbConnect';
 
 describe('renderDbConnectProperties', () => {
@@ -34,5 +34,18 @@ describe('renderDbConnectProperties', () => {
     const result = renderDbConnectProperties(defaultProps);
     const { container } = render(<>{result}</>);
     expect(container.textContent).toContain('Connection Key');
+  });
+
+  it('should call handlePropertyChange when selecting a value', () => {
+    const result = renderDbConnectProperties(defaultProps);
+    const { container } = render(<>{result}</>);
+
+    const selectDiv = container.querySelector('.cursor-pointer')!;
+    fireEvent.click(selectDiv);
+
+    const select = container.querySelector('select')!;
+    fireEvent.change(select, { target: { value: 'mysql' } });
+
+    expect(mockHandlePropertyChange).toHaveBeenCalledWith('dbType', 'mysql');
   });
 });
