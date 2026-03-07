@@ -1,5 +1,6 @@
 import { Workflow } from '@automflows/shared';
 import { BackendClient, ExecutionResult } from '../utils/backendClient.js';
+import { MAX_EXECUTION_DURATION_MS } from '../config.js';
 
 export interface ExecuteWorkflowParams {
   workflow: Workflow;
@@ -25,7 +26,7 @@ export async function executeWorkflow(params: ExecuteWorkflowParams): Promise<Ex
     breakpointConfig,
     waitForCompletion = false,
     pollIntervalMs = 1000,
-    maxDurationMs = 300000,
+    maxDurationMs = MAX_EXECUTION_DURATION_MS,
     returnLogs = false,
   } = params;
   const client = new BackendClient();

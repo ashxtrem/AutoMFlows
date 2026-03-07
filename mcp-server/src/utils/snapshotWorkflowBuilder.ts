@@ -1,17 +1,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import { Workflow, BaseNode, NodeType } from '@automflows/shared';
+import { Workflow, NodeType } from '@automflows/shared';
 import { WorkflowBuilder } from './workflowBuilder.js';
 import { RequestAnalyzer } from './requestAnalyzer.js';
 import { DOMSelectorInference } from './domSelectorInference.js';
+import { buildNodeConfig, SelectorInfo } from './nodeFactory.js';
+import { AccessibilityNode } from './types.js';
+import { WAIT_AFTER_CLICK_MS } from '../config.js';
 
-export interface AccessibilityNode {
-  role?: string;
-  name?: string;
-  value?: string;
-  level?: number;
-  children?: AccessibilityNode[];
-}
+export type { AccessibilityNode };
 
 interface SnapshotFile {
   nodeId: string;
@@ -143,7 +140,7 @@ export function buildWorkflowFromSnapshots(
 
       const waitAfterNavId = builder.addNode('wait', {
         label: 'Wait after navigation',
-        timeout: 2000,
+        timeout: WAIT_AFTER_CLICK_MS,
       });
       builder.connectNodes(navId, waitAfterNavId);
       lastNodeId = waitAfterNavId;
@@ -153,122 +150,26 @@ export function buildWorkflowFromSnapshots(
   // Process steps - skip navigate if we already added it
   for (const step of steps) {
     if (step.action === 'navigate' && url && lastNodeId) {
-      continue; // Already added
+      continue;
     }
 
     let currentNodeId: string | undefined;
 
-    switch (step.action) {
-      case 'navigate':
-        if (step.target && !url) {
-          currentNodeId = builder.addNode('navigation', {
-            label: `Navigate to ${step.target}`,
-            action: 'navigate',
-            url: step.target,
-            waitUntil: 'networkidle',
-          });
-        }
-        break;
-
-      case 'click': {
-        const match = findElementInSnapshot(latestTree, 'click', step.target);
-        if (match) {
-          currentNodeId = builder.addNode('action', {
-            label: `Click ${step.target || 'element'}`,
-            action: 'click',
-            selector: match.selector,
-            selectorType: 'getByRole',
-          });
-        } else {
-          currentNodeId = builder.addNode('action', {
-            label: `Click ${step.target || 'element'}`,
-            action: 'click',
-            selector: inferFallbackSelector(step.target, 'click'),
-            selectorType: 'css',
-          });
-        }
-        break;
+    // Build SelectorInfo from snapshot for interaction steps
+    let selectorInfo: SelectorInfo | null = null;
+    if (step.action === 'click' || step.action === 'type' || step.action === 'fill' || step.action === 'submit') {
+      const target = step.action === 'submit' ? 'submit' : (step.action === 'fill' ? (step.target || 'form') : step.target);
+      const snapshotAction = (step.action === 'type' || step.action === 'fill') ? 'type' : 'click';
+      const match = findElementInSnapshot(latestTree, snapshotAction, target);
+      if (match) {
+        selectorInfo = { selector: match.selector, selectorType: 'getByRole' };
       }
+    }
 
-      case 'type': {
-        const match = findElementInSnapshot(latestTree, 'type', step.target);
-        if (match) {
-          currentNodeId = builder.addNode('type', {
-            label: `Type ${step.value || 'text'}`,
-            selector: match.selector,
-            selectorType: 'getByRole',
-            text: step.value || '',
-            clearFirst: true,
-          });
-        } else {
-          currentNodeId = builder.addNode('type', {
-            label: `Type ${step.value || 'text'}`,
-            selector: inferFallbackSelector(step.target, 'type'),
-            text: step.value || '',
-            clearFirst: true,
-          });
-        }
-        break;
-      }
+    const nodeConfig = buildNodeConfig(step, selectorInfo);
 
-      case 'fill': {
-        const match = findElementInSnapshot(latestTree, 'type', step.target || 'form');
-        if (match) {
-          currentNodeId = builder.addNode('type', {
-            label: 'Fill form',
-            selector: match.selector,
-            selectorType: 'getByRole',
-            text: 'dummy data',
-            clearFirst: true,
-          });
-        } else {
-          currentNodeId = builder.addNode('type', {
-            label: 'Fill form',
-            selector: 'form input',
-            text: 'dummy data',
-            clearFirst: true,
-          });
-        }
-        break;
-      }
-
-      case 'wait': {
-        const waitTime = step.value ? parseInt(step.value, 10) * 1000 : 1000;
-        currentNodeId = builder.addNode('wait', {
-          label: `Wait ${step.value || '1'}s`,
-          timeout: waitTime,
-        });
-        break;
-      }
-
-      case 'submit': {
-        const match = findElementInSnapshot(latestTree, 'click', 'submit');
-        if (match) {
-          currentNodeId = builder.addNode('action', {
-            label: 'Submit form',
-            action: 'click',
-            selector: match.selector,
-            selectorType: 'getByRole',
-          });
-        } else {
-          currentNodeId = builder.addNode('action', {
-            label: 'Submit form',
-            action: 'click',
-            selector: 'button[type="submit"], input[type="submit"]',
-            selectorType: 'css',
-          });
-        }
-        break;
-      }
-
-      default:
-        if (step.action !== 'unknown') {
-          currentNodeId = builder.addNode('wait', {
-            label: step.description || 'Wait',
-            timeout: 2000,
-          });
-        }
-        break;
+    if (nodeConfig) {
+      currentNodeId = builder.addNode(nodeConfig.type, nodeConfig.data);
     }
 
     if (currentNodeId && lastNodeId) {
@@ -276,7 +177,7 @@ export function buildWorkflowFromSnapshots(
       if (step.action === 'navigate' || step.action === 'click') {
         const waitId = builder.addNode('wait', {
           label: `Wait after ${step.action}`,
-          timeout: 2000,
+          timeout: WAIT_AFTER_CLICK_MS,
         });
         builder.connectNodes(currentNodeId, waitId);
         lastNodeId = waitId;
@@ -310,13 +211,3 @@ export function findElementInSnapshot(
   return null;
 }
 
-function inferFallbackSelector(target: string | undefined, action: string): string {
-  if (!target) return action === 'click' ? 'button' : 'input';
-  const targetLower = target.toLowerCase();
-  if (targetLower.includes('button')) return 'button';
-  if (targetLower.includes('link')) return 'a';
-  if (targetLower.includes('input') || targetLower.includes('field') || targetLower.includes('search'))
-    return 'input';
-  if (targetLower.includes('form')) return 'form';
-  return action === 'click' ? 'button' : 'input';
-}

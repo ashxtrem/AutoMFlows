@@ -5,11 +5,13 @@ import { WorkflowBuilder } from '../utils/workflowBuilder.js';
 import { WorkflowValidator } from '../utils/workflowValidator.js';
 import { getWorkflowExample } from '../resources/workflowExamples.js';
 import { RequestAnalyzer } from '../utils/requestAnalyzer.js';
+import { buildNodeConfig, SelectorInfo } from '../utils/nodeFactory.js';
 import { findPluginNodeByKeyword } from '../resources/nodeDocumentation.js';
 import { executeWorkflow } from './executeWorkflow.js';
 import { buildWorkflowFromSnapshots } from '../utils/snapshotWorkflowBuilder.js';
 import { BackendClient } from '../utils/backendClient.js';
 import { ExecutionMonitor } from '../utils/executionMonitor.js';
+import { MAX_EXECUTION_DURATION_MS, WAIT_AFTER_CLICK_MS } from '../config.js';
 
 export interface CreateWorkflowParams {
   userRequest: string;
@@ -124,7 +126,7 @@ async function refineWorkflowViaSnapshots(
     recordSession: false,
     waitForCompletion: true,
     pollIntervalMs: 1000,
-    maxDurationMs: 300000,
+    maxDurationMs: MAX_EXECUTION_DURATION_MS,
   });
 
   // Get output directory from execution status
@@ -152,7 +154,7 @@ async function refineWorkflowViaSnapshots(
 
   try {
     const refinedWorkflow = buildWorkflowFromSnapshots(userRequest, useCase, snapshotsPath);
-    console.log(`Workflow refined from snapshots at ${snapshotsPath}`);
+    console.error(`Workflow refined from snapshots at ${snapshotsPath}`);
     return refinedWorkflow;
   } catch (snapshotError: any) {
     console.warn(`Failed to build workflow from snapshots: ${snapshotError.message}`);
@@ -292,8 +294,8 @@ function generateWorkflowRuleBased(
       const waitAfterNavId = builder.addNode(NodeType.WAIT, {
         label: 'Wait after navigation',
         waitType: 'timeout',
-        value: '2000',
-        timeout: 2000,
+        value: String(WAIT_AFTER_CLICK_MS),
+        timeout: WAIT_AFTER_CLICK_MS,
       });
       builder.connectNodes(navId, waitAfterNavId);
       lastNodeId = waitAfterNavId;
@@ -310,8 +312,8 @@ function generateWorkflowRuleBased(
       const waitAfterClickId = builder.addNode(NodeType.WAIT, {
         label: 'Wait after click',
         waitType: 'timeout',
-        value: '2000',
-        timeout: 2000,
+        value: String(WAIT_AFTER_CLICK_MS),
+        timeout: WAIT_AFTER_CLICK_MS,
       });
       builder.connectNodes(clickId, waitAfterClickId);
       lastNodeId = waitAfterClickId;
@@ -425,7 +427,7 @@ function generateWorkflowFromSteps(
   let lastExtractVariable: string | undefined;
 
   for (let stepIdx = 0; stepIdx < steps.length; stepIdx++) {
-    const step = steps[stepIdx];
+    let step = steps[stepIdx];
     let currentNodeId: string | undefined;
 
     // When a post-loop step arrives, finalize the loop body first
@@ -437,193 +439,58 @@ function generateWorkflowFromSteps(
       loopFinalized = true;
     }
 
-    switch (step.action) {
-      case 'setConfig': {
-        const merged = { ...(configVars || {}), ...(step.configEntries || {}) };
-        const config = Object.keys(merged).length > 0 ? merged : { key: 'value' };
-        currentNodeId = builder.addSetConfigNode(config, 'Set Config');
-        break;
+    // Track extract variables for smart verify generation
+    if (step.action === 'extract') {
+      lastExtractVariable = step.outputVariable || 'extractedData';
+    }
+
+    // Resolve config references in type/fill values before handing to nodeFactory
+    if ((step.action === 'type' || step.action === 'fill') && step.value && configVars) {
+      const resolved = resolveConfigReference(step.value, configVars);
+      if (resolved && resolved !== step.value) {
+        step = { ...step, value: resolved };
+      }
+    }
+
+    // Merge config vars into setConfig entries
+    if (step.action === 'setConfig' && configVars && Object.keys(configVars).length > 0) {
+      step = {
+        ...step,
+        configEntries: { ...(configVars || {}), ...(step.configEntries || {}) },
+      };
+    }
+
+    // Loop needs special handling for builder wiring (addLoopBody, addPostLoopConnection)
+    if (step.action === 'loop') {
+      if (activeLoopId && loopBodyNodeIds.length > 0) {
+        builder.addLoopBody(activeLoopId, loopBodyNodeIds);
+        loopBodyNodeIds.length = 0;
       }
 
-      case 'navigate':
-        if (step.target) {
-          currentNodeId = builder.addNode(NodeType.NAVIGATION, {
-            label: `Navigate to ${step.target}`,
-            action: 'navigate',
-            url: step.target,
-            waitUntil: 'networkidle',
-          });
-        }
-        break;
-
-      case 'click':
-        currentNodeId = builder.addNode(NodeType.ACTION, {
-          label: `Click ${step.target || 'element'}`,
-          action: 'click',
-          selector: inferSelector(step.target),
-        });
-        break;
-
-      case 'type': {
-        const resolvedText = resolveConfigReference(step.value, configVars) || step.value || '';
-        currentNodeId = builder.addNode(NodeType.TYPE, {
-          label: `Type ${step.value || 'text'}`,
-          selector: inferSelector(step.target),
-          text: resolvedText,
-          clearFirst: true,
-        });
-        break;
-      }
-
-      case 'fill':
-        currentNodeId = builder.addNode(NodeType.TYPE, {
-          label: 'Fill form',
-          selector: 'form input',
-          text: 'dummy data',
-          clearFirst: true,
-        });
-        break;
-
-      case 'wait': {
-        const waitTime = step.value ? parseInt(step.value, 10) * 1000 : 1000;
-        currentNodeId = builder.addNode(NodeType.WAIT, {
-          label: `Wait ${step.value || '1'}s`,
-          waitType: 'timeout',
-          value: String(waitTime),
-          timeout: waitTime,
-        });
-        break;
-      }
-
-      case 'submit':
-        currentNodeId = builder.addNode(NodeType.ACTION, {
-          label: 'Submit form',
-          action: 'click',
-          selector: 'button[type="submit"], input[type="submit"]',
-        });
-        break;
-
-      case 'keyboard': {
-        const keyName = step.key || 'Enter';
-        if (step.shortcut) {
-          currentNodeId = builder.addNode(NodeType.KEYBOARD, {
-            label: `Shortcut ${step.shortcut}`,
-            action: 'shortcut',
-            shortcut: step.shortcut,
-          });
-        } else {
-          currentNodeId = builder.addNode(NodeType.KEYBOARD, {
-            label: `Press ${keyName}`,
-            action: 'press',
-            key: keyName,
-          });
-        }
-        break;
-      }
-
-      case 'loop': {
-        // If there's an active loop pending, finalize it first
-        if (activeLoopId && loopBodyNodeIds.length > 0) {
-          builder.addLoopBody(activeLoopId, loopBodyNodeIds);
-          loopBodyNodeIds.length = 0;
-        }
-
-        const arrayVar = lastExtractVariable || step.loopVariable;
+      const nodeConfig = buildNodeConfig(step, null, lastExtractVariable);
+      if (nodeConfig) {
+        const loopData = nodeConfig.data;
         const loopId = builder.addLoopNode(
-          arrayVar ? 'forEach' : 'doWhile',
+          loopData.loopMode || 'doWhile',
           {
-            arrayVariable: arrayVar,
-            condition: step.loopCount ? `index < ${step.loopCount}` : undefined,
+            arrayVariable: loopData.arrayVariable,
+            condition: loopData.condition,
           },
-          `Loop${arrayVar ? ` over ${arrayVar}` : ''}`
+          loopData.label
         );
         activeLoopId = loopId;
         loopFinalized = false;
         currentNodeId = loopId;
-        break;
       }
+    } else {
+      // All other actions: delegate to the common node factory
+      const selectorInfo: SelectorInfo | null = step.target
+        ? { selector: inferSelector(step.target), selectorType: 'css' }
+        : null;
 
-      case 'extract': {
-        const outputVar = step.outputVariable || 'extractedData';
-        lastExtractVariable = outputVar;
-        let code: string;
-        if (step.target) {
-          code = `const el = context.page.locator(${JSON.stringify(step.target)});\n` +
-            `const items = await el.allTextContents();\n` +
-            `context.setData("${outputVar}", items);\n` +
-            `context.setVariable("${outputVar}", items);\n` +
-            `console.log("Extracted", items.length, "items into ${outputVar}");`;
-        } else {
-          code = `const maxResults = parseInt(context.getData("maxResults") || context.getData("maxProducts")) || 10;\n` +
-            `const items = await context.page.locator("h2").allTextContents();\n` +
-            `const limited = items.slice(0, maxResults);\n` +
-            `context.setData("${outputVar}", limited);\n` +
-            `context.setVariable("${outputVar}", limited);\n` +
-            `console.log("Extracted", limited.length, "items into ${outputVar}");`;
-        }
-        currentNodeId = builder.addJavaScriptNode(code, 'Extract Data');
-        break;
-      }
-
-      case 'verify': {
-        const vType = step.verifyType || 'visible';
-        const vSelector = step.verifySelector || 'body';
-        const vExpected = step.verifyExpectedText;
-
-        // When verifying with variable data (e.g. "cart contains the products"),
-        // generate a JS node that reads the stored variable and compares.
-        // Treat generic expected values (e.g. "products", "items", "data") as non-specific
-        const genericExpected = /^(the\s+)?(products?|items?|data|results?|elements?|entries|values?)$/i;
-        const hasSpecificExpected = vExpected && !genericExpected.test(vExpected.trim());
-        if (vType === 'containsText' && !hasSpecificExpected && lastExtractVariable) {
-          const verifyCode =
-            `const expected = context.getVariable("${lastExtractVariable}") || context.getData("${lastExtractVariable}") || [];\n` +
-            `const cartSelector = ${JSON.stringify(vSelector)};\n` +
-            `const cartItems = await context.page.locator(cartSelector).allTextContents();\n` +
-            `const cartText = cartItems.join(" ").toLowerCase();\n` +
-            `let matched = 0;\n` +
-            `for (const item of expected) {\n` +
-            `  if (cartText.includes(item.toLowerCase())) matched++;\n` +
-            `}\n` +
-            `console.log("Cart verification:", matched, "/", expected.length, "products found");\n` +
-            `if (matched === 0) throw new Error("None of the expected products found in cart");`;
-          currentNodeId = builder.addJavaScriptNode(verifyCode, 'Verify Cart Contents');
-        } else if (vType === 'url') {
-          currentNodeId = builder.addVerifyNode('browser', 'url', {
-            selector: vSelector,
-            expectedValue: vExpected,
-          }, `Verify: ${step.description.substring(0, 40)}`);
-        } else if (vType === 'containsText') {
-          currentNodeId = builder.addVerifyNode('browser', 'containsText', {
-            selector: vSelector,
-            expectedValue: vExpected,
-          }, `Verify: ${step.description.substring(0, 40)}`);
-        } else {
-          currentNodeId = builder.addVerifyNode('browser', 'visible', {
-            selector: vSelector,
-          }, `Verify: ${step.description.substring(0, 40)}`);
-        }
-        break;
-      }
-
-      case 'code': {
-        currentNodeId = builder.addJavaScriptNode(
-          `// ${step.description}\n// Add your JavaScript code here\n// Available: context.page, context.getData(), context.setData(), context.getVariable(), context.setVariable()`,
-          step.description.substring(0, 40)
-        );
-        break;
-      }
-
-      case 'unknown': {
-        // Try to match against plugin node types
-        const pluginNode = findPluginNodeByKeyword(step.description.toLowerCase());
-        if (pluginNode) {
-          currentNodeId = builder.addNode(pluginNode.type, {
-            label: pluginNode.label,
-            ...(pluginNode.defaultData || {}),
-          });
-        }
-        break;
+      const nodeConfig = buildNodeConfig(step, selectorInfo, lastExtractVariable);
+      if (nodeConfig) {
+        currentNodeId = builder.addNode(nodeConfig.type, nodeConfig.data);
       }
     }
 
@@ -634,7 +501,6 @@ function generateWorkflowFromSteps(
       if (isInLoopBody) {
         loopBodyNodeIds.push(currentNodeId);
       } else if (loopFinalized && activeLoopId) {
-        // First post-loop node: connect from loopComplete
         builder.addPostLoopConnection(activeLoopId, currentNodeId);
         activeLoopId = undefined;
         loopFinalized = false;
@@ -651,8 +517,8 @@ function generateWorkflowFromSteps(
         const waitId = builder.addNode(NodeType.WAIT, {
           label: `Wait after ${step.action}`,
           waitType: 'timeout',
-          value: '2000',
-          timeout: 2000,
+          value: String(WAIT_AFTER_CLICK_MS),
+          timeout: WAIT_AFTER_CLICK_MS,
         });
         if (isInLoopBody) {
           loopBodyNodeIds.push(waitId);

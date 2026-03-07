@@ -1,6 +1,21 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+/** Wait inserted after navigation actions (ms) */
+export const WAIT_AFTER_NAVIGATE_MS = 3000;
+/** Wait inserted after click/submit actions (ms) */
+export const WAIT_AFTER_CLICK_MS = 2000;
+/** Default fallback wait when no explicit duration is given (ms) */
+export const DEFAULT_WAIT_MS = 2000;
+/** Default maximum execution/polling duration (ms) -- 5 minutes */
+export const MAX_EXECUTION_DURATION_MS = 300000;
+/** Default maximum wait for a breakpoint to trigger (ms) -- 60 seconds */
+export const MAX_BREAKPOINT_WAIT_MS = 60000;
+/** Default maximum phase duration for incremental workflow creation (ms) -- 2 minutes */
+export const MAX_PHASE_DURATION_MS = 120000;
+/** HTTP client request timeout (ms) */
+export const HTTP_REQUEST_TIMEOUT_MS = 60000;
+
 export interface MCPConfig {
   backendUrl: string;
   workflowsPath: string;

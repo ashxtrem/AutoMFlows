@@ -23,6 +23,7 @@ import { validateWorkflow } from './tools/validateWorkflow.js';
 import { extendWorkflow } from './tools/extendWorkflow.js';
 import { createAndExecuteWorkflow } from './tools/createAndExecuteWorkflow.js';
 import { createWorkflowViaSnapshots } from './tools/createWorkflowViaSnapshots.js';
+import { createWorkflowIncremental } from './tools/createWorkflowIncremental.js';
 
 // Load configuration
 loadConfig();
@@ -542,6 +543,29 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ['userRequest', 'useCase'],
         },
       },
+      {
+        name: 'create_workflow_incremental',
+        description: 'Create a workflow incrementally using live accessibility snapshots and Text(Auto-detect) selectors. Builds a minimal seed workflow (Start -> Open Browser -> Navigate), executes it, captures the accessibility snapshot of the live page, then uses the snapshot to determine visible text labels for subsequent steps. Repeats phase-by-phase until the full workflow is built. Produces more accurate selectors than guess-based approaches because each phase uses real page state.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            userRequest: {
+              type: 'string',
+              description: 'User request describing what the workflow should do (e.g., "visit amazon.in, search for toys, add first product to cart, open cart")',
+            },
+            useCase: {
+              type: 'string',
+              description: 'Use case description for the workflow',
+            },
+            maxPhaseDurationMs: {
+              type: 'number',
+              description: 'Maximum duration in milliseconds for each phase execution (default: 120000 = 2 minutes)',
+              default: 120000,
+            },
+          },
+          required: ['userRequest', 'useCase'],
+        },
+      },
     ],
   };
 });
@@ -718,6 +742,23 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           preferredMode: args.preferredMode as 'guess' | 'snapshots' | undefined,
           snapshotsPath: args.snapshotsPath as string | undefined,
           executeImmediately: args.executeImmediately as boolean | undefined,
+        });
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'create_workflow_incremental': {
+        const result = await createWorkflowIncremental({
+          userRequest: args.userRequest as string,
+          useCase: args.useCase as string,
+          maxPhaseDurationMs: args.maxPhaseDurationMs as number | undefined,
         });
 
         return {

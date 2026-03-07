@@ -27,7 +27,7 @@ export class WorkflowModifier {
     };
     
     newNode.position = newPosition;
-    newNode.id = newNode.id || `${newNode.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    newNode.id = newNode.id || `${newNode.type}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 
     // Insert node after target
     modifiedWorkflow.nodes.splice(targetIndex + 1, 0, newNode);
@@ -99,7 +99,7 @@ export class WorkflowModifier {
     };
     
     newNode.position = newPosition;
-    newNode.id = newNode.id || `${newNode.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    newNode.id = newNode.id || `${newNode.type}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 
     // Insert node before target
     modifiedWorkflow.nodes.splice(targetIndex, 0, newNode);
@@ -182,7 +182,7 @@ export class WorkflowModifier {
     };
     
     newNode.position = newPosition;
-    newNode.id = newNode.id || `${newNode.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    newNode.id = newNode.id || `${newNode.type}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 
     // Add new node
     modifiedWorkflow.nodes.push(newNode);
@@ -251,7 +251,7 @@ export class WorkflowModifier {
     };
     
     newNode.position = newPosition;
-    newNode.id = newNode.id || `${newNode.type}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    newNode.id = newNode.id || `${newNode.type}-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
     modifiedWorkflow.nodes.push(newNode);
 
     return modifiedWorkflow;
@@ -346,7 +346,7 @@ export class WorkflowModifier {
     }
   ): Workflow {
     const verifyNode: BaseNode = {
-      id: `verify-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `verify-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
       type: NodeType.VERIFY,
       position: { x: 0, y: 0 }, // Will be calculated by insertNodeAfter
       data: {
@@ -377,7 +377,7 @@ export class WorkflowModifier {
     }
   ): Workflow {
     const verifyNode: BaseNode = {
-      id: `verify-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `verify-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
       type: NodeType.VERIFY,
       position: { x: 0, y: 0 }, // Will be calculated by insertNodeBefore
       data: {
@@ -483,7 +483,7 @@ export class WorkflowModifier {
 
     // Create wait node with pause enabled
     const waitNode: BaseNode = {
-      id: `wait-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: `wait-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
       type: NodeType.WAIT,
       position: {
         x: modifiedWorkflow.nodes[targetIndex].position.x - 300,

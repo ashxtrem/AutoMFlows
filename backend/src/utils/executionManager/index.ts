@@ -5,6 +5,7 @@ import { PlaywrightManager } from '../playwright';
 import { 
   Workflow, 
   ExecutionStatus, 
+  ExecutionSource,
   ScreenshotConfig, 
   ReportConfig,
   BatchPersistenceMetadata,
@@ -24,6 +25,7 @@ interface ExecutionMetadata {
   workflowPath?: string;
   executor: Executor;
   status: ExecutionStatus;
+  source?: ExecutionSource;
   workerId?: number;
   startTime: number;
   endTime?: number;
@@ -98,6 +100,7 @@ export class ExecutionManager {
       breakpointConfig?: any;
       builderModeEnabled?: boolean;
       workflowFileName?: string;
+      source?: ExecutionSource;
     } = {}
   ): Promise<string> {
     // Create isolated PlaywrightManager for this execution
@@ -117,6 +120,8 @@ export class ExecutionManager {
       playwrightManager // Pass isolated PlaywrightManager
     );
 
+    executor.setSource(options.source || 'api');
+
     const executionId = executor.getExecutionId();
 
     // Set execution context flags
@@ -129,6 +134,7 @@ export class ExecutionManager {
       workflow,
       workflowFileName: options.workflowFileName,
       executor,
+      source: options.source || 'api',
       status: ExecutionStatus.IDLE,
       startTime: Date.now(),
     };
@@ -160,6 +166,7 @@ export class ExecutionManager {
       outputPath?: string;
       startNodeOverrides?: StartNodeOverrides;
       priority?: number;
+      source?: ExecutionSource;
     }
   ): Promise<string> {
     const batchId = uuidv4();
@@ -206,6 +213,7 @@ export class ExecutionManager {
           recordSession: options.recordSession,
           outputPath: options.outputPath,
           startNodeOverrides: options.startNodeOverrides,
+          source: options.source,
         }
       );
       batch.executionIds.push(executionId);
@@ -239,6 +247,7 @@ export class ExecutionManager {
       recordSession?: boolean;
       outputPath?: string;
       startNodeOverrides?: StartNodeOverrides;
+      source?: ExecutionSource;
     }
   ): Promise<string> {
     // Create isolated PlaywrightManager for this execution
@@ -258,6 +267,8 @@ export class ExecutionManager {
       playwrightManager // Pass isolated PlaywrightManager
     );
 
+    executor.setSource(options.source || 'api');
+
     const executionId = executor.getExecutionId();
 
     // Set execution context flags for parallel mode
@@ -273,6 +284,7 @@ export class ExecutionManager {
       workflowFileName: options.workflowFileName,
       workflowPath: options.workflowPath,
       executor,
+      source: options.source || 'api',
       status: ExecutionStatus.IDLE, // IDLE means queued
       startTime: Date.now(),
       cancelled: false,

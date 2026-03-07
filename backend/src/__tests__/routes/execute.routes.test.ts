@@ -129,6 +129,40 @@ describe('POST /api/workflows/execute', () => {
         traceLogs: true,
         recordSession: true,
         workflowFileName: 'test.json',
+        source: 'api',
+      }),
+    );
+  });
+
+  it('passes source field to startSingleExecution', async () => {
+    mockStartSingleExecution.mockResolvedValue('exec-789');
+
+    await request(app)
+      .post('/api/workflows/execute')
+      .send({
+        workflow: minimalWorkflow,
+        source: 'frontend',
+      });
+
+    expect(mockStartSingleExecution).toHaveBeenCalledWith(
+      minimalWorkflow,
+      expect.objectContaining({
+        source: 'frontend',
+      }),
+    );
+  });
+
+  it('defaults source to api when not provided', async () => {
+    mockStartSingleExecution.mockResolvedValue('exec-default');
+
+    await request(app)
+      .post('/api/workflows/execute')
+      .send({ workflow: minimalWorkflow });
+
+    expect(mockStartSingleExecution).toHaveBeenCalledWith(
+      minimalWorkflow,
+      expect.objectContaining({
+        source: 'api',
       }),
     );
   });

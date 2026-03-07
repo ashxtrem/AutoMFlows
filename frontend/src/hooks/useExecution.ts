@@ -155,6 +155,11 @@ export function useExecution() {
         });
 
         socket.on('execution-event', async (event: any) => {
+          // Ignore events from non-frontend executions (MCP, API, etc.)
+          if (event.source && event.source !== 'frontend') {
+            return;
+          }
+
           console.log('Execution event:', event);
       
       switch (event.type) {
@@ -450,6 +455,7 @@ export function useExecution() {
           breakpointConfig,
           builderModeEnabled,
           workflowFileName: baseFileName,
+          source: 'frontend',
         }),
         signal: fetchController.signal,
       });

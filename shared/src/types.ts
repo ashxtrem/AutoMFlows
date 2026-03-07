@@ -1478,6 +1478,9 @@ export interface BuilderModeEvent {
   timestamp?: number;
 }
 
+// Execution source identifier
+export type ExecutionSource = 'frontend' | 'api' | 'mcp';
+
 // Execution Event
 export interface ExecutionEvent {
   type: ExecutionEventType;
@@ -1487,6 +1490,7 @@ export interface ExecutionEvent {
   traceLogs?: string[]; // Trace logs for node errors
   debugInfo?: PageDebugInfo; // Debug info for UI node errors
   failSilently?: boolean; // If true, node failed but execution should continue
+  source?: ExecutionSource;
   timestamp: number;
 }
 
@@ -1629,6 +1633,7 @@ export interface ExecuteWorkflowRequest {
   workflowFileName?: string;             // Optional: workflow filename (single mode)
   breakpointConfig?: BreakpointConfig;   // Optional: breakpoint config (single mode only, controlled via localStorage in frontend)
   builderModeEnabled?: boolean;          // Optional: builder mode flag (single mode only, controlled via localStorage in frontend)
+  source?: ExecutionSource;              // Optional: execution source identifier (default: 'api')
   
   // Parallel Mode Options
   workers?: number;                       // Optional: max concurrent workers (default: 4, use 1 for MCP/API)
