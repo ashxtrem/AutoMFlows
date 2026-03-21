@@ -1,0 +1,29 @@
+---
+description: AutoMFlows monorepo layout, Playwright install, workflow fixtures, link to AGENTS.md
+alwaysApply: true
+---
+
+# AutoMFlows (Cursor)
+
+**Operating contract:** read [AGENTS.md](../../AGENTS.md) first (install, verify commands, secrets, PR checklist).
+
+## Monorepo (npm workspaces)
+
+Root [package.json](../../package.json) workspaces: `backend`, `frontend`, `shared`, `mcp-server`. Prefer root scripts: `npm run lint`, `npm run type-check`, `npm test`, `npm run build`, `npm start`.
+
+Build `@automflows/shared` before backend/frontend type-check or build that depends on it: `npm run build --workspace=shared`.
+
+## Playwright / postinstall
+
+[backend/package.json](../../backend/package.json) defines `postinstall`: `npx playwright install chromium`. It runs when backend dependencies install (e.g. root `npm ci`). The backend execution engine uses Playwright; integration tests may assume Chromium is available.
+
+## Workflow JSON and test resources
+
+- **Workflow fixtures:** primarily under `tests/workflows/` (e.g. `tests/workflows/demo/*.json`).
+- **Supporting data:** `tests/resources/` (JSON, CSV, env samples, etc.).
+
+Do not commit real secrets; use [`.env.example`](../../.env.example) for variable names only.
+
+## Deeper docs
+
+Topic index: [docs/agent/](../../docs/agent/) (repo map, testing, security, workflow, code style).

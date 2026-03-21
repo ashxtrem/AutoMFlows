@@ -78,10 +78,10 @@ git clone https://github.com/ashxtrem/AutoMFlows.git
 cd AutoMFlows
 ```
 
-2. Install dependencies:
+2. Install dependencies (use `npm ci` for a reproducible install from the committed lockfile; use `npm install` when adding or updating dependencies):
 
 ```bash
-npm install
+npm ci
 ```
 
 3. Build shared package:
@@ -158,6 +158,11 @@ AutoMFlows supports plugins for custom nodes. Built-in plugins include:
 - **Shortcut**: Keyboard shortcuts in the editor
 
 See [Plugin Development Guide](docs/PLUGIN_DEVELOPMENT.md) for details.
+
+## Contributing
+
+- **[AGENTS.md](AGENTS.md)** — commands, layout, and verification for contributors and coding agents.
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — workflow and PR expectations.
 
 ## Repository
 

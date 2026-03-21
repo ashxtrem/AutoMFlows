@@ -5,7 +5,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-package-lock.json
 yarn.lock
 pnpm-lock.yaml
 
@@ -43,8 +42,10 @@ blob-report/
 .env.production.local
 .env*.local
 
-# IDE
-.cursor/
+# IDE — track shared Cursor rules; ignore other local .cursor state
+.cursor/*
+!.cursor/rules/
+!.cursor/rules/**
 .vscode/
 .idea/
 *.swp
