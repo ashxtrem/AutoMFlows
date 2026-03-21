@@ -1,6 +1,6 @@
 # Agent workflow protocol
 
-Lightweight sequence adapted from Foundry-style “casts” (no external CLI required).
+Lightweight sequence for agent work (no external tooling required).
 
 ## Sequence
 

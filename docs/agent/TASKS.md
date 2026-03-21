@@ -19,14 +19,14 @@ Prioritized follow-ups from [`SCORE_REPORT.md`](./SCORE_REPORT.md). Check items 
 - [ ] Add root **`SECURITY.md`** with supported versions and how to report vulnerabilities (even if email/GitHub Security Advisories only).
 - [ ] **Optional:** enable **Dependabot** or **Renovate** for `package-lock.json` (`.github/dependabot.yml`).
 
-## P4 — Deeper Foundry-style rubrics (periodic)
+## P4 — Deeper rubric audits (periodic)
 
-- [x] Run through **`testing`** `testing-llm-deep.md` in `foundry_og` (knowledge base only; no Foundry CLI) — gaps filed below.
-- [ ] Run through **`security`** rubric after any auth/execution/plugin change.
+- [x] Run through the **testing** deep checklist (manual / AI-assisted) — gaps filed below.
+- [ ] Run through the **`security`** rubric after any auth/execution/plugin change.
 
-### Foundry `testing-llm-deep.md` — filed gaps (AutoMFlows)
+### Testing deep rubric — filed gaps (AutoMFlows)
 
-Rubric source: `foundry_og/src/foundry/scoring/rules/legacy/testing/testing-llm-deep.md`. **Strengths:** many `__tests__` suites (backend Jest + frontend Vitest + RTL), route and Playwright-backed integration tests under `backend/src/__tests__/integration/`, `jest.config.js` / `vitest.config.ts` present, frontend **coverage thresholds** (80%) defined in Vitest config.
+**Strengths:** many `__tests__` suites (backend Jest + frontend Vitest + RTL), route and Playwright-backed integration tests under `backend/src/__tests__/integration/`, `jest.config.js` / `vitest.config.ts` present, frontend **coverage thresholds** (80%) defined in Vitest config.
 
 - [ ] **P4-T1 — Enforce coverage in CI** — Default `npm test` runs Jest/Vitest without coverage; frontend thresholds in `frontend/vitest.config.ts` only apply when using `test:coverage`. CI (`.github/workflows/ci.yml`) does not run coverage or fail on gates. *Rubric:* “Coverage report in CI artifacts without a threshold is measurement only.”
 - [ ] **P4-T2 — Backend Jest coverage gate** — `backend/jest.config.js` sets `coverageReporters` but no `coverageThreshold`; `test:coverage` is opt-in. *Rubric:* prefer `--cov-fail-under` / `coverageThreshold`-style enforcement aligned with product goals (can ratchet over time).
@@ -36,4 +36,4 @@ Rubric source: `foundry_og/src/foundry/scoring/rules/legacy/testing/testing-llm-
 
 ---
 
-*Last synced with score audit: 2026-03-21*
+*Last synced with score audit: 2026-03-21 (re-score, see [`SCORE_REPORT.md`](./SCORE_REPORT.md))*
