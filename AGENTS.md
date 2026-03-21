@@ -51,7 +51,7 @@ Run from the **repository root**:
 |------|---------|
 | Lint | `npm run lint` |
 | Lint with ESLint `--fix` (whole tree) | `npm run lint:fix` |
-| Typecheck (all workspaces) | `npm run type-check` |
+| Typecheck (all workspaces) | `npm run type-check` (builds `@automflows/shared` first so `dist` types exist) |
 | Tests (workspaces that define `test`) | `npm test` |
 | Build (all workspaces) | `npm run build` |
 | Dependency audit (report) | `npm run audit` |

@@ -22,7 +22,7 @@
     "lint": "eslint backend/src frontend/src shared/src mcp-server/src",
     "lint:fix": "eslint backend/src frontend/src shared/src mcp-server/src --fix",
     "test": "npm run test --workspaces --if-present",
-    "type-check": "npm run type-check --workspaces",
+    "type-check": "npm run build --workspace=shared && npm run type-check --workspaces",
     "compress": "bash scripts/compress.sh",
     "compress:ps1": "powershell -ExecutionPolicy Bypass -File scripts/compress.ps1",
     "prepare": "husky",

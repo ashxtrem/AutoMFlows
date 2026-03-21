@@ -11,7 +11,7 @@ alwaysApply: true
 
 Root [package.json](../../package.json) workspaces: `backend`, `frontend`, `shared`, `mcp-server`. Prefer root scripts: `npm run lint`, `npm run type-check`, `npm test`, `npm run build`, `npm start`.
 
-Build `@automflows/shared` before backend/frontend type-check or build that depends on it: `npm run build --workspace=shared`.
+Root `npm run type-check` builds `@automflows/shared` first (types come from `shared/dist`). If you run `tsc` / `type-check` only inside `backend`, `frontend`, or `mcp-server`, run `npm run build --workspace=shared` beforehand.
 
 ## Playwright / postinstall
 
